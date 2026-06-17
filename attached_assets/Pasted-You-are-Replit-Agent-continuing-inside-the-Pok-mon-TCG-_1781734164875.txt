@@ -1,0 +1,164 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not modify root main.py or root deck.csv.
+- Do not submit more than one candidate.
+- Submit only the already-built candidate `deck_energy_trim_light`.
+- Do not print or commit Kaggle credentials.
+- Use Kaggle CLI only through existing Replit Secrets.
+- If any validation fails, stop and do not upload.
+
+Context:
+- Current Kaggle-rated baseline v1 scored 349.8.
+- ActiveGraph high-fidelity pass found one promotable candidate:
+  - candidate_id: deck_energy_trim_light
+  - focused raw win rate: 0.650
+  - adjusted win rate: 0.650
+  - Wilson 80% CI: 0.549–0.739
+  - Wilson 95% CI: 0.495–0.779
+  - seat split: p0 0.55 / p1 0.75
+  - hypothesis: trimming 4 Basic Water Energy for +2 Kyogre + +2 Ultra Ball adds attacker/search density without dropping power online.
+- Candidate tarball path:
+  - data/submissions/candidates/deck_energy_trim_light.tar.gz
+- We want exactly one Kaggle probe submission.
+
+Goal:
+Validate and submit `deck_energy_trim_light` exactly once, then fetch submission status and record an ActiveGraph event.
+
+Step 1 — Validate root baseline remains untouched
+
+Run:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged"
+
+If either differs, stop and report. Do not upload.
+
+Step 2 — Inspect candidate tarball
+
+Run:
+
+ls -lh data/submissions/candidates/deck_energy_trim_light.tar.gz
+tar -tzf data/submissions/candidates/deck_energy_trim_light.tar.gz
+
+The tarball must contain exactly:
+
+main.py
+deck.csv
+
+If not, stop.
+
+Step 3 — Validate candidate package in an isolated temp directory
+
+Create a temp validation directory, extract the candidate tarball there, and run package/deck checks against those extracted files.
+
+Suggested commands:
+
+mkdir -p /tmp/ptcg_candidate_validate
+rm -rf /tmp/ptcg_candidate_validate/*
+tar -xzf data/submissions/candidates/deck_energy_trim_light.tar.gz -C /tmp/ptcg_candidate_validate
+ls -la /tmp/ptcg_candidate_validate
+wc -l /tmp/ptcg_candidate_validate/deck.csv
+python - <<'PY'
+from pathlib import Path
+p = Path("/tmp/ptcg_candidate_validate/deck.csv")
+rows = [x.strip() for x in p.read_text().splitlines() if x.strip()]
+assert len(rows) == 60, len(rows)
+assert all(x.isdigit() for x in rows)
+print("candidate deck valid:", len(rows), "cards", len(set(rows)), "unique")
+PY
+
+Step 4 — Run candidate smoke test if supported
+
+If existing smoke test supports a custom tarball or custom main/deck paths, run it against the candidate.
+
+Try help first:
+
+python scripts/kaggle_smoke_test.py --help || true
+
+If supported, run candidate smoke.
+
+If not supported, temporarily copy candidate files into a temp working area or use the existing experiment run’s smoke result. Do not overwrite root files permanently.
+
+If a candidate smoke test fails, stop and report. Do not upload.
+
+Step 5 — Check Kaggle auth/access
+
+Run:
+
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/pre_submit_status_deck_energy_trim_light.log
+
+If auth fails, stop and report.
+If rules/access fails, stop and report.
+Do not submit if status check fails from auth/access.
+
+Step 6 — Submit exactly once
+
+Run exactly one submit command:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submit pokemon-tcg-ai-battle -f data/submissions/candidates/deck_energy_trim_light.tar.gz -m "deck_energy_trim_light: -4 Water +2 Kyogre +2 Ultra Ball" 2>&1 | tee data/kaggle_uploads/submit_deck_energy_trim_light.log
+
+Do not run another submit command.
+
+Step 7 — Fetch status
+
+Run:
+
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_after_deck_energy_trim_light.log
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_after_deck_energy_trim_light.csv
+
+Step 8 — Emit ActiveGraph event
+
+If scripts/ag_event.py exists, append:
+
+event_type: SubmissionUploaded
+payload:
+  candidate_id: deck_energy_trim_light
+  tarball: data/submissions/candidates/deck_energy_trim_light.tar.gz
+  message: "deck_energy_trim_light: -4 Water +2 Kyogre +2 Ultra Ball"
+  local_adjusted_win_rate: 0.65
+  local_wilson_80: [0.549, 0.739]
+  local_wilson_95: [0.495, 0.779]
+  baseline_score: 349.8
+  upload_mode: human_approved_single_probe
+
+Use whatever CLI syntax exists. If awkward, create a small JSON event manually in data/activegraph/lab_events.jsonl using the existing event schema.
+
+Step 9 — Final report format
+
+Report exactly:
+
+Deck Energy Trim Light Kaggle Probe Report
+
+1. Baseline safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+
+2. Candidate validation
+- candidate tarball path:
+- tarball contents:
+- deck line count:
+- unique card IDs:
+- candidate smoke result:
+
+3. Kaggle upload
+- auth/status precheck:
+- upload attempted:
+- submit log path:
+- raw submit summary:
+
+4. Submission status
+- latest status:
+- score/rating if available:
+- status log paths:
+
+5. ActiveGraph
+- SubmissionUploaded event emitted:
+- event store path:
+
+6. Next action
+- If pending: say "Wait for validation/rating, then fetch status before submitting anything else."
+- If scored: say "Compare against v1 baseline and decide whether to promote."
+- If error: classify the error and recommend the smallest fix.
