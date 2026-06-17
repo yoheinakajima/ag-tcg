@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
-"""Package the Kaggle submission tarball.
+"""Package (and preflight) the Kaggle submission tarball.
 
-Verifies main.py and deck.csv, then builds data/submissions/submission.tar.gz
-containing exactly the runtime files.
+Runs strict preflight checks (main.py imports, agent returns a list, deck is 60
+integers and not a placeholder), builds data/submissions/submission.tar.gz with
+top-level-only files, inspects it, and prints its contents.
 
 Usage:
+    python scripts/package_submission.py --verify-only
     python scripts/package_submission.py
     python scripts/package_submission.py --main main.py --deck deck.csv \
         --out data/submissions/submission.tar.gz --include agent.py
+    python scripts/package_submission.py --allow-placeholder   # NOT for scoring
 """
 
 from __future__ import annotations
 
 import argparse
+import tarfile
 
 import _bootstrap  # noqa: F401
 from ptcg_activegraph.cards import load_card_db
@@ -31,19 +35,24 @@ def main() -> int:
     parser.add_argument("--include", action="append", default=[],
                         help="extra runtime file to include (repeatable)")
     parser.add_argument("--verify-only", action="store_true",
-                        help="only verify inputs, do not build the tarball")
+                        help="run preflight checks without building the tarball")
+    parser.add_argument("--allow-placeholder", action="store_true",
+                        help="permit a placeholder deck (will likely fail scoring)")
     args = parser.parse_args()
 
-    # Use card metadata for richer (soft) deck checks when available.
     card_db = load_card_db()
     card_db = card_db if len(card_db) > 0 else None
 
     try:
+        report = verify_submission_inputs(
+            args.main, args.deck, card_db=card_db,
+            allow_placeholder=args.allow_placeholder,
+        )
+        print("Preflight passed:")
+        for k, v in report.items():
+            print(f"  {k}: {v}")
+
         if args.verify_only:
-            report = verify_submission_inputs(args.main, args.deck, card_db=card_db)
-            print("Verification passed:")
-            for k, v in report.items():
-                print(f"  {k}: {v}")
             return 0
 
         out = build_submission(
@@ -52,8 +61,13 @@ def main() -> int:
             out_path=args.out,
             extra_files=args.include,
             card_db=card_db,
+            allow_placeholder=args.allow_placeholder,
         )
-        print(f"Built submission: {out}")
+        print(f"\nBuilt submission: {out}")
+        with tarfile.open(out, "r:gz") as tar:
+            print("Tarball contents:")
+            for info in tar.getmembers():
+                print(f"  {info.name}  ({info.size} bytes)")
         return 0
     except SubmissionError as exc:
         print(f"Submission error: {exc}")

@@ -5,7 +5,8 @@ PYTHON ?= python3
 DECK   ?= deck.csv
 GAMES  ?= 20
 
-.PHONY: help test test-v lint selfplay tournament report submission verify-submission inspect-cards smoke clean
+.PHONY: help test test-v lint selfplay tournament report submission verify-submission \
+        inspect-cards smoke demo resolve-deck record-schema first-run clean
 
 help:  ## Show this help.
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -17,8 +18,22 @@ test:  ## Run the unit test suite.
 test-v:  ## Run tests verbosely.
 	$(PYTHON) -m pytest -v
 
-smoke:  ## Run main.py's built-in smoke test.
+demo:  ## Show main.py's built-in demo decision (no cabt needed).
 	$(PYTHON) main.py
+
+resolve-deck:  ## Resolve a real deck.csv from sample/provided/generated sources.
+	$(PYTHON) scripts/resolve_deck.py
+
+smoke:  ## Run the cabt/kaggle smoke test (one full self-play game; needs cabt).
+	$(PYTHON) scripts/kaggle_smoke_test.py --deck $(DECK) --games 1
+
+record-schema:  ## Record the real cabt option schema via self-play (needs cabt).
+	$(PYTHON) scripts/record_schema.py --games $(GAMES) --deck $(DECK)
+
+first-run:  ## Preflight chain: tests -> resolve deck -> verify submission.
+	$(PYTHON) -m pytest -q
+	$(PYTHON) scripts/resolve_deck.py || true
+	$(PYTHON) scripts/package_submission.py --verify-only
 
 selfplay:  ## Run local self-play (needs cabt). GAMES=, DECK= configurable.
 	$(PYTHON) scripts/run_self_play.py --games $(GAMES) --deck $(DECK)

@@ -11,7 +11,7 @@ which the engine calls each step with an observation dict::
         "logs":    [...],     # event logs (optional)
         "current": {...},     # board state (dict or None)
         "select":  {          # legal choices (dict or None)
-            "options":  [...],
+            "options":  [...],   # (also tolerates "option")
             "maxCount": int,
             "minCount": int,
         },
@@ -22,12 +22,14 @@ legal moves, so the agent's job is to pick among them.
 
 Design guarantees (see docs/RUNTIME_AGENT.md):
   * Never raises outward — any internal error degrades to a legal fallback.
-  * Always returns unique, in-range indices respecting maxCount/minCount.
-  * Handles missing/null ``current`` and ``select`` (deck/setup phases).
+  * Always returns a ``list[int]`` of unique, in-range indices.
+  * Respects ``maxCount`` and ``minCount`` when present.
+  * Handles missing/null ``obs``/``current``/``select`` (deck/setup phases).
+  * Deterministic and very cheap (no search, no I/O, tiny time budget).
 
-A richer policy may live in ``agent.py``; if present and well-behaved it is used,
-otherwise the embedded heuristic below decides. Either way the output is
-validated here before returning.
+A richer policy may live in ``agent.py``; if importable and well-behaved it is
+used, otherwise the embedded heuristic below decides. Either way the output is
+re-validated here before returning.
 """
 
 from __future__ import annotations
@@ -35,38 +37,101 @@ from __future__ import annotations
 import json
 
 # ---------------------------------------------------------------------------
-# Embedded, dependency-free policy (the safety net that always works).
+# Keyword weights for the embedded heuristic (string-only, schema-agnostic).
 # ---------------------------------------------------------------------------
 
 _POSITIVE = {
-    "knock": 100, "ko": 60, "prize": 80, "attack": 80, "damage": 50,
-    "evolve": 45, "evolution": 40, "attach": 40, "energy": 40, "draw": 35,
-    "search": 35, "supporter": 30, "ability": 30, "skill": 30, "item": 25,
-    "bench": 20, "stadium": 18, "switch": 15, "active": 12,
+    "knockout": 110, "knock": 100, "prize": 80, "attack": 80, "weakness": 55,
+    "damage": 50, "evolve": 45, "evolution": 40, "attach": 40, "energy": 40,
+    "draw": 35, "search": 35, "supporter": 30, "ability": 30, "skill": 30,
+    "item": 25, "bench": 20, "stadium": 18, "switch": 15, "active": 12,
 }
-_NEGATIVE = {"end": -100, "pass": -100, "discard": -20, "trash": -20, "retreat": -10}
-_DISCARD_REDEEMERS = ("draw", "search", "attack", "attach", "evolve")
+_NEGATIVE = {
+    "concede": -1000, "end": -100, "pass": -100, "done": -90,
+    "discard": -20, "trash": -20, "retreat": -10,
+}
+# When an option also looks productive, don't punish its discard/trash cost.
+_DISCARD_REDEEMERS = ("draw", "search", "attack", "attach", "evolve", "energy")
 
 
-def _serialize(option):
-    """Serialize any option to a lower-cased text blob without raising."""
-    if option is None:
+# ---------------------------------------------------------------------------
+# Pure parsing / scoring helpers.
+# ---------------------------------------------------------------------------
+
+def _safe_json_lower(obj):
+    """Serialize any object to a lower-cased text blob without ever raising."""
+    if obj is None:
         return ""
-    if isinstance(option, str):
-        return option.lower()
-    if isinstance(option, (int, float, bool)):
-        return str(option).lower()
+    if isinstance(obj, str):
+        return obj.lower()
+    if isinstance(obj, bool):
+        return str(obj).lower()
+    if isinstance(obj, (int, float)):
+        return str(obj).lower()
     try:
-        return json.dumps(option, default=str, sort_keys=True).lower()
+        return json.dumps(obj, default=str, sort_keys=True).lower()
     except Exception:
         try:
-            return str(option).lower()
+            return str(obj).lower()
         except Exception:
             return ""
 
 
-def _score(option):
-    text = _serialize(option)
+def _get_select(obs):
+    """Return the ``select`` dict from an observation, or ``None``."""
+    if not isinstance(obs, dict):
+        return None
+    select = obs.get("select")
+    if isinstance(select, dict):
+        return select
+    return None
+
+
+def _get_options(select):
+    """Return the option list from a ``select`` dict (tolerant of shape)."""
+    if not isinstance(select, dict):
+        return []
+    # The competition uses "options"; tolerate "option" / "choices" as aliases.
+    for key in ("options", "option", "choices"):
+        val = select.get(key)
+        if isinstance(val, tuple):
+            val = list(val)
+        if isinstance(val, list):
+            return val
+    return []
+
+
+def _get_min_max_count(select, option_count):
+    """Return ``(min_count, max_count)`` clamped to ``[0, option_count]``."""
+    def _int(v, default):
+        try:
+            if isinstance(v, bool):
+                return default
+            return int(v)
+        except (TypeError, ValueError):
+            return default
+
+    if not isinstance(select, dict):
+        return 0, 0
+
+    max_count = _int(select.get("maxCount"), 1 if option_count else 0)
+    min_count = _int(select.get("minCount"), 0)
+
+    if max_count < 0:
+        max_count = 0
+    if max_count > option_count:
+        max_count = option_count
+    if min_count < 0:
+        min_count = 0
+    if min_count > max_count:
+        min_count = max_count
+    return min_count, max_count
+
+
+def _score_option(option, idx, obs):
+    """Score a single option. ``idx``/``obs`` are accepted for future
+    context-aware scoring but the v1 score is string-only and deterministic."""
+    text = _safe_json_lower(option)
     score = 0
     for kw, w in _POSITIVE.items():
         if kw in text:
@@ -79,123 +144,112 @@ def _score(option):
     return score
 
 
-def _parse_select(obs):
-    """Return (options, max_count, min_count), tolerant of any shape."""
-    if not isinstance(obs, dict):
-        return [], 0, 0
-    select = obs.get("select")
-    if not isinstance(select, dict):
-        return [], 0, 0
-    options = select.get("options")
-    if isinstance(options, tuple):
-        options = list(options)
-    if not isinstance(options, list):
-        options = []
-    num = len(options)
-
-    def _int(v, default):
-        try:
-            if isinstance(v, bool):
-                return default
-            return int(v)
-        except (TypeError, ValueError):
-            return default
-
-    max_count = _int(select.get("maxCount"), 1 if num else 0)
-    min_count = _int(select.get("minCount"), 0)
-    if max_count < 0:
-        max_count = 0
-    if max_count > num:
-        max_count = num
-    if min_count < 0:
-        min_count = 0
-    if min_count > max_count:
-        min_count = max_count
-    return options, max_count, min_count
+def _rank_options(options, obs):
+    """Return option indices best-first; deterministic tie-break on low index."""
+    n = len(options)
+    return sorted(range(n), key=lambda i: (-_score_option(options[i], i, obs), i))
 
 
-def _fallback(num, max_count, min_count=0):
-    if num <= 0 or max_count <= 0:
+def _fallback_action(option_count, min_count, max_count):
+    """Guaranteed-legal default selection, ignoring option semantics."""
+    if option_count <= 0 or max_count <= 0:
         return []
-    max_count = min(max_count, num)
+    max_count = min(max_count, option_count)
     min_count = max(0, min(min_count, max_count))
     if max_count == 1:
         return [0]
     take = min_count if min_count > 0 else max_count
-    return list(range(min(take, num)))
+    return list(range(min(take, option_count)))
 
 
-def _heuristic(options, max_count, min_count=0):
-    num = len(options)
-    if num == 0 or max_count <= 0:
+def _validate_action(result, option_count, min_count, max_count):
+    """Coerce ``result`` into a unique, in-range, count-respecting selection."""
+    if option_count <= 0 or max_count <= 0:
         return []
-    scored = sorted(range(num), key=lambda i: (-_score(options[i]), i))
-    if max_count == 1:
-        return [scored[0]]
-    chosen = []
-    for idx in scored:
-        if len(chosen) >= max_count:
-            break
-        if _score(options[idx]) > 0 or len(chosen) < min_count:
-            chosen.append(idx)
-    if not chosen:
-        chosen = [scored[0]]
-    return sorted(chosen)
-
-
-def _clamp(selection, num, max_count, min_count=0):
-    """Validate/repair a selection so it is always legal."""
-    if num <= 0 or max_count <= 0:
-        return []
+    if not isinstance(result, (list, tuple)):
+        result = []
     seen = set()
     cleaned = []
-    for item in selection or []:
+    for item in result:
         try:
+            if isinstance(item, bool):
+                continue
             idx = int(item)
         except (TypeError, ValueError):
             continue
-        if 0 <= idx < num and idx not in seen:
+        if 0 <= idx < option_count and idx not in seen:
             seen.add(idx)
             cleaned.append(idx)
     if len(cleaned) > max_count:
         cleaned = cleaned[:max_count]
     if len(cleaned) < min_count:
-        for idx in range(num):
+        for idx in range(option_count):
             if len(cleaned) >= min_count:
                 break
             if idx not in seen:
                 seen.add(idx)
                 cleaned.append(idx)
     if not cleaned and (min_count > 0 or max_count >= 1):
-        return _fallback(num, max_count, min_count)
+        return _fallback_action(option_count, min_count, max_count)
     return cleaned
 
 
+def _heuristic_action(options, min_count, max_count, obs):
+    """Pick up to ``max_count`` options by heuristic rank."""
+    n = len(options)
+    if n == 0 or max_count <= 0:
+        return []
+    ranked = _rank_options(options, obs)
+    if max_count == 1:
+        return [ranked[0]]
+    chosen = []
+    for idx in ranked:
+        if len(chosen) >= max_count:
+            break
+        if _score_option(options[idx], idx, obs) > 0 or len(chosen) < min_count:
+            chosen.append(idx)
+    if not chosen:
+        chosen = [ranked[0]]
+    return sorted(chosen)
+
+
 def _embedded_agent(obs):
-    options, max_count, min_count = _parse_select(obs)
-    if not options or max_count <= 0:
+    """The self-contained policy: rank, then validate."""
+    select = _get_select(obs)
+    options = _get_options(select)
+    option_count = len(options)
+    min_count, max_count = _get_min_max_count(select, option_count)
+    if option_count == 0 or max_count <= 0:
         return []
     try:
-        selection = _heuristic(options, max_count, min_count)
+        selection = _heuristic_action(options, min_count, max_count, obs)
     except Exception:
         selection = None
     if not selection:
-        selection = _fallback(len(options), max_count, min_count)
-    return _clamp(selection, len(options), max_count, min_count)
+        selection = _fallback_action(option_count, min_count, max_count)
+    return _validate_action(selection, option_count, min_count, max_count)
 
+
+# ---------------------------------------------------------------------------
+# Back-compat helpers (used by lab scripts/tests; harmless in Kaggle).
+# ---------------------------------------------------------------------------
 
 def validate_result(obs, result):
     """Coerce any candidate result into a guaranteed-legal selection."""
-    options, max_count, min_count = _parse_select(obs)
-    if not isinstance(result, (list, tuple)):
-        result = []
-    return _clamp(list(result), len(options), max_count, min_count)
+    select = _get_select(obs)
+    options = _get_options(select)
+    option_count = len(options)
+    min_count, max_count = _get_min_max_count(select, option_count)
+    return _validate_action(result, option_count, min_count, max_count)
 
 
 def fallback(obs):
     """Top-level safe fallback used if everything else fails."""
-    options, max_count, min_count = _parse_select(obs)
-    return _fallback(len(options), max_count, min_count)
+    select = _get_select(obs)
+    options = _get_options(select)
+    option_count = len(options)
+    min_count, max_count = _get_min_max_count(select, option_count)
+    return _fallback_action(option_count, min_count, max_count)
 
 
 # ---------------------------------------------------------------------------
@@ -209,13 +263,25 @@ except Exception:
 
 
 def agent(obs_dict):
-    """Kaggle entrypoint. Always returns a list of legal option indices."""
-    # 1. Try the optional external agent, validating its output.
+    """Kaggle entrypoint. Always returns a ``list[int]`` of legal option indices."""
+    # 1. Optional external agent, with its output re-validated here. Only trust
+    #    it when it actually proposed at least one valid index (or there's
+    #    nothing to pick). If it proposed nothing while options exist it
+    #    under-parsed, so we fall through to the embedded heuristic — the safe
+    #    source of truth.
     if _external_agent is not None:
         try:
-            result = _external_agent(obs_dict)
-            validated = validate_result(obs_dict, result)
-            return validated
+            raw = _external_agent(obs_dict)
+            select = _get_select(obs_dict)
+            options = _get_options(select)
+            mn, mx = _get_min_max_count(select, len(options))
+            proposed = [
+                i for i in (raw if isinstance(raw, (list, tuple)) else [])
+                if isinstance(i, int) and not isinstance(i, bool)
+                and 0 <= i < len(options)
+            ]
+            if proposed or mx <= 0:
+                return _validate_action(raw, len(options), mn, mx)
         except Exception:
             pass
     # 2. Embedded heuristic.

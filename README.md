@@ -39,14 +39,25 @@ pip install pytest
 python -m pytest            # or: make test
 
 # 3. see the runtime agent decide on a demo observation
-python main.py              # or: make smoke
+python main.py              # or: make demo
 
-# 4. package a submission (uses the placeholder deck.csv)
+# 4. resolve a REAL deck.csv from sample/provided/generated sources
+python scripts/resolve_deck.py           # or: make resolve-deck
+
+# 5. preflight + package a submission (blocks placeholder decks by default)
+python scripts/package_submission.py --verify-only
 python scripts/package_submission.py     # or: make submission
-
-# 5. generate the Strategy report scaffold
-python scripts/generate_report.py        # or: make report
 ```
+
+**First Kaggle/Replit run:** follow [`docs/REPLIT_FIRST_RUN.md`](docs/REPLIT_FIRST_RUN.md)
+and the [`docs/FIRST_KAGGLE_SUBMISSION_CHECKLIST.md`](docs/FIRST_KAGGLE_SUBMISSION_CHECKLIST.md).
+With `cabt` installed, `python scripts/kaggle_smoke_test.py` runs one full
+self-play game (`make smoke`) and `python scripts/record_schema.py --games 3`
+captures the real option schema (`make record-schema`).
+
+> The shipped `deck.csv` is a **placeholder** and is intentionally rejected by
+> the packager until you run `scripts/resolve_deck.py` (or pass
+> `--allow-placeholder`, which will not score).
 
 ## Install
 

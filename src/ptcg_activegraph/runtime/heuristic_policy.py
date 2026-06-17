@@ -121,3 +121,53 @@ def heuristic_select(options: list, max_count: int, min_count: int = 0) -> list[
         chosen = [ranked[0]]
 
     return sorted(chosen)
+
+
+# ---------------------------------------------------------------------------
+# Debug / lab helper: explain why each option scored as it did.
+# Not used by the Kaggle runtime (main.py is self-contained).
+# ---------------------------------------------------------------------------
+
+# Structured fields that, when present on a dict option, reinforce a signal.
+_FIELD_HINTS = ("type", "context", "selectType", "select_type", "name", "card",
+                "cardId", "card_id", "action", "player", "target", "description",
+                "skill", "attack", "damage", "cost")
+
+
+def _matched_keywords(text: str) -> list[tuple[str, int]]:
+    hits: list[tuple[str, int]] = []
+    for kw, w in POSITIVE_WEIGHTS.items():
+        if kw in text:
+            hits.append((kw, w))
+    for kw, w in NEGATIVE_WEIGHTS.items():
+        if kw in text:
+            if kw in ("discard", "trash") and any(r in text for r in DISCARD_REDEEMERS):
+                continue
+            hits.append((kw, w))
+    return hits
+
+
+def rank_options_with_reasons(obs_dict: dict) -> list[dict]:
+    """Return ranked options with score + matched-keyword reasons (debugging).
+
+    Reads the observation defensively, scores each option, and surfaces any
+    recognized structured fields so we can see how the real cabt schema maps to
+    our keyword heuristic.
+    """
+    from .observation import parse_observation
+
+    parsed = parse_observation(obs_dict)
+    views = parse_select(parsed.options)
+    rows: list[dict] = []
+    for v in views:
+        reasons = _matched_keywords(v.text)
+        fields_present = {k: v.fields[k] for k in _FIELD_HINTS if k in v.fields}
+        rows.append({
+            "index": v.index,
+            "score": score_option(v),
+            "matched": reasons,
+            "fields": fields_present,
+            "text_preview": v.text[:160],
+        })
+    rows.sort(key=lambda r: (-r["score"], r["index"]))
+    return rows

@@ -1,0 +1,7 @@
+{
+  "placeholder": true,
+  "source": "placeholder",
+  "source_path": null,
+  "deck_size": 60,
+  "note": "Structural placeholder (ids 1-15 x4). Run scripts/resolve_deck.py to replace with a real deck before submitting for score."
+}
