@@ -31,7 +31,16 @@ SITE_DIR = Path("data/site")
 REPORT_MD = Path("data/reports/activegraph_strategy_report.md")
 RANKING_JSON = Path("data/experiments/latest_ranking.json")
 FOCUSED_RANKING_JSON = Path("data/experiments/focused_ranking.json")
+PASS4_SCOUT_RANKING_JSON = Path("data/experiments/pass4_scout_ranking.json")
+PASS4_BLOCKED_JSON = Path("data/experiments/pass4_blocked_candidates.json")
+PASS4_REPLAY_ANALYSIS_JSON = Path("data/replays/80374966_analysis.json")
+V2_BASELINE_DIR = Path("data/baselines/v2_kaggle_479_1_deck_energy_trim_light")
 QUEUE_JSON = Path("data/submission_queue.json")
+
+# Corrected live baseline scores (see v2 baseline README correction note: the
+# v1 archive dir keeps its historical `349_8` name but live v1 is 356.9).
+V1_LIVE_SCORE = 356.9
+V2_LIVE_SCORE = 479.1
 
 STYLE = """\
 :root{--bg:#0f1115;--panel:#171a21;--ink:#e6e9ef;--muted:#9aa4b2;--line:#262b35;
@@ -104,9 +113,13 @@ def gather(runs_root=RUNS_ROOT) -> dict:
         "events": _load_events(),
         "ranking": _load_json(RANKING_JSON) or [],
         "focused_ranking": _load_json(FOCUSED_RANKING_JSON) or [],
+        "pass4_scout_ranking": _load_json(PASS4_SCOUT_RANKING_JSON) or [],
+        "pass4_blocked": _load_json(PASS4_BLOCKED_JSON) or [],
+        "pass4_replay": _load_json(PASS4_REPLAY_ANALYSIS_JSON) or {},
         "queue": _load_json(QUEUE_JSON) or {},
         "runs": runs,
         "baseline_readme": (BASELINE_DIR / "README.md"),
+        "v2_baseline_readme": (V2_BASELINE_DIR / "README.md"),
     }
 
 
@@ -176,6 +189,7 @@ def _overview_html(data: dict) -> str:
 
     body = (
         f"<section><h2>Snapshot</h2><div class=cards>{cards}</div></section>"
+        f"{_pass4_html(data)}"
         f"<section><h2>Stage 1 — Broad scout ranking</h2>"
         f"{_rank_table_html(ranking)}</section>"
         f"<section><h2>Stage 2 — Focused seat-swap confirmation</h2>"
@@ -184,6 +198,62 @@ def _overview_html(data: dict) -> str:
         f"{type_rows}</table></section>"
     )
     return _page("Overview", body)
+
+
+def _pass4_html(data: dict) -> str:
+    scout = data.get("pass4_scout_ranking") or []
+    blocked = data.get("pass4_blocked") or []
+    replay = data.get("pass4_replay") or {}
+
+    baseline_cards = "".join(
+        f"<div class=card><div class=k>{_esc(k)}</div><div class=v>{_esc(v)}</div></div>"
+        for k, v in [
+            ("v1 control (live)", V1_LIVE_SCORE),
+            ("v2 control (live)", V2_LIVE_SCORE),
+            ("v2 − v1 delta", f"+{round(V2_LIVE_SCORE - V1_LIVE_SCORE, 1)}"),
+        ]
+    )
+
+    if replay.get("status") == "missing":
+        replay_html = (
+            f"<div class=empty>Replay <code>{_esc(replay.get('requested_path'))}</code> "
+            f"not uploaded — analysis pending. {_esc(replay.get('note'))}</div>")
+    elif replay:
+        ep = replay.get("episode", {})
+        replay_html = (f"<p>Episode {_esc(ep.get('episode_id'))}: "
+                       f"{_esc(ep.get('num_steps'))} steps, "
+                       f"result {_esc(ep.get('final_result'))}.</p>")
+    else:
+        replay_html = "<div class=empty>No replay analysis yet.</div>"
+
+    if blocked:
+        brows = "".join(
+            f"<tr><td>{_esc(c.get('branch_id'))}</td>"
+            f"<td>{_esc(c.get('seam_id'))}</td>"
+            f"<td>{_esc(', '.join(str(i) for i in (c.get('core_card_ids') or [])))}</td>"
+            f"<td>{_esc(c.get('reason') or c.get('blocked_reason'))}</td></tr>"
+            for c in blocked
+        )
+        blocked_html = ("<table><tr><th>Branch</th><th>Seam</th><th>Confirmed core ids</th>"
+                        f"<th>Why blocked</th></tr>{brows}</table>")
+    else:
+        blocked_html = "<div class=empty>No blocked chaos candidates recorded.</div>"
+
+    return (
+        "<section><h2>Pass 4 — Replay + chaos scout</h2>"
+        f"<div class=cards>{baseline_cards}</div>"
+        "<p class=muted>v2 (deck_energy_trim_light) is the active local control; the "
+        "v1 archive dir keeps its historical <code>349_8</code> name but live v1 is "
+        f"{V1_LIVE_SCORE} (see v2 baseline README correction note). "
+        "No Kaggle upload / no GitHub push this pass.</p>"
+        "<h3>Replay analysis</h3>"
+        f"{replay_html}"
+        "<h3>Scout ranking (vs v2 control)</h3>"
+        f"{_rank_table_html(scout)}"
+        "<h3>Blocked chaos archetypes (metadata insufficient — no invented ids)</h3>"
+        f"{blocked_html}"
+        "</section>"
+    )
 
 
 def _candidates_html(data: dict) -> str:
@@ -284,6 +354,55 @@ def _ranking_md(ranking: list[dict], title: str) -> list[str]:
     return lines
 
 
+def _pass4_md(data: dict) -> list[str]:
+    """Pass 4 — replay + chaos scout section (degrades to empty states)."""
+    scout = data.get("pass4_scout_ranking") or []
+    blocked = data.get("pass4_blocked") or []
+    replay = data.get("pass4_replay") or {}
+    delta = round(V2_LIVE_SCORE - V1_LIVE_SCORE, 1)
+
+    lines = [
+        "## Pass 4 — Replay + chaos scout",
+        "",
+        f"- v1 control (corrected live score): **{V1_LIVE_SCORE}**",
+        f"- v2 control `deck_energy_trim_light` (live score): **{V2_LIVE_SCORE}** "
+        f"(**+{delta}** vs corrected v1)",
+        "- The v1 archive directory keeps its historical `v1_kaggle_349_8` name; "
+        f"live v1 is {V1_LIVE_SCORE} (see v2 baseline README correction note). The "
+        "directory is intentionally not renamed.",
+        "- Scope: local research + reporting only — **no Kaggle upload, no GitHub "
+        "push**; root `main.py`/`deck.csv` left immutable.",
+        "",
+        "### Replay analysis",
+    ]
+    if replay.get("status") == "missing":
+        lines.append(
+            f"- Replay `{replay.get('requested_path')}` is **not uploaded** — "
+            f"analysis pending. {replay.get('note', '')}".rstrip())
+    elif replay:
+        ep = replay.get("episode", {})
+        lines.append(f"- Episode {ep.get('episode_id')}: {ep.get('num_steps')} steps, "
+                     f"final result {ep.get('final_result')}.")
+    else:
+        lines.append("- _No replay analysis artifact found._")
+
+    lines += ["", "### Scout ranking (candidates vs v2 control)"]
+    lines += _ranking_md(scout, "Pass 4 scout ranking")[1:] if scout else [
+        "_No Pass 4 scout ranking yet._"]
+
+    lines += ["", "### Blocked chaos archetypes (no invented ids)"]
+    if blocked:
+        for c in blocked:
+            ids = ", ".join(str(i) for i in (c.get("core_card_ids") or []))
+            reason = c.get("reason") or c.get("blocked_reason") or "-"
+            lines.append(f"- **{c.get('branch_id')}** ({c.get('seam_id')}) — "
+                         f"confirmed core ids [{ids}]. Blocked: {reason}")
+    else:
+        lines.append("_No blocked chaos candidates recorded._")
+
+    return lines
+
+
 def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -319,6 +438,8 @@ def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
         "",
     ]
 
+    lines += _pass4_md(data)
+    lines += [""]
     lines += _ranking_md(ranking, "Stage 1 — Broad scout ranking")
     lines += [""]
     lines += _ranking_md(focused, "Stage 2 — Focused seat-swap confirmation ranking")

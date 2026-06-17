@@ -315,6 +315,167 @@ COMBO_SPECS: list[dict] = [
 
 
 # ---------------------------------------------------------------------------
+# Pass 4: replay-derived effect-resolution policy candidates
+# ---------------------------------------------------------------------------
+# IMPORTANT honesty note: the only override hook is keyword/option-type weighting
+# (_POSITIVE / _NEGATIVE / _OPTION_TYPE_SCORES / _ATTACK_ID_BONUS). There is NO
+# board-state card-targeting hook in main.py, so true "discard the worst card /
+# search the missing board piece" effect resolution cannot be expressed. These
+# candidates are therefore honest LIGHTWEIGHT KEYWORD-WEIGHT APPROXIMATIONS:
+# they bias the ranker toward high-value card *names* (which appear in the
+# JSON-serialized option text) over first-legal / basic-energy choices. Each
+# hypothesis states this limitation explicitly. All card ids referenced are
+# confirmed in data/cards/EN_Card_Data.csv (see pass4_id_confirmation.json).
+
+PASS4_POLICY_SPECS: list[dict] = [
+    {
+        "branch_id": "policy_effect_resolution_v1",
+        "seam_id": "policy.effect_resolution_targeting",
+        "archetype": "consistency_engine",
+        "hypothesis": "Effect-resolution targeting (approx): on search/to-hand "
+        "prompts, bias toward high-value targets by card name (Ultra Ball, Mega "
+        "Signal, Secret Box, Lillie's Determination, Mega Abomasnow line, Kyogre) "
+        "over first-legal/basic energy. Keyword-weight approximation only — board "
+        "state is not reachable through the override hook.",
+        "overrides": {
+            "positive": {
+                "ultra ball": 70, "mega signal": 60, "secret box": 60,
+                "lillie": 55, "abomasnow": 50, "kyogre": 45, "snover": 45,
+                "powerglass": 35,
+            },
+        },
+    },
+    {
+        "branch_id": "policy_ultra_ball_v1",
+        "seam_id": "policy.ultra_ball_discard_and_search",
+        "archetype": "consistency_engine",
+        "hypothesis": "Ultra Ball (1121) emphasis (approx): nudge toward playing "
+        "Ultra Ball and toward fetching the missing attacker/evolution line "
+        "(Mega Abomasnow / Snover / Kyogre). 'Discard energy first' is a board "
+        "decision the keyword hook cannot target, so only the search-target side "
+        "is approximated here.",
+        "overrides": {
+            "positive": {"ultra ball": 85, "abomasnow": 55, "snover": 50, "kyogre": 45},
+        },
+    },
+    {
+        "branch_id": "policy_secret_box_v1",
+        "seam_id": "policy.secret_box_mode_selection",
+        "archetype": "consistency_engine",
+        "hypothesis": "Secret Box (1092) mode selection (approx): boost choosing "
+        "Secret Box and high-leverage classes by name (Ultra Ball, Mega Signal, "
+        "Lillie's Determination, Powerglass, Surfing Beach). Stays conservative "
+        "where names are absent. Keyword-weight approximation only.",
+        "overrides": {
+            "positive": {
+                "secret box": 85, "ultra ball": 55, "mega signal": 50,
+                "lillie": 45, "powerglass": 35, "surfing beach": 30,
+            },
+        },
+    },
+    {
+        "branch_id": "policy_attach_targeting_v1",
+        "seam_id": "policy.attach_targeting",
+        "archetype": "setup_evolution",
+        "hypothesis": "Attach targeting (approx): prefer attach/place actions "
+        "(type 8) and active-target keywords so energy/tools land on the current "
+        "attacker. Precise 'attach to next-turn attacker' needs board state, so "
+        "this is the lightweight keyword/type approximation.",
+        "overrides": {
+            "option_type_scores": {8: 30},
+            "positive": {"attach": 70, "energy": 55, "active": 30},
+        },
+    },
+]
+
+# Pass 4 combos: v2 deck (deck_energy_trim_light deltas) + effect-resolution
+# policy, plus a v2-deck control anchor (no policy override) so the scout board
+# has a same-deck reference point the ranker recognizes as the control.
+PASS4_COMBO_SPECS: list[dict] = [
+    {
+        "branch_id": "combo_v2_deck__effect_resolution_v1",
+        "seam_id": "combo.v2_effect_resolution",
+        "archetype": "consistency_engine",
+        "policy_refs": ["policy_effect_resolution_v1"],
+        "deck_ref": "deck_energy_trim_light",
+        "hypothesis": "The v2 control deck (trim 4 energy, +2 Kyogre, +2 Ultra "
+        "Ball) plus effect-resolution targeting tests whether smarter search/"
+        "effect choices compound with the stronger deck.",
+        "required": True,
+    },
+    {
+        "branch_id": "pass4_control_v2_anchor",
+        "seam_id": "archetype.baseline_exploit",
+        "archetype": "baseline_exploit",
+        "policy_refs": [],
+        "deck_ref": "deck_energy_trim_light",
+        "hypothesis": "Exact v2 control (v2 deck, no policy override) anchors the "
+        "Pass 4 scout batch and confirms the harness reproduces the v2 baseline "
+        "as a ~50% mirror.",
+        "required": True,
+    },
+]
+
+# Pass 4 chaos scout candidates. BLOCKED: a legal 60-card chaos decklist cannot
+# be assembled from the ~8-10 confirmed core cards per archetype without
+# inventing the remaining ~50 ids, which this pass forbids. Recorded honestly so
+# the report shows them as blocked-with-reason rather than guessed at.
+CHAOS_BLOCKED: list[dict] = [
+    {
+        "branch_id": "chaos_hand_avalanche_froslass_light",
+        "seam_id": "chaos.hand_avalanche_froslass",
+        "archetype": "chaos",
+        "hypothesis": "Preserve large opponent hands, then convert hand size to "
+        "damage with Mega Froslass ex.",
+        "core_card_ids": [861, 103, 860, 1223, 1237, 1213, 1103, 1087, 1197],
+        "blocked_reason": "core ids confirmed in metadata, but a legal 60-card "
+        "list needs ~50 more ids (energy, supporting line, trainers) that are not "
+        "confirmed for this archetype; building it would require inventing ids.",
+    },
+    {
+        "branch_id": "chaos_bench_bloat_zoroark_or_hypno",
+        "seam_id": "chaos.bench_bloat_punisher",
+        "archetype": "chaos",
+        "hypothesis": "Crowd the opponent bench with Accompanying Flute, then "
+        "punish bench size with bench-scaling attackers.",
+        "core_card_ids": [1091, 615, 430, 79, 95, 956, 1059, 1187, 1204],
+        "blocked_reason": "core ids confirmed, but completing a legal 60-card deck "
+        "requires ~50 unconfirmed support/energy ids; no invented ids allowed.",
+    },
+    {
+        "branch_id": "chaos_durant_basic_mill",
+        "seam_id": "chaos.mill_resource_destruction",
+        "archetype": "chaos",
+        "hypothesis": "Disrupt opponent deck/hand/energy so brittle bots lose key "
+        "pieces, run out of energy, or deck out.",
+        "core_card_ids": [198, 58, 896, 881, 440, 290, 1120, 1149, 1087],
+        "blocked_reason": "core ids confirmed, but a legal 60-card mill list needs "
+        "~50 unconfirmed support/energy ids; cannot complete without inventing ids.",
+    },
+    {
+        "branch_id": "chaos_status_confusion_light",
+        "seam_id": "chaos.status_confusion_lock",
+        "archetype": "chaos",
+        "hypothesis": "Use Confusion/Burn/Sleep and forced switching to create "
+        "mis-sequencing and lost turns for opposing bots.",
+        "core_card_ids": [1095, 1265, 813, 1204, 861, 968, 854, 1243],
+        "blocked_reason": "core ids confirmed, but the remaining ~50 ids for a "
+        "legal deck are unconfirmed; no invented ids allowed.",
+    },
+    {
+        "branch_id": "chaos_vivillon_decidueye_research",
+        "seam_id": "chaos.vivillon_decidueye_four_card_lock",
+        "archetype": "chaos",
+        "hypothesis": "Use Vivillon/Judge to set the opponent to exactly 4 cards, "
+        "enabling Decidueye ex's reduced-cost attack while disrupting hand quality.",
+        "core_card_ids": [1017, 1018, 1019, 1020, 1021, 1022, 1213, 1261, 1231, 1225],
+        "blocked_reason": "core ids confirmed, but completing a legal 60-card "
+        "Vivillon/Decidueye list needs ~50 unconfirmed ids; cannot invent ids.",
+    },
+]
+
+
+# ---------------------------------------------------------------------------
 # Override rendering / injection
 # ---------------------------------------------------------------------------
 
@@ -498,7 +659,7 @@ def generate_deck_candidate(
 
 
 def _policy_by_id(branch_id: str) -> dict:
-    for s in POLICY_SPECS:
+    for s in POLICY_SPECS + PASS4_POLICY_SPECS:
         if s["branch_id"] == branch_id:
             return s
     raise KeyError(f"unknown policy spec ref: {branch_id}")
@@ -687,4 +848,46 @@ def plan_generation2(config: ExperimentConfig, include_optional: bool = True) ->
     # 3. Combos (required first, then optional).
     for c in sorted(combos, key=lambda x: (not x.get("required"), x["branch_id"])):
         plan.append(_meta(c, "combo", 2))
+    return plan
+
+
+def plan_pass4(config: ExperimentConfig) -> list[dict]:
+    """Plan the Pass 4 replay-derived + chaos scout batch.
+
+    Returns ordered ``{spec, track, ...}`` items, ``generation=4``:
+      1. the v2 control anchor (v2 deck, no policy override),
+      2. the replay-derived effect-resolution policy candidates (priority desc),
+      3. the v2-deck x effect-resolution combo,
+      4. the chaos archetype candidates, ALL marked ``testable=False`` with a
+         blocked reason (a legal 60-card chaos list cannot be built from the
+         confirmed cores without inventing ids).
+    """
+    def _meta(spec: dict, track: str, testable: bool, reason: str) -> dict:
+        return {
+            "spec": spec,
+            "track": track,
+            "seam_id": spec["seam_id"],
+            "branch_id": spec["branch_id"],
+            "priority": config.priority_for(spec["seam_id"]),
+            "testable": testable,
+            "reason": reason,
+            "generation": 4,
+        }
+
+    plan: list[dict] = []
+    # 1. v2 control anchor (the combo with empty policy_refs over the v2 deck).
+    anchor = next(c for c in PASS4_COMBO_SPECS if c["branch_id"] == "pass4_control_v2_anchor")
+    plan.append(_meta(anchor, "combo", True, ""))
+    # 2. Effect-resolution policy candidates, highest priority first.
+    policy_items = [_meta(s, "policy", True, "") for s in PASS4_POLICY_SPECS]
+    policy_items.sort(key=lambda x: (-x["priority"], x["branch_id"]))
+    plan.extend(policy_items)
+    # 3. The v2-deck x effect-resolution combo.
+    for c in PASS4_COMBO_SPECS:
+        if c["branch_id"] == "pass4_control_v2_anchor":
+            continue
+        plan.append(_meta(c, "combo", True, ""))
+    # 4. Chaos candidates: blocked, recorded for the report.
+    for spec in CHAOS_BLOCKED:
+        plan.append(_meta(spec, "chaos", False, spec.get("blocked_reason", "blocked")))
     return plan

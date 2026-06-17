@@ -33,10 +33,13 @@ RANKING_JSON = Path("data/experiments/latest_ranking.json")
 RANKING_MD = Path("data/experiments/latest_ranking.md")
 FOCUSED_RANKING_JSON = Path("data/experiments/focused_ranking.json")
 FOCUSED_RANKING_MD = Path("data/experiments/focused_ranking.md")
+PASS4_SCOUT_RANKING_JSON = Path("data/experiments/pass4_scout_ranking.json")
+PASS4_SCOUT_RANKING_MD = Path("data/experiments/pass4_scout_ranking.md")
 
 STAGE_PATHS = {
     "broad": (RANKING_JSON, RANKING_MD),
     "focused": (FOCUSED_RANKING_JSON, FOCUSED_RANKING_MD),
+    "pass4_scout": (PASS4_SCOUT_RANKING_JSON, PASS4_SCOUT_RANKING_MD),
 }
 
 # z-scores for the confidence intervals we report.
@@ -287,7 +290,12 @@ def save_ranking(ranked: list[dict], stage: str = "broad") -> tuple[Path, Path]:
 
 
 def _render_md(ranked: list[dict], stage: str = "broad") -> str:
-    title = "focused (seat-swap confirmation)" if stage == "focused" else "broad (scout)"
+    titles = {
+        "focused": "focused (seat-swap confirmation)",
+        "pass4_scout": "pass 4 scout (replay-derived, seat-swap)",
+        "broad": "broad (scout)",
+    }
+    title = titles.get(stage, "broad (scout)")
     lines = [f"# Candidate ranking — {title}", ""]
     lines.append("| Rank | Branch | Seam | Score | Adj WR | 80% CI | Games | "
                  "SeatΔ | Label |")

@@ -1,0 +1,92 @@
+[
+  {
+    "branch_id": "chaos_hand_avalanche_froslass_light",
+    "seam_id": "chaos.hand_avalanche_froslass",
+    "track": "chaos",
+    "reason": "core ids confirmed in metadata, but a legal 60-card list needs ~50 more ids (energy, supporting line, trainers) that are not confirmed for this archetype; building it would require inventing ids.",
+    "hypothesis": "Preserve large opponent hands, then convert hand size to damage with Mega Froslass ex.",
+    "core_card_ids": [
+      861,
+      103,
+      860,
+      1223,
+      1237,
+      1213,
+      1103,
+      1087,
+      1197
+    ]
+  },
+  {
+    "branch_id": "chaos_bench_bloat_zoroark_or_hypno",
+    "seam_id": "chaos.bench_bloat_punisher",
+    "track": "chaos",
+    "reason": "core ids confirmed, but completing a legal 60-card deck requires ~50 unconfirmed support/energy ids; no invented ids allowed.",
+    "hypothesis": "Crowd the opponent bench with Accompanying Flute, then punish bench size with bench-scaling attackers.",
+    "core_card_ids": [
+      1091,
+      615,
+      430,
+      79,
+      95,
+      956,
+      1059,
+      1187,
+      1204
+    ]
+  },
+  {
+    "branch_id": "chaos_durant_basic_mill",
+    "seam_id": "chaos.mill_resource_destruction",
+    "track": "chaos",
+    "reason": "core ids confirmed, but a legal 60-card mill list needs ~50 unconfirmed support/energy ids; cannot complete without inventing ids.",
+    "hypothesis": "Disrupt opponent deck/hand/energy so brittle bots lose key pieces, run out of energy, or deck out.",
+    "core_card_ids": [
+      198,
+      58,
+      896,
+      881,
+      440,
+      290,
+      1120,
+      1149,
+      1087
+    ]
+  },
+  {
+    "branch_id": "chaos_status_confusion_light",
+    "seam_id": "chaos.status_confusion_lock",
+    "track": "chaos",
+    "reason": "core ids confirmed, but the remaining ~50 ids for a legal deck are unconfirmed; no invented ids allowed.",
+    "hypothesis": "Use Confusion/Burn/Sleep and forced switching to create mis-sequencing and lost turns for opposing bots.",
+    "core_card_ids": [
+      1095,
+      1265,
+      813,
+      1204,
+      861,
+      968,
+      854,
+      1243
+    ]
+  },
+  {
+    "branch_id": "chaos_vivillon_decidueye_research",
+    "seam_id": "chaos.vivillon_decidueye_four_card_lock",
+    "track": "chaos",
+    "reason": "core ids confirmed, but completing a legal 60-card Vivillon/Decidueye list needs ~50 unconfirmed ids; cannot invent ids.",
+    "hypothesis": "Use Vivillon/Judge to set the opponent to exactly 4 cards, enabling Decidueye ex's reduced-cost attack while disrupting hand quality.",
+    "core_card_ids": [
+      1017,
+      1018,
+      1019,
+      1020,
+      1021,
+      1022,
+      1213,
+      1261,
+      1231,
+      1225
+    ]
+  }
+]

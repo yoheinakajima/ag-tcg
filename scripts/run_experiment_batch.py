@@ -50,8 +50,8 @@ def main() -> int:
                         help="seat-swap: play this many games as P0 AND as P1")
     parser.add_argument("--seat-swap", action="store_true",
                         help="balance first-/second-player advantage by swapping seats")
-    parser.add_argument("--stage", choices=["broad", "focused"], default=None,
-                        help="broad = scout all runs; focused = only the top ranked runs")
+    parser.add_argument("--stage", choices=["broad", "focused", "pass4_scout"], default=None,
+                        help="broad/pass4_scout = scout all runs; focused = only top ranked")
     parser.add_argument("--top", type=int, default=5,
                         help="for --stage focused: how many top-ranked candidates to confirm")
     parser.add_argument("--branch", action="append", default=[],
@@ -69,7 +69,7 @@ def main() -> int:
     games_per_seat = args.games_per_seat
     if stage == "focused" and games_per_seat is None:
         games_per_seat = 20
-    if stage == "broad" and games_per_seat is None and not args.seat_swap:
+    if stage in ("broad", "pass4_scout") and games_per_seat is None and not args.seat_swap:
         games_per_seat = 5
     if games_per_seat is not None:
         games_per_seat = max(1, min(games_per_seat, cap))

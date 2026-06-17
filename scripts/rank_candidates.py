@@ -27,8 +27,9 @@ from ptcg_activegraph.graph.event_store import EventStore
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--stage", choices=["broad", "focused"], default="broad",
-                        help="broad -> latest_ranking.*; focused -> focused_ranking.* "
+    parser.add_argument("--stage", choices=["broad", "focused", "pass4_scout"], default="broad",
+                        help="broad -> latest_ranking.*; focused -> focused_ranking.*; "
+                             "pass4_scout -> pass4_scout_ranking.* "
                              "(only ranks candidates evaluated at that stage)")
     parser.add_argument("--min-games", type=int, default=None,
                         help="minimum completed games before a candidate is promotable")
@@ -44,10 +45,10 @@ def main() -> int:
             m = json.loads(mpath.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             continue
-        # The focused ranking only considers candidates actually re-evaluated in
-        # the focused (high-game, seat-swap) stage, so stale broad metrics from
-        # un-promoted candidates never dilute the confirmation board.
-        if args.stage == "focused" and m.get("stage") != "focused":
+        # The focused / pass4_scout rankings only consider candidates actually
+        # evaluated at that stage, so stale broad metrics from un-promoted
+        # candidates never dilute a stage-specific board.
+        if args.stage in ("focused", "pass4_scout") and m.get("stage") != args.stage:
             continue
         metrics_list.append(m)
 
@@ -58,10 +59,12 @@ def main() -> int:
         print(f"No metrics.json for stage '{args.stage}'. {hint}")
         return 1
 
-    # Sensible default minimum-game gate per stage.
+    # Sensible default minimum-game gate per stage. pass4_scout keeps a high gate
+    # (20) so a 10-game scout can never reach 'promotable' — scouts only flag
+    # signal for a later focused confirmation, never auto-promote.
     min_games = args.min_games
     if min_games is None:
-        min_games = 30 if args.stage == "focused" else 8
+        min_games = {"focused": 30, "pass4_scout": 20}.get(args.stage, 8)
 
     store = EventStore(LAB_EVENTS_PATH)
     ranked = rank(metrics_list, event_store=store, min_games=min_games)

@@ -1,0 +1,540 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle in this pass.
+- Do not modify root main.py or root deck.csv unless explicitly creating a new baseline archive; root files should remain stable.
+- Do not print or commit Kaggle credentials.
+- Do not commit official Kaggle card CSV/PDF data.
+- Do not invent card IDs.
+- Keep all candidate submission tarballs top-level main.py + deck.csv only.
+- This pass is local research + ActiveGraph reporting only.
+
+Current status:
+- v1 baseline scored 356.9 on Kaggle after the deck-loader fix.
+- deck_energy_trim_light scored 479.1 on Kaggle.
+- That is a real improvement and should become the new active control baseline.
+- We uploaded/attached a Kaggle episode replay JSON, likely at or near the repo root or uploaded as 80374966.json.
+- The replay shows a real cabt episode with rewards [-1, 1], statuses DONE/DONE, 1-second actTimeout, 10,000 episode step cap, and the energy-trimmed deck list.
+- For today, no more Kaggle submissions.
+
+Goal:
+Build Pass 4 of the ActiveGraph lab:
+1. Promote deck_energy_trim_light to the new local control baseline.
+2. Ingest and analyze the Kaggle replay.
+3. Add replay-derived policy seams, especially effect-resolution/card-targeting.
+4. Add human-directed chaos strategy seams.
+5. Generate and scout-test candidates locally.
+6. Rebuild the report site.
+7. Produce a dry-run queue only. No upload.
+
+Part A — Verify and preserve current state
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+tar -tzf data/submissions/submission.tar.gz
+
+Verify current known candidate exists:
+
+ls -lh data/submissions/candidates/deck_energy_trim_light.tar.gz || true
+tar -tzf data/submissions/candidates/deck_energy_trim_light.tar.gz || true
+
+If missing, locate it:
+
+find . -name '*deck_energy_trim_light*.tar.gz' -o -name '*energy_trim_light*'
+
+Do not submit anything.
+
+Part B — Promote deck_energy_trim_light as new control baseline
+
+Create:
+
+data/baselines/v2_kaggle_479_1_deck_energy_trim_light/
+
+Extract the candidate tarball into this baseline directory:
+
+mkdir -p data/baselines/v2_kaggle_479_1_deck_energy_trim_light
+tar -xzf data/submissions/candidates/deck_energy_trim_light.tar.gz -C data/baselines/v2_kaggle_479_1_deck_energy_trim_light
+cp data/submissions/candidates/deck_energy_trim_light.tar.gz data/baselines/v2_kaggle_479_1_deck_energy_trim_light/submission.tar.gz
+
+Write README:
+
+cat > data/baselines/v2_kaggle_479_1_deck_energy_trim_light/README.md <<'EOF'
+# v2 Kaggle baseline — deck_energy_trim_light
+
+Status:
+- Kaggle validation passed
+- Public score/rating: 479.1
+- Previous v1 baseline score: 356.9
+- Improvement: +122.2 rating points
+- Local hypothesis: trimming 4 Basic Water Energy for +2 Kyogre + +2 Ultra Ball improved attacker/search density without breaking energy availability.
+- This is now the active local control baseline for future experiments.
+
+Root main.py/deck.csv are not automatically replaced by this baseline in this pass.
+EOF
+
+Emit ActiveGraph events:
+- CandidatePromoted
+- BaselineRegistered
+- KaggleScoreUpdated
+
+Payload should include:
+- old_baseline: v1_kaggle_349_8 or v1_kaggle_356_9 if represented
+- new_baseline: v2_kaggle_479_1_deck_energy_trim_light
+- candidate_id: deck_energy_trim_light
+- kaggle_score: 479.1
+- prior_score: 356.9
+- delta: 122.2
+- submit_count_note: no_more_submissions_today
+
+If the old baseline archive name still says 349.8, do not rename destructively; add a correction note in docs and event payload that live Kaggle later showed 356.9.
+
+Part C — Ingest the uploaded replay
+
+Find replay JSON files:
+
+find . -maxdepth 5 -type f \( -name '*.json' -o -name '*.jsonl' \) | sort | grep -E '80374966|episode|replay|kaggle|submission|match|smoke' || true
+
+If 80374966.json exists, copy it to:
+
+data/kaggle_replays/80374966.json
+
+If the file is not present, report that I need to upload it to the Replit workspace and continue with scaffold-only replay tools.
+
+Create or extend:
+
+src/ptcg_activegraph/replays/
+  __init__.py
+  kaggle_replay.py
+  analyzers.py
+
+scripts/analyze_replay.py
+
+The analyzer should parse Kaggle replay JSON and report:
+
+Episode-level:
+- episode id
+- module version
+- configuration
+- statuses
+- rewards
+- number of steps
+- final result
+- actTimeout
+- runTimeout
+- episodeSteps
+
+Deck-level:
+- submitted deck lists at step 0 if visible
+- card counts
+- unique card IDs
+- compare to v1 and v2 baselines if possible
+
+Action-level:
+- count selected action indices
+- select.type / select.context distribution
+- option.type distribution
+- chosen option.type distribution
+- attack count
+- attach count
+- play count
+- ability count
+- end/pass count
+- discard contexts
+- to-hand/search contexts
+- setup active/bench choices
+
+Card-level:
+- cards played
+- cards discarded
+- cards searched/to-hand
+- cards attached as energy/tools
+- attacks used
+- Pokémon active/bench evolution state over time
+
+Failure/lesson tags:
+- effect_resolution_first_legal
+- ultra_ball_targeting_uncertain
+- secret_box_targeting_uncertain
+- mega_signal_targeting_uncertain
+- overdraw_or_deckout_pressure
+- failed_to_evolve_if_detected
+- kyogre_active_bias
+- snower_setup_bias
+- attack_damage_low
+- pass_or_end_too_early
+- timeout_safe
+
+If exact interpretation is not possible, record uncertainty rather than guessing.
+
+Write outputs:
+
+data/replays/80374966_analysis.json
+data/replays/80374966_analysis.md
+
+Also emit ActiveGraph events:
+- ReplayImported
+- ReplayAnalyzed
+- FailureRegimeTagged
+- IdeaGenerated for replay-derived seams
+
+Part D — Add replay-derived policy seams
+
+Add to docs/STRATEGY_SEAMS.md and experiments/strategy_seams.yaml:
+
+1. policy.effect_resolution_targeting
+Hypothesis:
+The agent’s main weakness is no longer legality or basic action ranking; it is effect-resolution card choice for Ultra Ball, Secret Box, Mega Signal, and similar multi-step search/discard prompts.
+
+2. policy.ultra_ball_discard_and_search
+Hypothesis:
+Ultra Ball becomes much stronger if the bot discards low-value cards and searches for the highest-priority missing board piece rather than first legal options.
+
+3. policy.secret_box_mode_selection
+Hypothesis:
+Secret Box is high-leverage but dangerous; selecting the right item/supporter/tool/stadium targets can improve setup consistency.
+
+4. policy.mega_signal_evolution_search
+Hypothesis:
+Mega Signal should search for Mega Abomasnow ex only when Snover is available or likely to become available, otherwise prioritize a useful alternative if legal.
+
+5. policy.setup_active_choice
+Hypothesis:
+Choosing Kyogre vs Snover as opening Active affects whether the deck races or evolves; matchup and opening hand should guide setup.
+
+6. policy.attach_targeting
+Hypothesis:
+Energy/tool attachments should prefer the active or next-turn attacker, not the first legal target.
+
+7. policy.deckout_awareness
+Hypothesis:
+Long games can approach deck exhaustion; the bot should avoid unnecessary draw/search when deck count is low.
+
+Add priorities:
+- effect_resolution_targeting: 95
+- ultra_ball_discard_and_search: 92
+- secret_box_mode_selection: 88
+- mega_signal_evolution_search: 86
+- attach_targeting: 84
+- setup_active_choice: 80
+- deckout_awareness: 70
+
+Part E — Implement lightweight effect-resolution policy candidates
+
+Do not make a fragile giant rule engine. Use confirmed card IDs and contexts.
+
+Candidate policies:
+
+1. policy_effect_resolution_v1
+- In `context == ToHand` or numeric equivalent, prefer target cards by role:
+  - If searching deck and Mega Abomasnow/Snover line is incomplete, prefer missing line piece.
+  - If no attacker on board, prefer Kyogre/Snover.
+  - If attacker exists but no search/consistency, prefer Ultra Ball / Lillie / Mega Signal if legal.
+  - Avoid Basic Energy unless no better target.
+- In discard contexts, prefer discarding excess Basic Water Energy first.
+- Do not discard the only attacker/evolution line unless forced.
+
+2. policy_ultra_ball_v1
+- When effect card is Ultra Ball ID 1121:
+  - discard Water Energy first,
+  - avoid discarding only Snover or only Mega Abomasnow if line incomplete,
+  - search for missing attacker/evolution piece by board state.
+
+3. policy_secret_box_v1
+- When effect card is Secret Box ID 1092:
+  - discard lowest-priority cards,
+  - choose high-value card classes if legal: Ultra Ball, Mega Signal, Lillie’s Determination, Powerglass/Surfing Beach depending context.
+  - remain conservative if context unclear.
+
+4. policy_attach_targeting_v1
+- Attach Basic Water Energy to Active if it is the current attacker and lacks enough energy.
+- Otherwise attach to benched likely next attacker.
+- Avoid attaching tools/energy to low-value target if better one exists.
+
+5. combo_v2_deck__effect_resolution_v1
+- v2 deck plus effect-resolution targeting.
+
+All policy candidates must:
+- keep main.py stdlib-only
+- never import lab modules
+- never crash outward
+- preserve select=None deck return
+- preserve index validation
+- pass package verify and smoke
+
+If implementing these into `main.py` variants is too complex, create candidate plans and mark as not implemented; do not break current code.
+
+Part F — Add human-directed chaos seams
+
+Add to docs/STRATEGY_SEAMS.md and experiments/strategy_seams.yaml.
+
+Chaos philosophy:
+Chaos decks are asymmetric disruption decks. They are not random. They should create unstable hand/bench/deck/status states that our simple policy can exploit more reliably than opposing bots.
+
+Add these chaos seams:
+
+1. chaos.hand_avalanche_froslass
+Hypothesis:
+Force or preserve large/unstable opponent hands, then use Mega Froslass ex to convert opponent hand size into simple high damage.
+Candidate cards only if metadata confirms IDs:
+- 861 Mega Froslass ex
+- 103 Snorunt
+- 860 Snorunt
+- 1223 Harlequin
+- 1237 Lucian
+- 1213 Judge
+- 1103 Meddling Memo
+- 1087 Hand Trimmer
+- 1197 Xerosic's Machinations
+Policy requirements:
+- prefer Mega Froslass attack when opponent hand count is high
+- avoid reducing opponent hand before attacking if Froslass attack is available
+- value hand-size payoff, not generic disruption alone
+
+2. chaos.bench_bloat_punisher
+Hypothesis:
+Use Accompanying Flute to crowd the opponent bench, then punish bench size with bench-scaling attackers.
+Candidate cards only if metadata confirms IDs:
+- 1091 Accompanying Flute
+- 615 Zoroark
+- 430 Team Rocket's Hypno
+- 79 Incineroar ex
+- 95 Teal Mask Ogerpon
+- 956 Zeraora
+- 1059 Gengar
+- 1187 Morty's Conviction
+- 1204 Lisia's Appeal
+Policy requirements:
+- play Accompanying Flute only when a bench-size payoff is available or likely
+- prioritize bench-scaling attacks
+- track whether Accompanying Flute helped opponent setup
+
+3. chaos.mill_resource_destruction
+Hypothesis:
+Disrupt opponent deck/hand/energy resources so brittle bots lose key pieces, run out of energy, or deck out.
+Candidate cards only if metadata confirms IDs:
+- 198 Durant ex
+- 58 Great Tusk
+- 896 Mega Scrafty ex
+- 881 Team Rocket's Diglett
+- 440 Team Rocket's Larvitar
+- 290 Tyranitar
+- 1120 Crushing Hammer
+- 1149 Energy Swatter
+- 1087 Hand Trimmer
+Policy requirements:
+- value mill/discard effects even when damage is low
+- prefer resource disruption when opponent deck/energy resources are low
+- avoid self-deckout
+
+4. chaos.status_confusion_lock
+Hypothesis:
+Use Confusion/Burn/Sleep and forced switching to create mis-sequencing and lost turns for opponent bots.
+Candidate cards only if metadata confirms IDs:
+- 1095 Dangerous Laser
+- 1265 Dizzying Valley
+- 813 Mismagius ex
+- 1204 Lisia's Appeal
+- 861 Mega Froslass ex
+- 968 Dachsbun ex
+- 854 Dustox
+- 1243 Perilous Jungle
+Policy requirements:
+- prefer status when damage is not lethal
+- prefer gust/status combos against weak or stranded targets
+- track whether status actually reduces opponent action quality
+
+5. chaos.vivillon_decidueye_four_card_lock
+Hypothesis:
+Use Vivillon/Judge to set opponent to exactly 4 cards, enabling Decidueye ex's reduced-cost attack while disrupting hand quality.
+Candidate cards only if metadata confirms IDs:
+- 1017 Scatterbug
+- 1018 Spewpa
+- 1019 Vivillon
+- 1020 Rowlet
+- 1021 Dartrix
+- 1022 Decidueye ex
+- 1213 Judge
+- 1261 Forest of Vitality
+- 1231 Dawn
+- 1225 Hilda
+Policy requirements:
+- prioritize Vivillon setup
+- use hand-to-4 effects before Decidueye attack
+- favor Grass evolution support
+
+If any ID/name mismatch occurs, trust local card metadata over this prompt and write a correction note.
+
+Part G — Add chaos metrics
+
+Extend metrics where feasible:
+
+- opponent_hand_size_before_attack
+- opponent_bench_size_after_accompanying_flute
+- opponent_deck_count_delta
+- status_inflicted_count
+- confusion/burn/sleep/poison count if detectable
+- mill_cards_discarded if detectable
+- chaos_card_played_before_payoff
+- helped_opponent_setup tag
+- pass/end rate induced after chaos effects
+- payoff_attack_after_chaos count
+
+If a metric is not currently detectable, add TODO fields and report as unavailable. Do not block the pass.
+
+Part H — Generate candidates
+
+Generate two groups.
+
+Group 1: replay-derived policy candidates against v2 control:
+- policy_effect_resolution_v1
+- policy_ultra_ball_v1
+- policy_secret_box_v1
+- policy_attach_targeting_v1
+- combo_v2_deck__effect_resolution_v1
+
+Group 2: chaos scout candidates:
+Only generate if card metadata supports enough core cards. Otherwise create blocked candidate plans.
+- chaos_hand_avalanche_froslass_light
+- chaos_bench_bloat_zoroark_or_hypno
+- chaos_durant_basic_mill
+- chaos_status_confusion_light
+- chaos_vivillon_decidueye_research
+
+Do not invent card IDs.
+Do not exceed legal copy limits.
+Smoke-test all generated candidates.
+
+Part I — Scout evaluation
+
+Use v2_kaggle_479_1_deck_energy_trim_light as control.
+
+Run a scout budget:
+- 5 games per seat if supported, total 10 games/candidate
+- seat-swap enabled
+- SIGALRM watchdog enabled
+- no Kaggle upload
+
+Suggested commands, adapting to actual script interfaces:
+
+python scripts/analyze_replay.py data/kaggle_replays/80374966.json
+python scripts/generate_candidates.py --group pass4
+python scripts/run_experiment_batch.py --stage pass4_scout --control data/baselines/v2_kaggle_479_1_deck_energy_trim_light --games-per-seat 5 --seat-swap
+python scripts/rank_candidates.py --stage pass4_scout
+python scripts/build_report_site.py
+python scripts/queue_submissions.py --dry-run
+
+Part J — Report site
+
+Update the static site and markdown report with:
+- v1 score 356.9
+- v2 score 479.1
+- local hypothesis behind v2
+- replay analysis
+- effect-resolution lessons
+- chaos seam plan
+- scout rankings
+- blocked chaos candidates
+- next candidate recommendations
+- no-more-submissions-today note
+
+Part K — Tests and validation
+
+Add tests for:
+- replay parser handles uploaded Kaggle JSON shape
+- score promotion event payload
+- card ID/name confirmation
+- blocked chaos candidate when metadata missing
+- effect-resolution candidate does not mutate root baseline
+- generated candidate tarballs contain only main.py + deck.csv
+- metrics tolerate missing chaos fields
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1 archive"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1 archive"
+
+If root files changed accidentally, stop and report.
+
+Final report format:
+
+ActiveGraph Pass 4 Replay + Chaos Scout Report
+
+1. Baseline promotion
+- v2 baseline created:
+- v2 baseline path:
+- v1 score:
+- v2 score:
+- score delta:
+- ActiveGraph events emitted:
+
+2. Replay ingestion
+- replay found:
+- replay path:
+- episode id:
+- rewards/statuses:
+- steps:
+- key deck/action findings:
+- replay analysis files:
+
+3. Replay-derived seams
+- seams added:
+- policy candidates generated:
+- candidates blocked:
+- most important suspected policy weakness:
+
+4. Chaos seams
+- chaos seams added:
+- card IDs confirmed:
+- card ID corrections:
+- chaos candidates generated:
+- chaos candidates blocked and why:
+- chaos metrics available:
+- chaos metrics TODO:
+
+5. Local scout evaluation
+- control baseline:
+- games per candidate:
+- seat swap:
+- candidates evaluated:
+- crashes/timeouts/invalid returns:
+- top 5 candidates:
+  1.
+  2.
+  3.
+  4.
+  5.
+
+6. Submission queue
+- dry-run queue path:
+- queued candidates:
+- upload performed: no
+- should submit today: no
+
+7. Report site
+- site path:
+- markdown report path:
+- most useful new lesson:
+
+8. Validation
+- pytest:
+- root package verify:
+- root smoke:
+- root files unchanged:
+
+9. Manual git notes
+- files I should review:
+- files not to commit:
+- generated/ignored files:
+
+10. Next recommendation
+- one sentence only

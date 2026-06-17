@@ -9,6 +9,7 @@ covered by the live batch run, not here.
 from __future__ import annotations
 
 import json
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -495,7 +496,279 @@ def test_ag_event_append_list_summary(tmp_path, monkeypatch):
     assert len(all_events) == 3
     ideas = store.query(event_type="IdeaGenerated")
     assert len(ideas) == 2
-    from collections import Counter
-
     counts = Counter(e.event_type for e in all_events)
     assert counts["IdeaGenerated"] == 2 and counts["BaselineRegistered"] == 1
+
+
+# --------------------------------------------------------------------------
+# Pass 4 — chaos metrics tolerance
+# --------------------------------------------------------------------------
+
+def test_metrics_tolerate_missing_chaos_fields():
+    # The base runner does not surface chaos/board-state signals, so results
+    # omit every chaos field. compute_metrics must not raise and must report
+    # the chaos block as unavailable with an honest note (never a fabricated 0).
+    results = [
+        {"completed": True, "candidate_won": True, "candidate_seat": 0, "steps": 30},
+        {"completed": True, "candidate_won": False, "candidate_seat": 1, "steps": 28},
+    ]
+    m = metrics_mod.compute_metrics(results)
+    chaos = m["chaos"]
+    assert chaos["available"] is False
+    assert chaos["note"]  # explains why nothing was measured
+    assert chaos["opp_hand_size"] is None
+    assert chaos["opponent_deckouts"] is None
+
+
+def test_metrics_aggregate_chaos_when_present():
+    # When per-game results DO carry chaos signals, they are aggregated:
+    # sizes/rates average, counts sum, and available flips True.
+    results = [
+        {"completed": True, "candidate_won": True, "candidate_seat": 0,
+         "opp_hand_size": 8, "opponent_deckouts": 1, "status_conditions": 2},
+        {"completed": True, "candidate_won": True, "candidate_seat": 1,
+         "opp_hand_size": 6, "opponent_deckouts": 0, "status_conditions": 1},
+    ]
+    chaos = metrics_mod.compute_metrics(results)["chaos"]
+    assert chaos["available"] is True
+    assert chaos["opp_hand_size"] == 7.0          # averaged
+    assert chaos["opponent_deckouts"] == 1         # summed count
+    assert chaos["status_conditions"] == 3         # summed count
+    assert chaos["note"] == ""
+
+
+# --------------------------------------------------------------------------
+# Pass 4 — Kaggle replay parser + analyzer
+# --------------------------------------------------------------------------
+
+def _fixture_replay_raw() -> dict:
+    # Minimal cabt-shaped episode: two seats, two steps, seat 0 wins.
+    return {
+        "id": 80374966,
+        "name": "ptcg",
+        "version": "1.0",
+        "configuration": {"actTimeout": 10, "runTimeout": 1200, "episodeSteps": 500},
+        "rewards": [1, -1],
+        "statuses": ["DONE", "DONE"],
+        "steps": [
+            [
+                {"observation": {"select": {"context": "deck",
+                                            "options": [{"card_id": 3}, {"card_id": 721}]}},
+                 "action": [3, 721], "status": "ACTIVE", "reward": 0},
+                {"observation": {}, "action": [], "status": "INACTIVE", "reward": 0},
+            ],
+            [
+                {"observation": {"select": {"context": "attack",
+                                            "options": [{"type": "attack", "card_id": 721}]}},
+                 "action": [0], "status": "ACTIVE", "reward": 0},
+                {"observation": {}, "action": [], "status": "INACTIVE", "reward": 0},
+            ],
+        ],
+    }
+
+
+def test_replay_parser_shape_and_final_result():
+    from ptcg_activegraph.replays import analyze, parse_replay
+
+    replay = parse_replay(_fixture_replay_raw(), source_path="fixture.json")
+    assert replay.episode_id == 80374966
+    assert replay.num_steps == 2
+    fr = replay.final_result()
+    assert fr["winner_seat"] == 0 and fr["draw"] is False
+
+    analysis = analyze(replay)
+    # Top-level analysis contract the report relies on.
+    for key in ("episode", "decks", "actions", "failure_tags", "source_path"):
+        assert key in analysis
+    assert analysis["episode"]["episode_id"] == 80374966
+    assert analysis["episode"]["num_steps"] == 2
+
+
+def test_replay_loader_raises_when_absent(tmp_path):
+    from ptcg_activegraph.replays import ReplayNotFound, load_replay
+
+    missing = tmp_path / "80374966.json"
+    with pytest.raises(ReplayNotFound):
+        load_replay(missing)
+
+
+def test_replay_parser_robust_to_empty_episode():
+    from ptcg_activegraph.replays import analyze, parse_replay
+
+    # A completely empty / malformed episode must still analyze without raising.
+    replay = parse_replay({})
+    analysis = analyze(replay)
+    assert analysis["episode"]["num_steps"] == 0
+    assert analysis["episode"]["final_result"]["winner_seat"] is None
+
+
+# --------------------------------------------------------------------------
+# Pass 4 — card id/name confirmation
+# --------------------------------------------------------------------------
+
+def _norm_apostrophes(s: str) -> str:
+    # Treat curly and straight apostrophes as equal (typographic-only diff).
+    return s.replace("\u2019", "'").replace("\u2018", "'")
+
+
+def test_pass4_card_id_confirmation_match_or_apostrophe_only():
+    # Every id was checked against the metadata CSV. A MATCH means claimed ==
+    # actual; the only tolerated MISMATCH is a purely typographic apostrophe
+    # difference (straight ' vs curly ’). Anything else would be a real id/name
+    # error and must fail.
+    path = REPO / "data" / "cards" / "pass4_id_confirmation.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data, "confirmation file should not be empty"
+    seen = 0
+    for archetype, entries in data.items():
+        for e in entries:
+            seen += 1
+            assert e["status"] in ("MATCH", "MISMATCH")
+            if e["status"] == "MATCH":
+                assert e["claimed"] == e["actual"]
+            else:
+                # The mismatch must be apostrophe-only — not a wrong card.
+                assert _norm_apostrophes(e["claimed"]) == _norm_apostrophes(e["actual"]), (
+                    f"{archetype}: id {e['id']} is a real name mismatch "
+                    f"({e['claimed']!r} != {e['actual']!r})")
+    assert seen > 0
+
+
+def test_pass4_confirmation_matches_card_db():
+    # Re-derive the names straight from the card DB so the JSON cannot drift
+    # from the source of truth without this test catching it.
+    from ptcg_activegraph.cards import load_card_db
+
+    db = load_card_db()
+    path = REPO / "data" / "cards" / "pass4_id_confirmation.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    checked = 0
+    for entries in data.values():
+        for e in entries:
+            card = db.get(int(e["id"])) if hasattr(db, "get") else db[int(e["id"])]
+            if card is None:
+                continue
+            name = getattr(card, "name", None) or (
+                card.get("name") if isinstance(card, dict) else None)
+            if name:
+                checked += 1
+                assert name == e["actual"], f"id {e['id']}: {name!r} != {e['actual']!r}"
+    assert checked > 0
+
+
+# --------------------------------------------------------------------------
+# Pass 4 — blocked chaos candidates (metadata insufficient -> honest block)
+# --------------------------------------------------------------------------
+
+def test_blocked_chaos_records_reasons_and_confirmed_ids():
+    confirmation = json.loads(
+        (REPO / "data" / "cards" / "pass4_id_confirmation.json").read_text("utf-8")
+    )
+    # An id is "checked against metadata" if it appears in the confirmation
+    # file at all (MATCH, or apostrophe-only MISMATCH). Blocked chaos specs may
+    # only reference ids that were actually verified — never invented ones.
+    checked_ids = {
+        int(e["id"]) for entries in confirmation.values() for e in entries
+    }
+    for spec in generator.CHAOS_BLOCKED:
+        assert spec["archetype"] == "chaos"
+        assert spec["blocked_reason"], (
+            f"{spec['branch_id']} needs an honest block reason")
+        assert spec["core_card_ids"], spec["branch_id"]
+        for cid in spec["core_card_ids"]:
+            assert int(cid) in checked_ids, (
+                f"{spec['branch_id']} references unverified id {cid}")
+
+
+def test_blocked_candidates_file_mirrors_specs():
+    on_disk = json.loads(
+        (REPO / "data" / "experiments" / "pass4_blocked_candidates.json").read_text("utf-8")
+    )
+    disk_ids = {c["branch_id"] for c in on_disk}
+    spec_ids = {s["branch_id"] for s in generator.CHAOS_BLOCKED}
+    assert disk_ids == spec_ids
+
+
+# --------------------------------------------------------------------------
+# Pass 4 — effect-resolution policy candidate + combo on v2 deck
+# --------------------------------------------------------------------------
+
+def test_pass4_policy_candidate_does_not_mutate_baseline(tmp_path):
+    before_main, before_deck = _read(BASELINE_MAIN), _read(BASELINE_DECK)
+    spec = next(s for s in generator.PASS4_POLICY_SPECS
+                if s["branch_id"] == "policy_effect_resolution_v1")
+    b = generator.generate_policy_candidate(
+        spec, BASELINE_MAIN, BASELINE_DECK, runs_root=tmp_path, ts="p4"
+    )
+    # Root baseline untouched.
+    assert _read(BASELINE_MAIN) == before_main
+    assert _read(BASELINE_DECK) == before_deck
+    # Override block present and names the pass-4 seam.
+    cand_src = _read(Path(b.run_dir) / "main.py")
+    assert "EXPERIMENT OVERRIDE" in cand_src
+    assert spec["seam_id"] in cand_src
+    # Policy candidate keeps the v1 (root) deck unchanged.
+    assert _read(Path(b.run_dir) / "deck.csv") == before_deck
+
+
+def test_pass4_combo_uses_v2_deck_and_keeps_root_immutable(tmp_path):
+    before_main, before_deck = _read(BASELINE_MAIN), _read(BASELINE_DECK)
+    spec = next(s for s in generator.PASS4_COMBO_SPECS
+                if s["branch_id"] == "combo_v2_deck__effect_resolution_v1")
+    b = generator.generate_combo_candidate(
+        spec, BASELINE_MAIN, BASELINE_DECK, runs_root=tmp_path, ts="c4"
+    )
+    assert _read(BASELINE_MAIN) == before_main
+    assert _read(BASELINE_DECK) == before_deck
+
+    from ptcg_activegraph.decks.deck_io import load_deck
+    ids = load_deck(Path(b.run_dir) / "deck.csv")
+    counts = Counter(ids)
+    assert len(ids) == 60
+    # v2 deck = trim 4 basic energy (id 3), +2 Kyogre (721), +2 Ultra Ball (1121).
+    assert b.deck_diff["3"]["delta"] == -4
+    assert b.deck_diff["721"]["delta"] == 2
+    assert b.deck_diff["1121"]["delta"] == 2
+    assert counts[721] == 4 and counts[1121] == 4
+
+
+def test_pass4_anchor_is_pure_v2_control(tmp_path):
+    # The anchor must carry NO policy override (pure v2 control mirror).
+    spec = next(s for s in generator.PASS4_COMBO_SPECS
+                if s["branch_id"] == "pass4_control_v2_anchor")
+    b = generator.generate_combo_candidate(
+        spec, BASELINE_MAIN, BASELINE_DECK, runs_root=tmp_path, ts="anchor"
+    )
+    cand_src = _read(Path(b.run_dir) / "main.py")
+    # The anchor's override block carries NO actual policy mutation — it is an
+    # empty marker block, so behaviour is pure baseline.
+    assert "_OPTION_TYPE_SCORES.update(" not in cand_src
+    assert ".update(" not in cand_src
+    # but still the v2 deck.
+    from ptcg_activegraph.decks.deck_io import load_deck
+    counts = Counter(load_deck(Path(b.run_dir) / "deck.csv"))
+    assert counts[721] == 4 and counts[1121] == 4
+
+
+# --------------------------------------------------------------------------
+# Pass 4 — submission tarball contains ONLY top-level main.py + deck.csv
+# --------------------------------------------------------------------------
+
+def test_pass4_candidate_tarball_is_main_and_deck_only(tmp_path):
+    from ptcg_activegraph.cards import load_card_db
+    from ptcg_activegraph.packaging.make_submission import (
+        build_submission, inspect_tarball,
+    )
+
+    spec = next(s for s in generator.PASS4_POLICY_SPECS
+                if s["branch_id"] == "policy_ultra_ball_v1")
+    b = generator.generate_policy_candidate(
+        spec, BASELINE_MAIN, BASELINE_DECK, runs_root=tmp_path, ts="tar"
+    )
+    out = tmp_path / "submission.tar.gz"
+    build_submission(
+        Path(b.run_dir) / "main.py", Path(b.run_dir) / "deck.csv",
+        out_path=out, card_db=load_card_db(),
+    )
+    members = sorted(inspect_tarball(out)["members"])
+    assert members == ["deck.csv", "main.py"]

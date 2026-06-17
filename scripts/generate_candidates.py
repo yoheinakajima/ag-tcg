@@ -18,6 +18,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
+from pathlib import Path
 
 import _bootstrap  # noqa: F401
 from ptcg_activegraph.cards import load_card_db
@@ -29,6 +31,7 @@ from ptcg_activegraph.experiments.generator import (
     generate_policy_candidate,
     plan_candidates,
     plan_generation2,
+    plan_pass4,
 )
 from ptcg_activegraph.graph.event_store import EventStore
 from ptcg_activegraph.graph.events import EventType, new_event
@@ -42,6 +45,9 @@ def main() -> int:
     parser.add_argument("--generation", type=int, choices=[1, 2], default=1,
                         help="1 = priority single-seam plan; 2 = control + "
                              "single-seam confirmations + combination candidates")
+    parser.add_argument("--group", choices=["pass4"], default=None,
+                        help="pass4 = replay-derived effect-resolution + chaos "
+                             "scout batch (overrides --generation)")
     parser.add_argument("--no-optional-combos", action="store_true",
                         help="generation 2: skip the optional (non-required) combos")
     parser.add_argument("--baseline-main", default="main.py")
@@ -53,14 +59,42 @@ def main() -> int:
     store = EventStore(LAB_EVENTS_PATH)
     card_db = load_card_db()
 
-    if args.generation == 2:
-        plan = plan_generation2(config, include_optional=not args.no_optional_combos)
-        plan = plan[: args.limit] if args.limit and args.limit > 0 else plan
+    if args.group == "pass4":
+        full_plan = plan_pass4(config)
+    elif args.generation == 2:
+        full_plan = plan_generation2(config, include_optional=not args.no_optional_combos)
+        full_plan = full_plan[: args.limit] if args.limit and args.limit > 0 else full_plan
     else:
-        plan = [p for p in plan_candidates(config) if p["testable"]][: args.limit]
-    if not plan:
+        full_plan = [p for p in plan_candidates(config) if p["testable"]][: args.limit]
+
+    # Blocked items (e.g. Pass 4 chaos archetypes) are recorded honestly but not
+    # generated: a legal deck cannot be built without inventing card ids.
+    blocked = [p for p in full_plan if not p.get("testable", True)]
+    plan = [p for p in full_plan if p.get("testable", True)]
+    if not plan and not blocked:
         print("No testable candidates to generate.")
         return 0
+
+    if blocked:
+        blocked_records = [
+            {"branch_id": p["branch_id"], "seam_id": p["seam_id"],
+             "track": p["track"], "reason": p.get("reason", ""),
+             "hypothesis": p["spec"].get("hypothesis", ""),
+             "core_card_ids": p["spec"].get("core_card_ids", [])}
+            for p in blocked
+        ]
+        out = Path("data/experiments/pass4_blocked_candidates.json")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(blocked_records, indent=2), encoding="utf-8")
+        for rec in blocked_records:
+            store.append(new_event(
+                EventType.IdeaGenerated,
+                payload={"branch_id": rec["branch_id"], "seam_id": rec["seam_id"],
+                         "status": "blocked", "reason": rec["reason"]},
+                tags=["experiment", "pass4", "chaos", "blocked"],
+            ))
+            print(f"  ~ BLOCKED {rec['branch_id']:<34} {rec['reason'][:60]}")
+        print(f"  (wrote {out})")
 
     ts = branch_mod.timestamp()
     created = []

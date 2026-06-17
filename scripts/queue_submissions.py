@@ -22,7 +22,11 @@ import _bootstrap  # noqa: F401
 from ptcg_activegraph.experiments.branch import list_runs, load_branch_yaml
 from ptcg_activegraph.experiments.config import LAB_EVENTS_PATH, RUNS_ROOT, load_config
 from ptcg_activegraph.experiments.queue import build_queue
-from ptcg_activegraph.experiments.ranker import FOCUSED_RANKING_JSON, RANKING_JSON
+from ptcg_activegraph.experiments.ranker import (
+    FOCUSED_RANKING_JSON,
+    PASS4_SCOUT_RANKING_JSON,
+    RANKING_JSON,
+)
 from ptcg_activegraph.graph.event_store import EventStore
 
 
@@ -31,14 +35,19 @@ def main() -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true",
                         help="force dry-run (no upload) regardless of plan settings")
-    parser.add_argument("--stage", choices=["focused", "broad"], default="focused",
+    parser.add_argument("--stage", choices=["focused", "broad", "pass4_scout"],
+                        default="focused",
                         help="which ranking to queue from (focused preferred)")
     parser.add_argument("--runs-root", default=str(RUNS_ROOT))
     args = parser.parse_args()
 
     # Prefer the focused (high-game, seat-swap) confirmation ranking; fall back
     # to the broad scout ranking only if no focused stage has been run.
-    ranking_path = FOCUSED_RANKING_JSON if args.stage == "focused" else RANKING_JSON
+    ranking_path = {
+        "focused": FOCUSED_RANKING_JSON,
+        "broad": RANKING_JSON,
+        "pass4_scout": PASS4_SCOUT_RANKING_JSON,
+    }[args.stage]
     if not ranking_path.exists():
         if args.stage == "focused" and RANKING_JSON.exists():
             print(f"No focused ranking yet; falling back to {RANKING_JSON}.")

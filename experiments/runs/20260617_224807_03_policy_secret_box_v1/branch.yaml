@@ -1,0 +1,28 @@
+branch_id: policy_secret_box_v1
+seam_id: policy.secret_box_mode_selection
+family: policy
+kind: policy
+archetype: consistency_engine
+hypothesis: 'Secret Box (1092) mode selection (approx): boost choosing Secret Box
+  and high-leverage classes by name (Ultra Ball, Mega Signal, Lillie''s Determination,
+  Powerglass, Surfing Beach). Stays conservative where names are absent. Keyword-weight
+  approximation only.'
+parent: v1_kaggle_349_8
+created_at: '2026-06-17T22:48:08'
+run_dir: /home/runner/workspace/experiments/runs/20260617_224807_03_policy_secret_box_v1
+policy_overrides: &id001
+  positive:
+    secret box: 85
+    ultra ball: 55
+    mega signal: 50
+    lillie: 45
+    powerglass: 35
+    surfing beach: 30
+policy_diff: *id001
+deck_diff: {}
+deck_summary:
+  source: baseline
+  size: 60
+notes: []
+testable: true
+blocked_reason: ''

@@ -1,0 +1,302 @@
+{
+  "effect/v2": [
+    {
+      "id": 1121,
+      "claimed": "Ultra Ball",
+      "actual": "Ultra Ball",
+      "status": "MATCH"
+    },
+    {
+      "id": 1092,
+      "claimed": "Secret Box",
+      "actual": "Secret Box",
+      "status": "MATCH"
+    },
+    {
+      "id": 3,
+      "claimed": "Basic {W} Energy",
+      "actual": "Basic {W} Energy",
+      "status": "MATCH"
+    }
+  ],
+  "hand_avalanche_froslass": [
+    {
+      "id": 861,
+      "claimed": "Mega Froslass ex",
+      "actual": "Mega Froslass ex",
+      "status": "MATCH"
+    },
+    {
+      "id": 103,
+      "claimed": "Snorunt",
+      "actual": "Snorunt",
+      "status": "MATCH"
+    },
+    {
+      "id": 860,
+      "claimed": "Snorunt",
+      "actual": "Snorunt",
+      "status": "MATCH"
+    },
+    {
+      "id": 1223,
+      "claimed": "Harlequin",
+      "actual": "Harlequin",
+      "status": "MATCH"
+    },
+    {
+      "id": 1237,
+      "claimed": "Lucian",
+      "actual": "Lucian",
+      "status": "MATCH"
+    },
+    {
+      "id": 1213,
+      "claimed": "Judge",
+      "actual": "Judge",
+      "status": "MATCH"
+    },
+    {
+      "id": 1103,
+      "claimed": "Meddling Memo",
+      "actual": "Meddling Memo",
+      "status": "MATCH"
+    },
+    {
+      "id": 1087,
+      "claimed": "Hand Trimmer",
+      "actual": "Hand Trimmer",
+      "status": "MATCH"
+    },
+    {
+      "id": 1197,
+      "claimed": "Xerosic's Machinations",
+      "actual": "Xerosic\u2019s Machinations",
+      "status": "MISMATCH"
+    }
+  ],
+  "bench_bloat": [
+    {
+      "id": 1091,
+      "claimed": "Accompanying Flute",
+      "actual": "Accompanying Flute",
+      "status": "MATCH"
+    },
+    {
+      "id": 615,
+      "claimed": "Zoroark",
+      "actual": "Zoroark",
+      "status": "MATCH"
+    },
+    {
+      "id": 430,
+      "claimed": "Team Rocket's Hypno",
+      "actual": "Team Rocket's Hypno",
+      "status": "MATCH"
+    },
+    {
+      "id": 79,
+      "claimed": "Incineroar ex",
+      "actual": "Incineroar ex",
+      "status": "MATCH"
+    },
+    {
+      "id": 95,
+      "claimed": "Teal Mask Ogerpon",
+      "actual": "Teal Mask Ogerpon",
+      "status": "MATCH"
+    },
+    {
+      "id": 956,
+      "claimed": "Zeraora",
+      "actual": "Zeraora",
+      "status": "MATCH"
+    },
+    {
+      "id": 1059,
+      "claimed": "Gengar",
+      "actual": "Gengar",
+      "status": "MATCH"
+    },
+    {
+      "id": 1187,
+      "claimed": "Morty's Conviction",
+      "actual": "Morty\u2019s Conviction",
+      "status": "MISMATCH"
+    },
+    {
+      "id": 1204,
+      "claimed": "Lisia's Appeal",
+      "actual": "Lisia\u2019s Appeal",
+      "status": "MISMATCH"
+    }
+  ],
+  "mill": [
+    {
+      "id": 198,
+      "claimed": "Durant ex",
+      "actual": "Durant ex",
+      "status": "MATCH"
+    },
+    {
+      "id": 58,
+      "claimed": "Great Tusk",
+      "actual": "Great Tusk",
+      "status": "MATCH"
+    },
+    {
+      "id": 896,
+      "claimed": "Mega Scrafty ex",
+      "actual": "Mega Scrafty ex",
+      "status": "MATCH"
+    },
+    {
+      "id": 881,
+      "claimed": "Team Rocket's Diglett",
+      "actual": "Team Rocket's Diglett",
+      "status": "MATCH"
+    },
+    {
+      "id": 440,
+      "claimed": "Team Rocket's Larvitar",
+      "actual": "Team Rocket's Larvitar",
+      "status": "MATCH"
+    },
+    {
+      "id": 290,
+      "claimed": "Tyranitar",
+      "actual": "Tyranitar",
+      "status": "MATCH"
+    },
+    {
+      "id": 1120,
+      "claimed": "Crushing Hammer",
+      "actual": "Crushing Hammer",
+      "status": "MATCH"
+    },
+    {
+      "id": 1149,
+      "claimed": "Energy Swatter",
+      "actual": "Energy Swatter",
+      "status": "MATCH"
+    },
+    {
+      "id": 1087,
+      "claimed": "Hand Trimmer",
+      "actual": "Hand Trimmer",
+      "status": "MATCH"
+    }
+  ],
+  "status_confusion": [
+    {
+      "id": 1095,
+      "claimed": "Dangerous Laser",
+      "actual": "Dangerous Laser",
+      "status": "MATCH"
+    },
+    {
+      "id": 1265,
+      "claimed": "Dizzying Valley",
+      "actual": "Dizzying Valley",
+      "status": "MATCH"
+    },
+    {
+      "id": 813,
+      "claimed": "Mismagius ex",
+      "actual": "Mismagius ex",
+      "status": "MATCH"
+    },
+    {
+      "id": 1204,
+      "claimed": "Lisia's Appeal",
+      "actual": "Lisia\u2019s Appeal",
+      "status": "MISMATCH"
+    },
+    {
+      "id": 861,
+      "claimed": "Mega Froslass ex",
+      "actual": "Mega Froslass ex",
+      "status": "MATCH"
+    },
+    {
+      "id": 968,
+      "claimed": "Dachsbun ex",
+      "actual": "Dachsbun ex",
+      "status": "MATCH"
+    },
+    {
+      "id": 854,
+      "claimed": "Dustox",
+      "actual": "Dustox",
+      "status": "MATCH"
+    },
+    {
+      "id": 1243,
+      "claimed": "Perilous Jungle",
+      "actual": "Perilous Jungle",
+      "status": "MATCH"
+    }
+  ],
+  "vivillon_decidueye": [
+    {
+      "id": 1017,
+      "claimed": "Scatterbug",
+      "actual": "Scatterbug",
+      "status": "MATCH"
+    },
+    {
+      "id": 1018,
+      "claimed": "Spewpa",
+      "actual": "Spewpa",
+      "status": "MATCH"
+    },
+    {
+      "id": 1019,
+      "claimed": "Vivillon",
+      "actual": "Vivillon",
+      "status": "MATCH"
+    },
+    {
+      "id": 1020,
+      "claimed": "Rowlet",
+      "actual": "Rowlet",
+      "status": "MATCH"
+    },
+    {
+      "id": 1021,
+      "claimed": "Dartrix",
+      "actual": "Dartrix",
+      "status": "MATCH"
+    },
+    {
+      "id": 1022,
+      "claimed": "Decidueye ex",
+      "actual": "Decidueye ex",
+      "status": "MATCH"
+    },
+    {
+      "id": 1213,
+      "claimed": "Judge",
+      "actual": "Judge",
+      "status": "MATCH"
+    },
+    {
+      "id": 1261,
+      "claimed": "Forest of Vitality",
+      "actual": "Forest of Vitality",
+      "status": "MATCH"
+    },
+    {
+      "id": 1231,
+      "claimed": "Dawn",
+      "actual": "Dawn",
+      "status": "MATCH"
+    },
+    {
+      "id": 1225,
+      "claimed": "Hilda",
+      "actual": "Hilda",
+      "status": "MATCH"
+    }
+  ]
+}

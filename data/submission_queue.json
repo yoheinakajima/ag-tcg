@@ -6,42 +6,5 @@
   "queue_enabled": true,
   "will_upload": false,
   "mode": "DRY-RUN",
-  "candidates": [
-    {
-      "branch_id": "deck_energy_trim_light",
-      "rank": 1,
-      "score": 751.712,
-      "label": "promotable",
-      "seam_id": "deck.energy_trim",
-      "kind": "deck",
-      "hypothesis": "Trimming 4 Basic {W} Energy for +2 Kyogre and +2 Ultra Ball keeps power online while adding an attacker and a search item.",
-      "run_dir": "/home/runner/workspace/experiments/runs/20260617_213948_09_deck_energy_trim_light",
-      "tarball": "data/submissions/candidates/deck_energy_trim_light.tar.gz",
-      "package_error": null,
-      "focused_metrics": {
-        "games_completed": 40,
-        "win_rate": 0.65,
-        "adjusted_win_rate": 0.65,
-        "wilson80": [
-          0.5492,
-          0.739
-        ],
-        "wilson95": [
-          0.4951,
-          0.7787
-        ],
-        "seat_balance_delta": -0.2,
-        "candidate_p0_win_rate": 0.55,
-        "candidate_p1_win_rate": 0.75
-      },
-      "interpretation": "Adjusted win rate 0.65 over 40 games with an 80% lower bound of 0.55 (> 0.50) and beats the control (0.60). Strong enough to queue for manual review.",
-      "risk_notes": [
-        "Local cabt is a proxy for the hidden Kaggle ladder; treat as a directional signal, not a guaranteed score gain."
-      ],
-      "suggested_message": "deck_energy_trim_light: Trimming 4 Basic {W} Energy for +2 Kyogre and +2 Ultra Ball keeps power online while adding an attacker and a search item.",
-      "message": "deck_energy_trim_light: Trimming 4 Basic {W} Energy for +2 Kyogre and +2 Ultra Ball keeps power online while adding an attacker and a search item.",
-      "kaggle_command": "python .pythonlibs/bin/kaggle competitions submit -c pokemon-tcg-ai-battle -f data/submissions/candidates/deck_energy_trim_light.tar.gz -m 'deck_energy_trim_light: Trimming 4 Basic {W} Energy for +2 Kyogre and +2 Ultra Ball keeps power online while adding an attacker and a search item.'",
-      "uploaded": false
-    }
-  ]
+  "candidates": []
 }

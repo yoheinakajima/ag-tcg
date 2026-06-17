@@ -1,0 +1,50 @@
+branch_id: combo_v2_deck__effect_resolution_v1
+seam_id: combo.v2_effect_resolution
+family: combo
+kind: combo
+archetype: consistency_engine
+hypothesis: The v2 control deck (trim 4 energy, +2 Kyogre, +2 Ultra Ball) plus effect-resolution
+  targeting tests whether smarter search/effect choices compound with the stronger
+  deck.
+parent: v1_kaggle_349_8
+created_at: '2026-06-17T22:48:08'
+run_dir: /home/runner/workspace/experiments/runs/20260617_224807_05_combo_v2_deck__effect_resolution_v1
+policy_overrides: &id001
+  positive:
+    ultra ball: 70
+    mega signal: 60
+    secret box: 60
+    lillie: 55
+    abomasnow: 50
+    kyogre: 45
+    snover: 45
+    powerglass: 35
+policy_diff: *id001
+deck_diff:
+  '3':
+    name: Basic {W} Energy
+    from: 33
+    to: 29
+    delta: -4
+  '721':
+    name: Kyogre
+    from: 2
+    to: 4
+    delta: 2
+  '1121':
+    name: Ultra Ball
+    from: 2
+    to: 4
+    delta: 2
+deck_summary:
+  size: 60
+  unique: 11
+  warnings:
+  - card 3 appears 29 times (> 4)
+  policy_refs:
+  - policy_effect_resolution_v1
+  deck_ref: deck_energy_trim_light
+notes:
+- combo of policy_effect_resolution_v1 x deck_energy_trim_light
+testable: true
+blocked_reason: ''

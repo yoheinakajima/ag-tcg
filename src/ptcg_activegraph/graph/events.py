@@ -64,6 +64,10 @@ class EventType(str, Enum):
     KaggleScoreUpdated = "KaggleScoreUpdated"
     ReportSiteGenerated = "ReportSiteGenerated"
 
+    # --- Pass 4: Kaggle replay ingestion ----------------------------------
+    ReplayImported = "ReplayImported"
+    ReplayAnalyzed = "ReplayAnalyzed"
+
 
 @dataclass
 class Event:

@@ -113,6 +113,63 @@ seams:
     requires: [cabt_schema]
     enabled: true
 
+  # ----------------- policy: replay-derived effect resolution -------------
+  # Added in Pass 4 from the Kaggle replay analysis. The agent's main weakness
+  # is no longer legality/basic ranking; it is effect-resolution card choice on
+  # multi-step search/discard prompts (Ultra Ball / Secret Box / Mega Signal).
+  # The override hook is keyword/option-type weighting only (no board-state card
+  # targeting), so these are honest *lightweight keyword-weight approximations*,
+  # not a rule engine.
+  - id: policy.effect_resolution_targeting
+    family: policy
+    description: Choose effect-resolution targets (search/discard) by role, not first-legal.
+    default_priority: 95
+    risk: low
+    requires: [cabt_schema, official_card_csv]
+    enabled: true
+  - id: policy.ultra_ball_discard_and_search
+    family: policy
+    description: Ultra Ball (1121) — discard low value, search highest-priority missing piece.
+    default_priority: 92
+    risk: low
+    requires: [cabt_schema, official_card_csv]
+    enabled: true
+  - id: policy.secret_box_mode_selection
+    family: policy
+    description: Secret Box (1092) — pick high-leverage item/supporter/tool/stadium targets.
+    default_priority: 88
+    risk: low
+    requires: [cabt_schema, official_card_csv]
+    enabled: true
+  - id: policy.mega_signal_evolution_search
+    family: policy
+    description: Mega Signal (1145) — search Mega Abomasnow line only when Snover is available.
+    default_priority: 86
+    risk: low
+    requires: [cabt_schema, official_card_csv]
+    enabled: true
+  - id: policy.attach_targeting
+    family: policy
+    description: Attach energy/tools to the active/next-turn attacker, not first legal target.
+    default_priority: 84
+    risk: low
+    requires: [cabt_schema, official_card_csv]
+    enabled: true
+  - id: policy.setup_active_choice
+    family: policy
+    description: Choose opening Active (Kyogre vs Snover) by race-vs-evolve matchup intent.
+    default_priority: 80
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+  - id: policy.deckout_awareness
+    family: policy
+    description: Avoid unnecessary draw/search when deck count is low (deckout safety).
+    default_priority: 70
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+
   # ------------------------------- archetype ------------------------------
   - id: archetype.linear_aggro
     family: archetype
@@ -156,6 +213,55 @@ seams:
     risk: high
     requires: [official_card_csv, toolbox_cards_identified]
     enabled: false
+
+  # ------------------- archetype: human-directed chaos --------------------
+  # Added in Pass 4. Chaos decks are asymmetric *disruption* decks (not random):
+  # they create unstable hand/bench/deck/status states our simple policy can
+  # exploit. All listed core card ids are CONFIRMED against
+  # data/cards/EN_Card_Data.csv (see data/cards/pass4_id_confirmation.json).
+  # They stay BLOCKED (enabled: false) because a legal 60-card chaos list cannot
+  # be assembled from the ~9 confirmed core cards alone without inventing ids,
+  # which the pass forbids. requires: chaos_decklist_confirmed gates them.
+  - id: chaos.hand_avalanche_froslass
+    family: archetype
+    description: Preserve large opponent hands, convert hand size to damage via Mega Froslass ex.
+    default_priority: 58
+    risk: high
+    requires: [official_card_csv, chaos_decklist_confirmed]
+    enabled: false
+    core_card_ids: [861, 103, 860, 1223, 1237, 1213, 1103, 1087, 1197]
+  - id: chaos.bench_bloat_punisher
+    family: archetype
+    description: Crowd opponent bench with Accompanying Flute, punish with bench-scaling attackers.
+    default_priority: 56
+    risk: high
+    requires: [official_card_csv, chaos_decklist_confirmed]
+    enabled: false
+    core_card_ids: [1091, 615, 430, 79, 95, 956, 1059, 1187, 1204]
+  - id: chaos.mill_resource_destruction
+    family: archetype
+    description: Disrupt opponent deck/hand/energy so brittle bots lose pieces or deck out.
+    default_priority: 54
+    risk: high
+    requires: [official_card_csv, chaos_decklist_confirmed]
+    enabled: false
+    core_card_ids: [198, 58, 896, 881, 440, 290, 1120, 1149, 1087]
+  - id: chaos.status_confusion_lock
+    family: archetype
+    description: Confusion/Burn/Sleep + forced switching to cause mis-sequencing and lost turns.
+    default_priority: 52
+    risk: high
+    requires: [official_card_csv, chaos_decklist_confirmed]
+    enabled: false
+    core_card_ids: [1095, 1265, 813, 1204, 861, 968, 854, 1243]
+  - id: chaos.vivillon_decidueye_four_card_lock
+    family: archetype
+    description: Vivillon/Judge set opponent to 4 cards, enabling Decidueye ex's reduced-cost attack.
+    default_priority: 50
+    risk: high
+    requires: [official_card_csv, chaos_decklist_confirmed]
+    enabled: false
+    core_card_ids: [1017, 1018, 1019, 1020, 1021, 1022, 1213, 1261, 1231, 1225]
 
   # ------------------------------ evaluation ------------------------------
   - id: eval.vs_baseline

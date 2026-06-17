@@ -60,6 +60,8 @@ def compute_metrics(results: list[dict]) -> dict:
     else:
         seat_balance_delta = None
 
+    chaos = _chaos_metrics(results)
+
     win_rate = _safe_div(wins, games_completed) if games_completed else None
     # Draw-adjusted win rate: a draw counts as half a win (standard convention),
     # so a candidate is not unfairly punished/rewarded for stalemates.
@@ -103,7 +105,51 @@ def compute_metrics(results: list[dict]) -> dict:
         "candidate_p0_win_rate": None if seat0_rate is None else round(seat0_rate, 4),
         "candidate_p1_win_rate": None if seat1_rate is None else round(seat1_rate, 4),
         "seat_balance_delta": seat_balance_delta,
+        "chaos": chaos,
     }
+
+
+def _chaos_metrics(results: list[dict]) -> dict:
+    """Optional disruption / chaos-archetype metrics (Pass 4).
+
+    These describe how often a candidate *disrupted* the opponent rather than
+    just won: opponent hand bloat, bench crowding, mill / deckout pressure, and
+    status conditions inflicted. The base self-play runner does not yet surface
+    per-game board state, so every field is reported as ``None`` (= not
+    measured) unless a per-game result dict explicitly carries it. The function
+    tolerates results that omit the chaos fields entirely — it never raises and
+    never fabricates a number. ``available`` is True only if at least one game
+    actually reported a chaos signal.
+    """
+    fields = (
+        "opp_hand_size",          # avg opponent hand size when we acted
+        "opp_bench_count",        # avg opponent bench size
+        "opp_deck_remaining",     # avg cards left in opponent deck (mill proxy)
+        "status_conditions",      # statuses we inflicted (confusion/burn/sleep)
+        "forced_switches",        # forced opponent switches
+        "opponent_deckouts",      # games the opponent decked out
+    )
+    out: dict[str, float | int | None] = {}
+    available = False
+    for f in fields:
+        vals = [r[f] for r in results if isinstance(r, dict) and r.get(f) is not None]
+        if vals:
+            available = True
+            total = sum(float(v) for v in vals)
+            # Counts (deckouts/forced switches/statuses) sum; rates/sizes average.
+            if f in ("opponent_deckouts", "forced_switches", "status_conditions"):
+                out[f] = int(total)
+            else:
+                out[f] = round(total / len(vals), 3)
+        else:
+            out[f] = None
+    out["available"] = available
+    out["note"] = (
+        "" if available
+        else "no chaos/disruption signal recorded; base runner does not yet "
+             "surface per-game board state for these archetypes"
+    )
+    return out
 
 
 def _decision_entropy(counter: Counter) -> float:

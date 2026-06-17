@@ -1,0 +1,26 @@
+branch_id: policy_attach_targeting_v1
+seam_id: policy.attach_targeting
+family: policy
+kind: policy
+archetype: setup_evolution
+hypothesis: 'Attach targeting (approx): prefer attach/place actions (type 8) and active-target
+  keywords so energy/tools land on the current attacker. Precise ''attach to next-turn
+  attacker'' needs board state, so this is the lightweight keyword/type approximation.'
+parent: v1_kaggle_349_8
+created_at: '2026-06-17T22:48:08'
+run_dir: /home/runner/workspace/experiments/runs/20260617_224807_04_policy_attach_targeting_v1
+policy_overrides: &id001
+  option_type_scores:
+    8: 30
+  positive:
+    attach: 70
+    energy: 55
+    active: 30
+policy_diff: *id001
+deck_diff: {}
+deck_summary:
+  source: baseline
+  size: 60
+notes: []
+testable: true
+blocked_reason: ''
