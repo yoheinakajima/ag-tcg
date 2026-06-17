@@ -36,3 +36,6 @@ data/submissions/archive/*.tar.gz
 
 # OS
 .DS_Store
+
+# Kaggle CLI logs (may contain handle; never commit)
+data/kaggle_uploads/

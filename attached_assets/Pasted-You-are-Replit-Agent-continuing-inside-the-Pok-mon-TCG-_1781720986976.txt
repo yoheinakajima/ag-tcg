@@ -1,0 +1,214 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Goal:
+
+Diagnose and retry Kaggle authentication/upload without exposing credentials. Do not modify main.py, deck.csv, or the submission package unless explicitly instructed. Do not push to GitHub.
+
+Context:
+
+The package is ready:
+- pytest PASS
+- package verify PASS
+- smoke test PASS
+- data/submissions/submission.tar.gz exists
+- tarball contains only main.py and deck.csv
+
+Previous Kaggle CLI attempt failed at:
+
+kaggle competitions files pokemon-tcg-ai-battle
+
+with:
+
+401 - Unauthorized - Unauthenticated
+
+I regenerated a fresh Kaggle API key and verified my Kaggle username. Please do a careful auth diagnostic and retry.
+
+Important:
+- Do not print KAGGLE_USERNAME value.
+- Do not print KAGGLE_KEY value.
+- Do not print kaggle.json contents.
+- Do not commit credentials.
+- Do not write credentials into tracked files.
+- You may write ~/.kaggle/kaggle.json from Replit Secrets if needed.
+- Use chmod 600 on ~/.kaggle/kaggle.json.
+- If auth still fails, give me exact next manual steps.
+
+Competition slug:
+
+pokemon-tcg-ai-battle
+
+Step 1 — Confirm package is still ready
+
+Run:
+
+python scripts/package_submission.py --verify-only
+tar -tzf data/submissions/submission.tar.gz
+ls -lh data/submissions/submission.tar.gz
+
+Stop if package verification fails.
+
+Step 2 — Inspect Kaggle packages and CLI path
+
+Run:
+
+python - <<'PY'
+import sys, subprocess, importlib.util
+print("python:", sys.version)
+print("kaggle spec:", importlib.util.find_spec("kaggle"))
+PY
+
+which kaggle || true
+kaggle --version || true
+python -m pip show kaggle || true
+python -m pip show kagglehub || true
+python -m pip list | grep -i kaggle || true
+
+Step 3 — Check secrets shape without revealing values
+
+Run:
+
+python - <<'PY'
+import os, re, json
+u = os.environ.get("KAGGLE_USERNAME")
+k = os.environ.get("KAGGLE_KEY")
+print("KAGGLE_USERNAME present:", bool(u))
+print("KAGGLE_KEY present:", bool(k))
+if u:
+    print("username length:", len(u))
+    print("username has surrounding whitespace:", u != u.strip())
+    print("username has @:", "@" in u)
+    print("username contains slash:", "/" in u)
+if k:
+    print("key length:", len(k))
+    print("key has surrounding whitespace:", k != k.strip())
+    print("key contains whitespace:", bool(re.search(r"\\s", k)))
+    print("key starts with quote:", k[:1] in ['\\\"', \"'\"])
+    print("key ends with quote:", k[-1:] in ['\\\"', \"'\"])
+PY
+
+If username contains @, tell me Kaggle usually wants the Kaggle username/handle, not email, and stop.
+
+If either secret is missing, stop and tell me to add Replit Secrets KAGGLE_USERNAME and KAGGLE_KEY.
+
+Step 4 — Remove stale local Kaggle config and write fresh kaggle.json from secrets
+
+Run:
+
+rm -rf ~/.kaggle
+mkdir -p ~/.kaggle
+python - <<'PY'
+import os, json, pathlib
+u = os.environ.get("KAGGLE_USERNAME", "").strip()
+k = os.environ.get("KAGGLE_KEY", "").strip().strip('"').strip("'")
+if not u or not k:
+    raise SystemExit("Missing KAGGLE_USERNAME or KAGGLE_KEY")
+p = pathlib.Path.home() / ".kaggle" / "kaggle.json"
+p.write_text(json.dumps({"username": u, "key": k}))
+print("wrote", str(p), "with username/key lengths", len(u), len(k))
+PY
+chmod 600 ~/.kaggle/kaggle.json
+ls -la ~/.kaggle
+python - <<'PY'
+import json, pathlib
+p = pathlib.Path.home() / ".kaggle" / "kaggle.json"
+data = json.loads(p.read_text())
+print("kaggle.json present:", p.exists())
+print("username present:", bool(data.get("username")))
+print("key present:", bool(data.get("key")))
+print("username length:", len(data.get("username","")))
+print("key length:", len(data.get("key","")))
+PY
+
+Step 5 — Force classic Kaggle package if needed
+
+The previous report said kaggle 1.6.17 was installed after downgrading. Keep classic kaggle CLI if available. Do not use kagglehub for submission.
+
+Run:
+
+python -m pip install --force-reinstall "kaggle==1.6.17"
+hash -r || true
+kaggle --version || true
+
+Step 6 — Try several safe auth checks
+
+Run these one by one and capture outputs:
+
+mkdir -p data/kaggle_uploads
+
+kaggle config view 2>&1 | tee data/kaggle_uploads/auth_config_view.log
+
+kaggle competitions list -s "pokemon" 2>&1 | tee data/kaggle_uploads/auth_competitions_list.log
+
+kaggle competitions files pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/auth_competition_files.log
+
+Interpretation:
+- If competitions list fails with 401, auth is still broken.
+- If competitions list works but competition files fails with 403/rules, I need to accept/join competition rules manually in browser.
+- If files works, proceed to upload.
+
+Step 7 — If auth works, submit exactly once
+
+Only if `kaggle competitions files pokemon-tcg-ai-battle` succeeds or fails only with a non-auth warning that does not block access, run exactly one submit command:
+
+kaggle competitions submit pokemon-tcg-ai-battle -f data/submissions/submission.tar.gz -m "v0 smoke-passing baseline" 2>&1 | tee data/kaggle_uploads/v0_submit.log
+
+Then run:
+
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/submissions_after_v0.log
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/submissions_after_v0.csv
+
+Step 8 — If auth still fails, diagnose likely cause
+
+If still 401, report:
+- exact command that failed
+- kaggle version
+- whether ~/.kaggle/kaggle.json was created
+- username length only
+- key length only
+- whether username looked like email
+- whether env vars existed
+- whether config view succeeded
+- whether competitions list succeeded
+- whether files command succeeded
+- likely manual fix
+
+Likely manual fixes to suggest:
+1. In Kaggle, use Account Settings → API → Legacy API Credentials / Create Legacy API Key if available, not OAuth-only token.
+2. Download kaggle.json and paste its exact username/key into Replit Secrets.
+3. Make sure KAGGLE_USERNAME is the handle in kaggle.json, not email/display name.
+4. Try manual browser upload if CLI auth continues failing.
+
+Final report format:
+
+Kaggle Auth Retry Report
+
+1. Package status
+- package verify:
+- tarball contents:
+- upload file size:
+
+2. Local auth config
+- kaggle CLI version:
+- kaggle package location:
+- KAGGLE_USERNAME present:
+- username length:
+- username looked like email:
+- KAGGLE_KEY present:
+- key length:
+- ~/.kaggle/kaggle.json written:
+- file permissions set:
+
+3. Auth checks
+- kaggle config view:
+- competitions list:
+- competition files:
+- interpretation:
+
+4. Upload
+- upload attempted: yes/no
+- submit result:
+- latest submission status:
+- logs saved at:
+
+5. Next action
+- one sentence
