@@ -1,0 +1,1 @@
+- [cabt agent runtime](cabt-agent-runtime.md) — deck.csv must fall back to /kaggle_simulations/agent/; basic Energy has no 4-copy limit; CLI has no replay/log download.

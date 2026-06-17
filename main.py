@@ -314,27 +314,56 @@ def fallback(obs):
 _DECK_IDS: list[int] | None = None
 
 
+def _deck_candidate_paths() -> list[str]:
+    """Candidate locations for ``deck.csv`` across the environments cabt uses.
+
+    The cabt engine exec()s the agent source, so ``__file__`` and the current
+    working directory may not point at the agent directory. We therefore mirror
+    the official sample: try the cwd-relative name, then this module's directory
+    (guarded, since ``__file__`` can be undefined), then the documented Kaggle
+    agent path. Each base is resolved independently so one bad base never aborts
+    the rest.
+    """
+    candidates: list[str] = ["deck.csv"]
+    try:
+        here = _os.path.dirname(_os.path.abspath(__file__))
+        candidates.append(_os.path.join(here, "deck.csv"))
+    except Exception:
+        pass
+    candidates.append("/kaggle_simulations/agent/deck.csv")
+    return candidates
+
+
 def _load_deck_ids() -> list[int]:
-    """Read deck.csv next to this file and return card IDs. Cached."""
+    """Read deck.csv and return its card IDs. Cached."""
     global _DECK_IDS
     if _DECK_IDS is not None:
         return _DECK_IDS
     ids: list[int] = []
-    try:
-        for base in (_os.path.dirname(_os.path.abspath(__file__)), "."):
-            p = _os.path.join(base, "deck.csv")
-            if _os.path.exists(p):
-                with open(p, encoding="utf-8") as fh:
-                    for line in fh:
-                        line = line.strip()
-                        if line:
-                            try:
-                                ids.append(int(line))
-                            except ValueError:
-                                pass
+    for p in _deck_candidate_paths():
+        try:
+            if not _os.path.exists(p):
+                continue
+            parsed: list[int] = []
+            with open(p, encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        parsed.append(int(line))
+                    except ValueError:
+                        pass
+            # Prefer a path that yields a full 60-card deck; otherwise remember
+            # the first non-empty result as a fallback but keep looking so a
+            # stray earlier deck.csv can't mask the real one.
+            if len(parsed) == 60:
+                ids = parsed
                 break
-    except Exception:
-        pass
+            if parsed and not ids:
+                ids = parsed
+        except Exception:
+            continue
     _DECK_IDS = ids
     return _DECK_IDS
 
