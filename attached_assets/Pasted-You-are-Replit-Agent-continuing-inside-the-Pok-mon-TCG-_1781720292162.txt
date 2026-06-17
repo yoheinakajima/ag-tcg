@@ -1,0 +1,222 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important: do not push to GitHub. I will handle git manually.
+
+We have a known-good local submission:
+
+- data/submissions/submission.tar.gz
+- tarball contains only main.py and deck.csv
+- pytest: PASS, 106 tests
+- package verify: PASS
+- cabt smoke test: PASS, 64 steps
+- schema recorder: PASS, 127 observations / 3 games
+- deck: real cabt built-in known-valid deck, 60 cards, 11 unique IDs
+- main.py: stdlib-only, handles select=None by returning deck, uses structured scoring for option type 13 attack and related numeric option types
+
+Goal of this pass:
+
+Ingest the first Kaggle upload result/logs/replay if available, preserve the known-good v0, and only make changes that either fix Kaggle validation failures or improve the local policy while keeping smoke/package validity.
+
+Do not redesign architecture. Do not add RL. Do not add heavyweight runtime imports. Do not add external calls. Do not push to GitHub.
+
+Step 1 — Preserve current v0
+
+Before making changes, run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+python scripts/package_submission.py
+tar -tzf data/submissions/submission.tar.gz
+
+Then archive the current v0:
+
+mkdir -p data/submissions/archive
+cp data/submissions/submission.tar.gz data/submissions/archive/v0_kaggle_upload_candidate.tar.gz
+cp main.py data/submissions/archive/main_v0_kaggle_upload_candidate.py
+cp deck.csv data/submissions/archive/deck_v0_kaggle_upload_candidate.csv
+
+Write:
+
+cat > data/submissions/archive/v0_kaggle_upload_candidate.md <<'EOF'
+# v0 Kaggle upload candidate
+
+Local status:
+- pytest passed
+- package verify passed
+- cabt smoke passed
+- schema recorder passed
+- tarball contains only main.py and deck.csv
+
+This is the restore point before any post-upload changes.
+EOF
+
+Step 2 — Ask me for Kaggle result artifacts if not present
+
+Check whether I have uploaded any Kaggle logs/replays/results into the repo:
+
+find . -maxdepth 4 -type f \( -iname '*kaggle*' -o -iname '*submission*' -o -iname '*replay*' -o -iname '*episode*' -o -iname '*log*' \) | sort
+
+If no Kaggle result artifact is present, stop after preserving v0 and report:
+
+Waiting for Kaggle result. Please upload or paste one of:
+- validation status
+- error log
+- replay JSON/HTML
+- submission page status
+- first rating/result
+
+Do not guess what happened on Kaggle.
+
+Step 3 — If Kaggle result exists, classify it
+
+If there is a Kaggle result/log/replay, inspect it and classify:
+
+A. Validation failed
+B. Validation passed but agent lost quickly
+C. Validation passed and agent entered ladder
+D. Runtime/package/deck error
+E. Timeout
+F. Unknown/incomplete result
+
+Prioritize fixes in this order:
+
+1. package shape
+2. deck return / deck validity
+3. agent return shape
+4. runtime exception
+5. timeout
+6. obvious policy weakness
+
+If Kaggle validation failed, do not optimize strategy. Fix the failure and rebuild the package.
+
+Step 4 — If validation passed, improve policy cautiously
+
+If Kaggle validation passed, use local schema/replays to improve main.py conservatively.
+
+Read:
+
+cat docs/CABT_SCHEMA_NOTES.md || true
+cat data/matches/schema_examples.json || true
+head -200 data/matches/option_examples.jsonl || true
+
+Use only confirmed fields.
+
+Known current heuristic:
+
+- option.type == 13: attack, +120
+- attackId present: +30
+- type 7: +15
+- type 8: +12
+- type 3: +8
+- type 10: +6
+- type 9: +4
+- type 14: pass-like, -40
+- generic string scoring remains
+
+Next improvement target:
+
+Make type-8/type-7/type-3 choices board-aware using confirmed fields like area, index, inPlayArea, inPlayIndex, playerIndex, but only if the schema examples make the meaning clear.
+
+Potential safe improvements:
+
+1. Avoid pass-like type 14 whenever any non-pass option exists.
+2. Prefer attack type 13 even more when select.maxCount == 1.
+3. During multi-select, avoid selecting pass/end unless required.
+4. If type 8/7 are card selections, prefer own active/bench cards with useful actions only if confirmed.
+5. If area/index maps to hand/bench/active, add comments documenting exact observed mapping.
+
+Do not use unconfirmed meanings.
+
+Keep main.py:
+
+- stdlib-only
+- self-contained
+- no imports from src
+- no network calls
+- no LLM calls
+- never raises outward
+- returns deck on select=None
+- validates final indices
+
+Step 5 — Add tests for every change
+
+For each new scoring rule, add or update tests.
+
+Required regression tests:
+
+- select=None returns 60-card deck
+- type 13 attack outranks type 14 pass
+- type 14 pass is selected only if no better legal option exists or required
+- maxCount/minCount respected
+- malformed option objects never crash
+- returned indices are unique and in range
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+python scripts/record_schema.py --games 3
+python scripts/package_submission.py
+tar -tzf data/submissions/submission.tar.gz
+
+Promotion rule:
+
+Keep the new main.py only if:
+- pytest passes
+- package verify passes
+- smoke passes
+- final tarball contains only main.py and deck.csv
+
+If anything fails, restore:
+
+cp data/submissions/archive/main_v0_kaggle_upload_candidate.py main.py
+cp data/submissions/archive/deck_v0_kaggle_upload_candidate.csv deck.csv
+python scripts/package_submission.py
+
+Final report format
+
+Report back exactly in this format:
+
+PTCG Post-Kaggle/Replit Report
+
+1. v0 preserved
+- Archive created: yes/no
+- Archive paths:
+- Current final tarball:
+
+2. Kaggle result ingestion
+- Kaggle artifact found: yes/no
+- Artifact path/type:
+- Result classification:
+- Validation status:
+- Error/log summary if any:
+
+3. Changes made
+- main.py changed: yes/no
+- deck.csv changed: yes/no
+- tests changed: yes/no
+- docs/schema changed: yes/no
+- Exact policy/scoring changes:
+
+4. Validation
+- pytest:
+- package verify:
+- smoke test:
+- schema recorder:
+- final package:
+- tarball contents:
+
+5. Upload readiness
+- Ready for Kaggle upload/re-upload: yes/no
+- Upload file:
+- If no, blockers:
+
+6. Manual git notes
+- Files changed that I should review:
+- Files that should not be committed:
+- Large/generated files ignored:
+
+7. Recommended next action
+- One sentence only.
