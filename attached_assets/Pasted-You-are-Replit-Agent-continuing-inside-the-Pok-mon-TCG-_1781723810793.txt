@@ -1,0 +1,186 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+I have updated the Replit Secret KAGGLE_KEY with a new key from Kaggle. Retry Kaggle auth and upload.
+
+Important:
+- Do not push to GitHub.
+- Do not modify main.py or deck.csv unless the package is invalid.
+- Do not print Kaggle credentials.
+- Do not print kaggle.json contents.
+- Do not commit credentials.
+- Do not write credentials into tracked files.
+- Use Replit Secrets / environment variables only.
+- Submit exactly once, and only after auth + package verification pass.
+
+Known-ready upload file:
+
+data/submissions/submission.tar.gz
+
+Competition slug:
+
+pokemon-tcg-ai-battle
+
+Expected Replit Secrets:
+
+KAGGLE_USERNAME
+KAGGLE_KEY
+
+Step 1 — Verify package still ready
+
+Run:
+
+python scripts/package_submission.py --verify-only
+tar -tzf data/submissions/submission.tar.gz
+ls -lh data/submissions/submission.tar.gz
+
+Confirm tarball contains exactly:
+
+main.py
+deck.csv
+
+If package verification fails, stop and report. Do not upload.
+
+Step 2 — Validate new secret shape without revealing values
+
+Run:
+
+python - <<'PY'
+import os, re
+u = os.environ.get("KAGGLE_USERNAME", "")
+k = os.environ.get("KAGGLE_KEY", "")
+print("KAGGLE_USERNAME present:", bool(u))
+print("username length:", len(u))
+print("username looks like email:", "@" in u)
+print("KAGGLE_KEY present:", bool(k))
+print("key length:", len(k))
+print("key has surrounding whitespace:", k != k.strip())
+print("key contains whitespace:", bool(re.search(r"\\s", k)))
+print("key contains underscore:", "_" in k)
+print("key is 32 lowercase hex:", bool(re.fullmatch(r"[0-9a-f]{32}", k.strip())))
+PY
+
+If key is not exactly 32 lowercase hex, stop and report:
+
+The KAGGLE_KEY still does not look like a legacy Kaggle API key. It should be the exact 32-character lowercase hex "key" value from the downloaded kaggle.json file.
+
+Step 3 — Rewrite ~/.kaggle/kaggle.json from current Replit Secrets
+
+Run:
+
+rm -rf ~/.kaggle
+mkdir -p ~/.kaggle
+python - <<'PY'
+import os, json, pathlib, re
+u = os.environ.get("KAGGLE_USERNAME", "").strip()
+k = os.environ.get("KAGGLE_KEY", "").strip().strip('"').strip("'")
+if not u or not k:
+    raise SystemExit("Missing KAGGLE_USERNAME or KAGGLE_KEY")
+if not re.fullmatch(r"[0-9a-f]{32}", k):
+    raise SystemExit("KAGGLE_KEY is not a 32-character lowercase hex legacy API key")
+p = pathlib.Path.home() / ".kaggle" / "kaggle.json"
+p.write_text(json.dumps({"username": u, "key": k}))
+print("wrote kaggle.json with username/key lengths:", len(u), len(k))
+PY
+chmod 600 ~/.kaggle/kaggle.json
+
+Then verify without printing contents:
+
+python - <<'PY'
+import json, pathlib, stat
+p = pathlib.Path.home() / ".kaggle" / "kaggle.json"
+data = json.loads(p.read_text())
+mode = oct(p.stat().st_mode & 0o777)
+print("kaggle.json present:", p.exists())
+print("permissions:", mode)
+print("username present:", bool(data.get("username")))
+print("key present:", bool(data.get("key")))
+print("username length:", len(data.get("username","")))
+print("key length:", len(data.get("key","")))
+PY
+
+Step 4 — Ensure classic Kaggle CLI
+
+Run:
+
+python -m pip install --force-reinstall "kaggle==1.6.17"
+kaggle --version || python -m kaggle --version || true
+
+Step 5 — Auth checks
+
+Run:
+
+mkdir -p data/kaggle_uploads
+
+kaggle config view 2>&1 | tee data/kaggle_uploads/auth_config_view_retry.log
+
+kaggle competitions list -s "pokemon" 2>&1 | tee data/kaggle_uploads/auth_competitions_list_retry.log
+
+kaggle competitions files pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/auth_competition_files_retry.log
+
+Interpretation:
+- If competitions list fails with 401, auth is still broken. Stop and report.
+- If competitions list works but competition files fails with 403/rules, stop and tell me to accept/join competition rules manually in browser.
+- If competition files works, proceed to upload.
+- If competition files fails with a non-auth/non-rules error, report exact error and stop.
+
+Step 6 — Submit exactly once
+
+Only if auth/access checks pass, run exactly one submit command:
+
+kaggle competitions submit pokemon-tcg-ai-battle -f data/submissions/submission.tar.gz -m "v0 smoke-passing baseline" 2>&1 | tee data/kaggle_uploads/v0_submit_retry.log
+
+Do not run another submit command.
+
+Step 7 — Fetch submission status
+
+Run:
+
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/submissions_after_v0_retry.log
+
+Also try:
+
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/submissions_after_v0_retry.csv
+
+Step 8 — Final report format
+
+Report back exactly in this format:
+
+Kaggle Upload Retry Report
+
+1. Package status
+- package verify:
+- tarball contents:
+- upload file size:
+
+2. Secret/auth shape
+- KAGGLE_USERNAME present:
+- username length:
+- username looked like email:
+- KAGGLE_KEY present:
+- key length:
+- key is 32 lowercase hex:
+- ~/.kaggle/kaggle.json written:
+- permissions:
+
+3. Auth checks
+- kaggle CLI version:
+- config view:
+- competitions list:
+- competition files:
+- interpretation:
+
+4. Upload
+- upload attempted: yes/no
+- submit log path:
+- raw submit result summary:
+
+5. Submission status
+- status command succeeded:
+- latest submission status:
+- score/rating if available:
+- error if any:
+- logs saved at:
+
+6. Next action
+- If validation passed/queued: say "Wait for Kaggle validation/episodes, then fetch submissions again."
+- If error: classify the error and recommend the next fix.
