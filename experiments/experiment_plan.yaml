@@ -1,0 +1,47 @@
+# Experiment plan — HAND-EDITABLE control surface for the strategy lab.
+#
+# This is the file you edit to steer the lab. Change priorities to test ideas
+# earlier, flip submission switches, or queue specific candidates. The lab
+# scripts read this file; they never rewrite your priorities (only the
+# submission_queue.candidates list may be appended to by queue_submissions).
+
+settings:
+  # Local evaluation budget.
+  max_local_games_per_candidate: 20   # games per candidate per batch run
+  max_candidates_per_batch: 12        # cap on how many candidates a batch runs
+
+  # Kaggle submission safety (ALL must align before any upload happens).
+  kaggle_daily_submission_limit: 3    # competition cap; configurable (limits change)
+  auto_submit_enabled: false          # MUST be true before any upload automation runs
+  require_manual_approval_for_submit: true  # protects against accidental submissions
+  submission_message_template: "{branch_id}: {hypothesis}"
+
+  # The immutable control every candidate is compared against.
+  current_control_baseline: v1_kaggle_349_8
+
+# Higher priority => generated/tested earlier. These override (per-seam) the
+# default_priority values in strategy_seams.yaml. Add or change freely.
+priorities:
+  deck.energy_trim: 90
+  deck.consistency_engine: 85
+  policy.attack_priority: 80
+  policy.pass_avoidance: 78
+  policy.evolution_priority: 75
+  policy.search_targeting: 72
+  policy.energy_priority: 71
+  archetype.linear_aggro: 70
+  archetype.baseline_exploit: 68
+  archetype.setup_evolution: 65
+  archetype.consistency_engine: 60
+  deck.attacker_focus: 55
+  policy.bench_pressure: 50
+  archetype.disruption_lite: 45
+  archetype.toolbox: 30
+
+# Submission queue. `candidates` is filled by `scripts/queue_submissions.py`
+# from the latest ranking, respecting max_per_day. With auto_submit_enabled
+# false (the default) nothing is ever uploaded — queueing is dry-run only.
+submission_queue:
+  enabled: true
+  max_per_day: 3
+  candidates: []

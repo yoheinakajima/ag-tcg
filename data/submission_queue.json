@@ -1,0 +1,41 @@
+{
+  "auto_submit_enabled": false,
+  "require_manual_approval_for_submit": true,
+  "kaggle_daily_submission_limit": 3,
+  "max_per_day": 3,
+  "queue_enabled": true,
+  "will_upload": false,
+  "mode": "DRY-RUN",
+  "candidates": [
+    {
+      "branch_id": "policy_evolution_bias",
+      "rank": 1,
+      "score": 719.312,
+      "run_dir": "/home/runner/workspace/experiments/runs/20260617_205332_05_policy_evolution_bias",
+      "tarball": "/home/runner/workspace/experiments/runs/20260617_205332_05_policy_evolution_bias/submission.tar.gz",
+      "package_error": null,
+      "message": "policy_evolution_bias: policy.evolution_priority",
+      "kaggle_command": "python .pythonlibs/bin/kaggle competitions submit -c pokemon-tcg-ai-battle -f /home/runner/workspace/experiments/runs/20260617_205332_05_policy_evolution_bias/submission.tar.gz -m 'policy_evolution_bias: policy.evolution_priority'"
+    },
+    {
+      "branch_id": "deck_baseline_consistency",
+      "rank": 2,
+      "score": 704.173,
+      "run_dir": "/home/runner/workspace/experiments/runs/20260617_205332_02_deck_baseline_consistency",
+      "tarball": "/home/runner/workspace/experiments/runs/20260617_205332_02_deck_baseline_consistency/submission.tar.gz",
+      "package_error": null,
+      "message": "deck_baseline_consistency: deck.consistency_engine",
+      "kaggle_command": "python .pythonlibs/bin/kaggle competitions submit -c pokemon-tcg-ai-battle -f /home/runner/workspace/experiments/runs/20260617_205332_02_deck_baseline_consistency/submission.tar.gz -m 'deck_baseline_consistency: deck.consistency_engine'"
+    },
+    {
+      "branch_id": "deck_energy_trim_medium",
+      "rank": 3,
+      "score": 651.622,
+      "run_dir": "/home/runner/workspace/experiments/runs/20260617_205332_01_deck_energy_trim_medium",
+      "tarball": "/home/runner/workspace/experiments/runs/20260617_205332_01_deck_energy_trim_medium/submission.tar.gz",
+      "package_error": null,
+      "message": "deck_energy_trim_medium: deck.energy_trim",
+      "kaggle_command": "python .pythonlibs/bin/kaggle competitions submit -c pokemon-tcg-ai-battle -f /home/runner/workspace/experiments/runs/20260617_205332_01_deck_energy_trim_medium/submission.tar.gz -m 'deck_energy_trim_medium: deck.energy_trim'"
+    }
+  ]
+}

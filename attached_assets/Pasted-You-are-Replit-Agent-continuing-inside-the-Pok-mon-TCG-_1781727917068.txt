@@ -1,0 +1,786 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub. I will handle git manually.
+- Do not overwrite the working Kaggle baseline.
+- Do not auto-submit anything to Kaggle unless explicitly enabled by config.
+- Do not print or commit Kaggle credentials.
+- Do not commit official Kaggle card CSV/PDF data unless already tracked intentionally.
+- Keep `main.py` stdlib-only and self-contained.
+- Preserve the current working baseline as v1.
+
+Current status:
+- We have a working rated Kaggle baseline.
+- Public score / rating: 349.8.
+- Current submission passed validation and ran episodes.
+- `data/submissions/submission.tar.gz` is valid.
+- Tarball contains only top-level `main.py` and `deck.csv`.
+- `main.py` handles `select=None` by returning the 60-card deck.
+- Local smoke test passes.
+- Current policy is still simple structured heuristic.
+- Current deck is a known-valid cabt/baseline deck, apparently with a Snover → Mega Abomasnow ex line, but you must confirm card identities from available card metadata rather than assume.
+
+Goal of this pass:
+
+Build the first real ActiveGraph strategy lab around the working baseline.
+
+The objective is not to pick one strategy manually. The objective is to create a transparent experiment factory that can:
+1. enumerate many strategy/deck/policy seams,
+2. generate candidate experiment branches,
+3. run local cabt evaluations,
+4. record every idea/test/result into ActiveGraph events,
+5. rank candidates for optimization,
+6. queue at most N Kaggle submissions per day,
+7. generate a browsable HTML/Markdown report showing the full ideation/test/promotion lineage.
+
+This should become the evidence base for the Strategy Category report.
+
+Treat the current Kaggle-scoring baseline as the immutable control.
+
+Do not focus on making the strongest agent in this single pass. Focus on building the system that lets us test many strategies safely and document everything.
+
+---
+
+High-level architecture to build
+
+Create an ActiveGraph-backed experiment loop:
+
+Idea → Hypothesis → Branch → Deck/Policy Variant → Local Evaluation → Metrics → Regime Classification → Promotion Candidate → Submission Queue → Kaggle Result → Report
+
+Every step should emit events.
+
+The core idea:
+
+- `main.py` remains the submitted runtime.
+- The lab code generates candidate `main.py`/`deck.csv` pairs in isolated run directories.
+- Local evaluations compare candidates against the current baseline and other branches.
+- Only promoted candidates become submission packages.
+- Kaggle upload automation exists but is disabled by default unless config explicitly enables it.
+- All experiments are inspectable through markdown/HTML.
+
+---
+
+First, preserve current working baseline
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+python scripts/package_submission.py
+tar -tzf data/submissions/submission.tar.gz
+
+Then create a named baseline archive:
+
+mkdir -p data/baselines/v1_kaggle_349_8
+cp main.py data/baselines/v1_kaggle_349_8/main.py
+cp deck.csv data/baselines/v1_kaggle_349_8/deck.csv
+cp data/submissions/submission.tar.gz data/baselines/v1_kaggle_349_8/submission.tar.gz
+
+Write metadata:
+
+cat > data/baselines/v1_kaggle_349_8/README.md <<'EOF'
+# v1 Kaggle baseline
+
+Status:
+- Kaggle validation passed
+- Public score/rating: 349.8
+- Local package verification passed
+- Local cabt smoke test passed
+- Runtime handles select=None deck request
+- Submission tarball contains only main.py and deck.csv
+
+This is the immutable control baseline for future ActiveGraph experiments.
+EOF
+
+Also emit an ActiveGraph event if the event store exists:
+- event_type: KaggleScoreUpdated
+- policy_version: v1
+- deck_version: v1
+- payload: score 349.8, status "passed_validation_and_scored"
+
+If the existing event API is awkward, add a small CLI helper to append this event.
+
+---
+
+Inspect current repo and available data
+
+Run:
+
+find . -maxdepth 4 -type f | sort | head -300
+ls -la data || true
+ls -la data/cards || true
+ls -la data/decks || true
+ls -la src/ptcg_activegraph || true
+cat docs/CABT_SCHEMA_NOTES.md || true
+cat data/decks/resolved_deck_summary.json || true
+cat deck.meta.json || true
+head -20 deck.csv
+
+Look for:
+- official card CSVs
+- deck summaries
+- schema examples
+- event store
+- existing tournament/self-play scripts
+- existing report generator
+- existing package builder
+
+Do not require official card CSV if missing. Degrade gracefully.
+
+---
+
+ActiveGraph Labs inspiration
+
+Look for an `activegraph-labs` repo or directory locally:
+
+find .. -maxdepth 3 -iname '*activegraph*' -o -iname '*activegraph-labs*' 2>/dev/null | sort
+
+If a local `activegraph-labs` repo exists, inspect only:
+- README
+- docs
+- examples
+- package structure
+- event/graph/report conventions
+
+Do not vendor or copy large code blindly.
+Do not block if it is absent.
+
+If absent, proceed with the existing ActiveGraph-style JSONL event system already in this repo.
+
+Document any useful inspiration in:
+
+docs/ACTIVEGRAPH_LABS_NOTES.md
+
+Keep it concise.
+
+---
+
+Build or extend the strategy seam taxonomy
+
+Create:
+
+docs/STRATEGY_SEAMS.md
+
+This should be a serious planning document and machine-readable roadmap.
+
+Include these top-level seam families:
+
+1. Deck construction seams
+- energy count
+- basic Pokémon count
+- attacker package
+- evolution package
+- draw/search density
+- supporter/item/stadium mix
+- trainer complexity
+- type/color consistency
+- prize liability
+- recovery cards
+- disruption cards
+- bench pressure cards
+- retreat/switch cards
+- anti-baseline techs
+- bot-playability / branching complexity
+
+2. Policy seams
+- attack priority
+- energy attachment priority
+- evolution priority
+- benching rules
+- active promotion after KO
+- retreat/switch rules
+- card search target selection
+- draw/search sequencing
+- supporter timing
+- item timing
+- pass/end avoidance
+- multi-select behavior
+- target selection
+- hidden-information assumptions
+- fallback behavior
+
+3. Strategy archetype seams
+- linear aggro
+- consistency engine
+- big basic / ex beatdown
+- setup evolution deck
+- single-prize prize-trade deck
+- disruption-lite
+- baseline/mirror exploit
+- anti-meta counterdeck
+- time-pressure/simple-turn deck
+- higher-ceiling research deck
+
+4. Evaluation seams
+- self-play vs baseline
+- first-player vs second-player split
+- seed sweep
+- mirror match
+- generated deck matrix
+- timeout rate
+- validation safety
+- decision entropy
+- first meaningful attack turn
+- prize curve
+- fallback count
+- pass/end rate
+- attack rate
+- game length
+- local win rate
+- Kaggle rating delta
+
+5. Reporting seams
+- hypothesis
+- branch lineage
+- deck diff
+- policy diff
+- local metrics
+- failures/regimes
+- promotion/rejection decision
+- Kaggle score after upload
+- lessons learned
+
+Also create a machine-readable config:
+
+experiments/strategy_seams.yaml
+
+It should list seam IDs, descriptions, default priority, expected risk, required data, and whether each seam can be tested now.
+
+Example structure:
+
+seams:
+  - id: deck.energy_trim
+    family: deck_construction
+    description: Reduce excess energy cards and replace with consistency cards.
+    default_priority: 90
+    risk: medium
+    requires:
+      - official_card_csv
+    enabled: true
+  - id: policy.attack_priority
+    family: policy
+    description: Increase preference for confirmed attack option type 13.
+    default_priority: 80
+    risk: low
+    requires:
+      - cabt_schema
+    enabled: true
+
+---
+
+Create experiment config and queue
+
+Create:
+
+experiments/experiment_plan.yaml
+
+This is where I can change priorities later.
+
+It should support:
+
+settings:
+  max_local_games_per_candidate: 20
+  max_candidates_per_batch: 12
+  kaggle_daily_submission_limit: 3
+  auto_submit_enabled: false
+  require_manual_approval_for_submit: true
+  current_control_baseline: v1_kaggle_349_8
+
+priorities:
+  deck.energy_trim: 90
+  deck.consistency_engine: 85
+  policy.attack_priority: 80
+  policy.pass_avoidance: 78
+  policy.evolution_priority: 75
+  policy.search_targeting: 72
+  archetype.linear_aggro: 70
+  archetype.baseline_exploit: 68
+  archetype.setup_evolution: 65
+  archetype.disruption_lite: 45
+  archetype.toolbox: 30
+
+submission_queue:
+  enabled: true
+  max_per_day: 3
+  candidates: []
+
+Make this easy for me to edit by hand.
+
+Add comments explaining:
+- higher priority gets tested earlier
+- auto_submit_enabled must be true before any Kaggle upload automation runs
+- require_manual_approval_for_submit protects against accidental submissions
+- max_per_day should be configurable because competition limits can change
+
+---
+
+Implement ActiveGraph event extensions
+
+Extend existing event types if needed.
+
+Add support for these events:
+
+- BaselineRegistered
+- IdeaGenerated
+- HypothesisRegistered
+- StrategySeamSelected
+- ExperimentBranchCreated
+- DeckVariantCreated
+- PolicyVariantCreated
+- LocalEvaluationStarted
+- LocalEvaluationFinished
+- MatchBatchStarted
+- MatchBatchFinished
+- MetricsComputed
+- FailureRegimeTagged
+- CandidateRanked
+- CandidatePromoted
+- CandidateRejected
+- SubmissionQueued
+- SubmissionPackaged
+- SubmissionUploaded
+- KaggleScoreUpdated
+- ReportSiteGenerated
+
+Keep JSONL as the source of truth.
+
+Store events under existing ActiveGraph event path if one exists. If not, use:
+
+data/activegraph/events.jsonl
+
+Add helper script:
+
+scripts/ag_event.py
+
+Usage examples:
+python scripts/ag_event.py append --type BaselineRegistered --payload '{"name":"v1_kaggle_349_8","score":349.8}'
+python scripts/ag_event.py list --limit 20
+python scripts/ag_event.py summary
+
+Do not break existing event store tests.
+
+Add tests for basic append/list/summary if easy.
+
+---
+
+Build experiment branch directories
+
+Create a directory convention:
+
+experiments/runs/
+  YYYYMMDD_HHMMSS_branch_id/
+    branch.yaml
+    main.py
+    deck.csv
+    metrics.json
+    events.jsonl
+    report.md
+    submission.tar.gz optional
+
+Implement:
+
+src/ptcg_activegraph/experiments/
+  __init__.py
+  config.py
+  branch.py
+  generator.py
+  runner.py
+  metrics.py
+  ranker.py
+  queue.py
+
+If this is too much, keep modules simple and focus on working scripts.
+
+Create scripts:
+
+scripts/plan_experiments.py
+scripts/generate_candidates.py
+scripts/run_experiment_batch.py
+scripts/rank_candidates.py
+scripts/queue_submissions.py
+scripts/build_report_site.py
+
+Every script should have --help.
+
+---
+
+Candidate generation
+
+Build candidate generation in two tracks:
+
+A. Policy-only candidates
+These are safest because they do not require official card CSV.
+
+Generate candidate `main.py` variants from current baseline by editing constants/config inside a controlled template or by writing variant metadata if direct mutation is too risky.
+
+Initial policy candidates:
+1. attack_heavy
+- type 13 attack score increased
+- type 14 pass penalty increased
+2. pass_avoidant
+- stronger pass/end avoidance
+- only choose pass-like option if no non-pass option exists
+3. evolution_bias
+- if string/option suggests evolve/evolution, increase score
+4. energy_bias
+- stronger attach/energy preference before attack only if attack not available
+5. draw_search_bias
+- stronger draw/search/supporter/item preference
+6. conservative_baseline
+- current v1 exact copy
+
+Each candidate must preserve:
+- stdlib-only main.py
+- deck-return behavior on select=None
+- index validation
+- no imports from src
+- package shape
+
+B. Deck candidates
+Only generate deck variants if card metadata is available.
+
+Use current deck as baseline.
+Use official card CSV or cabt card data if available.
+Do not invent card IDs.
+
+Initial deck candidates:
+1. energy_trim_light
+- reduce energy count moderately
+- replace with simple draw/search/consistency trainers if identifiable
+2. energy_trim_medium
+- more aggressive energy reduction
+3. baseline_consistency
+- increase draw/search trainers
+4. attacker_focus
+- increase confirmed main attacker/evolution counts if legal and identifiable
+5. abomasnow_line_focus
+- only if CardDB confirms Snover / Mega Abomasnow ex line
+6. anti_baseline
+- only if metadata identifies clear counters; otherwise create placeholder experiment marked "not testable yet"
+
+If deck legality constraints beyond 60 cards are not fully known, be conservative:
+- exactly 60 cards
+- integer IDs
+- do not exceed obvious 4-copy limit for non-energy if metadata can identify energy
+- allow more copies only for basic energy if identifiable
+- package verify must pass
+- smoke test must pass before candidate can be ranked
+
+If metadata is missing, create only policy candidates and report deck candidates as blocked.
+
+---
+
+Local evaluation runner
+
+Implement a local evaluation runner using cabt.
+
+Minimum viable:
+- compare each candidate against v1 baseline
+- run N games, configurable
+- collect:
+  - games attempted
+  - games completed
+  - wins/losses/draws if detectable
+  - crashes/errors/timeouts
+  - average steps
+  - max steps
+  - attack option chosen count if instrumentable
+  - pass-like option chosen count if instrumentable
+  - fallback count if instrumentable
+  - first attack turn if detectable
+  - decision option count average
+  - package verify status
+  - smoke status
+
+If win/loss is hard to parse, at least capture environment statuses/rewards/logs and mark incomplete.
+
+Do not let a failed candidate crash the whole batch.
+Each candidate gets its own result file.
+
+Commands:
+
+python scripts/generate_candidates.py --plan experiments/experiment_plan.yaml
+python scripts/run_experiment_batch.py --games 20 --control data/baselines/v1_kaggle_349_8
+python scripts/rank_candidates.py
+
+Ranking should be transparent, not magical.
+
+Initial scoring formula:
+- hard reject if package verify fails
+- hard reject if smoke fails
+- hard reject if crash/error/timeout > 0
+- prefer higher win rate if known
+- prefer longer real games if loss status unknown but game does not crash
+- prefer lower pass-like rate
+- prefer higher attack rate
+- prefer lower fallback count
+- prefer lower decision entropy for deck variants
+- add diversity bonus so top candidates are not all the same seam
+
+Save ranking to:
+
+data/experiments/latest_ranking.json
+data/experiments/latest_ranking.md
+
+Emit ActiveGraph events.
+
+---
+
+Submission queue and optional automation
+
+Build, but do not enable by default.
+
+Create:
+
+scripts/submit_queue.py
+
+Behavior:
+- reads experiments/experiment_plan.yaml
+- reads data/experiments/latest_ranking.json
+- queues top candidates into experiments/experiment_plan.yaml or data/submission_queue.json
+- packages queued candidate tarballs
+- checks Kaggle daily submission count if CLI/auth available
+- respects max_per_day from config
+- if auto_submit_enabled is false, dry-run only
+- if require_manual_approval_for_submit is true, dry-run only and print exact command
+- if both auto_submit_enabled true and require_manual_approval_for_submit false, may submit up to max_per_day
+- never submit candidates that did not pass package verify + smoke
+
+Add:
+
+scripts/fetch_kaggle_status.py
+
+Behavior:
+- fetches Kaggle submissions
+- records statuses/scores into ActiveGraph
+- updates data/kaggle_uploads/status_latest.csv/json
+- does not submit
+
+Add config keys:
+- auto_submit_enabled: false
+- require_manual_approval_for_submit: true
+- kaggle_daily_submission_limit: 3
+- submission_message_template: "{branch_id}: {hypothesis}"
+
+Do not create a background job unless Replit has a clear supported scheduler. If it does, create documentation only:
+docs/AUTOSUBMIT_SCHEDULE.md
+
+Explain how to enable it safely, but keep it disabled by default.
+
+---
+
+Transparent report website
+
+Build a static report site generator.
+
+Create:
+
+data/site/index.html
+data/site/experiments.html
+data/site/seams.html
+data/site/candidates.html
+data/site/submissions.html
+data/site/events.html
+data/site/style.css
+
+Or a single-page HTML if faster.
+
+Script:
+
+python scripts/build_report_site.py
+
+The site should show:
+- current baseline score 349.8
+- baseline deck summary
+- strategy seam taxonomy
+- experiment plan priorities
+- candidate branches
+- each branch hypothesis
+- deck diff if any
+- policy diff if any
+- local evaluation metrics
+- promotion/rejection status
+- Kaggle submissions and scores
+- ActiveGraph event timeline
+- next recommended experiments
+
+Also generate markdown:
+
+data/reports/activegraph_strategy_report.md
+
+This should be suitable as a living draft for the Strategy Category.
+
+Add Make targets:
+
+make ag-summary
+make plan-experiments
+make generate-candidates
+make run-experiments
+make rank-candidates
+make report-site
+make queue-submissions
+make fetch-kaggle-status
+
+If Makefile already exists, extend it.
+
+---
+
+Initial batch to run in this pass
+
+After building the system, run a small first batch.
+
+Use small numbers to keep runtime reasonable:
+
+1. Generate candidates.
+2. Run at least 5 games per candidate if cabt can handle it quickly.
+3. Rank candidates.
+4. Build report site.
+5. Do not submit new candidates to Kaggle yet.
+
+Commands should be approximately:
+
+python scripts/plan_experiments.py
+python scripts/generate_candidates.py --limit 8
+python scripts/run_experiment_batch.py --games 5
+python scripts/rank_candidates.py
+python scripts/build_report_site.py
+python scripts/queue_submissions.py --dry-run
+
+If any command names differ, use your implemented names and report them.
+
+---
+
+Testing
+
+Add/update tests for:
+- experiment config loading
+- seam YAML parsing
+- candidate generation does not mutate v1 baseline
+- generated candidate has main.py and deck.csv
+- generated candidate package verifies if applicable
+- ranker hard-rejects failed smoke/package candidates
+- queue respects max_per_day and dry-run default
+- report site generation works with empty and non-empty data
+- ActiveGraph event append/list/summary works
+
+Run:
+
+python -m pytest
+
+Also run:
+
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+
+Make sure the original baseline still works.
+
+---
+
+Promotion criteria for future candidates
+
+Document and implement as defaults:
+
+A candidate can be "promotable" only if:
+- tests pass
+- generated candidate package verifies
+- cabt smoke test passes
+- no runtime crashes in local batch
+- no timeout/error in local batch
+- local metrics improve over control or add strategic diversity
+- branch has a hypothesis and report entry
+- submission queue has room under daily limit
+- auto-submit config permits it
+
+Do not promote purely on one lucky game.
+
+---
+
+What to avoid
+
+- Do not upload another Kaggle submission in this pass.
+- Do not enable auto-submit in this pass.
+- Do not change root `main.py`/`deck.csv` unless explicitly creating a candidate or preserving baseline.
+- Do not overfit to one schema field unless examples confirm it.
+- Do not hardcode Snover/Abomasnow strategy unless card metadata confirms those card IDs.
+- Do not invent card IDs.
+- Do not add live LLM calls.
+- Do not add heavyweight dependencies to submitted runtime.
+- Do not break the existing working tarball.
+
+---
+
+Final report format
+
+Report exactly in this format:
+
+ActiveGraph Strategy Lab Build Report
+
+1. Baseline preservation
+- v1 baseline archived: yes/no
+- baseline path:
+- Kaggle score recorded:
+- root submission still valid: yes/no
+
+2. ActiveGraph implementation
+- event store path:
+- new event types added:
+- helper scripts added:
+- events emitted this pass:
+
+3. Strategy seams
+- docs/STRATEGY_SEAMS.md created: yes/no
+- experiments/strategy_seams.yaml created: yes/no
+- number of seam families:
+- number of seam IDs:
+- blocked seams and why:
+
+4. Experiment system
+- experiment config path:
+- candidate generator: implemented/not implemented
+- local runner: implemented/not implemented
+- ranker: implemented/not implemented
+- submission queue: implemented/not implemented
+- auto-submit default: enabled/disabled
+- manual priority editing path:
+
+5. First candidate batch
+- candidates generated:
+- candidates evaluated:
+- games per candidate:
+- top 5 candidates:
+  1.
+  2.
+  3.
+  4.
+  5.
+- candidates rejected and why:
+- candidates promotable: yes/no
+
+6. Report website
+- static site generated: yes/no
+- site path:
+- markdown report path:
+- what the site shows:
+
+7. Validation
+- pytest:
+- baseline package verify:
+- baseline smoke test:
+- candidate smoke/package checks:
+- errors or limitations:
+
+8. Submission guidance
+- should we submit a new candidate now: yes/no
+- if yes, candidate ID:
+- if no, reason:
+- queue dry-run output path:
+- Kaggle auto-submit enabled: yes/no
+
+9. Manual git notes
+- files I should review:
+- files not to commit:
+- generated/ignored files:
+
+10. Next recommended Replit prompt
+- Provide one concise next prompt for the next pass.

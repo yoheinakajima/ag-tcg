@@ -1,0 +1,225 @@
+# Strategy seam taxonomy (machine-readable).
+#
+# A "seam" is a place where the agent/deck can be varied to produce a testable
+# experiment branch. Each seam declares:
+#   id               unique dotted id (family.short_name)
+#   family           one of: deck_construction | policy | archetype | evaluation | reporting
+#   description      one-line human summary
+#   default_priority 0..100 (higher = tested earlier)
+#   risk             low | medium | high (chance of breaking package/smoke)
+#   requires         data/capabilities needed before it can be tested
+#   enabled          whether the lab may generate candidates for it now
+#
+# "requires" tokens understood by the lab:
+#   cabt_schema        the recorded cabt option schema (always present here)
+#   official_card_csv  data/cards/EN_Card_Data.csv (present -> deck seams testable)
+#   none               nothing beyond the baseline runtime
+#
+# Edit `enabled` / `default_priority` freely; the generator and planner read this.
+
+seams:
+  # ----------------------------- deck construction ------------------------
+  - id: deck.energy_trim
+    family: deck_construction
+    description: Reduce excess basic-energy count, add consistency/search trainers.
+    default_priority: 90
+    risk: medium
+    requires: [official_card_csv]
+    enabled: true
+  - id: deck.consistency_engine
+    family: deck_construction
+    description: Maximise draw/search trainer density for steadier setup.
+    default_priority: 85
+    risk: medium
+    requires: [official_card_csv]
+    enabled: true
+  - id: deck.attacker_focus
+    family: deck_construction
+    description: Increase confirmed attacker/evolution counts within legality.
+    default_priority: 70
+    risk: medium
+    requires: [official_card_csv]
+    enabled: true
+  - id: deck.abomasnow_line_focus
+    family: deck_construction
+    description: Lean into a Snover -> Mega Abomasnow ex line.
+    default_priority: 60
+    risk: high
+    requires: [official_card_csv, abomasnow_cards_confirmed]
+    enabled: false
+  - id: deck.anti_baseline
+    family: deck_construction
+    description: Tech specifically against the mirror/baseline deck.
+    default_priority: 40
+    risk: high
+    requires: [official_card_csv, meta_counters_identified]
+    enabled: false
+  - id: deck.prize_liability
+    family: deck_construction
+    description: Lower single-prize liability / improve prize trade math.
+    default_priority: 45
+    risk: high
+    requires: [official_card_csv, prize_values_identified]
+    enabled: false
+  - id: deck.recovery_package
+    family: deck_construction
+    description: Add recovery/recycle cards for late-game grind.
+    default_priority: 42
+    risk: high
+    requires: [official_card_csv, recovery_cards_identified]
+    enabled: false
+
+  # --------------------------------- policy -------------------------------
+  - id: policy.attack_priority
+    family: policy
+    description: Increase preference for confirmed attack option type 13.
+    default_priority: 80
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+  - id: policy.pass_avoidance
+    family: policy
+    description: Strengthen penalty on pass/end (type 14) options.
+    default_priority: 78
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+  - id: policy.evolution_priority
+    family: policy
+    description: Bias toward evolve/evolution-flavoured options.
+    default_priority: 75
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+  - id: policy.energy_priority
+    family: policy
+    description: Bias toward attach/energy options when no attack available.
+    default_priority: 72
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+  - id: policy.search_targeting
+    family: policy
+    description: Bias toward draw/search/supporter/item options.
+    default_priority: 72
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+  - id: policy.bench_pressure
+    family: policy
+    description: Favour benching/placement (type 8) for board development.
+    default_priority: 50
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+
+  # ------------------------------- archetype ------------------------------
+  - id: archetype.linear_aggro
+    family: archetype
+    description: Attack-first, low-decision aggressive line.
+    default_priority: 70
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+  - id: archetype.baseline_exploit
+    family: archetype
+    description: Exact v1 control copy used as the diversity anchor.
+    default_priority: 68
+    risk: low
+    requires: [none]
+    enabled: true
+  - id: archetype.setup_evolution
+    family: archetype
+    description: Prioritise evolution + energy setup before attacking.
+    default_priority: 65
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+  - id: archetype.consistency_engine
+    family: archetype
+    description: Draw/search heavy line that values steady card flow.
+    default_priority: 60
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+  - id: archetype.disruption_lite
+    family: archetype
+    description: Light disruption tilt (needs disruption cards/options).
+    default_priority: 45
+    risk: high
+    requires: [disruption_cards_identified]
+    enabled: false
+  - id: archetype.toolbox
+    family: archetype
+    description: Flexible multi-attacker toolbox (needs many attackers).
+    default_priority: 30
+    risk: high
+    requires: [official_card_csv, toolbox_cards_identified]
+    enabled: false
+
+  # ------------------------------ evaluation ------------------------------
+  - id: eval.vs_baseline
+    family: evaluation
+    description: Candidate vs immutable v1 control, both seatings.
+    default_priority: 95
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+  - id: eval.seat_split
+    family: evaluation
+    description: Track first-player vs second-player win split.
+    default_priority: 80
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+  - id: eval.seed_sweep
+    family: evaluation
+    description: Repeat games to estimate variance, not one lucky game.
+    default_priority: 75
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+  - id: eval.timeout_safety
+    family: evaluation
+    description: Track crash/error/timeout rate as a hard gate.
+    default_priority: 90
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+  - id: eval.decision_metrics
+    family: evaluation
+    description: Attack rate, pass rate, fallback count, game length, entropy.
+    default_priority: 70
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
+
+  # ------------------------------- reporting ------------------------------
+  - id: report.lineage
+    family: reporting
+    description: Idea -> hypothesis -> branch -> metrics -> decision lineage.
+    default_priority: 85
+    risk: low
+    requires: [none]
+    enabled: true
+  - id: report.deck_diff
+    family: reporting
+    description: Show deck composition diff vs control.
+    default_priority: 70
+    risk: low
+    requires: [none]
+    enabled: true
+  - id: report.policy_diff
+    family: reporting
+    description: Show policy constant diff vs control.
+    default_priority: 70
+    risk: low
+    requires: [none]
+    enabled: true
+  - id: report.kaggle_results
+    family: reporting
+    description: Show Kaggle submission statuses and scores once uploaded.
+    default_priority: 65
+    risk: low
+    requires: [none]
+    enabled: true

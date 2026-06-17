@@ -42,6 +42,28 @@ class EventType(str, Enum):
     SubmissionPackaged = "SubmissionPackaged"
     ReportGenerated = "ReportGenerated"
 
+    # --- ActiveGraph strategy-lab event types -----------------------------
+    BaselineRegistered = "BaselineRegistered"
+    IdeaGenerated = "IdeaGenerated"
+    HypothesisRegistered = "HypothesisRegistered"
+    StrategySeamSelected = "StrategySeamSelected"
+    ExperimentBranchCreated = "ExperimentBranchCreated"
+    DeckVariantCreated = "DeckVariantCreated"
+    PolicyVariantCreated = "PolicyVariantCreated"
+    LocalEvaluationStarted = "LocalEvaluationStarted"
+    LocalEvaluationFinished = "LocalEvaluationFinished"
+    MatchBatchStarted = "MatchBatchStarted"
+    MatchBatchFinished = "MatchBatchFinished"
+    MetricsComputed = "MetricsComputed"
+    FailureRegimeTagged = "FailureRegimeTagged"
+    CandidateRanked = "CandidateRanked"
+    CandidatePromoted = "CandidatePromoted"
+    CandidateRejected = "CandidateRejected"
+    SubmissionQueued = "SubmissionQueued"
+    SubmissionUploaded = "SubmissionUploaded"
+    KaggleScoreUpdated = "KaggleScoreUpdated"
+    ReportSiteGenerated = "ReportSiteGenerated"
+
 
 @dataclass
 class Event:
