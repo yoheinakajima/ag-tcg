@@ -1,0 +1,317 @@
+You are Replit Agent working inside an imported GitHub repo for an ActiveGraph-powered Pokémon TCG AI Battle Challenge Kaggle submission.
+
+Goal:
+
+> Get this repo to the first real Kaggle-valid submission package: valid `deck.csv`, cabt self-play smoke test passing, schema recorded, and `data/submissions/submission.tar.gz` ready to upload.
+
+The repo was already built by Claude Code. Do not redesign the architecture. Prioritize real-environment validation.
+
+---
+
+# Current expected repo state
+
+The repo should already contain:
+
+* `main.py` — self-contained stdlib-only Kaggle runtime agent
+* `agent.py`
+* `deck.csv` — currently likely a placeholder and should be replaced
+* `scripts/resolve_deck.py`
+* `scripts/package_submission.py`
+* `scripts/kaggle_smoke_test.py`
+* `scripts/record_schema.py`
+* `scripts/explain_action.py`
+* `docs/REPLIT_FIRST_RUN.md`
+* `docs/FIRST_KAGGLE_SUBMISSION_CHECKLIST.md`
+* `src/ptcg_activegraph/...`
+* tests
+
+The previous local result was:
+
+* 88 tests passing
+* packaging blocks placeholder deck by default
+* cabt smoke not yet tested because cabt was unavailable
+* deck unresolved because no official Kaggle data/sample deck was present
+
+---
+
+# Absolute priorities
+
+Do these in order:
+
+```text
+1. Confirm repo imports and tests pass.
+2. Install needed Replit/Python dependencies.
+3. Resolve the real deck problem.
+4. Run packaging verification.
+5. Run cabt smoke test.
+6. Record actual cabt schema.
+7. Package final submission.
+8. Report exact upload path and blockers, if any.
+```
+
+The first goal is not a strong bot. The first goal is a valid submission that runs and scores, even low.
+
+---
+
+# Step 1 — Inspect repo and environment
+
+Run:
+
+```bash
+pwd
+ls -la
+find . -maxdepth 3 -type f | sort | head -200
+python --version
+python -m pip --version
+```
+
+Then run tests:
+
+```bash
+python -m pytest
+```
+
+If pytest is missing:
+
+```bash
+python -m pip install -U pip
+python -m pip install pytest
+python -m pytest
+```
+
+---
+
+# Step 2 — Install Kaggle/cabt dependencies
+
+Try:
+
+```bash
+python -m pip install -U pip
+python -m pip install kaggle-environments pytest
+```
+
+Then test cabt availability:
+
+```bash
+python - <<'PY'
+try:
+    import kaggle_environments
+    print("kaggle_environments OK", getattr(kaggle_environments, "__version__", "unknown"))
+    from kaggle_environments import make
+    print("make import OK")
+    try:
+        env = make("cabt")
+        print("cabt make OK")
+    except Exception as e:
+        print("cabt make failed:", type(e).__name__, str(e))
+except Exception as e:
+    print("kaggle_environments import failed:", type(e).__name__, str(e))
+PY
+```
+
+If `cabt` is unavailable from plain `kaggle-environments`, inspect installed package/environment names and search local docs/files. Do not guess. Report exactly what failed.
+
+---
+
+# Step 3 — Resolve real Kaggle data/deck
+
+Check whether official files are already present:
+
+```bash
+find . -iname '*Card*Data*.csv' -o -iname 'EN_Card_Data.csv' -o -iname 'JP_Card_Data.csv' -o -path '*sample_submission*' -o -name 'deck.csv'
+```
+
+Important:
+
+* The current root `deck.csv` may be a placeholder.
+* Do not use placeholder deck for final packaging.
+* We need either:
+
+  * `sample_submission/deck.csv`, or
+  * official `EN_Card_Data.csv`, or
+  * another known-good 60-card deck file from Kaggle data.
+
+If the files are missing, stop and print exact instructions:
+
+```text
+Upload one of these into the Replit workspace:
+- sample_submission/deck.csv
+- data/cards/EN_Card_Data.csv
+- EN_Card_Data.csv
+```
+
+Preferred location:
+
+```text
+data/cards/EN_Card_Data.csv
+sample_submission/deck.csv
+```
+
+Once files exist, run:
+
+```bash
+python scripts/resolve_deck.py
+```
+
+Then inspect:
+
+```bash
+head -20 deck.csv
+wc -l deck.csv
+cat data/decks/resolved_deck_summary.json || true
+cat deck.meta.json || true
+```
+
+If `resolve_deck.py` fails, fix the resolver only if the file is present but parsing/column detection failed. Do not fabricate card IDs.
+
+---
+
+# Step 4 — Verify packaging
+
+Run:
+
+```bash
+python scripts/package_submission.py --verify-only
+```
+
+If it fails:
+
+* If deck placeholder: resolve deck first.
+* If import error: fix `main.py`.
+* If deck invalid: fix deck resolver or deck format.
+* If tar/package nesting issue: fix packaging script.
+
+Then build package:
+
+```bash
+python scripts/package_submission.py
+tar -tzf data/submissions/submission.tar.gz
+```
+
+The tarball must contain exactly top-level:
+
+```text
+main.py
+deck.csv
+```
+
+No nested folder. No docs. No tests. No data directory.
+
+---
+
+# Step 5 — Run cabt smoke test
+
+Run:
+
+```bash
+python scripts/kaggle_smoke_test.py
+```
+
+Expected success condition:
+
+```text
+PASS
+```
+
+If it fails, fix in this priority order:
+
+```text
+1. cabt/kaggle environment import/config issue
+2. deck loading issue
+3. env.make configuration shape
+4. main.agent return shape
+5. runtime exception
+6. timeout
+```
+
+Do not optimize heuristics until smoke passes.
+
+If the smoke script tries multiple configuration shapes, inspect the exact failure and harden it to the real one.
+
+Save/inspect outputs:
+
+```bash
+ls -la data/matches || true
+cat data/matches/smoke_result.json || true
+```
+
+---
+
+# Step 6 — Record schema
+
+After smoke passes, run:
+
+```bash
+python scripts/record_schema.py --games 3
+```
+
+Inspect:
+
+```bash
+cat docs/CABT_SCHEMA_NOTES.md || true
+head -50 data/matches/option_examples.jsonl || true
+cat data/matches/schema_examples.json || true
+```
+
+If schema recording fails but smoke passes, fix schema recorder. This is not a blocker for first Kaggle upload, but it is important for the next improvement pass.
+
+---
+
+# Step 7 — Optional small heuristic patch only if schema is obvious
+
+Only after smoke passes and schema is recorded:
+
+* inspect real option fields
+* if there are obvious stable fields like `type`, `context`, `name`, `action`, `card`, `attack`, `damage`, add conservative structured scoring to `main.py`
+* keep the generic JSON/string scorer as fallback
+* keep `main.py` stdlib-only and self-contained
+* do not add imports
+* do not risk breaking packaging
+
+Then run again:
+
+```bash
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+python scripts/package_submission.py
+```
+
+---
+
+# Step 8 — Final report
+
+At the end, report:
+
+1. Test pass status.
+2. Whether real deck was resolved.
+3. Deck source:
+
+   * sample-derived
+   * official CSV generated
+   * provided deck file
+   * unresolved
+4. Whether packaging verifies.
+5. Tarball contents.
+6. Whether cabt smoke test passes.
+7. Whether schema recording succeeded.
+8. Final Kaggle upload path:
+
+   * `data/submissions/submission.tar.gz`
+9. Remaining blockers before upload, if any.
+10. Recommended next prompt after the first Kaggle result.
+
+---
+
+# Hard constraints
+
+* Do not fabricate real card IDs.
+* Do not use placeholder deck for final upload.
+* Do not add live LLM calls.
+* Do not add external network calls in `main.py`.
+* Do not add heavyweight runtime imports to `main.py`.
+* Do not include anything except top-level `main.py` and `deck.csv` in the final submission tarball.
+* Do not spend time on RL/search/ActiveGraph expansion until smoke passes.
+* Valid low-scoring submission is better than sophisticated broken submission.
+
+Begin now by inspecting the repo and running tests.
