@@ -210,6 +210,111 @@ DECK_BLOCKED: list[dict] = [
 
 
 # ---------------------------------------------------------------------------
+# Generation-2 combination candidate specs
+# ---------------------------------------------------------------------------
+# A combo applies a policy override block AND a deck delta together, so we can
+# test interaction effects (does the evolution tilt help more once the deck is
+# leaned toward consistency?). Every combo references existing single-seam specs
+# by id — no new card ids, no new override constants are invented here.
+
+COMBO_SPECS: list[dict] = [
+    {
+        "branch_id": "combo_evo_bias__baseline_consistency",
+        "seam_id": "combo.evolution_consistency",
+        "archetype": "setup_evolution",
+        "policy_refs": ["policy_evolution_bias"],
+        "deck_ref": "deck_baseline_consistency",
+        "hypothesis": "Evolution-priority policy plus the +Ultra Ball/+Mega Signal "
+        "consistency deck should reach the Mega Abomasnow ex line more reliably "
+        "than either change alone.",
+        "required": True,
+    },
+    {
+        "branch_id": "combo_evo_bias__energy_trim_medium",
+        "seam_id": "combo.evolution_energy_trim",
+        "archetype": "setup_evolution",
+        "policy_refs": ["policy_evolution_bias"],
+        "deck_ref": "deck_energy_trim_medium",
+        "hypothesis": "Evolution-priority policy with the deeper 10-energy trim "
+        "tests whether faster setup offsets the higher energy-drought risk.",
+        "required": True,
+    },
+    {
+        "branch_id": "combo_evo_pass__baseline_consistency",
+        "seam_id": "combo.evolution_pass_consistency",
+        "archetype": "setup_evolution",
+        "policy_refs": ["policy_evolution_bias", "policy_pass_avoidant"],
+        "deck_ref": "deck_baseline_consistency",
+        "hypothesis": "Stacking evolution-priority and pass-avoidance over the "
+        "consistency deck should keep the agent acting AND setting up, compounding "
+        "two scout leaders.",
+        "required": True,
+    },
+    {
+        "branch_id": "combo_evo_pass__energy_trim_medium",
+        "seam_id": "combo.evolution_pass_energy_trim",
+        "archetype": "setup_evolution",
+        "policy_refs": ["policy_evolution_bias", "policy_pass_avoidant"],
+        "deck_ref": "deck_energy_trim_medium",
+        "hypothesis": "Evolution + pass-avoidance policy on the aggressive 10-energy "
+        "trim deck tests the fastest-setup, fewest-wasted-turns configuration.",
+        "required": True,
+    },
+    {
+        "branch_id": "combo_evo_attack__baseline_consistency",
+        "seam_id": "combo.evolution_attack_consistency",
+        "archetype": "setup_evolution",
+        "policy_refs": ["policy_evolution_bias", "policy_attack_heavy"],
+        "deck_ref": "deck_baseline_consistency",
+        "hypothesis": "Evolution setup tilt plus an attack-priority finisher over "
+        "the consistency deck tests whether setup-then-swing beats pure setup.",
+        "required": True,
+    },
+    {
+        "branch_id": "combo_evo_attack__energy_trim_medium",
+        "seam_id": "combo.evolution_attack_energy_trim",
+        "archetype": "setup_evolution",
+        "policy_refs": ["policy_evolution_bias", "policy_attack_heavy"],
+        "deck_ref": "deck_energy_trim_medium",
+        "hypothesis": "Evolution + attack-priority policy on the 10-energy trim deck "
+        "tests the most aggressive setup-and-swing build in the pass.",
+        "required": True,
+    },
+    # Optional combos (generated when budget allows; clearly lower priority).
+    {
+        "branch_id": "combo_energy_bias__energy_trim_light",
+        "seam_id": "combo.energy_priority_trim",
+        "archetype": "consistency_engine",
+        "policy_refs": ["policy_energy_bias"],
+        "deck_ref": "deck_energy_trim_light",
+        "hypothesis": "Energy-attach priority paired with a light energy trim tests "
+        "whether smarter attachment compensates for slightly fewer energy cards.",
+        "required": False,
+    },
+    {
+        "branch_id": "combo_draw_search__baseline_consistency",
+        "seam_id": "combo.search_consistency",
+        "archetype": "consistency_engine",
+        "policy_refs": ["policy_draw_search_bias"],
+        "deck_ref": "deck_baseline_consistency",
+        "hypothesis": "Draw/search policy bias over the consistency deck doubles "
+        "down on setup density; tests for over-drawing diminishing returns.",
+        "required": False,
+    },
+    {
+        "branch_id": "combo_setup_evo__energy_trim_medium",
+        "seam_id": "combo.setup_archetype_trim",
+        "archetype": "setup_evolution",
+        "policy_refs": ["policy_setup_evolution"],
+        "deck_ref": "deck_energy_trim_medium",
+        "hypothesis": "The combined evolution+energy archetype policy on the deep "
+        "trim deck tests the strongest single-policy setup tilt with deck support.",
+        "required": False,
+    },
+]
+
+
+# ---------------------------------------------------------------------------
 # Override rendering / injection
 # ---------------------------------------------------------------------------
 
@@ -392,6 +497,103 @@ def generate_deck_candidate(
     return branch
 
 
+def _policy_by_id(branch_id: str) -> dict:
+    for s in POLICY_SPECS:
+        if s["branch_id"] == branch_id:
+            return s
+    raise KeyError(f"unknown policy spec ref: {branch_id}")
+
+
+def _deck_by_id(branch_id: str) -> dict:
+    for s in DECK_SPECS:
+        if s["branch_id"] == branch_id:
+            return s
+    raise KeyError(f"unknown deck spec ref: {branch_id}")
+
+
+def merge_overrides(specs: list[dict]) -> dict:
+    """Merge several policy override dicts into one (later refs win on scalars)."""
+    merged: dict = {}
+    for spec in specs:
+        ov = spec.get("overrides", {})
+        for key in ("option_type_scores", "positive", "negative"):
+            if ov.get(key):
+                merged.setdefault(key, {})
+                merged[key].update(ov[key])
+        if ov.get("attack_id_bonus") is not None:
+            merged["attack_id_bonus"] = ov["attack_id_bonus"]
+    return merged
+
+
+def generate_combo_candidate(
+    spec: dict,
+    baseline_main: str | Path,
+    baseline_deck: str | Path,
+    runs_root: str | Path,
+    card_db=None,
+    ts: str | None = None,
+) -> Branch:
+    """Write a generation-2 combo (policy override block + deck delta) into a run dir.
+
+    The combo references existing single-seam specs by id: it merges their policy
+    overrides into one injected block AND applies the referenced deck's deltas, so
+    we test the interaction of both changes at once. Same legality gates as the
+    deck track (validate + strict 4-copy limit) apply.
+    """
+    from ..decks.validator import validate_deck
+
+    policy_specs = [_policy_by_id(pid) for pid in spec.get("policy_refs", [])]
+    deck_spec = _deck_by_id(spec["deck_ref"])
+    overrides = merge_overrides(policy_specs)
+    deltas = deck_spec["deltas"]
+
+    baseline_ids = load_deck(baseline_deck)
+    new_ids = apply_deck_deltas(baseline_ids, deltas)
+    result = validate_deck(new_ids, card_db=card_db)
+    if not result.valid:
+        raise ValueError(
+            f"combo deck for {spec['branch_id']} is invalid: " + "; ".join(result.errors)
+        )
+    over = _illegal_copy_counts(new_ids, card_db)
+    if over:
+        raise ValueError(
+            f"combo deck for {spec['branch_id']} exceeds 4 copies of non-energy "
+            "card(s): " + ", ".join(f"{cid}x{n}" for cid, n in over.items())
+        )
+
+    baseline_src = Path(baseline_main).read_text(encoding="utf-8")
+    block = render_override_block(spec["branch_id"], spec["seam_id"], overrides)
+    candidate_src = inject_override(baseline_src, block)
+
+    run_dir = make_run_dir(spec["branch_id"], root=runs_root, ts=ts)
+    (run_dir / "main.py").write_text(candidate_src, encoding="utf-8")
+    save_deck(run_dir / "deck.csv", new_ids)
+
+    diff = deck_diff(baseline_ids, new_ids)
+    branch = Branch(
+        branch_id=spec["branch_id"],
+        seam_id=spec["seam_id"],
+        family="combo",
+        kind="combo",
+        archetype=spec.get("archetype", ""),
+        hypothesis=spec["hypothesis"],
+        run_dir=str(run_dir),
+        policy_overrides=overrides,
+        policy_diff=overrides,
+        deck_diff=diff,
+        deck_summary={
+            "size": len(new_ids),
+            "unique": len(set(new_ids)),
+            "warnings": result.warnings,
+            "policy_refs": list(spec.get("policy_refs", [])),
+            "deck_ref": spec["deck_ref"],
+        },
+        notes=[f"combo of {'+'.join(spec.get('policy_refs', []))} x {spec['deck_ref']}"],
+    )
+    write_branch_yaml(branch, run_dir)
+    return branch
+
+
 # ---------------------------------------------------------------------------
 # Planning: which candidates are testable now, ordered by priority
 # ---------------------------------------------------------------------------
@@ -433,4 +635,56 @@ def plan_candidates(config: ExperimentConfig) -> list[dict]:
         plan.append(item)
 
     plan.sort(key=lambda x: (-x["priority"], x["branch_id"]))
+    return plan
+
+
+def plan_generation2(config: ExperimentConfig, include_optional: bool = True) -> list[dict]:
+    """Plan the generation-2 confirmation + combination batch.
+
+    Returns ordered ``{spec, track, ...}`` items:
+      1. the v1 control exact-copy anchor,
+      2. every single-seam spec referenced by a combo (so each combo can be
+         compared against its own components in the same batch),
+      3. the combo candidates (required combos first, optional after).
+
+    ``track`` is one of ``policy`` / ``deck`` / ``combo``; ``generation`` is set
+    so the report can separate gen-1 confirmations from gen-2 combinations.
+    """
+    combos = [c for c in COMBO_SPECS if include_optional or c.get("required")]
+
+    # Single-seam components referenced by the chosen combos, de-duplicated and
+    # kept in a stable order.
+    policy_refs: list[str] = []
+    deck_refs: list[str] = []
+    for c in combos:
+        for pid in c.get("policy_refs", []):
+            if pid not in policy_refs:
+                policy_refs.append(pid)
+        if c["deck_ref"] not in deck_refs:
+            deck_refs.append(c["deck_ref"])
+
+    def _meta(spec: dict, track: str, generation: int) -> dict:
+        return {
+            "spec": spec,
+            "track": track,
+            "seam_id": spec["seam_id"],
+            "branch_id": spec["branch_id"],
+            "priority": config.priority_for(spec["seam_id"]),
+            "testable": True,
+            "reason": "",
+            "generation": generation,
+        }
+
+    plan: list[dict] = []
+    # 1. Control anchor (exact v1 copy: empty overrides).
+    control = next(s for s in POLICY_SPECS if not s["overrides"])
+    plan.append(_meta(control, "policy", 1))
+    # 2. Single-seam confirmations.
+    for pid in policy_refs:
+        plan.append(_meta(_policy_by_id(pid), "policy", 1))
+    for did in deck_refs:
+        plan.append(_meta(_deck_by_id(did), "deck", 1))
+    # 3. Combos (required first, then optional).
+    for c in sorted(combos, key=lambda x: (not x.get("required"), x["branch_id"])):
+        plan.append(_meta(c, "combo", 2))
     return plan

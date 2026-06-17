@@ -24,9 +24,11 @@ from ptcg_activegraph.cards import load_card_db
 from ptcg_activegraph.experiments import branch as branch_mod
 from ptcg_activegraph.experiments.config import LAB_EVENTS_PATH, RUNS_ROOT, load_config
 from ptcg_activegraph.experiments.generator import (
+    generate_combo_candidate,
     generate_deck_candidate,
     generate_policy_candidate,
     plan_candidates,
+    plan_generation2,
 )
 from ptcg_activegraph.graph.event_store import EventStore
 from ptcg_activegraph.graph.events import EventType, new_event
@@ -37,6 +39,11 @@ def main() -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--limit", type=int, default=8,
                         help="max candidates to generate (by priority)")
+    parser.add_argument("--generation", type=int, choices=[1, 2], default=1,
+                        help="1 = priority single-seam plan; 2 = control + "
+                             "single-seam confirmations + combination candidates")
+    parser.add_argument("--no-optional-combos", action="store_true",
+                        help="generation 2: skip the optional (non-required) combos")
     parser.add_argument("--baseline-main", default="main.py")
     parser.add_argument("--baseline-deck", default="deck.csv")
     parser.add_argument("--runs-root", default=str(RUNS_ROOT))
@@ -46,7 +53,11 @@ def main() -> int:
     store = EventStore(LAB_EVENTS_PATH)
     card_db = load_card_db()
 
-    plan = [p for p in plan_candidates(config) if p["testable"]][: args.limit]
+    if args.generation == 2:
+        plan = plan_generation2(config, include_optional=not args.no_optional_combos)
+        plan = plan[: args.limit] if args.limit and args.limit > 0 else plan
+    else:
+        plan = [p for p in plan_candidates(config) if p["testable"]][: args.limit]
     if not plan:
         print("No testable candidates to generate.")
         return 0
@@ -62,6 +73,12 @@ def main() -> int:
                 b = generate_policy_candidate(
                     spec, args.baseline_main, args.baseline_deck,
                     runs_root=args.runs_root, ts=run_ts,
+                )
+                ev_type = EventType.PolicyVariantCreated
+            elif track == "combo":
+                b = generate_combo_candidate(
+                    spec, args.baseline_main, args.baseline_deck,
+                    runs_root=args.runs_root, card_db=card_db, ts=run_ts,
                 )
                 ev_type = EventType.PolicyVariantCreated
             else:

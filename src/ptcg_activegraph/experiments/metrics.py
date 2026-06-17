@@ -53,8 +53,20 @@ def compute_metrics(results: list[dict]) -> dict:
     seat1 = [r for r in completed if r.get("candidate_seat") == 1]
     seat0_wins = sum(1 for r in seat0 if r.get("candidate_won") is True)
     seat1_wins = sum(1 for r in seat1 if r.get("candidate_won") is True)
+    seat0_rate = _safe_div(seat0_wins, len(seat0)) if seat0 else None
+    seat1_rate = _safe_div(seat1_wins, len(seat1)) if seat1 else None
+    if seat0_rate is not None and seat1_rate is not None:
+        seat_balance_delta = round(seat0_rate - seat1_rate, 4)
+    else:
+        seat_balance_delta = None
 
     win_rate = _safe_div(wins, games_completed) if games_completed else None
+    # Draw-adjusted win rate: a draw counts as half a win (standard convention),
+    # so a candidate is not unfairly punished/rewarded for stalemates.
+    adjusted_win_rate = (
+        round(_safe_div(wins + 0.5 * draws, games_completed), 4)
+        if games_completed else None
+    )
 
     return {
         "games_attempted": games_attempted,
@@ -64,6 +76,8 @@ def compute_metrics(results: list[dict]) -> dict:
         "draws": draws,
         "unknown_outcomes": unknown,
         "win_rate": win_rate,
+        "adjusted_win_rate": adjusted_win_rate,
+        "combined_win_rate": win_rate,
         "crashes": crashes,
         "timeouts": timeouts,
         "avg_steps": round(avg_steps, 2),
@@ -82,6 +96,13 @@ def compute_metrics(results: list[dict]) -> dict:
         "seat1_games": len(seat1),
         "seat0_wins": seat0_wins,
         "seat1_wins": seat1_wins,
+        "candidate_as_p0_games": len(seat0),
+        "candidate_as_p0_wins": seat0_wins,
+        "candidate_as_p1_games": len(seat1),
+        "candidate_as_p1_wins": seat1_wins,
+        "candidate_p0_win_rate": None if seat0_rate is None else round(seat0_rate, 4),
+        "candidate_p1_win_rate": None if seat1_rate is None else round(seat1_rate, 4),
+        "seat_balance_delta": seat_balance_delta,
     }
 
 

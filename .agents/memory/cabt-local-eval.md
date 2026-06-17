@@ -32,3 +32,20 @@ TypeError into a 2-step draw with no traceback. Always reproduce a suspicious
 **How to apply:** see `src/ptcg_activegraph/experiments/runner.py` (`_make_cabt`,
 `_InstrumentedAgent`). Final-reward parse: walk `env.steps` in reverse, first
 step where `step[seat]["reward"]` is not None; reward 1=win, -1=loss.
+
+**Rule 4 — `env.run` has no internal wall-clock cap; some candidate-vs-control
+games never terminate.** A warm cabt game finishes in well under a second (the
+cold OpenSpiel registration is paid once per process on the first game). But
+certain candidates (notably combined policy+deck variants) produce
+candidate-vs-control games that run to cabt's enormous step cap, i.e. tens of
+seconds to minutes each — one such game can stall a whole batch. Self-play smoke
+can still pass fast for these, so the smoke gate does NOT catch it.
+
+**Why:** a 19-candidate broad batch hung indefinitely on the first combo until a
+per-game watchdog was added; without it the background driver appeared to "die".
+
+**How to apply:** `run_one_game` arms a `signal.SIGALRM` watchdog
+(`GAME_TIMEOUT_SECONDS`, currently 20s) around `env.run`; on fire it raises and
+the game is recorded as `timeout=True` (a hard-reject), not a crash. SIGALRM only
+arms on the main thread (the batch is single-threaded) — fine here. Keep the
+budget far above warm-game time (<1s) but below a stalled game.

@@ -24,15 +24,36 @@ import _bootstrap  # noqa: F401
 from ptcg_activegraph.cards import load_card_db
 from ptcg_activegraph.experiments.branch import list_runs, load_branch_yaml
 from ptcg_activegraph.experiments.config import LAB_EVENTS_PATH, RUNS_ROOT, load_config
+from ptcg_activegraph.experiments.ranker import RANKING_JSON
 from ptcg_activegraph.experiments.runner import cabt_available, evaluate_candidate
 from ptcg_activegraph.graph.event_store import EventStore
+
+
+def _top_branch_ids(top: int) -> list[str]:
+    """Read the broad ranking and return the top-N non-rejected branch ids."""
+    if not RANKING_JSON.exists():
+        return []
+    try:
+        ranked = json.loads(RANKING_JSON.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return []
+    ids = [e["branch_id"] for e in ranked if not e.get("rejected")]
+    return ids[: max(0, int(top))]
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--games", type=int, default=5,
-                        help="games per candidate vs the control")
+                        help="games per candidate vs the control (legacy alternating)")
+    parser.add_argument("--games-per-seat", type=int, default=None,
+                        help="seat-swap: play this many games as P0 AND as P1")
+    parser.add_argument("--seat-swap", action="store_true",
+                        help="balance first-/second-player advantage by swapping seats")
+    parser.add_argument("--stage", choices=["broad", "focused"], default=None,
+                        help="broad = scout all runs; focused = only the top ranked runs")
+    parser.add_argument("--top", type=int, default=5,
+                        help="for --stage focused: how many top-ranked candidates to confirm")
     parser.add_argument("--branch", action="append", default=[],
                         help="only run branches whose id contains this (repeatable)")
     parser.add_argument("--control-main", default="main.py")
@@ -41,7 +62,18 @@ def main() -> int:
     args = parser.parse_args()
 
     config = load_config()
-    games = min(args.games, int(config.setting("max_local_games_per_candidate", 20)))
+    cap = int(config.setting("max_local_games_per_candidate", 20))
+
+    # Resolve the seat schedule + per-candidate game budget.
+    stage = args.stage
+    games_per_seat = args.games_per_seat
+    if stage == "focused" and games_per_seat is None:
+        games_per_seat = 20
+    if stage == "broad" and games_per_seat is None and not args.seat_swap:
+        games_per_seat = 5
+    if games_per_seat is not None:
+        games_per_seat = max(1, min(games_per_seat, cap))
+    games = min(args.games, cap)
 
     if not cabt_available():
         print("cabt (kaggle_environments) unavailable — cannot evaluate. "
@@ -49,8 +81,17 @@ def main() -> int:
         return 2
 
     runs = list_runs(args.runs_root)
-    if args.branch:
-        runs = [r for r in runs if any(tok in r.name for tok in args.branch)]
+    selectors = list(args.branch)
+    if stage == "focused":
+        top_ids = _top_branch_ids(args.top)
+        if not top_ids:
+            print("No broad ranking found. Run the broad stage + rank_candidates first.")
+            return 1
+        # Always keep the control anchor in the focused stage for comparison.
+        runs = [r for r in runs if any(tid in r.name for tid in top_ids)
+                or "control" in r.name or "conservative_baseline" in r.name]
+    elif selectors:
+        runs = [r for r in runs if any(tok in r.name for tok in selectors)]
     if not runs:
         print(f"No candidate runs found under {args.runs_root}/. "
               "Run generate_candidates.py first.")
@@ -58,7 +99,12 @@ def main() -> int:
 
     store = EventStore(LAB_EVENTS_PATH)
     card_db = load_card_db()
-    print(f"Evaluating {len(runs)} candidate(s) at {games} games each vs control...\n")
+    if games_per_seat:
+        budget = f"{games_per_seat}/seat ({2 * games_per_seat} total, seat-swap)"
+    else:
+        budget = f"{games} alternating"
+    print(f"[{stage or 'default'}] Evaluating {len(runs)} candidate(s) "
+          f"at {budget} vs control...\n")
 
     summary = []
     for run_dir in runs:
@@ -68,16 +114,22 @@ def main() -> int:
         metrics = evaluate_candidate(
             b, args.control_main, args.control_deck,
             n_games=games, card_db=card_db, event_store=store,
+            games_per_seat=games_per_seat, seat_swap=args.seat_swap, stage=stage,
         )
         wr = metrics.get("win_rate")
         wr_s = "-" if wr is None else f"{wr:.2f}"
+        awr = metrics.get("adjusted_win_rate")
+        awr_s = "-" if awr is None else f"{awr:.2f}"
         gate = "ok" if (metrics.get("package_ok") and metrics.get("smoke_ok")) else "GATE-FAIL"
-        print(f"  {b.branch_id:<28} games={metrics.get('games_completed', 0):<3} "
-              f"win_rate={wr_s:<5} attack={metrics.get('attack_rate')} "
-              f"pass={metrics.get('pass_rate')} crashes={metrics.get('crashes')} [{gate}]")
+        print(f"  {b.branch_id:<34} games={metrics.get('games_completed', 0):<3} "
+              f"wr={wr_s:<5} adj={awr_s:<5} "
+              f"seatΔ={metrics.get('seat_balance_delta')} "
+              f"crashes={metrics.get('crashes')} [{gate}]")
         summary.append(metrics)
 
-    print(f"\nEvaluated {len(summary)} candidate(s). Next: scripts/rank_candidates.py")
+    nxt = ("scripts/rank_candidates.py --stage focused" if stage == "focused"
+           else "scripts/rank_candidates.py --stage broad")
+    print(f"\nEvaluated {len(summary)} candidate(s). Next: {nxt}")
     return 0
 
 

@@ -23,6 +23,7 @@ Outputs ``data/experiments/latest_ranking.{json,md}``.
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
 from ..graph.event_store import EventStore
@@ -30,6 +31,49 @@ from ..graph.events import EventType, new_event
 
 RANKING_JSON = Path("data/experiments/latest_ranking.json")
 RANKING_MD = Path("data/experiments/latest_ranking.md")
+FOCUSED_RANKING_JSON = Path("data/experiments/focused_ranking.json")
+FOCUSED_RANKING_MD = Path("data/experiments/focused_ranking.md")
+
+STAGE_PATHS = {
+    "broad": (RANKING_JSON, RANKING_MD),
+    "focused": (FOCUSED_RANKING_JSON, FOCUSED_RANKING_MD),
+}
+
+# z-scores for the confidence intervals we report.
+Z_80 = 1.2816  # 80% two-sided -> used as the promotion gate (small samples)
+Z_95 = 1.96    # 95% two-sided -> shown for transparency only
+
+# Minimum completed games before a candidate may be labelled promotable.
+DEFAULT_MIN_GAMES = 20
+
+# Labels (most to least confident).
+LABEL_PROMOTABLE = "promotable"
+LABEL_CONFIRMATION = "confirmation_promising"
+LABEL_SCOUT = "scout_promising"
+LABEL_DIVERSITY = "diversity_candidate"
+LABEL_INCONCLUSIVE = "inconclusive"
+LABEL_REJECTED = "rejected"
+
+
+def wilson_interval(wins: float, games: int, z: float = Z_80) -> tuple[float, float]:
+    """Wilson score interval for a binomial proportion.
+
+    ``wins`` may be fractional (e.g. draws counted as 0.5) and is clamped to
+    ``[0, games]``. Returns ``(low, high)``; for ``games == 0`` returns
+    ``(0.0, 1.0)`` (maximally uncertain).
+    """
+    n = int(games)
+    if n <= 0:
+        return 0.0, 1.0
+    w = max(0.0, min(float(wins), float(n)))
+    p = w / n
+    z2 = z * z
+    denom = 1.0 + z2 / n
+    centre = p + z2 / (2 * n)
+    margin = z * math.sqrt((p * (1 - p) + z2 / (4 * n)) / n)
+    low = (centre - margin) / denom
+    high = (centre + margin) / denom
+    return round(max(0.0, low), 4), round(min(1.0, high), 4)
 
 
 def hard_reject_reasons(m: dict) -> list[str]:
@@ -67,13 +111,81 @@ def soft_score(m: dict) -> float:
     return round(score, 3)
 
 
+def _control_adjusted_win_rate(candidates: list[dict]) -> float:
+    """Adjusted win rate of the v1 control copy, if present (else 0.5)."""
+    for m in candidates:
+        bid = str(m.get("branch_id", ""))
+        if m.get("kind") == "control" or "control" in bid or "conservative_baseline" in bid:
+            awr = m.get("adjusted_win_rate")
+            if awr is not None:
+                return float(awr)
+    return 0.5
+
+
+def label_for(e: dict, control_adj: float, min_games: int) -> tuple[str, str]:
+    """Return ``(label, interpretation)`` for an already-scored entry.
+
+    Conservative by design: promotion requires a real sample AND an 80% Wilson
+    lower bound above 0.50 AND beating the control. Small/scout samples can only
+    reach ``confirmation_promising`` or ``scout_promising`` regardless of raw rate.
+    """
+    if e["rejected"]:
+        return LABEL_REJECTED, "Hard-rejected: " + "; ".join(e["reject_reasons"]) + "."
+
+    games = int(e.get("games_completed") or 0)
+    adj = e.get("adjusted_win_rate")
+    w80_low = (e.get("wilson80") or [0.0, 1.0])[0]
+    beats_control = adj is not None and adj > control_adj + 1e-9
+    is_control = e.get("kind") == "control" or "control" in str(e.get("branch_id", ""))
+
+    if games == 0 or adj is None:
+        return LABEL_INCONCLUSIVE, (
+            "No completed games with a parseable outcome; cannot judge strength."
+        )
+    if is_control:
+        return LABEL_INCONCLUSIVE, (
+            f"Control anchor (adjusted win rate {adj:.2f} over {games} games); "
+            "used as the comparison baseline, not a promotion target."
+        )
+
+    if games >= min_games and w80_low > 0.50 and beats_control:
+        return LABEL_PROMOTABLE, (
+            f"Adjusted win rate {adj:.2f} over {games} games with an 80% lower "
+            f"bound of {w80_low:.2f} (> 0.50) and beats the control "
+            f"({control_adj:.2f}). Strong enough to queue for manual review."
+        )
+    if games >= min_games and beats_control and adj >= 0.50:
+        return LABEL_CONFIRMATION, (
+            f"Adjusted win rate {adj:.2f} over {games} games beats the control "
+            f"({control_adj:.2f}) but the 80% lower bound ({w80_low:.2f}) does not "
+            "clear 0.50 — promising but not yet confidently above the control."
+        )
+    if games >= min_games:
+        return LABEL_INCONCLUSIVE, (
+            f"Adjusted win rate {adj:.2f} over {games} games does not beat the "
+            f"control ({control_adj:.2f}); confirmed as no improvement at this "
+            "sample size."
+        )
+    if adj >= 0.55:
+        return LABEL_SCOUT, (
+            f"Scout-level signal (adjusted {adj:.2f} over only {games} games); "
+            "needs a focused, higher-game confirmation before promotion."
+        )
+    return LABEL_INCONCLUSIVE, (
+        f"Adjusted win rate {adj:.2f} over {games} games is not distinguishable "
+        "from the control at this sample size."
+    )
+
+
 def rank(
     candidates: list[dict],
     diversity_bonus: float = 50.0,
     event_store: EventStore | None = None,
+    min_games: int = DEFAULT_MIN_GAMES,
 ) -> list[dict]:
     """Rank candidate metric dicts. Returns ranked entries (best first)."""
     store = event_store or EventStore()
+    control_adj = _control_adjusted_win_rate(candidates)
     entries: list[dict] = []
     for m in candidates:
         reasons = hard_reject_reasons(m)
@@ -81,17 +193,32 @@ def rank(
         # Hard rejects never get a soft score: a broken candidate must not be
         # ranked on gameplay metrics it never legitimately produced.
         base = float("-inf") if rejected else soft_score(m)
+        games = int(m.get("games_completed") or 0)
+        wins = float(m.get("wins") or 0)
+        draws = float(m.get("draws") or 0)
+        adj_wins = wins + 0.5 * draws
         entries.append({
             "branch_id": m.get("branch_id"),
             "seam_id": m.get("seam_id"),
             "kind": m.get("kind"),
+            "hypothesis": m.get("hypothesis", ""),
+            "stage": m.get("stage"),
             "family": _family_of(m.get("seam_id", "")),
             "rejected": rejected,
             "reject_reasons": reasons,
             "base_score": base,
             "score": base,
             "win_rate": m.get("win_rate"),
-            "games_completed": m.get("games_completed"),
+            "adjusted_win_rate": m.get("adjusted_win_rate"),
+            "games_completed": games,
+            "wins": int(wins),
+            "losses": m.get("losses"),
+            "draws": int(draws),
+            "wilson80": list(wilson_interval(adj_wins, games, Z_80)),
+            "wilson95": list(wilson_interval(adj_wins, games, Z_95)),
+            "candidate_p0_win_rate": m.get("candidate_p0_win_rate"),
+            "candidate_p1_win_rate": m.get("candidate_p1_win_rate"),
+            "seat_balance_delta": m.get("seat_balance_delta"),
             "attack_rate": m.get("attack_rate"),
             "pass_rate": m.get("pass_rate"),
             "fallbacks": m.get("fallbacks"),
@@ -124,11 +251,24 @@ def rank(
             e["score"] = None
         if e["base_score"] == float("-inf"):
             e["base_score"] = None
+        label, interp = label_for(e, control_adj, min_games)
+        # A diversity candidate is a non-promotable survivor that still earned a
+        # family bonus; surface that so the report can keep one per family visible.
+        if label in (LABEL_SCOUT, LABEL_CONFIRMATION) and e.get("diversity_bonus"):
+            e["diversity_candidate"] = True
+        else:
+            e["diversity_candidate"] = False
+        e["label"] = label
+        e["interpretation"] = interp
+        e["promotable"] = label == LABEL_PROMOTABLE
+        ev_type = EventType.CandidateRejected if e["rejected"] else (
+            EventType.CandidatePromoted if e["promotable"] else EventType.CandidateRanked
+        )
         store.append(new_event(
-            EventType.CandidateRanked,
+            ev_type,
             payload={"branch_id": e["branch_id"], "rank": i,
                      "score": e["score"], "rejected": e["rejected"],
-                     "reject_reasons": e["reject_reasons"]},
+                     "label": label, "reject_reasons": e["reject_reasons"]},
             tags=["experiment", "ranking"],
         ))
     return ranked
@@ -138,25 +278,36 @@ def _family_of(seam_id: str) -> str:
     return seam_id.split(".", 1)[0] if seam_id else "unknown"
 
 
-def save_ranking(ranked: list[dict]) -> tuple[Path, Path]:
-    RANKING_JSON.parent.mkdir(parents=True, exist_ok=True)
-    RANKING_JSON.write_text(json.dumps(ranked, indent=2, default=str), encoding="utf-8")
-    RANKING_MD.write_text(_render_md(ranked), encoding="utf-8")
-    return RANKING_JSON, RANKING_MD
+def save_ranking(ranked: list[dict], stage: str = "broad") -> tuple[Path, Path]:
+    json_path, md_path = STAGE_PATHS.get(stage, STAGE_PATHS["broad"])
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+    json_path.write_text(json.dumps(ranked, indent=2, default=str), encoding="utf-8")
+    md_path.write_text(_render_md(ranked, stage), encoding="utf-8")
+    return json_path, md_path
 
 
-def _render_md(ranked: list[dict]) -> str:
-    lines = ["# Candidate ranking (latest)", ""]
-    lines.append("| Rank | Branch | Seam | Score | Win rate | Games | Attack | Pass | Status |")
-    lines.append("|----:|--------|------|------:|---------:|------:|-------:|-----:|--------|")
+def _render_md(ranked: list[dict], stage: str = "broad") -> str:
+    title = "focused (seat-swap confirmation)" if stage == "focused" else "broad (scout)"
+    lines = [f"# Candidate ranking — {title}", ""]
+    lines.append("| Rank | Branch | Seam | Score | Adj WR | 80% CI | Games | "
+                 "SeatΔ | Label |")
+    lines.append("|----:|--------|------|------:|-------:|--------|------:|"
+                 "------:|-------|")
     for e in ranked:
-        status = "REJECTED: " + "; ".join(e["reject_reasons"]) if e["rejected"] else "ok"
-        wr = "-" if e.get("win_rate") is None else f"{e['win_rate']:.2f}"
         sc = "-" if e.get("score") is None else f"{e['score']:.1f}"
+        awr = "-" if e.get("adjusted_win_rate") is None else f"{e['adjusted_win_rate']:.2f}"
+        w80 = e.get("wilson80") or [None, None]
+        ci = "-" if w80[0] is None else f"{w80[0]:.2f}–{w80[1]:.2f}"
+        seatd = e.get("seat_balance_delta")
+        seatd_s = "-" if seatd is None else f"{seatd:+.2f}"
         lines.append(
-            f"| {e['rank']} | {e['branch_id']} | {e['seam_id']} | {sc} | {wr} | "
-            f"{e.get('games_completed', 0)} | {e.get('attack_rate', 0)} | "
-            f"{e.get('pass_rate', 0)} | {status} |"
+            f"| {e['rank']} | {e['branch_id']} | {e['seam_id']} | {sc} | {awr} | "
+            f"{ci} | {e.get('games_completed', 0)} | {seatd_s} | {e.get('label', '-')} |"
         )
+    lines.append("")
+    lines.append("## Interpretations")
+    for e in ranked:
+        lines.append(f"- **{e['branch_id']}** ({e.get('label', '-')}): "
+                     f"{e.get('interpretation', '')}")
     lines.append("")
     return "\n".join(lines)

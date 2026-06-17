@@ -1,0 +1,19 @@
+branch_id: policy_conservative_baseline
+seam_id: archetype.baseline_exploit
+family: archetype
+kind: control
+archetype: baseline_exploit
+hypothesis: An exact copy of the v1 control (no overrides) anchors the batch and confirms
+  the harness reproduces the baseline.
+parent: v1_kaggle_349_8
+created_at: '2026-06-17T21:39:48'
+run_dir: /home/runner/workspace/experiments/runs/20260617_213948_00_policy_conservative_baseline
+policy_overrides: &id001 {}
+policy_diff: *id001
+deck_diff: {}
+deck_summary:
+  source: baseline
+  size: 60
+notes: []
+testable: true
+blocked_reason: ''

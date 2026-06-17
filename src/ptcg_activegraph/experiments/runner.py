@@ -23,6 +23,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import logging
+import signal
 import sys
 import traceback
 import uuid
@@ -30,6 +31,22 @@ from pathlib import Path
 
 from ..graph.event_store import EventStore
 from ..graph.events import EventType, new_event
+
+# Hard wall-clock budget for a single cabt game. Once cabt is warm a normal
+# game finishes in well under a second (the cold OpenSpiel registration cost is
+# paid once per process, on the first game). A *warm* game that exceeds this
+# generous budget is a degenerate/non-terminating one (e.g. a combined policy
+# that never advances the match toward a knockout); it is recorded as a timeout
+# (a hard-reject) instead of hanging the whole batch.
+GAME_TIMEOUT_SECONDS = 20
+
+
+class _GameTimeout(Exception):
+    """Raised by the per-game SIGALRM watchdog when a game runs too long."""
+
+
+def _game_timeout_handler(signum, frame):  # noqa: ARG001
+    raise _GameTimeout()
 
 _ATTACK_TYPE = 13
 _PASS_TYPE = 14
@@ -195,7 +212,24 @@ def run_one_game(
             decks = [list(control_deck), list(cand_deck)]
 
         env = _make_cabt(ke, decks)
-        env.run(agents)
+        # Watchdog: abort a degenerate/non-terminating game instead of hanging
+        # the whole batch. Only arms on the main thread (the batch is single
+        # threaded); on other threads we fall back to no watchdog.
+        armed = False
+        prev_handler = None
+        try:
+            prev_handler = signal.signal(signal.SIGALRM, _game_timeout_handler)
+            signal.alarm(GAME_TIMEOUT_SECONDS)
+            armed = True
+        except (ValueError, AttributeError):
+            armed = False
+        try:
+            env.run(agents)
+        finally:
+            if armed:
+                signal.alarm(0)
+                if prev_handler is not None:
+                    signal.signal(signal.SIGALRM, prev_handler)
 
         r0, r1, s0, s1 = _final_rewards(env)
         steps = len(getattr(env, "steps", []) or [])
@@ -227,6 +261,11 @@ def run_one_game(
 
         sys.modules.pop(cand_name, None)
         sys.modules.pop(ctrl_name, None)
+    except _GameTimeout:
+        # Watchdog fired: a degenerate/non-terminating game. Record it as an
+        # explicit timeout (a hard-reject downstream), not a generic crash.
+        result["timeout"] = True
+        result["error"] = f"game watchdog timeout (>{GAME_TIMEOUT_SECONDS}s)"
     except Exception as exc:  # noqa: BLE001 - one bad game must not kill the batch
         result["error"] = repr(exc)
         result["trace"] = traceback.format_exc()
@@ -267,6 +306,68 @@ def _run_candidate_gates(run_dir: Path, card_db) -> dict:
     return gates
 
 
+def _seat_schedule(n_games: int, games_per_seat: int | None, seat_swap: bool) -> list[int]:
+    """Return the ordered list of candidate seats to play.
+
+    With ``games_per_seat`` set (seat-swap), play exactly that many games as
+    player 0 then the same number as player 1, so any first-/second-player
+    advantage is balanced out. Otherwise fall back to the legacy alternating
+    schedule of ``n_games`` games (seat = i % 2).
+    """
+    if games_per_seat and games_per_seat > 0:
+        g = int(games_per_seat)
+        return [0] * g + [1] * g
+    if seat_swap:
+        half = max(1, n_games) // 2 or 1
+        return [0] * half + [1] * half
+    return [i % 2 for i in range(max(1, n_games))]
+
+
+def _write_branch_report(run_dir: Path, branch, metrics: dict) -> None:
+    """Write a per-branch human summary (hypothesis + gate + match results)."""
+    def fmt(v, nd=2):
+        return "-" if v is None else (f"{v:.{nd}f}" if isinstance(v, float) else str(v))
+
+    lines = [
+        f"# {branch.branch_id}",
+        "",
+        f"- **Seam:** {branch.seam_id}",
+        f"- **Kind:** {branch.kind}    **Archetype:** {getattr(branch, 'archetype', '')}",
+        f"- **Parent:** {getattr(branch, 'parent', '')}",
+        f"- **Stage:** {metrics.get('stage') or 'broad'}",
+        "",
+        "## Hypothesis",
+        getattr(branch, "hypothesis", "") or "(none)",
+        "",
+        "## Gates",
+        f"- package verify: {'PASS' if metrics.get('package_ok') else 'FAIL'}"
+        + (f" ({metrics.get('package_error')})" if metrics.get('package_error') else ""),
+        f"- one-game smoke: {'PASS' if metrics.get('smoke_ok') else 'FAIL'}"
+        + (f" ({metrics.get('smoke_status')})" if metrics.get('smoke_status') else ""),
+        "",
+        "## Match results (vs immutable v1 control)",
+        f"- games completed: {metrics.get('games_completed', 0)} "
+        f"(seat-swap: {metrics.get('seat_swap')})",
+        f"- wins / losses / draws: {metrics.get('wins', 0)} / "
+        f"{metrics.get('losses', 0)} / {metrics.get('draws', 0)}",
+        f"- raw win rate: {fmt(metrics.get('win_rate'))}    "
+        f"adjusted win rate: {fmt(metrics.get('adjusted_win_rate'))}",
+        f"- as P0: {metrics.get('candidate_as_p0_wins', 0)}/"
+        f"{metrics.get('candidate_as_p0_games', 0)} "
+        f"(rate {fmt(metrics.get('candidate_p0_win_rate'))}); "
+        f"as P1: {metrics.get('candidate_as_p1_wins', 0)}/"
+        f"{metrics.get('candidate_as_p1_games', 0)} "
+        f"(rate {fmt(metrics.get('candidate_p1_win_rate'))})",
+        f"- seat balance delta (P0-P1): {fmt(metrics.get('seat_balance_delta'))}",
+        f"- attack rate: {fmt(metrics.get('attack_rate'))}    "
+        f"pass rate: {fmt(metrics.get('pass_rate'))}",
+        f"- crashes / timeouts / fallbacks: {metrics.get('crashes', 0)} / "
+        f"{metrics.get('timeouts', 0)} / {metrics.get('fallbacks', 0)}",
+        "",
+    ]
+    (run_dir / "report.md").write_text("\n".join(lines), encoding="utf-8")
+
+
 def evaluate_candidate(
     branch,
     control_main: str | Path,
@@ -274,6 +375,9 @@ def evaluate_candidate(
     n_games: int = 5,
     card_db=None,
     event_store: EventStore | None = None,
+    games_per_seat: int | None = None,
+    seat_swap: bool = False,
+    stage: str | None = None,
 ) -> dict:
     """Gate, then evaluate one candidate branch vs the control. Returns metrics."""
     from .metrics import compute_metrics
@@ -284,10 +388,14 @@ def evaluate_candidate(
     control_deck_ids = _read_deck(control_deck)
     cand_deck_ids = _read_deck(run_dir / "deck.csv")
 
+    seats = _seat_schedule(n_games, games_per_seat, seat_swap)
+    total_games = len(seats)
+
     store.append(new_event(
         EventType.LocalEvaluationStarted,
-        payload={"branch_id": branch.branch_id, "n_games": n_games,
-                 "seam_id": branch.seam_id},
+        payload={"branch_id": branch.branch_id, "n_games": total_games,
+                 "games_per_seat": games_per_seat, "seat_swap": seat_swap,
+                 "stage": stage, "seam_id": branch.seam_id},
         tags=["experiment", branch.kind],
     ))
 
@@ -297,11 +405,11 @@ def evaluate_candidate(
     if gates["package_ok"] and gates["smoke_ok"]:
         store.append(new_event(
             EventType.MatchBatchStarted,
-            payload={"branch_id": branch.branch_id, "games": n_games},
+            payload={"branch_id": branch.branch_id, "games": total_games,
+                     "stage": stage},
             tags=["experiment"],
         ))
-        for i in range(max(1, n_games)):
-            seat = i % 2
+        for seat in seats:
             r = run_one_game(
                 control_main, control_deck_ids,
                 run_dir / "main.py", cand_deck_ids, candidate_seat=seat,
@@ -320,10 +428,18 @@ def evaluate_candidate(
     metrics["branch_id"] = branch.branch_id
     metrics["seam_id"] = branch.seam_id
     metrics["kind"] = branch.kind
+    metrics["stage"] = stage
+    metrics["games_per_seat"] = games_per_seat
+    metrics["seat_swap"] = bool(games_per_seat) or seat_swap
+    metrics["hypothesis"] = getattr(branch, "hypothesis", "")
 
     (run_dir / "metrics.json").write_text(
         json.dumps(metrics, indent=2, default=str), encoding="utf-8"
     )
+    try:
+        _write_branch_report(run_dir, branch, metrics)
+    except Exception:  # noqa: BLE001 - reporting must never fail an eval
+        pass
 
     store.append(new_event(
         EventType.MetricsComputed,

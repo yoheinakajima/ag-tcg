@@ -1,0 +1,27 @@
+branch_id: policy_attack_heavy
+seam_id: policy.attack_priority
+family: policy
+kind: policy
+archetype: linear_aggro
+hypothesis: Strongly preferring confirmed attacks (type 13) and knockouts should raise
+  attack rate and shorten games without crashing.
+parent: v1_kaggle_349_8
+created_at: '2026-06-17T21:39:48'
+run_dir: /home/runner/workspace/experiments/runs/20260617_213948_03_policy_attack_heavy
+policy_overrides: &id001
+  option_type_scores:
+    13: 220
+    14: -90
+  attack_id_bonus: 70
+  positive:
+    attack: 140
+    knockout: 170
+    knock: 150
+policy_diff: *id001
+deck_diff: {}
+deck_summary:
+  source: baseline
+  size: 60
+notes: []
+testable: true
+blocked_reason: ''

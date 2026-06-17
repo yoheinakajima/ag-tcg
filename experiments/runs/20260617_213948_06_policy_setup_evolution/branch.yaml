@@ -1,0 +1,26 @@
+branch_id: policy_setup_evolution
+seam_id: archetype.setup_evolution
+family: archetype
+kind: policy
+archetype: setup_evolution
+hypothesis: A combined evolution + energy setup tilt should reach the Mega Abomasnow
+  ex line faster, trading early tempo for ceiling.
+parent: v1_kaggle_349_8
+created_at: '2026-06-17T21:39:48'
+run_dir: /home/runner/workspace/experiments/runs/20260617_213948_06_policy_setup_evolution
+policy_overrides: &id001
+  option_type_scores:
+    8: 24
+  positive:
+    evolve: 90
+    evolution: 85
+    attach: 75
+    energy: 75
+policy_diff: *id001
+deck_diff: {}
+deck_summary:
+  source: baseline
+  size: 60
+notes: []
+testable: true
+blocked_reason: ''

@@ -237,6 +237,160 @@ def test_ranker_diversity_bonus_across_families(tmp_path):
 
 
 # --------------------------------------------------------------------------
+# Wilson CI + conservative promotion labels
+# --------------------------------------------------------------------------
+
+def test_wilson_interval_bounds_and_width():
+    lo, hi = ranker.wilson_interval(5, 10, ranker.Z_80)
+    assert 0.0 <= lo < 0.5 < hi <= 1.0
+    # 95% interval is strictly wider than the 80% interval for the same data.
+    lo95, hi95 = ranker.wilson_interval(5, 10, ranker.Z_95)
+    assert lo95 < lo and hi95 > hi
+    # Zero games is a degenerate, maximally-uncertain interval.
+    assert ranker.wilson_interval(0, 0, ranker.Z_80) == (0.0, 1.0)
+    # More games at the same rate tightens the interval.
+    lo_small, hi_small = ranker.wilson_interval(6, 10, ranker.Z_80)
+    lo_big, hi_big = ranker.wilson_interval(60, 100, ranker.Z_80)
+    assert (hi_big - lo_big) < (hi_small - lo_small)
+
+
+def test_label_small_sample_not_promotable():
+    # 3/5 = 60% raw, but the sample is tiny: cannot be promotable.
+    cands = [
+        _metric("control", kind="control", wins=10, draws=0, games_completed=20,
+                adjusted_win_rate=0.5),
+        _metric("tiny", wins=3, draws=0, games_completed=5, adjusted_win_rate=0.6),
+    ]
+    from ptcg_activegraph.graph.event_store import EventStore
+    ranked = ranker.rank(cands, event_store=EventStore(REPO / "no.jsonl"),
+                         min_games=20)
+    Path(REPO / "no.jsonl").unlink(missing_ok=True)
+    by_id = {e["branch_id"]: e for e in ranked}
+    assert by_id["tiny"]["label"] != "promotable"
+    assert by_id["tiny"]["rejected"] is False
+
+
+def test_label_strong_enough_is_promotable():
+    # Overwhelming, well-sampled candidate that beats the control: promotable.
+    cands = [
+        _metric("control", kind="control", wins=10, draws=0, games_completed=20,
+                adjusted_win_rate=0.5),
+        _metric("strong", wins=36, draws=0, games_completed=40,
+                adjusted_win_rate=0.9),
+    ]
+    from ptcg_activegraph.graph.event_store import EventStore
+    ranked = ranker.rank(cands, event_store=EventStore(REPO / "no2.jsonl"),
+                         min_games=20)
+    Path(REPO / "no2.jsonl").unlink(missing_ok=True)
+    by_id = {e["branch_id"]: e for e in ranked}
+    assert by_id["strong"]["label"] == "promotable"
+    assert by_id["strong"]["wilson80"][0] > 0.50
+
+
+def test_label_enough_games_but_wide_ci_is_confirmation():
+    # 22/40 = 55% over enough games, but 80% lower bound does not clear 0.50.
+    cands = [
+        _metric("control", kind="control", wins=10, draws=0, games_completed=20,
+                adjusted_win_rate=0.5),
+        _metric("borderline", wins=22, draws=0, games_completed=40,
+                adjusted_win_rate=0.55),
+    ]
+    from ptcg_activegraph.graph.event_store import EventStore
+    ranked = ranker.rank(cands, event_store=EventStore(REPO / "no3.jsonl"),
+                         min_games=20)
+    Path(REPO / "no3.jsonl").unlink(missing_ok=True)
+    by_id = {e["branch_id"]: e for e in ranked}
+    assert by_id["borderline"]["label"] == "confirmation_promising"
+    assert by_id["borderline"]["wilson80"][0] <= 0.50
+
+
+def test_label_enough_games_not_beating_control_is_inconclusive():
+    # Enough games, but tying or trailing the control must never be labelled
+    # confirmation_promising — it is conservatively inconclusive.
+    cands = [
+        _metric("control", kind="control", wins=24, draws=0, games_completed=40,
+                adjusted_win_rate=0.60),
+        _metric("tie", wins=24, draws=0, games_completed=40, adjusted_win_rate=0.60),
+        _metric("below", wins=17, draws=0, games_completed=40, adjusted_win_rate=0.425),
+    ]
+    from ptcg_activegraph.graph.event_store import EventStore
+    ranked = ranker.rank(cands, event_store=EventStore(REPO / "no4.jsonl"),
+                         min_games=30)
+    Path(REPO / "no4.jsonl").unlink(missing_ok=True)
+    by_id = {e["branch_id"]: e for e in ranked}
+    assert by_id["tie"]["label"] == "inconclusive"
+    assert by_id["below"]["label"] == "inconclusive"
+
+
+def test_run_one_game_watchdog_timeout_is_classified_as_timeout(monkeypatch):
+    # When the per-game watchdog fires (env.run raises _GameTimeout) the game is
+    # recorded as an explicit timeout (a hard-reject), not a generic crash.
+    from ptcg_activegraph.experiments import runner as runner_mod
+
+    class _FakeEnv:
+        steps: list = []
+
+        def run(self, agents):
+            raise runner_mod._GameTimeout()
+
+    monkeypatch.setattr(runner_mod, "_make_cabt", lambda ke, decks: _FakeEnv())
+    main_py = REPO / "main.py"
+    res = runner_mod.run_one_game(main_py, [1], main_py, [1], candidate_seat=0)
+    assert res["timeout"] is True
+    assert res["completed"] is False
+    assert "watchdog" in (res["error"] or "")
+
+
+def test_metrics_handles_draws_and_seat_split():
+    results = [
+        {"completed": True, "candidate_won": True, "candidate_seat": 0},
+        {"completed": True, "candidate_won": True, "candidate_seat": 0},
+        {"completed": True, "candidate_won": None, "draw": True, "candidate_seat": 1},
+        {"completed": True, "candidate_won": False, "candidate_seat": 1},
+    ]
+    m = metrics_mod.compute_metrics(results)
+    # Two seats with two games each.
+    assert m["candidate_as_p0_games"] == 2 and m["candidate_p0_win_rate"] == 1.0
+    assert m["candidate_p1_win_rate"] == 0.0
+    assert m["seat_balance_delta"] == 1.0
+    # A draw is half a win in the adjusted rate (2 wins + 0.5 draw)/4.
+    assert m["draws"] == 1
+    assert m["adjusted_win_rate"] == pytest.approx((2 + 0.5) / 4)
+
+
+def test_seat_swap_schedule_is_balanced():
+    from ptcg_activegraph.experiments import runner as runner_mod
+    sched = runner_mod._seat_schedule(0, games_per_seat=5, seat_swap=True)
+    assert sched == [0] * 5 + [1] * 5
+    assert sched.count(0) == sched.count(1)
+    # Legacy alternating schedule when no seat-swap is requested.
+    legacy = runner_mod._seat_schedule(4, games_per_seat=None, seat_swap=False)
+    assert legacy == [0, 1, 0, 1]
+
+
+# --------------------------------------------------------------------------
+# generation-2 combination candidates
+# --------------------------------------------------------------------------
+
+def test_combo_candidate_merges_and_does_not_mutate_baseline(tmp_path):
+    spec = generator.COMBO_SPECS[0]
+    before_main = _read(BASELINE_MAIN)
+    before_deck = _read(BASELINE_DECK)
+    b = generator.generate_combo_candidate(
+        spec, BASELINE_MAIN, BASELINE_DECK, runs_root=tmp_path, ts="c0"
+    )
+    # Root baseline is never touched.
+    assert _read(BASELINE_MAIN) == before_main
+    assert _read(BASELINE_DECK) == before_deck
+    # Combo branch carries the combo kind and both a policy block and deck diff.
+    assert b.kind == "combo"
+    run = Path(b.run_dir)
+    assert (run / "main.py").exists() and (run / "deck.csv").exists()
+    # The injected override block names the combo seam.
+    assert spec["seam_id"] in (run / "main.py").read_text(encoding="utf-8")
+
+
+# --------------------------------------------------------------------------
 # queue
 # --------------------------------------------------------------------------
 
@@ -253,10 +407,12 @@ def test_queue_respects_max_per_day_and_dry_run(tmp_path, monkeypatch):
         )
         runs_by_branch[b.branch_id] = b.run_dir
         ranked.append({"branch_id": b.branch_id, "rank": i + 1, "score": 100 - i,
-                       "rejected": False, "seam_id": b.seam_id})
+                       "rejected": False, "seam_id": b.seam_id,
+                       "label": "promotable"})
 
-    # Point the queue output at a temp file.
+    # Point the queue output + candidate tarballs at temp paths (hermetic).
     monkeypatch.setattr(queue_mod, "QUEUE_JSON", tmp_path / "queue.json")
+    monkeypatch.setattr(queue_mod, "CANDIDATES_DIR", tmp_path / "candidates")
 
     cfg = config_mod.load_config()
     cfg.settings["auto_submit_enabled"] = False
@@ -289,7 +445,7 @@ def test_report_site_empty_state(tmp_path):
     idx = (tmp_path / "site" / "index.html").read_text(encoding="utf-8")
     assert "No ranking yet" in idx or "empty" in idx
     md = report.write_markdown(data, path=tmp_path / "r.md")
-    assert "No ranking yet" in md.read_text(encoding="utf-8")
+    assert "No ranking at this stage yet" in md.read_text(encoding="utf-8")
 
 
 def test_report_site_nonempty(tmp_path):
@@ -298,7 +454,15 @@ def test_report_site_nonempty(tmp_path):
     data = {
         "events": [{"event_type": "MetricsComputed", "timestamp": 1.0, "payload": {}}],
         "ranking": [{"rank": 1, "branch_id": "demo", "seam_id": "policy.attack_priority",
-                     "score": 900.0, "win_rate": 0.8, "rejected": False}],
+                     "score": 900.0, "win_rate": 0.8, "adjusted_win_rate": 0.8,
+                     "wilson80": [0.55, 0.95], "wilson95": [0.45, 0.97],
+                     "label": "promotable", "rejected": False}],
+        "focused_ranking": [{"rank": 1, "branch_id": "demo",
+                             "seam_id": "policy.attack_priority", "score": 950.0,
+                             "win_rate": 0.82, "adjusted_win_rate": 0.82,
+                             "wilson80": [0.6, 0.95], "wilson95": [0.5, 0.97],
+                             "label": "promotable", "rejected": False,
+                             "hypothesis": "demo hypothesis"}],
         "queue": {"mode": "DRY-RUN", "candidates": [], "auto_submit_enabled": False,
                   "require_manual_approval_for_submit": True},
         "runs": [{"branch": b, "metrics": {"win_rate": 0.8, "package_ok": True,
@@ -308,9 +472,9 @@ def test_report_site_nonempty(tmp_path):
     }
     report.write_site(data, site_dir=tmp_path / "site")
     idx = (tmp_path / "site" / "index.html").read_text(encoding="utf-8")
-    assert "demo" in idx and "900" in idx
+    assert "demo" in idx and "promotable" in idx
     md = report.write_markdown(data, path=tmp_path / "r.md").read_text(encoding="utf-8")
-    assert "demo" in md
+    assert "demo" in md and "Current interpretation" in md
 
 
 # --------------------------------------------------------------------------

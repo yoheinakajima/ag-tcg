@@ -1,0 +1,62 @@
+branch_id: combo_setup_evo__energy_trim_medium
+seam_id: combo.setup_archetype_trim
+family: combo
+kind: combo
+archetype: setup_evolution
+hypothesis: The combined evolution+energy archetype policy on the deep trim deck tests
+  the strongest single-policy setup tilt with deck support.
+parent: v1_kaggle_349_8
+created_at: '2026-06-17T21:39:48'
+run_dir: /home/runner/workspace/experiments/runs/20260617_213948_18_combo_setup_evo__energy_trim_medium
+policy_overrides: &id001
+  option_type_scores:
+    8: 24
+  positive:
+    evolve: 90
+    evolution: 85
+    attach: 75
+    energy: 75
+policy_diff: *id001
+deck_diff:
+  '3':
+    name: Basic {W} Energy
+    from: 33
+    to: 23
+    delta: -10
+  '721':
+    name: Kyogre
+    from: 2
+    to: 4
+    delta: 2
+  '1121':
+    name: Ultra Ball
+    from: 2
+    to: 4
+    delta: 2
+  '1145':
+    name: Mega Signal
+    from: 2
+    to: 4
+    delta: 2
+  '1163':
+    name: Powerglass
+    from: 2
+    to: 4
+    delta: 2
+  '1262':
+    name: Surfing Beach
+    from: 2
+    to: 4
+    delta: 2
+deck_summary:
+  size: 60
+  unique: 11
+  warnings:
+  - card 3 appears 23 times (> 4)
+  policy_refs:
+  - policy_setup_evolution
+  deck_ref: deck_energy_trim_medium
+notes:
+- combo of policy_setup_evolution x deck_energy_trim_medium
+testable: true
+blocked_reason: ''

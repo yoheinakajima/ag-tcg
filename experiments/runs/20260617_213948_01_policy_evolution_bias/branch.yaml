@@ -1,0 +1,22 @@
+branch_id: policy_evolution_bias
+seam_id: policy.evolution_priority
+family: policy
+kind: policy
+archetype: setup_evolution
+hypothesis: Biasing toward evolve/evolution options should help the Snover -> Mega
+  Abomasnow ex line set up before attacking.
+parent: v1_kaggle_349_8
+created_at: '2026-06-17T21:39:48'
+run_dir: /home/runner/workspace/experiments/runs/20260617_213948_01_policy_evolution_bias
+policy_overrides: &id001
+  positive:
+    evolve: 95
+    evolution: 90
+policy_diff: *id001
+deck_diff: {}
+deck_summary:
+  source: baseline
+  size: 60
+notes: []
+testable: true
+blocked_reason: ''

@@ -22,7 +22,7 @@ import _bootstrap  # noqa: F401
 from ptcg_activegraph.experiments.branch import list_runs, load_branch_yaml
 from ptcg_activegraph.experiments.config import LAB_EVENTS_PATH, RUNS_ROOT, load_config
 from ptcg_activegraph.experiments.queue import build_queue
-from ptcg_activegraph.experiments.ranker import RANKING_JSON
+from ptcg_activegraph.experiments.ranker import FOCUSED_RANKING_JSON, RANKING_JSON
 from ptcg_activegraph.graph.event_store import EventStore
 
 
@@ -31,13 +31,22 @@ def main() -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true",
                         help="force dry-run (no upload) regardless of plan settings")
+    parser.add_argument("--stage", choices=["focused", "broad"], default="focused",
+                        help="which ranking to queue from (focused preferred)")
     parser.add_argument("--runs-root", default=str(RUNS_ROOT))
     args = parser.parse_args()
 
-    if not RANKING_JSON.exists():
-        print(f"No ranking at {RANKING_JSON}. Run scripts/rank_candidates.py first.")
-        return 1
-    ranked = json.loads(RANKING_JSON.read_text(encoding="utf-8"))
+    # Prefer the focused (high-game, seat-swap) confirmation ranking; fall back
+    # to the broad scout ranking only if no focused stage has been run.
+    ranking_path = FOCUSED_RANKING_JSON if args.stage == "focused" else RANKING_JSON
+    if not ranking_path.exists():
+        if args.stage == "focused" and RANKING_JSON.exists():
+            print(f"No focused ranking yet; falling back to {RANKING_JSON}.")
+            ranking_path = RANKING_JSON
+        else:
+            print(f"No ranking at {ranking_path}. Run scripts/rank_candidates.py first.")
+            return 1
+    ranked = json.loads(ranking_path.read_text(encoding="utf-8"))
 
     config = load_config()
     runs_by_branch = {}
@@ -53,17 +62,26 @@ def main() -> int:
         plan["mode"] = "DRY-RUN"
         plan["will_upload"] = False
 
-    print(f"Submission queue ({plan['mode']}):")
+    print(f"Submission queue ({plan['mode']}) from {ranking_path.name}:")
     print(f"  auto_submit_enabled={plan['auto_submit_enabled']}  "
           f"require_manual_approval={plan['require_manual_approval_for_submit']}  "
           f"max_per_day={plan['max_per_day']}")
     if not plan["candidates"]:
-        print("  (no promotable candidates — nothing queued)")
+        print("  (no promotable / confirmation candidates — nothing queued)")
     for c in plan["candidates"]:
-        print(f"\n  #{c['rank']} {c['branch_id']} (score={c['score']})")
+        fm = c.get("focused_metrics", {})
+        w80 = fm.get("wilson80") or [None, None]
+        ci = "-" if w80[0] is None else f"{w80[0]:.2f}-{w80[1]:.2f}"
+        print(f"\n  #{c['rank']} {c['branch_id']} "
+              f"[{c.get('label')}] (score={c['score']})")
+        print(f"     hypothesis: {c.get('hypothesis')}")
+        print(f"     adj_wr={fm.get('adjusted_win_rate')} 80%CI={ci} "
+              f"games={fm.get('games_completed')} seatΔ={fm.get('seat_balance_delta')}")
         print(f"     tarball: {c['tarball']}")
         if c.get("package_error"):
             print(f"     PACKAGE ERROR: {c['package_error']}")
+        for note in c.get("risk_notes", []):
+            print(f"     risk: {note}")
         print(f"     would run: {c['kaggle_command']}")
     print(f"\nWrote data/submission_queue.json. "
           f"{'NO UPLOAD (dry-run).' if not plan['will_upload'] else 'Upload ENABLED.'}")

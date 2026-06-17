@@ -1,0 +1,45 @@
+branch_id: combo_energy_bias__energy_trim_light
+seam_id: combo.energy_priority_trim
+family: combo
+kind: combo
+archetype: consistency_engine
+hypothesis: Energy-attach priority paired with a light energy trim tests whether smarter
+  attachment compensates for slightly fewer energy cards.
+parent: v1_kaggle_349_8
+created_at: '2026-06-17T21:39:48'
+run_dir: /home/runner/workspace/experiments/runs/20260617_213948_17_combo_energy_bias__energy_trim_light
+policy_overrides: &id001
+  option_type_scores:
+    8: 28
+  positive:
+    attach: 85
+    energy: 85
+policy_diff: *id001
+deck_diff:
+  '3':
+    name: Basic {W} Energy
+    from: 33
+    to: 29
+    delta: -4
+  '721':
+    name: Kyogre
+    from: 2
+    to: 4
+    delta: 2
+  '1121':
+    name: Ultra Ball
+    from: 2
+    to: 4
+    delta: 2
+deck_summary:
+  size: 60
+  unique: 11
+  warnings:
+  - card 3 appears 29 times (> 4)
+  policy_refs:
+  - policy_energy_bias
+  deck_ref: deck_energy_trim_light
+notes:
+- combo of policy_energy_bias x deck_energy_trim_light
+testable: true
+blocked_reason: ''

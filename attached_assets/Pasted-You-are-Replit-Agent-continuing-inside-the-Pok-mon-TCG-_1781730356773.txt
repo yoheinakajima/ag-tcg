@@ -1,0 +1,505 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub. I will handle git manually.
+- Do not upload/submit anything to Kaggle in this pass.
+- Do not modify the root Kaggle baseline `main.py` or `deck.csv`.
+- Do not overwrite the working v1 baseline.
+- Do not print or commit Kaggle credentials.
+- Keep all generated candidate code submission-safe.
+- The goal is high-fidelity ActiveGraph experimentation and candidate packaging, not Kaggle upload yet.
+
+Current status:
+- v1 baseline has passed Kaggle validation and scored.
+- Public score/rating: 349.8.
+- Root submission is valid.
+- ActiveGraph lab exists and passed first end-to-end run.
+- First scout batch produced 8 candidates, 5 games each.
+- Top scout candidates:
+  1. policy_evolution_bias — soft score 719.3, win rate 0.60
+  2. deck_baseline_consistency — soft score 704.2, win rate 0.60
+  3. deck_energy_trim_medium — soft score 651.6, win rate 0.60
+  4. policy_energy_bias — soft score 486.6, win rate 0.40
+  5. policy_attack_heavy — soft score 472.2, win rate 0.40
+- This is promising but noisy because it was only 5 games/candidate.
+
+Goal of this pass:
+
+Run a higher-fidelity ActiveGraph confirmation and combination pass.
+
+The objective is to determine whether the scout leaders are real signal, discover whether combined deck+policy variants improve further, and produce submit-ready candidate packages for manual review — without uploading.
+
+Think of this pass as:
+
+Scout results → confirmation evaluation → combination candidates → confidence intervals → report site → dry-run submission queue.
+
+Do not do a Kaggle upload.
+
+---
+
+Step 1 — Preserve and verify baseline
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+tar -tzf data/submissions/submission.tar.gz
+
+Then confirm the v1 baseline archive exists:
+
+ls -la data/baselines/v1_kaggle_349_8 || true
+ls -la data/baselines/v1_kaggle_349_8/main.py data/baselines/v1_kaggle_349_8/deck.csv || true
+
+If missing, recreate it from current root baseline:
+
+mkdir -p data/baselines/v1_kaggle_349_8
+cp main.py data/baselines/v1_kaggle_349_8/main.py
+cp deck.csv data/baselines/v1_kaggle_349_8/deck.csv
+cp data/submissions/submission.tar.gz data/baselines/v1_kaggle_349_8/submission.tar.gz || true
+
+Do not change root `main.py` or root `deck.csv`.
+
+Emit or append an ActiveGraph event if possible:
+- event_type: ConfirmationPassStarted
+- payload:
+  - baseline: v1_kaggle_349_8
+  - kaggle_public_score: 349.8
+  - purpose: higher_fidelity_confirmation_and_combo_generation
+
+---
+
+Step 2 — Add or verify confidence intervals
+
+Inspect current ranker:
+
+find src/ptcg_activegraph/experiments -type f -maxdepth 2 -print
+sed -n '1,240p' src/ptcg_activegraph/experiments/ranker.py || true
+sed -n '1,240p' scripts/rank_candidates.py || true
+
+Add Wilson confidence intervals to candidate metrics/ranking if not already present.
+
+Implement:
+
+- `wilson_interval(wins, games, z)`
+- default 80% CI for promotion decisions, z approximately 1.2816
+- also report 95% CI for transparency, z approximately 1.96
+- handle draws if present:
+  - primary simple version: win_rate = wins / completed_games
+  - optional adjusted version: adjusted_win_rate = (wins + 0.5 * draws) / completed_games
+  - report both if possible
+
+Promotion should require more than raw win rate.
+
+Default promotion logic:
+
+A candidate is promotable only if:
+- package verify passed
+- smoke test passed
+- no crashes
+- no timeouts
+- no invalid returns
+- no agent fallbacks if fallback count is measured
+- completed_games >= configured minimum
+- 80% Wilson lower bound for adjusted win rate is greater than 0.50 OR candidate is explicitly marked as a diversity candidate
+- local score beats baseline/control according to ranker
+- hypothesis/report entry exists
+
+Do not use 95% lower bound as the promotion gate yet because the sample sizes may be too small; show it in the report.
+
+Add tests for:
+- Wilson interval function
+- 3 wins out of 5 should not confidently promote
+- a candidate with failed smoke is hard rejected
+- a candidate with crash/timeout is hard rejected
+- a candidate with strong enough win rate and enough games can be promotable
+- draws are handled without crashing
+
+---
+
+Step 3 — Add seat-swap / side-balance evaluation
+
+Local evaluation must reduce first-player/second-player bias.
+
+Inspect existing local runner:
+
+sed -n '1,260p' src/ptcg_activegraph/experiments/runner.py || true
+sed -n '1,260p' scripts/run_experiment_batch.py || true
+
+Add seat-swap support:
+
+For each candidate vs control pair:
+- run candidate as player 0 vs control as player 1
+- run control as player 0 vs candidate as player 1
+- aggregate results
+- record split metrics:
+  - candidate_as_p0_games
+  - candidate_as_p0_wins
+  - candidate_as_p1_games
+  - candidate_as_p1_wins
+  - candidate_p0_win_rate
+  - candidate_p1_win_rate
+  - seat_balance_delta
+  - combined_win_rate
+  - adjusted_win_rate
+
+If exact winner extraction is unreliable, record what is available:
+- env rewards
+- statuses
+- terminal logs
+- final observation state
+- game length
+- errors
+- decision metrics
+
+Do not let one failed game abort the batch.
+
+Add CLI options if missing:
+
+python scripts/run_experiment_batch.py --games 25 --seat-swap
+python scripts/run_experiment_batch.py --games-per-seat 25
+
+If implementing both is too much, implement `--games-per-seat`.
+
+Add tests for aggregation logic.
+
+---
+
+Step 4 — Generate generation-2 combination candidates
+
+We do not want only single-seam candidates. Create combination candidates from top scout seams.
+
+Generate candidates in a new batch, preserving previous runs.
+
+Candidate set should include:
+
+Controls:
+1. control_v1_exact_copy
+
+Confirmed single-seam candidates:
+2. policy_evolution_bias
+3. deck_baseline_consistency
+4. deck_energy_trim_medium
+5. policy_attack_heavy
+6. policy_energy_bias
+
+Combination candidates:
+7. combo_evolution_bias__baseline_consistency
+8. combo_evolution_bias__energy_trim_medium
+9. combo_evolution_bias__baseline_consistency__pass_avoidant
+10. combo_evolution_bias__energy_trim_medium__pass_avoidant
+11. combo_evolution_bias__baseline_consistency__attack_heavy
+12. combo_evolution_bias__energy_trim_medium__attack_heavy
+
+Optional, only if already supported:
+13. combo_baseline_consistency__energy_bias
+14. combo_energy_trim_medium__energy_bias
+15. combo_evolution_bias__draw_search_bias
+
+Rules:
+- Do not invent card IDs.
+- Do not exceed deck legality constraints enforced by current validator.
+- Do not overwrite root files.
+- Each candidate run directory must contain:
+  - branch.yaml
+  - main.py
+  - deck.csv
+  - package verification result
+  - smoke result
+  - metrics.json after evaluation
+  - report.md
+- Each candidate must have a hypothesis.
+
+Example hypotheses:
+- policy_evolution_bias: “The baseline deck contains an evolution line, and better evolution selection may improve setup reliability.”
+- deck_baseline_consistency: “Replacing excess energy with consistency cards may reduce dead hands and improve plan execution.”
+- deck_energy_trim_medium: “The current 33-energy deck may be over-saturated; moderate energy trimming may improve draw quality.”
+- combo_evolution_bias__baseline_consistency: “Consistency improvements plus better evolution priority may compound by finding and using the evolution line more reliably.”
+- combo_evolution_bias__energy_trim_medium: “Energy trimming may create better hands, but needs evolution-aware policy to convert setup into attacks.”
+
+Emit ActiveGraph events:
+- IdeaGenerated
+- HypothesisRegistered
+- ExperimentBranchCreated
+- PolicyVariantCreated
+- DeckVariantCreated where applicable
+
+---
+
+Step 5 — Run two-stage evaluation
+
+Because runtime can be expensive, use a two-stage approach.
+
+Stage A: broad confirmation
+- candidates: all generated generation-2 candidates
+- games per seat: 5
+- total games per candidate: 10
+- seat swap enabled
+- purpose: eliminate obviously weak/broken candidates
+
+Stage B: focused confirmation
+- candidates: top 5 from Stage A plus v1 control
+- games per seat: 20
+- total games per candidate: 40
+- seat swap enabled
+- purpose: get a better signal before spending Kaggle submission budget
+
+If this is too slow, reduce Stage B to games per seat 10, but report that fidelity was reduced.
+
+Commands should be approximately:
+
+python scripts/generate_candidates.py --generation 2 --limit 15
+python scripts/run_experiment_batch.py --stage broad --games-per-seat 5 --seat-swap
+python scripts/rank_candidates.py --stage broad
+python scripts/run_experiment_batch.py --stage focused --top 5 --games-per-seat 20 --seat-swap
+python scripts/rank_candidates.py --stage focused
+
+If your script interfaces differ, adapt them but preserve the same behavior.
+
+Every run should emit ActiveGraph events:
+- LocalEvaluationStarted
+- MatchBatchStarted
+- MatchBatchFinished
+- MetricsComputed
+- CandidateRanked
+- CandidatePromoted or CandidateRejected
+
+---
+
+Step 6 — Improve decision metrics if cheap
+
+If already instrumented, include:
+- option_type counts chosen
+- type 13 attack choice count
+- type 14 pass-like choice count
+- pass-like rate
+- attack rate
+- evolution-like choice rate
+- energy-like choice rate
+- average legal option count
+- average game length
+- fallback count
+- invalid return count
+- error/timeout count
+
+If not already instrumented, add lightweight instrumentation in the local wrapper only, not in the submitted runtime.
+
+Do not make `main.py` depend on instrumentation.
+
+---
+
+Step 7 — Rank and label candidates conservatively
+
+Ranking output should distinguish:
+
+- scout_promising
+- confirmation_promising
+- promotable
+- diversity_candidate
+- rejected
+- inconclusive
+
+Do not mark a candidate promotable from 5-game scout results.
+
+For each candidate, produce:
+- raw win rate
+- adjusted win rate
+- Wilson 80% CI
+- Wilson 95% CI
+- completed games
+- seat split
+- crash/error/timeout counts
+- package/smoke status
+- soft score
+- promotion status
+- one-paragraph interpretation
+
+Save:
+
+data/experiments/latest_ranking.json
+data/experiments/latest_ranking.md
+data/experiments/focused_ranking.json
+data/experiments/focused_ranking.md
+
+---
+
+Step 8 — Build submit-ready packages but do not upload
+
+For the top candidates that pass promotion gates or are strong confirmation candidates, build local tarballs under:
+
+data/submissions/candidates/
+
+Example:
+
+data/submissions/candidates/policy_evolution_bias.tar.gz
+data/submissions/candidates/combo_evolution_bias__baseline_consistency.tar.gz
+data/submissions/candidates/deck_baseline_consistency.tar.gz
+
+Each tarball must contain only:
+- main.py
+- deck.csv
+
+Run tar inspection on each.
+
+Do not upload to Kaggle.
+
+Update or create:
+
+data/submission_queue.json
+
+It should contain at most 3 candidates for manual review, because we want to conserve daily Kaggle submissions.
+
+For each queued candidate:
+- candidate_id
+- hypothesis
+- local rank
+- focused metrics
+- package path
+- suggested Kaggle message
+- reason for queueing
+- risk notes
+
+The queue must say:
+- auto_submit_enabled: false
+- require_manual_approval_for_submit: true
+- NO UPLOAD PERFORMED
+
+---
+
+Step 9 — Rebuild ActiveGraph report site
+
+Run:
+
+python scripts/build_report_site.py
+
+The report site should clearly show:
+- v1 baseline score 349.8
+- scout vs focused results
+- generation-2 combo candidates
+- confidence intervals
+- seat-swap split
+- promotion status
+- top 3 manual submission candidates
+- all rejected/inconclusive candidates and why
+- event timeline
+- strategy seams
+- hypothesis lineage
+- deck/policy diffs
+- lessons learned
+
+Also rebuild:
+
+data/reports/activegraph_strategy_report.md
+
+Add a “Current Interpretation” section:
+- What appears promising
+- What remains uncertain
+- What should be submitted next, if any
+- Why the recommendation is grounded in local evidence
+- Why Kaggle rating may differ from local cabt results
+
+---
+
+Step 10 — Validate everything
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+
+Also verify root baseline remains unchanged relative to archive if possible:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged"
+
+If root files changed accidentally, restore them from baseline archive.
+
+---
+
+Final report format
+
+Report exactly in this format:
+
+ActiveGraph High-Fidelity Strategy Pass Report
+
+1. Baseline safety
+- root baseline unchanged: yes/no
+- baseline package verify:
+- baseline smoke:
+- Kaggle score recorded:
+- archive path:
+
+2. Lab improvements
+- Wilson confidence intervals added: yes/no
+- seat-swap evaluation added: yes/no
+- generation-2 combo candidates added: yes/no
+- decision metrics added/available:
+- new tests added:
+- ActiveGraph events emitted:
+
+3. Candidate generation
+- total candidates generated:
+- control candidates:
+- single-seam candidates:
+- combo candidates:
+- candidates blocked and why:
+
+4. Evaluation
+- Stage A games per candidate:
+- Stage B games per candidate:
+- candidates evaluated:
+- failed package/smoke candidates:
+- crashes/timeouts/invalid returns:
+- result files:
+
+5. Ranking summary
+- Top 5 focused candidates:
+  1.
+  2.
+  3.
+  4.
+  5.
+- For each top candidate include:
+  - raw win rate
+  - adjusted win rate
+  - Wilson 80% CI
+  - Wilson 95% CI
+  - seat split
+  - promotion label
+  - one-line interpretation
+
+6. Submission queue
+- top queued candidates:
+  1.
+  2.
+  3.
+- candidate tarball paths:
+- auto-submit enabled:
+- manual approval required:
+- upload performed: no
+
+7. Report site
+- site generated:
+- site path:
+- markdown report path:
+- most important new lesson:
+
+8. Validation
+- pytest:
+- root package verify:
+- root smoke:
+- candidate tarball inspections:
+- root files unchanged:
+
+9. Manual git notes
+- files I should review:
+- files not to commit:
+- generated/ignored files:
+
+10. Recommendation
+- Submit a candidate now: yes/no
+- If yes, candidate ID and reason:
+- If no, reason:
+- Next Replit prompt:
+  - Provide one concise prompt for the next pass.

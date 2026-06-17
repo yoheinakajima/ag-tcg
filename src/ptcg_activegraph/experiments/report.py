@@ -30,6 +30,7 @@ from .config import (
 SITE_DIR = Path("data/site")
 REPORT_MD = Path("data/reports/activegraph_strategy_report.md")
 RANKING_JSON = Path("data/experiments/latest_ranking.json")
+FOCUSED_RANKING_JSON = Path("data/experiments/focused_ranking.json")
 QUEUE_JSON = Path("data/submission_queue.json")
 
 STYLE = """\
@@ -102,6 +103,7 @@ def gather(runs_root=RUNS_ROOT) -> dict:
     return {
         "events": _load_events(),
         "ranking": _load_json(RANKING_JSON) or [],
+        "focused_ranking": _load_json(FOCUSED_RANKING_JSON) or [],
         "queue": _load_json(QUEUE_JSON) or {},
         "runs": runs,
         "baseline_readme": (BASELINE_DIR / "README.md"),
@@ -126,12 +128,35 @@ def _page(title: str, body: str) -> str:
             f"empty sections mean no data yet.</footer></body></html>")
 
 
+def _rank_table_html(ranking: list[dict]) -> str:
+    if not ranking:
+        return ("<div class=empty>No ranking at this stage yet — run the batch "
+                "and rank_candidates.</div>")
+    rows = "".join(
+        f"<tr><td>{r.get('rank')}</td><td>{_esc(r.get('branch_id'))}</td>"
+        f"<td>{_esc(r.get('seam_id'))}</td><td>{_esc(r.get('kind') or '-')}</td>"
+        f"<td>{_esc(r.get('games_completed') or '-')}</td>"
+        f"<td>{_num(r.get('adjusted_win_rate'))}</td>"
+        f"<td>{_ci_str(r.get('wilson80'))}</td>"
+        f"<td>{_num(r.get('seat_balance_delta'), '{:+.3f}')}</td>"
+        f"<td class={'rej' if r.get('rejected') else 'ok'}>"
+        f"{_esc(r.get('label') or ('REJECTED' if r.get('rejected') else '-'))}</td></tr>"
+        for r in ranking
+    )
+    return ("<table><tr><th>#</th><th>Branch</th><th>Seam</th><th>Kind</th>"
+            "<th>Games</th><th>Adj WR</th><th>80% CI</th><th>Seat Δ</th>"
+            f"<th>Label</th></tr>{rows}</table>")
+
+
 def _overview_html(data: dict) -> str:
     events = data["events"]
     ranking = data["ranking"]
+    focused = data.get("focused_ranking", [])
     runs = data["runs"]
     counts = Counter(e.get("event_type") for e in events)
-    promotable = [r for r in ranking if not r.get("rejected") and r.get("score") is not None]
+    primary = focused or ranking
+    promotable = [r for r in primary if r.get("label") == "promotable"]
+    confirmation = [r for r in primary if r.get("label") == "confirmation_promising"]
 
     cards = "".join(
         f"<div class=card><div class=k>{_esc(k)}</div><div class=v>{_esc(v)}</div></div>"
@@ -139,24 +164,10 @@ def _overview_html(data: dict) -> str:
             ("Events", len(events)),
             ("Candidates", len(runs)),
             ("Promotable", len(promotable)),
-            ("Rejected", sum(1 for r in ranking if r.get("rejected"))),
+            ("Confirmation", len(confirmation)),
+            ("Rejected", sum(1 for r in primary if r.get("rejected"))),
         ]
     )
-
-    if ranking:
-        rows = "".join(
-            f"<tr><td>{r.get('rank')}</td><td>{_esc(r.get('branch_id'))}</td>"
-            f"<td>{_esc(r.get('seam_id'))}</td>"
-            f"<td>{'-' if r.get('score') is None else _esc(r.get('score'))}</td>"
-            f"<td>{'-' if r.get('win_rate') is None else _esc(r.get('win_rate'))}</td>"
-            f"<td class={'rej' if r.get('rejected') else 'ok'}>"
-            f"{'REJECTED' if r.get('rejected') else 'ok'}</td></tr>"
-            for r in ranking
-        )
-        rank_tbl = ("<table><tr><th>#</th><th>Branch</th><th>Seam</th><th>Score</th>"
-                    f"<th>Win rate</th><th>Status</th></tr>{rows}</table>")
-    else:
-        rank_tbl = "<div class=empty>No ranking yet — run the batch and rank_candidates.</div>"
 
     type_rows = "".join(
         f"<tr><td>{_esc(t)}</td><td>{n}</td></tr>"
@@ -165,7 +176,10 @@ def _overview_html(data: dict) -> str:
 
     body = (
         f"<section><h2>Snapshot</h2><div class=cards>{cards}</div></section>"
-        f"<section><h2>Latest ranking</h2>{rank_tbl}</section>"
+        f"<section><h2>Stage 1 — Broad scout ranking</h2>"
+        f"{_rank_table_html(ranking)}</section>"
+        f"<section><h2>Stage 2 — Focused seat-swap confirmation</h2>"
+        f"{_rank_table_html(focused)}</section>"
         f"<section><h2>Event types</h2><table><tr><th>Type</th><th>Count</th></tr>"
         f"{type_rows}</table></section>"
     )
@@ -239,56 +253,147 @@ def write_site(data: dict, site_dir: Path = SITE_DIR) -> list[Path]:
 # Markdown
 # ---------------------------------------------------------------------------
 
+def _ci_str(ci) -> str:
+    if not ci or ci[0] is None:
+        return "-"
+    return f"{ci[0]:.3f}–{ci[1]:.3f}"
+
+
+def _num(x, fmt="{:.3f}") -> str:
+    return "-" if x is None else fmt.format(x) if isinstance(x, (int, float)) else str(x)
+
+
+def _ranking_md(ranking: list[dict], title: str) -> list[str]:
+    """Render a ranking table with adjusted win rate, CIs, seat split, label."""
+    lines = [f"## {title}"]
+    if not ranking:
+        lines.append("_No ranking at this stage yet._")
+        return lines
+    lines.append("| # | Branch | Seam | Kind | Games | Adj WR | 80% CI | 95% CI "
+                 "| Seat Δ | Label |")
+    lines.append("|--:|--------|------|------|------:|-------:|--------|--------"
+                 "|-------:|-------|")
+    for r in ranking:
+        lines.append(
+            f"| {r.get('rank')} | {r.get('branch_id')} | {r.get('seam_id')} | "
+            f"{r.get('kind') or '-'} | {r.get('games_completed') or '-'} | "
+            f"{_num(r.get('adjusted_win_rate'))} | {_ci_str(r.get('wilson80'))} | "
+            f"{_ci_str(r.get('wilson95'))} | {_num(r.get('seat_balance_delta'), '{:+.3f}')} "
+            f"| {r.get('label') or ('REJECTED' if r.get('rejected') else '-')} |"
+        )
+    return lines
+
+
 def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    events, ranking, runs, queue = (
-        data["events"], data["ranking"], data["runs"], data["queue"],
+    events, ranking, focused, runs, queue = (
+        data["events"], data["ranking"], data.get("focused_ranking", []),
+        data["runs"], data["queue"],
     )
     counts = Counter(e.get("event_type") for e in events)
+    combos = [r for r in runs if (r["branch"].kind == "combo")]
+    primary = focused or ranking
+    survivors = [r for r in primary
+                 if not r.get("rejected") and r.get("label") in
+                 ("promotable", "confirmation_promising")]
+    rejected = [r for r in primary if r.get("rejected")
+                or r.get("label") in ("rejected", "inconclusive")]
+    top3 = survivors[:3]
+
     lines = [
         "# ActiveGraph Strategy Lab — Report",
         "",
         "Transparent experiment factory around the immutable v1 control "
-        "(Kaggle public score 349.8).",
+        "(Kaggle public score 349.8). Two-stage evaluation: a broad scout pass "
+        "then a focused seat-swap confirmation pass with Wilson confidence "
+        "intervals and conservative promotion labels.",
         "",
         "## Snapshot",
         f"- Events recorded: **{len(events)}**",
-        f"- Candidates generated: **{len(runs)}**",
-        f"- Ranked: **{len(ranking)}** "
-        f"({sum(1 for r in ranking if r.get('rejected'))} rejected)",
+        f"- Candidates generated: **{len(runs)}** "
+        f"({len(combos)} combination / generation-2)",
+        f"- Broad-ranked: **{len(ranking)}**, Focused-ranked: **{len(focused)}**",
+        f"- Survivors (promotable / confirmation): **{len(survivors)}**, "
+        f"Rejected / inconclusive: **{len(rejected)}**",
         "",
-        "## Ranking",
     ]
-    if ranking:
-        lines.append("| # | Branch | Seam | Score | Win rate | Status |")
-        lines.append("|--:|--------|------|------:|---------:|--------|")
-        for r in ranking:
-            status = "REJECTED" if r.get("rejected") else "ok"
-            sc = "-" if r.get("score") is None else f"{r.get('score')}"
-            wr = "-" if r.get("win_rate") is None else f"{r.get('win_rate')}"
-            lines.append(f"| {r.get('rank')} | {r.get('branch_id')} | "
-                         f"{r.get('seam_id')} | {sc} | {wr} | {status} |")
+
+    lines += _ranking_md(ranking, "Stage 1 — Broad scout ranking")
+    lines += [""]
+    lines += _ranking_md(focused, "Stage 2 — Focused seat-swap confirmation ranking")
+
+    lines += ["", "## Top candidates (focused)"]
+    if top3:
+        for r in top3:
+            lines.append(
+                f"- **{r.get('branch_id')}** ({r.get('seam_id')}, "
+                f"{r.get('kind') or 'single'}) — _{r.get('label')}_  ")
+            lines.append(f"  - Hypothesis: {r.get('hypothesis') or '(n/a)'}")
+            lines.append(
+                f"  - Adjusted WR {_num(r.get('adjusted_win_rate'))} "
+                f"(80% CI {_ci_str(r.get('wilson80'))}), seat split "
+                f"p0={_num(r.get('candidate_p0_win_rate'))} / "
+                f"p1={_num(r.get('candidate_p1_win_rate'))} "
+                f"(Δ {_num(r.get('seat_balance_delta'), '{:+.3f}')})")
+            if r.get("interpretation"):
+                lines.append(f"  - {r.get('interpretation')}")
     else:
-        lines.append("_No ranking yet._")
-    lines += ["", "## Candidate lineage"]
-    if runs:
-        for r in runs:
+        lines.append("_No promotable or confirmation candidates at the focused "
+                     "stage._")
+
+    lines += ["", "## Combination (generation-2) candidates"]
+    if combos:
+        for r in combos:
             b = r["branch"]
-            lines.append(f"- **{b.branch_id}** ({b.seam_id}, {b.kind}) — {b.hypothesis}")
+            lines.append(f"- **{b.branch_id}** — {b.hypothesis}")
     else:
-        lines.append("_No candidates generated yet._")
+        lines.append("_No combination candidates generated._")
+
+    lines += ["", "## Rejected & inconclusive"]
+    if rejected:
+        for r in rejected:
+            reasons = ", ".join(r.get("reject_reasons") or []) or r.get("label") or "-"
+            lines.append(f"- {r.get('branch_id')} ({r.get('seam_id')}): {reasons}")
+    else:
+        lines.append("_None._")
+
     lines += ["", "## Submission queue"]
     if queue:
         lines.append(f"- Mode: **{queue.get('mode', 'n/a')}** "
                      f"(auto_submit={queue.get('auto_submit_enabled')}, "
                      f"manual_approval={queue.get('require_manual_approval_for_submit')})")
         for c in queue.get("candidates", []):
-            lines.append(f"  - {c.get('branch_id')} -> `{c.get('kaggle_command')}`")
+            lines.append(f"  - {c.get('branch_id')} [{c.get('label')}] "
+                         f"-> `{c.get('tarball')}` (NOT uploaded)")
         if not queue.get("candidates"):
             lines.append("  - (nothing queued)")
     else:
         lines.append("_Queue not built yet._")
+
+    lines += ["", "## Current interpretation"]
+    if top3:
+        best = top3[0]
+        lines.append(
+            f"The strongest focused candidate is **{best.get('branch_id')}** "
+            f"({best.get('seam_id')}), labelled _{best.get('label')}_ with an "
+            f"adjusted win rate of {_num(best.get('adjusted_win_rate'))} "
+            f"(80% CI {_ci_str(best.get('wilson80'))}). ")
+        if best.get("label") == "promotable":
+            lines.append(
+                "Its 80% lower bound clears 0.50 and it beats the v1 control, so "
+                "it is a defensible submission — but local cabt is only a proxy "
+                "for the hidden Kaggle ladder, so treat it as directional.")
+        else:
+            lines.append(
+                "No candidate has yet cleared the promotion gate (80% lower bound "
+                "above 0.50 while beating the v1 control); the queue holds the "
+                "best confirmation candidates for an optional, clearly-flagged "
+                "submission. The v1 baseline (349.8) remains the control.")
+    else:
+        lines.append("No candidate currently beats the v1 control with confidence; "
+                     "the immutable v1 baseline (349.8) remains the best option.")
+
     lines += ["", "## Event types"]
     if counts:
         for t, n in sorted(counts.items(), key=lambda x: (-x[1], x[0])):
