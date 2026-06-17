@@ -54,38 +54,6 @@ _NEGATIVE = {
 # When an option also looks productive, don't punish its discard/trash cost.
 _DISCARD_REDEEMERS = ("draw", "search", "attack", "attach", "evolve", "energy")
 
-# ---------------------------------------------------------------------------
-# Structured option scoring from the recorded cabt schema
-# (see docs/CABT_SCHEMA_NOTES.md). Real options are dicts with a numeric
-# "type". These weights are conservative and ADDITIVE on top of the string
-# scorer; they only nudge ranking and never produce illegal actions.
-# Observed types (counts from 162 self-play observations):
-#   13 = attack action (carries "attackId")            -> strongly prefer
-#    8 = most common in-play action (attach/place)      -> mild prefer
-#    7 = play/select card by hand index                 -> mild prefer
-#    3 = select a card in a play area                   -> slight prefer
-#   10 = area-7 action                                  -> slight prefer
-#    9 = observed action (meaning uncertain)            -> slight
-#    0 = pick a number/quantity (carries "number")      -> neutral
-#  1,2 = bare simple choices (meaning uncertain)        -> neutral
-#   14 = bare option, observed as turn-ending/pass-like -> mild deprefer
-# Unknown types default to neutral (0) so we never over-penalize.
-# ---------------------------------------------------------------------------
-_OPTION_TYPE_SCORES = {
-    13: 120,
-    8: 12,
-    7: 15,
-    3: 8,
-    10: 6,
-    9: 4,
-    0: 0,
-    1: 0,
-    2: 0,
-    14: -40,
-}
-_ATTACK_TYPE = 13
-_ATTACK_ID_BONUS = 30
-
 
 # ---------------------------------------------------------------------------
 # Pure parsing / scoring helpers.
@@ -161,32 +129,11 @@ def _get_min_max_count(select, option_count):
     return min_count, max_count
 
 
-def _structured_score(option):
-    """Conservative score over the recorded cabt numeric fields.
-
-    Only applies when ``option`` is a dict with a known integer ``type``.
-    Unknown types score 0 (neutral) so we never over-penalize. Never raises.
-    """
-    if not isinstance(option, dict):
-        return 0
-    t = option.get("type")
-    if isinstance(t, bool):  # bool is an int subclass; treat as unknown.
-        return 0
-    if not isinstance(t, int):
-        return 0
-    score = _OPTION_TYPE_SCORES.get(t, 0)
-    if t == _ATTACK_TYPE and option.get("attackId") is not None:
-        score += _ATTACK_ID_BONUS
-    return score
-
-
 def _score_option(option, idx, obs):
-    """Score a single option. Combines a conservative structured score over the
-    recorded cabt numeric fields (when the option is a dict) with the
-    schema-agnostic string scorer, so it works on both string and dict shapes.
-    ``idx``/``obs`` are accepted for future context-aware scoring."""
-    score = _structured_score(option)
+    """Score a single option. ``idx``/``obs`` are accepted for future
+    context-aware scoring but the v1 score is string-only and deterministic."""
     text = _safe_json_lower(option)
+    score = 0
     for kw, w in _POSITIVE.items():
         if kw in text:
             score += w

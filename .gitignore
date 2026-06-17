@@ -21,5 +21,15 @@ data/submissions/*.tar.gz
 data/decks/*.csv
 data/cards/*.csv
 
+# Official/proprietary Kaggle card data (never commit)
+data/cards/*.pdf
+Card_ID*.pdf
+*Card*List*.pdf
+EN_Card_Data.csv
+JP_Card_Data.csv
+
+# Known-good archive: keep .py/.csv/.md preservation copies, ignore tarballs
+data/submissions/archive/*.tar.gz
+
 # OS
 .DS_Store

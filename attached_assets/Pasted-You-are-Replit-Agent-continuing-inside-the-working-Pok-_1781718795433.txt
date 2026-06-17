@@ -1,0 +1,330 @@
+You are Replit Agent continuing inside the working Pokémon TCG AI Battle Challenge repo.
+
+We now have a real passing baseline:
+
+* 88/88 tests passing
+* real deck resolved
+* smoke test PASS
+* 37-step real game completed
+* schema recorded from 162 observations / 3 games
+* final tarball exists at `data/submissions/submission.tar.gz`
+* critical `select is None` deck-return bug fixed
+* `main.py` is stdlib-only and includes deck-submission handling
+* final tarball contains only top-level `main.py` and `deck.csv`
+
+Goal of this pass:
+
+> Preserve the known-good submission, commit/push safe files, then improve `main.py` using the real cabt option schema without breaking smoke/package validity.
+
+Do not redesign the project. Do not add RL. Do not add ActiveGraph complexity. This is a schema-informed heuristic hardening pass.
+
+---
+
+# Critical preservation rule
+
+Before changing anything, preserve the current known-good state.
+
+Run:
+
+```bash
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+python scripts/package_submission.py
+tar -tzf data/submissions/submission.tar.gz
+```
+
+Then archive the known-good package:
+
+```bash
+mkdir -p data/submissions/archive
+cp data/submissions/submission.tar.gz data/submissions/archive/known_good_first_smoke_pass.tar.gz
+cp main.py data/submissions/archive/main_known_good_first_smoke_pass.py
+cp deck.csv data/submissions/archive/deck_known_good_first_smoke_pass.csv
+```
+
+Also write a small metadata file:
+
+```bash
+cat > data/submissions/archive/known_good_first_smoke_pass.md <<'EOF'
+# Known-good first smoke-pass submission
+
+Status:
+- tests passing
+- package verifies
+- cabt smoke passes
+- real deck resolved
+- main.py handles select=None by returning the deck
+- tarball contains only top-level main.py and deck.csv
+
+Use this archive if later heuristic changes regress.
+EOF
+```
+
+---
+
+# Git hygiene / data hygiene
+
+Inspect git status:
+
+```bash
+git status --short
+```
+
+Add or update `.gitignore` so we do not accidentally commit large/proprietary official Kaggle data or huge generated artifacts.
+
+Ignore at least:
+
+```text
+data/cards/*.pdf
+data/cards/*Card*List*.pdf
+data/cards/EN_Card_Data.csv
+data/cards/JP_Card_Data.csv
+Card_ID*.pdf
+EN_Card_Data.csv
+JP_Card_Data.csv
+*.html
+data/matches/*.html
+data/matches/*.jsonl
+data/submissions/archive/*.tar.gz
+```
+
+But keep useful small files commit-friendly:
+
+```text
+main.py
+deck.csv
+deck.meta.json
+docs/CABT_SCHEMA_NOTES.md
+data/decks/resolved_deck_summary.json
+data/matches/schema_examples.json
+```
+
+If `data/matches/option_examples.jsonl` is small, keep it. If it is huge, summarize it instead and ignore the raw JSONL.
+
+Then commit the safe baseline:
+
+```bash
+git add .
+git status --short
+git commit -m "Prepare first valid PTCG Kaggle submission with cabt smoke pass" || true
+```
+
+If remote is configured, push the branch:
+
+```bash
+git branch --show-current
+git push
+```
+
+If push fails due to auth/remote, report the exact message and continue with code improvements.
+
+---
+
+# Inspect real schema
+
+Read:
+
+```bash
+cat docs/CABT_SCHEMA_NOTES.md || true
+cat data/matches/schema_examples.json || true
+head -100 data/matches/option_examples.jsonl || true
+```
+
+Summarize the observed schema before editing.
+
+Known observed facts from prior run:
+
+* `select.type` is numeric action category, values 0–14
+* `select.maxCount` is almost always 1
+* `option.type` common values:
+
+  * 8 appeared 3249×
+  * 7 appeared 807×
+  * 9 appeared 170×
+  * 13 appeared 125× and has `attackId`
+* `option.area` indicates board zone
+* `option.index` indicates card position
+* `option.attackId` is present on attack options
+* `select=None` at step 0 expects the agent to return the full 60-card deck
+
+Do not assume undocumented meanings beyond what the examples support. Use structured fields conservatively.
+
+---
+
+# Improve main.py scoring conservatively
+
+Update `main.py` only.
+
+Keep all existing safety properties:
+
+* stdlib-only
+* self-contained
+* no external calls
+* no imports from `src`
+* never raises outward
+* returns deck when `select is None`
+* always returns list[int]
+* validates/clamps result
+* generic string scorer remains as fallback
+
+Add structured scoring in `_score_option` or equivalent.
+
+Rules:
+
+1. If option is a dict and `option.type == 13`, strongly prefer it as an attack.
+
+   * Add a large positive score.
+   * Add extra if `attackId` exists.
+   * Do not blindly choose attack if there are required multi-select contexts, but for `maxCount=1`, type 13 should usually win over pass/end.
+
+2. Deprioritize likely pass/end/no-op options only when there are alternatives.
+
+   * Use actual examples to identify type 0/type 1 only if schema supports it.
+   * Do not over-penalize unknown types.
+
+3. Prefer card-action types that seem to correspond to productive card choices.
+
+   * Use observed examples, not guesses.
+   * Add comments documenting uncertainty.
+
+4. Keep string scoring:
+
+   * attack, damage, knockout, prize, evolve, energy, attach, draw, search, supporter, item, ability, skill, bench, switch, retreat, stadium
+   * end, pass, done, concede negative
+
+5. Add reason/debug support only outside hot path or behind simple helper, not required by Kaggle runtime.
+
+6. Add regression tests using real option examples where possible:
+
+   * type 13 attack outranks obvious end/pass
+   * `main.agent` still returns deck on `select=None`
+   * malformed observations still do not crash
+   * returned indices are always in range
+   * `maxCount` and `minCount` respected
+
+---
+
+# Optional: A/B smoke comparison
+
+Create a copy of known-good `main.py` as temporary baseline for local comparison only, not for submission.
+
+Run at least:
+
+```bash
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+```
+
+If there is already a tournament/self-play script that can compare two agents cheaply, run:
+
+```bash
+python scripts/run_tournament.py --help || true
+```
+
+Only use it if it works quickly. Do not spend time building a tournament system in this pass.
+
+The promotion rule is simple:
+
+```text
+Promote new main.py only if:
+- tests pass
+- package verifies
+- smoke test passes
+- final tarball still contains only main.py and deck.csv
+```
+
+If smoke fails, revert `main.py` from:
+
+```bash
+cp data/submissions/archive/main_known_good_first_smoke_pass.py main.py
+```
+
+Then rerun package verification.
+
+---
+
+# Rebuild final submission
+
+After changes pass:
+
+```bash
+python scripts/package_submission.py
+tar -tzf data/submissions/submission.tar.gz
+ls -lh data/submissions/submission.tar.gz
+```
+
+The tarball must contain only:
+
+```text
+main.py
+deck.csv
+```
+
+---
+
+# Report format required
+
+At the end, report in exactly this format:
+
+```text
+PTCG Replit Pass Report
+
+1. Baseline preserved
+- Known-good archive created: yes/no
+- Archive paths:
+  - ...
+- Current final tarball path:
+  - data/submissions/submission.tar.gz
+
+2. Git status
+- Commit created: yes/no
+- Commit hash if available:
+- Push succeeded: yes/no
+- Files intentionally ignored:
+- Any files that still need manual Git handling:
+
+3. Deck status
+- deck.csv source: cabt built-in / sample_submission / generated from official CSV / provided file / unresolved
+- deck.csv line count:
+- unique card IDs:
+- placeholder detected: yes/no
+- deck.meta.json summary:
+
+4. Schema findings
+- select.type values observed:
+- option.type values observed:
+- confirmed attack type:
+- fields used by heuristic:
+- fields deliberately not used yet:
+
+5. main.py changes
+- Structured scoring added: yes/no
+- Exact scoring rules added:
+- Safety properties preserved:
+  - stdlib-only:
+  - handles select=None deck request:
+  - never raises outward:
+  - validates indices:
+  - respects maxCount/minCount:
+
+6. Validation results
+- pytest:
+- package verify:
+- smoke test:
+- schema recorder rerun: yes/no
+- final package built: yes/no
+- tarball contents:
+
+7. Upload readiness
+- Ready to upload to Kaggle now: yes/no
+- Upload file:
+  - data/submissions/submission.tar.gz
+- Remaining blockers, if any:
+
+8. Recommended next action
+- One sentence only.
+```
+
+Remember: a valid low-scoring agent is better than a clever broken one. Preserve the known-good submission above all else.
