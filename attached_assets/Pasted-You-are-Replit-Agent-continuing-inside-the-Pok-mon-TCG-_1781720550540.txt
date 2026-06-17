@@ -1,0 +1,143 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Goal:
+
+Upload the known-good submission tarball to Kaggle using Kaggle CLI if credentials are available, then fetch submission status.
+
+Do not push to GitHub.
+Do not modify main.py or deck.csv unless upload validation reveals a real error.
+Do not print Kaggle credentials.
+Do not commit Kaggle credentials.
+Do not write credentials into tracked files.
+Use environment variables / Replit Secrets only.
+
+Known-good upload file:
+
+data/submissions/submission.tar.gz
+
+Competition slug:
+
+pokemon-tcg-ai-battle
+
+Expected Replit Secrets:
+
+KAGGLE_USERNAME
+KAGGLE_KEY
+
+Important:
+
+I must have already accepted the Kaggle competition rules in the browser. If Kaggle CLI reports that rules are not accepted, stop and tell me to accept the rules manually.
+
+Step 1 — Verify current package before upload
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+python scripts/package_submission.py
+tar -tzf data/submissions/submission.tar.gz
+ls -lh data/submissions/submission.tar.gz
+
+Confirm tarball contains exactly:
+
+main.py
+deck.csv
+
+If any validation fails, stop and report the failure. Do not upload.
+
+Step 2 — Install/check Kaggle CLI
+
+Run:
+
+python -m pip install -U kaggle
+
+Then check secrets without exposing values:
+
+python - <<'PY'
+import os
+print("KAGGLE_USERNAME present:", bool(os.environ.get("KAGGLE_USERNAME")))
+print("KAGGLE_KEY present:", bool(os.environ.get("KAGGLE_KEY")))
+PY
+
+If either is missing, stop and report exactly:
+
+Please add these Replit Secrets:
+- KAGGLE_USERNAME = your Kaggle username
+- KAGGLE_KEY = your Kaggle API token key
+
+Then rerun this prompt.
+
+Step 3 — Test Kaggle auth and competition access
+
+Run:
+
+kaggle competitions files pokemon-tcg-ai-battle
+
+If this fails because rules are not accepted, stop and report:
+
+Kaggle credentials work, but competition rules are not accepted. Please open the Kaggle competition page in the browser, join/accept rules, then rerun this prompt.
+
+If this fails because authentication is missing or invalid, stop and report:
+
+Kaggle authentication failed. Please check KAGGLE_USERNAME and KAGGLE_KEY in Replit Secrets.
+
+If this fails for another reason, report the exact error and stop.
+
+Step 4 — Submit exactly once
+
+Run only this one submit command:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submit pokemon-tcg-ai-battle -f data/submissions/submission.tar.gz -m "v0 smoke-passing baseline" 2>&1 | tee data/kaggle_uploads/v0_submit.log
+
+Do not run any second submit command.
+
+Step 5 — Fetch submission status
+
+Run:
+
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/submissions_after_v0.log
+
+Also try:
+
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/submissions_after_v0.csv
+
+If status is queued/pending, say so. Do not assume failure.
+
+Step 6 — Final report format
+
+Report back exactly in this format:
+
+Kaggle Upload Report
+
+1. Pre-upload validation
+- pytest:
+- package verify:
+- smoke test:
+- tarball contents:
+- upload file size:
+
+2. Kaggle CLI/auth
+- Kaggle CLI installed:
+- KAGGLE_USERNAME present:
+- KAGGLE_KEY present:
+- Competition access check:
+- Rules accepted/access available:
+
+3. Upload
+- Upload attempted: yes/no
+- Upload command used:
+- Submit log path:
+- Raw submit result summary:
+
+4. Submission status
+- Status command succeeded: yes/no
+- Latest submission status:
+- Score/rating if available:
+- Error if any:
+- Logs saved at:
+
+5. Next action
+- If validation passed/queued: say "Wait for Kaggle validation/episodes, then fetch submissions again."
+- If error: classify the error and recommend the next fix.
