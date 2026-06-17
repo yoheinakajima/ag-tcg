@@ -1,0 +1,456 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle in this pass.
+- Do not modify root main.py or root deck.csv.
+- Preserve v1 and v2 baselines.
+- Do not print or commit Kaggle credentials.
+- Do not commit official card CSV/PDF data.
+- Keep candidate submission tarballs top-level main.py + deck.csv only.
+- This is a local ActiveGraph research pass only.
+
+Current status:
+- v1 baseline live Kaggle score: 356.9.
+- v2 deck_energy_trim_light live Kaggle score: 479.1.
+- v2 should remain the active control baseline.
+- The uploaded Kaggle replay is episode 80374966.
+- Replit previously did not have the replay file locally, so the analyzer wrote a placeholder.
+- I will upload/copy the replay into Replit at:
+  data/replays/80374966.json
+
+Goal:
+Run Pass 5: replay-informed effect-resolution and deckout-awareness research, plus chaos telemetry enablement. No Kaggle upload.
+
+Key strategic interpretation:
+The v2 improvement came from deck composition, but the replay shows the next major policy weakness is effect-resolution/card-targeting:
+- Ultra Ball/Secret Box/Mega Signal/Lillie/Petrel/Surfing Beach decisions are not coordinated.
+- The bot can search for a setup piece, then discard it shortly after.
+- The bot can fetch Mega Abomasnow ex without preserving/setting up Snover.
+- The bot can over-draw/search toward deckout.
+- Chaos telemetry is available enough for first-order metrics because observations expose opponent handCount, deckCount, bench count, visible board, and status flags.
+
+Part A — Verify replay file exists
+
+Run:
+
+ls -lh data/replays/80374966.json || true
+
+If missing, stop and report:
+
+Please upload the replay JSON to:
+data/replays/80374966.json
+
+Do not continue without the replay.
+
+Part B — Preserve baselines
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+
+Verify baselines:
+
+ls -la data/baselines/v1_kaggle_349_8 || true
+ls -la data/baselines/v2_kaggle_479_1_deck_energy_trim_light || true
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part C — Build real replay analyzer
+
+Update or create:
+
+src/ptcg_activegraph/replays/kaggle_replay.py
+src/ptcg_activegraph/replays/analyzers.py
+scripts/analyze_replay.py
+
+The analyzer should parse data/replays/80374966.json and produce:
+
+data/replays/80374966_analysis.json
+data/replays/80374966_analysis.md
+
+Extract at least:
+
+Episode:
+- EpisodeId
+- module_version
+- rewards
+- statuses
+- actTimeout
+- runTimeout
+- episodeSteps
+- total steps
+
+Deck:
+- submitted deck list
+- card counts
+- unique card IDs
+- compare to v1/v2 baselines if possible
+
+Final state:
+- final deckCount by player
+- final handCount by player
+- final prize counts
+- active/bench summary
+- apparent loss reason if inferable
+- uncertainty note
+
+Decision telemetry:
+- select.context distribution
+- select.type distribution
+- option.type distribution
+- chosen option.type distribution
+- attack count
+- play count
+- attach count
+- evolve count
+- ability count
+- end/pass count
+- discard contexts
+- to-hand/search contexts
+- effect card IDs involved
+
+Effect-resolution traces:
+For each effect card:
+- Ultra Ball ID 1121
+- Secret Box ID 1092
+- Mega Signal ID 1145
+- Lillie’s Determination ID 1227
+- Team Rocket’s Petrel ID 1219
+- Surfing Beach ID 1262
+
+Record:
+- step
+- player
+- effect card
+- context
+- legal option card IDs if visible
+- chosen card IDs if visible
+- pre-state hand/board/deckCount
+- post-state hand/board/deckCount if inferable
+- heuristic “good/bad/uncertain” tag
+
+Specific failure tags to detect:
+- searched_setup_piece_then_discarded
+- discarded_last_or_only_snover
+- fetched_mega_without_snover_line
+- discarded_energy_ok
+- overdraw_or_oversearch_near_deckout
+- chose_draw_when_deck_low
+- attached_to_current_attacker
+- attached_to_non_attacker
+- played_stadium_when_already_stadium
+- played_secret_box_with_too_few_safe_discards
+- effect_resolution_first_legal
+
+Do not fabricate conclusions. Use “uncertain” where needed.
+
+Emit ActiveGraph events:
+- ReplayImported
+- ReplayAnalyzed
+- FailureRegimeTagged
+- IdeaGenerated
+
+Part D — Correct chaos telemetry support
+
+Update docs/STRATEGY_SEAMS.md and the report site:
+
+Replace the previous “engine does not expose opponent-state telemetry” blocker with:
+
+The engine exposes enough first-order opponent telemetry for chaos scouts:
+- opponent handCount
+- opponent deckCount
+- opponent bench count
+- opponent active/bench visible cards
+- status flags: asleep, burned, confused, paralyzed, poisoned
+- discard contents
+- action logs
+
+Limitations:
+- opponent hand contents remain hidden
+- exact intent/causality must be inferred carefully
+- chaos metrics are approximate until replay parser is validated
+
+Add telemetry extraction in the local runner where feasible:
+- own_deck_count
+- opp_deck_count
+- own_hand_count
+- opp_hand_count
+- own_bench_count
+- opp_bench_count
+- own_status_flags
+- opp_status_flags
+- attack_count_by_player
+- draw_count_by_player
+- cards_drawn_by_player
+- discard_count_by_player
+- deckout_or_zero_deck_seen
+- hand_size_delta
+- bench_size_delta
+
+Part E — Implement replay-informed policy candidates
+
+Use v2 as the control baseline.
+
+Generate these candidate policies, each as isolated run dirs/tarballs only:
+
+1. policy_effect_resolution_v2
+Hypothesis:
+General card-targeting rules for search/discard effects will improve setup consistency.
+
+Rules:
+- In Discard context, prefer discarding excess Basic Water Energy first.
+- Avoid discarding the only visible Snover if no Snover is on board.
+- Avoid discarding the only Mega Abomasnow ex if a Snover is on board or available.
+- Avoid discarding the only attack-ready Pokémon.
+- If forced, choose the least damaging discard.
+
+2. policy_ultra_ball_v2
+Hypothesis:
+Ultra Ball should discard excess Water Energy and search for the missing setup piece.
+
+Rules:
+- If no Basic attacker/bench support exists, prefer Kyogre or Snover.
+- If Snover is on board and Mega Abomasnow ex is available, prefer Mega Abomasnow ex.
+- If no Snover is on board, prefer Snover over Mega Abomasnow ex.
+- Prefer not to search a duplicate low-value card.
+
+3. policy_secret_box_v2
+Hypothesis:
+Secret Box is powerful but dangerous; use it only when there are safe discards and choose coherent targets.
+
+Rules:
+- Do not play Secret Box if hand has fewer than 3 safe discard cards unless no better action exists.
+- Safe discards: excess Basic Water Energy first.
+- Unsafe discards: only Snover, only Mega Abomasnow ex, only attacker, only search card.
+- For ToHand choices, prefer coherent package:
+  - Mega Signal only if Snover line is preserved or on board.
+  - Powerglass if an attacker is active.
+  - Lillie/Petrel if deck count is healthy.
+  - Surfing Beach only if not already in play.
+
+4. policy_mega_signal_v2
+Hypothesis:
+Mega Signal should not fetch Mega Abomasnow ex unless Snover exists or is likely usable.
+
+Rules:
+- If Snover is on board, prefer Mega Abomasnow ex.
+- If Snover is not on board but Snover is available in options, prefer Snover if allowed.
+- If no Snover exists, deprioritize Mega Abomasnow ex and choose the best alternative.
+
+5. policy_deckout_guard_v1
+Hypothesis:
+The bot loses long games by over-drawing/searching into zero deck; avoid optional draw/search when deckCount is low.
+
+Rules:
+- If own deckCount <= 8, penalize draw/search/supporter/stadium abilities unless they immediately enable attack/evolution/KO.
+- If own deckCount <= 4, heavily penalize optional draw/search effects.
+- Never choose draw-count > 0 if deckCount is very low unless required.
+- End/pass can be acceptable if the alternative is self-deckout.
+
+6. combo_effect_resolution_v2__deckout_guard
+Hypothesis:
+Effect targeting plus deckout avoidance addresses the replay’s two clearest failure modes.
+
+All candidates must:
+- keep candidate main.py stdlib-only
+- return the deck on select=None
+- validate indices
+- never raise outward
+- pass package verify
+- pass candidate smoke
+- not mutate root files
+
+Part F — Add setup strategy candidates
+
+Generate these as local candidates too:
+
+1. policy_setup_snover_active
+Hypothesis:
+Opening Snover active may improve Mega Abomasnow setup, even at lower HP.
+
+2. policy_setup_kyogre_active
+Hypothesis:
+Opening Kyogre active remains safer because of HP and immediate attack plan.
+
+3. policy_setup_hybrid
+Hypothesis:
+Open Kyogre active if hand has attack/energy density; open Snover active if hand has Mega Signal/Mega Abomasnow/evolution support.
+
+These are candidates, not assumptions. Let the local evaluation decide.
+
+Part G — Run local evaluation
+
+Use v2 baseline as control:
+
+data/baselines/v2_kaggle_479_1_deck_energy_trim_light
+
+Generate candidates:
+
+python scripts/generate_candidates.py --group pass5_replay_policy
+
+Run scout:
+- 5 games per seat
+- seat swap on
+- watchdog on
+
+Then focused confirmation:
+- top 4 from scout
+- 20 games per seat
+- seat swap on
+- watchdog on
+
+Suggested commands, adapt to actual script interfaces:
+
+python scripts/analyze_replay.py data/replays/80374966.json
+python scripts/generate_candidates.py --group pass5_replay_policy
+python scripts/run_experiment_batch.py --stage pass5_scout --control data/baselines/v2_kaggle_479_1_deck_energy_trim_light --games-per-seat 5 --seat-swap
+python scripts/rank_candidates.py --stage pass5_scout
+python scripts/run_experiment_batch.py --stage pass5_focused --control data/baselines/v2_kaggle_479_1_deck_energy_trim_light --top 4 --games-per-seat 20 --seat-swap
+python scripts/rank_candidates.py --stage pass5_focused
+python scripts/build_report_site.py
+python scripts/queue_submissions.py --dry-run
+
+Do not upload.
+
+Part H — Chaos telemetry scout only
+
+Do not generate full chaos decks yet unless the candidate generator already supports them safely.
+
+Instead, create chaos telemetry readiness outputs:
+
+data/experiments/chaos_telemetry_contract.json
+data/experiments/chaos_candidate_requirements.md
+
+For each chaos seam:
+- hand_avalanche_froslass
+- bench_bloat_punisher
+- mill_resource_destruction
+- status_confusion_lock
+- vivillon_decidueye_four_card_lock
+
+Record:
+- required telemetry
+- whether telemetry is available from replay/local runner
+- candidate card IDs confirmed
+- policy requirements
+- generation blocker if any
+- minimum metric needed to evaluate
+
+Do not mark chaos “blocked because no telemetry” if handCount/deckCount/bench/status are available. Mark only the missing pieces honestly.
+
+Part I — Report site
+
+Rebuild:
+
+data/site/index.html
+data/reports/activegraph_strategy_report.md
+
+The site/report should show:
+- v1 score 356.9
+- v2 score 479.1
+- replay findings
+- effect-resolution failure chain
+- deckout evidence
+- policy candidate results
+- chaos telemetry readiness
+- no Kaggle upload note
+
+Part J — Tests
+
+Add tests for:
+- replay parser on 80374966-style JSON
+- effect-resolution trace extraction
+- deckout detection
+- chaos telemetry extraction from observations
+- candidate generation preserves root files
+- candidate package contains only main.py + deck.csv
+- ranker handles pass5 stages
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Final report format:
+
+ActiveGraph Pass 5 Replay-Informed Policy Report
+
+1. Replay ingestion
+- replay found:
+- replay path:
+- episode id:
+- rewards/statuses:
+- steps:
+- analyzer outputs:
+
+2. Main replay lessons
+- effect-resolution failures:
+- deckout/overdraw evidence:
+- setup-choice evidence:
+- strongest failure tag:
+- uncertainty notes:
+
+3. Telemetry
+- opponent handCount available:
+- opponent deckCount available:
+- opponent bench/status available:
+- chaos telemetry contract path:
+- remaining telemetry gaps:
+
+4. Candidates
+- replay-informed candidates generated:
+- setup candidates generated:
+- chaos candidates generated:
+- candidates blocked and why:
+
+5. Evaluation
+- control baseline:
+- scout games:
+- focused games:
+- candidates evaluated:
+- crashes/timeouts/invalid returns:
+- top 5 focused candidates:
+  1.
+  2.
+  3.
+  4.
+  5.
+
+6. Ranking / queue
+- promotable candidates:
+- dry-run queue path:
+- candidate tarball paths:
+- upload performed: no
+
+7. Report site
+- site path:
+- markdown report path:
+- most important new lesson:
+
+8. Validation
+- pytest:
+- root package verify:
+- root smoke:
+- root files unchanged:
+
+9. Manual git notes
+- files I should review:
+- files not to commit:
+- generated/ignored files:
+
+10. Next recommendation
+- one sentence only
