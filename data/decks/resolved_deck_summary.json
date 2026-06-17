@@ -1,0 +1,16 @@
+{
+  "deck_size": 60,
+  "errors": [],
+  "notes": [
+    "chose dominant energy type: '{f}'",
+    "12 Basic Pok\u00e9mon from 5 distinct cards",
+    "30 Trainers (draw/search prioritised)",
+    "18 basic Energy (card 6) as filler"
+  ],
+  "ok": true,
+  "placeholder": false,
+  "source": "generated",
+  "source_path": "data/cards/EN_Card_Data.csv",
+  "unique_cards": 33,
+  "warnings": []
+}

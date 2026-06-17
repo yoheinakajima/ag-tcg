@@ -1,7 +1,7 @@
 {
-  "placeholder": true,
-  "source": "placeholder",
-  "source_path": null,
+  "placeholder": false,
+  "source": "cabt_builtin",
+  "source_path": "kaggle_environments/envs/cabt/cabt.py",
   "deck_size": 60,
-  "note": "Structural placeholder (ids 1-15 x4). Run scripts/resolve_deck.py to replace with a real deck before submitting for score."
+  "note": "Known-valid cabt built-in deck (IDs 3x33, 721x2, 722x4, 723x4, 1092x1, 1121x2, 1145x2, 1163x2, 1219x4, 1227x4, 1262x2). Matches the competition reference agent deck."
 }

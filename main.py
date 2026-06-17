@@ -35,6 +35,7 @@ re-validated here before returning.
 from __future__ import annotations
 
 import json
+import os as _os
 
 # ---------------------------------------------------------------------------
 # Keyword weights for the embedded heuristic (string-only, schema-agnostic).
@@ -253,6 +254,39 @@ def fallback(obs):
 
 
 # ---------------------------------------------------------------------------
+# Deck loading (stdlib only) — cabt passes select=None on step 0 and expects
+# the agent to return its 60-card deck as a list of integer card IDs.
+# ---------------------------------------------------------------------------
+
+_DECK_IDS: list[int] | None = None
+
+
+def _load_deck_ids() -> list[int]:
+    """Read deck.csv next to this file and return card IDs. Cached."""
+    global _DECK_IDS
+    if _DECK_IDS is not None:
+        return _DECK_IDS
+    ids: list[int] = []
+    try:
+        for base in (_os.path.dirname(_os.path.abspath(__file__)), "."):
+            p = _os.path.join(base, "deck.csv")
+            if _os.path.exists(p):
+                with open(p, encoding="utf-8") as fh:
+                    for line in fh:
+                        line = line.strip()
+                        if line:
+                            try:
+                                ids.append(int(line))
+                            except ValueError:
+                                pass
+                break
+    except Exception:
+        pass
+    _DECK_IDS = ids
+    return _DECK_IDS
+
+
+# ---------------------------------------------------------------------------
 # Optional richer policy from agent.py (used only if it behaves).
 # ---------------------------------------------------------------------------
 
@@ -264,6 +298,16 @@ except Exception:
 
 def agent(obs_dict):
     """Kaggle entrypoint. Always returns a ``list[int]`` of legal option indices."""
+    # 0. Deck-submission step: cabt explicitly sets select=None on step 0 and
+    #    expects the agent to return its 60 card IDs (not option indices).
+    #    Only trigger when "select" key is present but null — not on empty dicts.
+    try:
+        if isinstance(obs_dict, dict) and "select" in obs_dict and obs_dict["select"] is None:
+            deck_ids = _load_deck_ids()
+            if len(deck_ids) == 60:
+                return deck_ids
+    except Exception:
+        pass
     # 1. Optional external agent, with its output re-validated here. Only trust
     #    it when it actually proposed at least one valid index (or there's
     #    nothing to pick). If it proposed nothing while options exist it
