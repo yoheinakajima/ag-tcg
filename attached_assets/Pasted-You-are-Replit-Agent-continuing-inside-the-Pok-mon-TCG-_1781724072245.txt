@@ -1,0 +1,129 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not submit another Kaggle submission unless explicitly instructed at the end of this prompt.
+- Do not modify main.py or deck.csv until the current Kaggle submission status is known.
+- Do not print credentials.
+- Preserve the current v0 package and Kaggle logs.
+
+Current known state:
+- Kaggle upload succeeded.
+- Submission file: data/submissions/submission.tar.gz
+- Description: v0 smoke-passing baseline
+- Submission time: 2026-06-17 19:19:56
+- Last known Kaggle status: pending
+- Local validation before upload:
+  - package verify PASS
+  - smoke test PASS
+  - tarball contains only main.py and deck.csv
+
+Goal:
+Fetch Kaggle submission status, classify the result, save all logs locally, and tell me the next highest-leverage action. Do not resubmit yet.
+
+Step 1 — Confirm local package still exists
+
+Run:
+
+ls -lh data/submissions/submission.tar.gz
+tar -tzf data/submissions/submission.tar.gz
+
+Step 2 — Fetch Kaggle submission status
+
+Run:
+
+mkdir -p data/kaggle_uploads
+
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/submissions_status_check.log
+
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/submissions_status_check.csv
+
+Step 3 — Inspect available Kaggle CLI commands for logs/replays
+
+Run:
+
+kaggle competitions --help 2>&1 | tee data/kaggle_uploads/kaggle_competitions_help.log
+
+kaggle competitions submissions --help 2>&1 | tee data/kaggle_uploads/kaggle_submissions_help.log
+
+Also search for any local docs or CLI help mentioning episode/replay/log download:
+
+python - <<'PY'
+import subprocess, sys
+commands = [
+    ["kaggle", "--help"],
+    ["kaggle", "competitions", "--help"],
+]
+for cmd in commands:
+    print("\\n$", " ".join(cmd))
+    try:
+        print(subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)[:5000])
+    except Exception as e:
+        print("FAILED", type(e).__name__, e)
+PY
+
+If the CLI exposes a safe command to download submission logs, validation logs, episode replays, or simulation episodes, use it and save outputs under:
+
+data/kaggle_uploads/
+data/kaggle_replays/
+
+Do not guess command names. Use CLI help or documented commands only.
+
+Step 4 — Classify latest submission
+
+Classify the latest submission as one of:
+
+A. still pending / queued
+B. validation passed and waiting for episodes/rating
+C. validation passed and score/rating available
+D. validation failed with error log
+E. package/deck/runtime error
+F. timeout
+G. unknown
+
+If still pending, do not change code. Just report.
+
+If validation failed, inspect the error/log and recommend the smallest fix. Do not make the fix unless it is trivial and clearly necessary.
+
+If validation passed, archive the Kaggle status:
+
+mkdir -p data/kaggle_uploads/archive
+cp data/kaggle_uploads/submissions_status_check.log data/kaggle_uploads/archive/v0_status_check.log || true
+cp data/kaggle_uploads/submissions_status_check.csv data/kaggle_uploads/archive/v0_status_check.csv || true
+
+Then recommend the next local improvement, but do not submit another version yet.
+
+Step 5 — Final report format
+
+Report exactly:
+
+PTCG Kaggle Status Check Report
+
+1. Current package
+- submission tarball exists:
+- tarball contents:
+- local package path:
+
+2. Kaggle status
+- status command succeeded:
+- latest submission file:
+- latest submission date:
+- latest submission description:
+- latest submission status:
+- public/private score or rating if shown:
+- result classification:
+
+3. Logs/replays
+- log/replay download available via CLI: yes/no/unknown
+- files saved:
+- relevant error summary if any:
+
+4. Decision
+- Should we change code now: yes/no
+- Should we resubmit now: yes/no
+- Reason:
+
+5. Next action
+- If pending: say "Check again after Kaggle finishes validation."
+- If passed: say "Start v1 local improvement using real schema, but preserve v0."
+- If failed: say "Fix the classified failure, rebuild, smoke-test, then resubmit once."
