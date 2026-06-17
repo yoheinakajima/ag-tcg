@@ -32,3 +32,7 @@ outputType = "console"
 [deployment]
 deploymentTarget = "vm"
 run = ["python3", "main.py"]
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 60000
