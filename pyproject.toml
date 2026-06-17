@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ptcg-activegraph"
+version = "0.1.0"
+description = "ActiveGraph-powered Pokémon TCG AI Battle Challenge lab + Kaggle submission agent"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+# Runtime (Kaggle) needs NO third-party deps. These are optional lab extras.
+dependencies = []
+
+[project.optional-dependencies]
+lab = [
+    "kaggle-environments",
+    # cabt is provided by the competition; install separately.
+]
+dev = [
+    "pytest>=8",
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["src", "."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

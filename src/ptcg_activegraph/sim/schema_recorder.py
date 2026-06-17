@@ -1,0 +1,164 @@
+"""Record the real cabt observation/option schema during self-play.
+
+We do not yet know the exact cabt option schema. This recorder wraps the agent
+so that every observation it sees is captured, then summarizes the structure:
+top-level keys, ``select`` shape, option examples, distinct option keys, distinct
+type/context strings, and a few ``current``/``logs`` examples.
+
+Outputs:
+* ``data/matches/schema_examples.json``   — aggregated summary
+* ``data/matches/option_examples.jsonl``  — one option object per line
+* ``docs/CABT_SCHEMA_NOTES.md``           — human-readable notes
+
+Pure helpers (``summarize_observations``, ``recording_agent``) are unit-testable
+without cabt.
+"""
+
+from __future__ import annotations
+
+import json
+from collections import Counter
+from pathlib import Path
+from typing import Any, Callable
+
+
+def _keys_of(obj: Any) -> list[str]:
+    return sorted(obj.keys()) if isinstance(obj, dict) else []
+
+
+def recording_agent(inner_agent: Callable[[dict], list], sink: list) -> Callable[[dict], list]:
+    """Wrap ``inner_agent`` so each observation it receives is appended to ``sink``."""
+    def wrapped(obs):
+        try:
+            sink.append(obs)
+        except Exception:
+            pass
+        return inner_agent(obs)
+    return wrapped
+
+
+def summarize_observations(observations: list) -> dict:
+    """Build a structural summary over a list of raw observations."""
+    top_keys: Counter = Counter()
+    select_keys: Counter = Counter()
+    option_keys: Counter = Counter()
+    option_types: Counter = Counter()
+    select_types: Counter = Counter()
+    max_counts: Counter = Counter()
+
+    option_examples: list = []
+    select_examples: list = []
+    current_examples: list = []
+    logs_examples: list = []
+
+    for obs in observations:
+        if not isinstance(obs, dict):
+            continue
+        for k in _keys_of(obs):
+            top_keys[k] += 1
+
+        if len(current_examples) < 3 and obs.get("current") is not None:
+            current_examples.append(obs.get("current"))
+        if len(logs_examples) < 3 and obs.get("logs"):
+            logs_examples.append(obs.get("logs"))
+
+        select = obs.get("select")
+        if isinstance(select, dict):
+            for k in _keys_of(select):
+                select_keys[k] += 1
+            for tkey in ("type", "selectType", "select_type", "context"):
+                if tkey in select and isinstance(select[tkey], (str, int)):
+                    select_types[f"{tkey}={select[tkey]}"] += 1
+            if "maxCount" in select:
+                max_counts[str(select.get("maxCount"))] += 1
+            if len(select_examples) < 5:
+                select_examples.append(select)
+
+            options = select.get("options") or select.get("option") or []
+            if isinstance(options, list):
+                for opt in options:
+                    if isinstance(opt, dict):
+                        for k in _keys_of(opt):
+                            option_keys[k] += 1
+                        for tkey in ("type", "action", "selectType", "context"):
+                            if tkey in opt and isinstance(opt[tkey], (str, int)):
+                                option_types[f"{tkey}={opt[tkey]}"] += 1
+                    if len(option_examples) < 50:
+                        option_examples.append(opt)
+
+    return {
+        "observation_count": len(observations),
+        "top_level_keys": dict(top_keys),
+        "select_keys": dict(select_keys),
+        "option_keys": dict(option_keys),
+        "option_type_values": dict(option_types.most_common(40)),
+        "select_type_values": dict(select_types.most_common(40)),
+        "maxCount_distribution": dict(max_counts),
+        "select_examples": select_examples,
+        "current_examples": current_examples,
+        "logs_examples": logs_examples,
+        "option_examples": option_examples,
+    }
+
+
+def write_schema_outputs(summary: dict, matches_dir: str | Path = "data/matches",
+                         docs_dir: str | Path = "docs") -> dict:
+    """Persist the schema summary to JSON/JSONL and a markdown notes file."""
+    matches_dir = Path(matches_dir)
+    docs_dir = Path(docs_dir)
+    matches_dir.mkdir(parents=True, exist_ok=True)
+    docs_dir.mkdir(parents=True, exist_ok=True)
+
+    json_path = matches_dir / "schema_examples.json"
+    json_path.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
+
+    jsonl_path = matches_dir / "option_examples.jsonl"
+    with open(jsonl_path, "w", encoding="utf-8") as f:
+        for opt in summary.get("option_examples", []):
+            f.write(json.dumps(opt, default=str) + "\n")
+
+    md_path = docs_dir / "CABT_SCHEMA_NOTES.md"
+    md_path.write_text(_render_notes(summary), encoding="utf-8")
+
+    return {"json": str(json_path), "jsonl": str(jsonl_path), "md": str(md_path)}
+
+
+def _render_notes(summary: dict) -> str:
+    lines = [
+        "# cabt Schema Notes (auto-recorded)",
+        "",
+        "Generated by `scripts/record_schema.py` from real self-play observations.",
+        "Use this to refine `main.py`'s heuristic from string-only scoring toward",
+        "field-aware scoring (see docs/RUNTIME_AGENT.md).",
+        "",
+        f"- Observations sampled: **{summary.get('observation_count', 0)}**",
+        "",
+        "## Top-level observation keys",
+        "```json",
+        json.dumps(summary.get("top_level_keys", {}), indent=2),
+        "```",
+        "## `select` keys",
+        "```json",
+        json.dumps(summary.get("select_keys", {}), indent=2),
+        "```",
+        "## Option object keys",
+        "```json",
+        json.dumps(summary.get("option_keys", {}), indent=2),
+        "```",
+        "## Distinct option type/action values",
+        "```json",
+        json.dumps(summary.get("option_type_values", {}), indent=2),
+        "```",
+        "## `maxCount` distribution",
+        "```json",
+        json.dumps(summary.get("maxCount_distribution", {}), indent=2),
+        "```",
+        "## Example options",
+        "```json",
+        json.dumps(summary.get("option_examples", [])[:10], indent=2, default=str),
+        "```",
+        "",
+        "> If this file shows `observation_count: 0`, cabt was not available when",
+        "> recording. Install it and re-run `make record-schema`.",
+    ]
+    return "\n".join(lines) + "\n"

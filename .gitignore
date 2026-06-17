@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Lab artifacts (regenerated; keep dirs via .gitkeep / README)
+data/matches/*.jsonl
+data/matches/*.html
+data/matches/*.json
+data/reports/*.md
+data/reports/*.html
+data/submissions/*.tar.gz
+data/decks/*.csv
+data/cards/*.csv
+
+# OS
+.DS_Store
