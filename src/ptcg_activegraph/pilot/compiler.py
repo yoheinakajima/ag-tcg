@@ -7,9 +7,12 @@ base candidate ``main.py``. Because the fixtures grade the very ``core_pilot_dec
 this block emits, the deterministic gate tests exactly what ships.
 
 Runtime integration is intentionally conservative: it preserves the proven Pass-8
-effect-safety policy untouched and only *refines the search target* at the reliably
-identifiable ToHand-search context (cabt ``select.context == 7``), deferring to the
-base policy everywhere else and on any error.
+effect-safety policy untouched and only refines decisions at the *reliably
+identifiable* cabt contexts named in ``state.py`` (``select.context == 7`` ToHand
+search, and — when enabled for a candidate — ``select.context == 8`` discard),
+deferring to the base policy everywhere else and on any error. Which contexts a
+compiled candidate refines is recorded in the emitted ``_CP_RUNTIME_CONTEXTS`` set
+so the coverage audit can verify wiring without guessing.
 """
 from __future__ import annotations
 
@@ -84,20 +87,26 @@ def build_playbook_literal(playbook: dict, flags: dict | None = None) -> dict:
     return out
 
 
-def _render_block(playbook_literal: dict, candidate_id: str) -> str:
+def _render_block(playbook_literal: dict, candidate_id: str,
+                  runtime_contexts: tuple = (7,)) -> str:
     layer_src = _embedded_layer_source()
     return f'''
 
 # === PASS14 CORE-PILOT OVERRIDE: {candidate_id} ===
 # Embeds the Layer 1-3 core-pilot decision layer (stdlib-only) plus this deck's
 # role playbook. Exposes ``core_pilot_decide(kind, board, options)`` (graded by the
-# core-competency fixtures) and conservatively refines the ToHand-search target at
-# runtime while preserving the proven Pass-8 effect-safety policy beneath it.
+# core-competency fixtures) and conservatively refines decisions at the reliably
+# identifiable cabt contexts in ``_CP_RUNTIME_CONTEXTS`` while preserving the proven
+# Pass-8 effect-safety policy beneath it.
 from typing import Any as _CP_Any  # noqa: F401  (stdlib)
 
 {layer_src}
 
 _CP_PLAYBOOK = {playbook_literal!r}
+
+# Reliably-identifiable cabt select.context integers this candidate refines at
+# runtime (7=ToHand search, 8=discard). Empirically confirmed + named in state.py.
+_CP_RUNTIME_CONTEXTS = {tuple(runtime_contexts)!r}
 
 
 def core_pilot_decide(kind, board, options, playbook=None):
@@ -123,7 +132,13 @@ def _cp_indices_for_ids(built, chosen_ids):
 
 
 def _cp_embedded(obs):
-    """Run the proven base policy, then refine the ToHand-search target only."""
+    """Run the proven base policy, then refine ONLY at the reliably identifiable
+    cabt contexts in ``_CP_RUNTIME_CONTEXTS`` (7=ToHand search, 8=discard).
+
+    Refinement never changes WHETHER or HOW MANY cards are acted on — the base
+    policy already decided that (and owns all effect-safety). We only reorder
+    WHICH card(s) of the base's committed action are chosen, and bail back to the
+    base result on any mismatch or error."""
     base = _CP_ORIG_EMBEDDED(obs)
     try:
         sel = _get_select(obs)
@@ -134,9 +149,12 @@ def _cp_embedded(obs):
             return base
         mn, mx = _get_min_max_count(sel, len(options))
         ctx = sel.get("context")
-        # Only refine when the base policy chose to search (non-empty, not a
-        # safety decline) at the reliably identifiable ToHand-search context.
-        if ctx == 7 and mx >= 1 and isinstance(base, list) and len(base) >= 1:
+        # Only refine when the base policy committed to acting (non-empty list,
+        # not a safety decline).
+        if not (isinstance(base, list) and len(base) >= 1):
+            return base
+        # Refine the search target at the ToHand-search context.
+        if ctx == 7 and 7 in _CP_RUNTIME_CONTEXTS and mx >= 1:
             built = [{{"card_id": resolve_option_card(obs, o)}} for o in options]
             board = build_board(obs)
             res = core_pilot_decide("search_to_hand", board, built)
@@ -146,6 +164,22 @@ def _cp_embedded(obs):
                 if idxs:
                     refined = _validate_action(idxs, len(options), mn, mx)
                     if refined:
+                        return refined
+        # Refine WHICH cards to discard at the discard context, keeping exactly
+        # the COUNT the base policy already committed to (only the choice changes).
+        elif ctx == 8 and 8 in _CP_RUNTIME_CONTEXTS:
+            need = len(base)
+            if mn <= need <= mx:
+                built = [{{"card_id": resolve_option_card(obs, o)}} for o in options]
+                board = build_board(obs)
+                if isinstance(board, dict):
+                    board["discard_count"] = need
+                res = core_pilot_decide("discard", board, built)
+                chosen_ids = res.get("chosen_card_ids") or []
+                idxs = _cp_indices_for_ids(built, chosen_ids)
+                if len(idxs) == need:
+                    refined = _validate_action(idxs, len(options), mn, mx)
+                    if refined and len(refined) == need:
                         return refined
     except Exception:
         pass
@@ -175,20 +209,24 @@ def core_pilot_agent(obs_dict):
 
 
 def compile_candidate_source(base_main_src: str, playbook: dict,
-                             candidate_id: str, flags: dict | None = None) -> str:
+                             candidate_id: str, flags: dict | None = None,
+                             runtime_contexts: tuple = (7,)) -> str:
     literal = build_playbook_literal(playbook, flags=flags)
-    return base_main_src.rstrip("\n") + "\n" + _render_block(literal, candidate_id)
+    return base_main_src.rstrip("\n") + "\n" + _render_block(
+        literal, candidate_id, runtime_contexts=runtime_contexts)
 
 
 def compile_to_dir(base_dir: Any, playbook_path: Any, out_dir: Any,
-                   candidate_id: str, flags: dict | None = None) -> dict:
+                   candidate_id: str, flags: dict | None = None,
+                   runtime_contexts: tuple = (7,)) -> dict:
     """Write a compiled candidate (main.py + deck.csv) into ``out_dir``."""
     base = Path(base_dir)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     base_main = (base / "main.py").read_text(encoding="utf-8")
     playbook = load_playbook(playbook_path)
-    src = compile_candidate_source(base_main, playbook, candidate_id, flags=flags)
+    src = compile_candidate_source(base_main, playbook, candidate_id, flags=flags,
+                                   runtime_contexts=runtime_contexts)
     (out / "main.py").write_text(src, encoding="utf-8")
     deck_src = (base / "deck.csv").read_text(encoding="utf-8")
     (out / "deck.csv").write_text(deck_src, encoding="utf-8")

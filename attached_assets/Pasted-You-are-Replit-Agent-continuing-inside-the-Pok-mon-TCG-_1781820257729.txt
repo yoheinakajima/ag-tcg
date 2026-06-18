@@ -1,0 +1,565 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not generate broad deck-search candidates.
+- Do not generate chaos candidates in this pass.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Keep all candidate tarballs top-level main.py + deck.csv only.
+- Read docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md, docs/NEXT_AGENT_README.md, docs/CORE_PILOT_ARCHITECTURE.md, and data/reports/pass14_final_report.md before making changes.
+- This is a runtime-coverage + focused-evaluation pass only.
+
+Current status:
+- Pass 14 completed successfully.
+- New core pilot architecture exists:
+  - src/ptcg_activegraph/pilot/
+  - docs/CORE_PILOT_ARCHITECTURE.md
+  - playbooks/v2_kyogre_abomasnow_core_pilot.yaml
+  - data/fixtures/core_competency/
+  - scripts/run_core_competency_gate.py
+- Candidate:
+  - core_pilot_water_v1
+  - tarball: data/submissions/candidates_pass14/core_pilot_water_v1.tar.gz
+- core_pilot_water_v1:
+  - passes strict tarball validator
+  - passes core competency gate: 13 pass / 0 hard fail / 1 advisory
+  - active control fails 13 hard core competency fixtures
+  - plays live cabt cleanly after compiler entrypoint fix
+  - won both live cabt smoke seats: 109 and 37 steps, DONE, no INVALID
+  - directional eval showed no regression vs active control
+- Critical Pass 14 lesson:
+  - kaggle_environments runs the last top-level callable in main.py, not necessarily a function named agent.
+  - The compiler now emits core_pilot_agent last under a fresh name.
+  - This must remain a hard invariant.
+- Important nuance from Pass 14:
+  - The reduced-model core gate proves the lab decision layer.
+  - The compiled runtime is still conservative and only reliably applies to ToHand/search context.
+  - Therefore, Pass 15 must audit fixture-to-live parity and then safely extend runtime coverage only for contexts that are clearly identifiable in cabt observations.
+- Known issue:
+  - One pre-existing unrelated test failure remains: test_dry_run_queue_respects_no_more_submissions_today.
+  - Fix or isolate it hermetically if feasible.
+
+Goal:
+Run Pass 15: Core Pilot Runtime Coverage + Focused Confirmation.
+
+Objectives:
+1. Ratchet the last-callable / entrypoint invariant into a mandatory validator.
+2. Audit which core competency fixtures are actually enforced in the live compiled runtime.
+3. Safely expand runtime coverage beyond ToHand/search for only the most reliable cabt contexts.
+4. Build one improved runtime candidate, core_pilot_water_v2_runtime.
+5. Validate and live-smoke the candidate.
+6. Run a focused directional eval against active control and refined Pass 13 subfamily surrogates.
+7. Produce a dry-run recommendation only.
+8. No Kaggle upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Refresh or record live score state
+
+Try read-only status fetch:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass15.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass15.csv || true
+
+Then run:
+
+python scripts/build_live_score_registry.py
+
+If Kaggle CLI is unavailable:
+- use last-known-good registry,
+- record stale-score caveat,
+- do not silently overwrite active control from a stale/default snapshot.
+
+Update:
+- data/kaggle_uploads/live_score_registry.json
+- data/kaggle_uploads/live_score_registry.md
+
+Part C — Entrypoint invariant ratchet
+
+Update or create a hard validator so every candidate tarball proves:
+
+1. Tarball contains exactly top-level main.py + deck.csv.
+2. Candidate returns 60-card deck for deck-selection observations.
+3. Candidate handles:
+   - canonical null select/current dict
+   - key-absent dict
+   - empty dict
+   - Struct-like object
+4. Candidate has no forbidden imports.
+5. Candidate's final top-level callable is the intended safe entrypoint.
+6. The final top-level callable returns 60 on deck-selection observations.
+7. The final top-level callable delegates gameplay observations safely.
+8. A one-game live cabt smoke does not INVALID.
+
+Update:
+
+scripts/validate_candidate_tarball.py
+
+or create:
+
+scripts/validate_candidate_entrypoint.py
+
+It must inspect module callable order the same way kaggle_environments does:
+- import candidate main.py
+- list callables in module insertion order
+- identify the last callable
+- assert it is the intended safe entrypoint or a wrapper/alias that returns correct behavior
+- call that last callable directly with deck-selection observations
+- assert it returns 60
+- call it with a simple legal gameplay observation and assert legal index output
+
+Add a regression fixture:
+- a deliberately bad candidate where the last callable is a helper that returns []
+- validator must fail it.
+
+Part D — Fix or isolate stale dry-run queue test
+
+Investigate:
+
+test_dry_run_queue_respects_no_more_submissions_today
+
+Goal:
+- make the test hermetic,
+- do not read or clobber live data/submission_queue.json,
+- use a temp queue path,
+- use temp candidate dirs,
+- assert no_more_submissions_today behavior on isolated fixtures.
+
+If the test is obsolete:
+- mark it with a clear reason,
+- add a replacement hermetic test.
+
+Do not leave the repo with an unexplained failing test.
+
+Part E — Fixture-to-live runtime coverage audit
+
+Create:
+
+scripts/audit_core_runtime_coverage.py
+
+Inputs:
+- data/submissions/candidates_pass14/core_pilot_water_v1.tar.gz
+- data/fixtures/core_competency/
+- replay/cabt observations if available
+- existing Pass 14 smoke trace if available
+
+Outputs:
+- data/experiments/pass15_core_runtime_coverage.json
+- data/experiments/pass15_core_runtime_coverage.md
+
+The audit should answer:
+
+For each core competency fixture:
+- fixture id
+- context
+- hard/advisory
+- reduced-model gate result
+- whether the compiled runtime actually intercepts an equivalent live cabt context
+- if yes: which live context / select.context / select.type
+- if no: lab-only / not wired
+- risk of wiring it
+- recommended action
+
+Minimum context map:
+- Deck selection
+- SetupActivePokemon
+- SetupBenchPokemon
+- Main
+- Discard
+- ToHand
+- Count / DrawCount
+- Attack
+- promote/choose-new-active if detectable
+
+Expected:
+- core_pilot_water_v1 probably has strong reduced-model competency but limited live runtime coverage.
+- This should be reported honestly.
+
+Part F — Safe runtime expansion plan
+
+Create:
+
+data/experiments/pass15_runtime_expansion_plan.md
+
+Based on the audit, classify contexts:
+
+1. Safe to wire now:
+- SetupActivePokemon
+- SetupBenchPokemon
+- Discard when option cards resolve cleanly
+- ToHand when option cards resolve cleanly
+- Count/DrawCount for low-deck guard if options are numeric
+- narrow Main attach cases when the target and hand card resolve cleanly
+
+2. Unsafe / defer:
+- broad Main action ranking
+- broad Play card logic
+- multi-step combo lines not reliably attributable
+- attack target ordering unless attack option metadata is confirmed
+- chaos/disruption decisions
+
+Do not wire unsafe contexts.
+
+Part G — Compile improved runtime candidate
+
+Build exactly one improved candidate:
+
+candidate_id: core_pilot_water_v2_runtime
+
+Use:
+- same deck as core_pilot_water_v1 unless there is a clear reason to use active control deck
+- same playbook: playbooks/v2_kyogre_abomasnow_core_pilot.yaml
+- existing Pass-8 effect-safety policy preserved
+- robust deck-selection wrapper preserved
+- last-callable entrypoint invariant preserved
+
+Runtime expansion should be conservative and namespaced.
+
+Implement only the safe contexts from Part F:
+
+1. SetupActivePokemon
+- choose highest active score.
+- For Water shell, Kyogre should generally beat Snover unless the playbook says fast evolution dominates.
+
+2. SetupBenchPokemon
+- bench useful backup/setup Pokémon up to maxCount.
+- Prefer backup attacker + setup basic.
+- Avoid empty bench if useful bench options exist.
+- Respect minCount/maxCount.
+
+3. Discard
+- prefer excess Basic Water Energy.
+- avoid only attacker, only setup basic, only evolution payoff where possible.
+- if all choices are forced, return forced legal set.
+
+4. ToHand
+- choose missing setup piece:
+  - no Snover line → prefer Snover over orphan Mega
+  - Snover exists → prefer Mega Abomasnow
+  - active attacker exists → tool/search/support by role
+- preserve existing Ultra Ball / Secret Box / Mega Signal safety.
+
+5. Count / DrawCount
+- if deckCount low, prefer zero or lower draw count if legal.
+- otherwise delegate.
+
+6. Narrow Main attach
+Only intercept if:
+- option is Attach,
+- attached card resolves to Basic Water Energy or Powerglass,
+- target resolves to active/bench Pokémon,
+- score clearly favors active/next attacker,
+- no higher-priority special play is being overridden with uncertainty.
+If uncertain, delegate to previous proven agent.
+
+Do not implement broad Main action ranking in this pass.
+
+Output:
+- experiments/runs_pass15/core_pilot_water_v2_runtime/
+- data/submissions/candidates_pass15/core_pilot_water_v2_runtime.tar.gz
+
+Part H — Validation gates
+
+Run:
+
+python scripts/validate_candidate_tarball.py data/submissions/candidates_pass14/core_pilot_water_v1.tar.gz
+python scripts/validate_candidate_tarball.py data/submissions/candidates_pass15/core_pilot_water_v2_runtime.tar.gz
+
+Run entrypoint validator if separate:
+
+python scripts/validate_candidate_entrypoint.py data/submissions/candidates_pass15/core_pilot_water_v2_runtime.tar.gz
+
+Run core gate:
+
+python scripts/run_core_competency_gate.py --candidate data/submissions/candidates_pass15/core_pilot_water_v2_runtime.tar.gz --fixtures data/fixtures/core_competency
+
+Also run core gate on:
+- active control, if available
+- core_pilot_water_v1
+
+Expected:
+- v2_runtime passes all hard fixtures.
+- v1 passes reduced fixtures.
+- active control may fail; record honestly.
+
+Part I — Live cabt smoke
+
+Run live cabt smoke for:
+- core_pilot_water_v2_runtime vs active control, both seats
+- core_pilot_water_v2_runtime self-play, if cheap
+- core_pilot_water_v1 vs active control, if cheap
+
+Required:
+- DONE statuses
+- no INVALID
+- no ERROR
+- no TIMEOUT
+- finite rewards
+
+Output:
+- data/experiments/pass15_live_smoke.json
+- data/experiments/pass15_live_smoke.md
+
+Part J — Focused directional evaluation
+
+Evaluate only validator-passing artifacts.
+
+Candidate set:
+1. active_control_combo_full_safety_v3_fixed
+2. core_pilot_water_v1
+3. core_pilot_water_v2_runtime
+4. deck12_less_draw_more_attack, if tarball exists and passes validator
+5. pb12_kyogre_tempo, if tarball exists and passes validator
+6. transfer12_water_maxbelt, if tarball exists and passes validator
+
+If any fail validator or entrypoint check, exclude and record.
+
+Opponent pool:
+Use Pass 13 refined meta pool:
+
+experiments/pass13_refined_meta_pool.yaml
+
+Subfamilies:
+- metal_ex_zacian_ramp
+- water_kyogre_abomasnow_maxbelt
+- mega_lucario_ex_tempo
+- mega_kangaskhan_energy_stack
+- dragapult_ex
+- lightning_bellibolt
+
+Self-mirror diagnostic may be included at zero/diagnostic weight only.
+
+Budget:
+- 5 games per seat per subfamily minimum
+- 10 games per seat per subfamily if workflow runtime allows
+- seat-swapped
+- watchdog enabled
+- use Replit workflow if runtime exceeds tool wall
+- no upload
+
+Outputs:
+- data/experiments/pass15_core_focused_eval.json
+- data/experiments/pass15_core_focused_eval.md
+- data/experiments/pass15_core_matchup_matrix.csv
+- data/experiments/pass15_core_ranking.json
+- data/experiments/pass15_core_ranking.md
+
+Part K — Metrics
+
+Collect and report:
+
+Validation:
+- tarball validator pass/fail
+- entrypoint validator pass/fail
+- core competency gate pass/fail
+
+Runtime coverage:
+- setup active wired
+- setup bench wired
+- discard wired
+- ToHand wired
+- Count/DrawCount wired
+- narrow attach wired
+- broad Main delegated
+
+Outcome:
+- wins/losses/draws
+- adjusted win rate
+- Wilson 80/95 CI
+- seat split
+- crashes/timeouts/invalid returns
+
+Competency metrics:
+- setup active correctness
+- setup bench correctness
+- early backup bench rate
+- attach-to-attacker rate
+- evolution attempt rate
+- search missing-piece rate
+- discard safety rate
+- deckout guard behavior
+- attack/passive-loop metric
+
+Game metrics:
+- first meaningful attack step
+- first KO step if detectable
+- average game length
+- stuck_on_basic_snover_rate
+- no_bench_loss_rate
+- low-deck draw/search count
+
+Meta metrics:
+- weighted refined meta score
+- per-subfamily score
+- worst-subfamily score
+- matchup spread
+- mirror-only overfit tag
+
+Part L — Ranking / recommendation rules
+
+Labels:
+- core_promotable
+- core_promising
+- competency_improved_but_unproven
+- runtime_coverage_improved
+- no_regression
+- inconclusive
+- blocked
+- live_rejected
+
+Candidate is NOT upload-ready unless:
+- tarball validator passes
+- entrypoint validator passes
+- live cabt smoke passes
+- core competency hard gate passes
+- no crashes/timeouts/invalid returns
+- weighted refined meta score beats active control OR is close to active control while materially improving core competency and runtime coverage
+- worst matchup does not collapse
+- not mirror-overfit
+- report clearly explains surrogate limitation
+
+No upload in this pass.
+
+Dry-run queue may include at most one candidate with:
+- upload_performed: false
+- auto_submit_enabled: false
+- require_manual_approval_for_submit: true
+- human_review_required: true
+
+Part M — Report site
+
+Update:
+- data/site/index.html
+- data/reports/activegraph_strategy_report.md
+- data/reports/pass15_core_runtime_coverage_report.md
+- data/reports/pass15_core_focused_eval_report.md
+
+Include:
+- why fixture/runtime parity matters
+- last-callable entrypoint lesson
+- runtime coverage audit
+- contexts safely wired in v2_runtime
+- active control vs core_pilot_water_v1 vs core_pilot_water_v2_runtime
+- focused eval by subfamily
+- dry-run recommendation
+- no-upload note
+
+Part N — Tests
+
+Add/update tests for:
+- last top-level callable invariant
+- bad helper-last candidate fails validator
+- core_pilot_water_v2_runtime last callable passes deck-selection
+- fixture/runtime coverage artifact exists
+- SetupActive runtime wiring chooses Kyogre over Snover when appropriate
+- SetupBench runtime wiring benches useful backup when legal
+- Discard runtime preserves only setup piece when possible
+- ToHand runtime chooses missing basic before orphan evolution
+- Count/DrawCount low-deck guard works
+- narrow Main attach only fires when target/card resolve cleanly
+- broad Main remains delegated when uncertain
+- dry-run queue test is hermetic
+- root files unchanged
+- active control selected dynamically or stale caveat recorded
+- only validator-passing candidates enter eval
+- core competency hard failure blocks queue/eval
+- no upload flag remains false
+- report includes surrogate limitation
+
+Run targeted tests in small groups, then run broader suite if feasible.
+
+Part O — Final report
+
+Report exactly:
+
+ActiveGraph Pass 15 Core Runtime Coverage + Focused Eval Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Live score state
+- registry path:
+- scores refreshed:
+- active control:
+- active control score:
+- stale caveat:
+
+3. Entrypoint invariant
+- validator updated:
+- last-callable invariant:
+- bad-helper-last regression:
+- core_v1 entrypoint:
+- core_v2 entrypoint:
+- live cabt smoke:
+
+4. Runtime coverage audit
+- audit path:
+- fixtures mapped to live contexts:
+- lab-only fixtures:
+- safe contexts wired:
+- unsafe contexts deferred:
+
+5. Core competency gate
+- active control hard failures:
+- core_v1 hard failures:
+- core_v2 hard failures:
+- advisory fixtures:
+- ablation behavior:
+
+6. Candidate generation
+- core_v2 generated:
+- candidate tarball:
+- tarball validator:
+- entrypoint validator:
+- forbidden imports:
+- blocked and why:
+
+7. Focused evaluation
+- candidates evaluated:
+- opponents/subfamilies:
+- games per seat:
+- active control score:
+- core_v1 score:
+- core_v2 score:
+- best candidate:
+- worst matchup:
+- crashes/timeouts/invalid returns:
+
+8. Competency/runtime metrics
+- setup active:
+- setup bench:
+- discard:
+- ToHand:
+- Count/DrawCount:
+- narrow attach:
+- biggest remaining weakness:
+
+9. Queue/upload guidance
+- candidates queued:
+- upload performed: no
+- submit next: yes/no:
+- reason:
+
+10. Report site / next recommendation
+- site path:
+- markdown reports:
+- key lesson:
+- next recommendation:

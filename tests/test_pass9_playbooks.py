@@ -395,12 +395,54 @@ def test_fixed_candidate_tarball_is_main_and_deck_only():
 # --------------------------------------------------------------------------- #
 # dry-run queue policy
 # --------------------------------------------------------------------------- #
-def test_dry_run_queue_respects_no_more_submissions_today():
-    q = REPO / "data" / "submission_queue.json"
-    if not q.exists():
-        pytest.skip("queue not produced")
-    doc = json.loads(q.read_text(encoding="utf-8"))
-    assert doc.get("upload_performed") is False
-    if doc.get("no_more_submissions_today") is True:
-        assert doc.get("queued_candidate_count", 0) == 0
-        assert doc.get("queue") == []
+def test_dry_run_queue_respects_no_more_submissions_today(tmp_path):
+    """Hermetic: the builder holds the queue EMPTY when no submissions remain
+    today, even when an otherwise-eligible candidate exists in the ranking.
+
+    This exercises ``build_dry_run_queue`` directly against a temp queue path and
+    an explicit flag, so it never reads or clobbers the live
+    ``data/submission_queue.json`` (which is written by a different generator
+    with its own contract).
+    """
+    from ptcg_activegraph.experiments.dry_run_queue import build_dry_run_queue
+
+    # A ranking that WOULD yield an eligible candidate if submissions remained.
+    rank = {
+        "stage": "test_stage",
+        "control": "test_control",
+        "candidates": [
+            {"candidate_id": "would_be_eligible", "role": "candidate",
+             "fixture_gate_status": "PASS", "promotion_label": "scout_promising",
+             "adjusted_win_rate": 0.7, "games_completed": 40,
+             "crashes": 0, "timeouts": 0, "stale": 0},
+        ],
+    }
+    qp = tmp_path / "queue.json"
+
+    # no_more_submissions_today=True -> queue held empty regardless of eligibility.
+    doc = build_dry_run_queue("test_run", rank, queue_path=qp,
+                              no_more_submissions_today=True)
+    assert doc["upload_performed"] is False
+    assert doc["auto_submit_enabled"] is False
+    assert doc["require_manual_approval_for_submit"] is True
+    assert doc["no_more_submissions_today"] is True
+    assert doc["queued_candidate_count"] == 0
+    assert doc["queue"] == []
+    assert qp.exists()  # wrote to the temp path, not the live queue
+    # The live queue file must be untouched by this test.
+    assert qp != REPO / "data" / "submission_queue.json"
+
+
+def test_dry_run_queue_empty_when_no_eligible_candidates(tmp_path):
+    """Hermetic: with submissions allowed but no eligible candidates, the queue
+    is empty with a recorded reason and never uploads."""
+    from ptcg_activegraph.experiments.dry_run_queue import build_dry_run_queue
+
+    rank = {"stage": "test_stage", "control": "test_control", "candidates": []}
+    qp = tmp_path / "queue.json"
+    doc = build_dry_run_queue("test_run", rank, queue_path=qp,
+                              no_more_submissions_today=False)
+    assert doc["upload_performed"] is False
+    assert doc["queued_candidate_count"] == 0
+    assert doc["queue"] == []
+    assert "no candidates" in doc["selection_reason"]

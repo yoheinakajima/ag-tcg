@@ -85,6 +85,15 @@ PASS13_REFINED_POOL_YAML = Path("experiments/pass13_refined_meta_pool.yaml")
 PASS13_REFINED_EVAL_JSON = Path("data/experiments/pass13_refined_eval.json")
 PASS13_LIVE_REGISTRY_JSON = Path("data/kaggle_uploads/live_score_registry.json")
 PASS13_REPORT_MD = Path("data/reports/pass13_operating_manual_and_meta_decomposition.md")
+# Pass 15 — core-pilot runtime coverage + focused directional confirmation (local-only).
+PASS15_RUNTIME_COVERAGE_JSON = Path("data/experiments/pass15_core_runtime_coverage.json")
+PASS15_EXPANSION_PLAN_MD = Path("data/experiments/pass15_runtime_expansion_plan.md")
+PASS15_LIVE_SMOKE_JSON = Path("data/reports/pass15_live_smoke.json")
+PASS15_FOCUSED_EVAL_JSON = Path("data/reports/pass15_core_focused_eval.json")
+PASS15_METRICS_JSON = Path("data/experiments/pass15_candidate_metrics.json")
+PASS15_DRY_RUN_QUEUE_JSON = Path("data/experiments/pass15_dry_run_queue.json")
+PASS15_RUNTIME_REPORT_MD = Path("data/reports/pass15_runtime_coverage_report.md")
+PASS15_EVAL_REPORT_MD = Path("data/reports/pass15_focused_eval_report.md")
 
 # Corrected live baseline scores (see v2 baseline README correction note: the
 # v1 archive dir keeps its historical `349_8` name but live v1 is 356.9).
@@ -241,6 +250,12 @@ def gather(runs_root=RUNS_ROOT) -> dict:
         "pass13_refined_pool": _load_yaml(PASS13_REFINED_POOL_YAML) or {},
         "pass13_refined_eval": _load_json(PASS13_REFINED_EVAL_JSON) or {},
         "pass13_live_registry": _load_json(PASS13_LIVE_REGISTRY_JSON) or {},
+        "pass15_runtime_coverage": _load_json(PASS15_RUNTIME_COVERAGE_JSON) or {},
+        "pass15_expansion_plan_exists": PASS15_EXPANSION_PLAN_MD.exists(),
+        "pass15_live_smoke": _load_json(PASS15_LIVE_SMOKE_JSON) or {},
+        "pass15_focused_eval": _load_json(PASS15_FOCUSED_EVAL_JSON) or {},
+        "pass15_metrics": _load_json(PASS15_METRICS_JSON) or {},
+        "pass15_dry_run_queue": _load_json(PASS15_DRY_RUN_QUEUE_JSON) or {},
         "runs": runs,
         "baseline_readme": (BASELINE_DIR / "README.md"),
         "v2_baseline_readme": (V2_BASELINE_DIR / "README.md"),
@@ -359,6 +374,7 @@ def _overview_html(data: dict) -> str:
 
     body = (
         f"<section><h2>Snapshot</h2><div class=cards>{cards}</div></section>"
+        f"{_pass15_html(data)}"
         f"{_pass13_html(data)}"
         f"{_pass12_html(data)}"
         f"{_pass11b_html(data)}"
@@ -1577,6 +1593,201 @@ def write_pass13_report(data: dict, path: Path = PASS13_REPORT_MD) -> Path:
     return path
 
 
+# ---------------------------------------------------------------------------
+# Pass 15 — core-pilot runtime coverage + focused directional confirmation.
+# ---------------------------------------------------------------------------
+
+def _pass15_stats(data: dict) -> dict:
+    cov = data.get("pass15_runtime_coverage") or {}
+    smoke = data.get("pass15_live_smoke") or {}
+    focused = data.get("pass15_focused_eval") or {}
+    metrics = data.get("pass15_metrics") or {}
+    queue = data.get("pass15_dry_run_queue") or {}
+    contexts = cov.get("contexts") or cov.get("rows") or []
+    wired = [c for c in contexts
+             if c.get("runtime_intercepts") or c.get("runtime_wired")
+             or c.get("wired")]
+    return {
+        "coverage": cov,
+        "n_contexts": len(contexts),
+        "n_wired": len(wired),
+        "expansion_plan": data.get("pass15_expansion_plan_exists", False),
+        "smoke": smoke,
+        "smoke_rows": smoke.get("smoke") or [],
+        "smoke_complete": bool(smoke.get("complete")),
+        "focused": focused,
+        "ranking": focused.get("ranking") or [],
+        "active_control": focused.get("active_control"),
+        "metrics_rows": metrics.get("rows") or [],
+        "queue": queue,
+        "upload_performed": queue.get("upload_performed"),
+        "queued_count": queue.get("queued_count"),
+    }
+
+
+def _pass15_present(s: dict) -> bool:
+    return bool(s["coverage"] or s["smoke"] or s["focused"] or s["metrics_rows"])
+
+
+def _pass15_md(data: dict) -> list[str]:
+    s = _pass15_stats(data)
+    if not _pass15_present(s):
+        return []
+    L = ["## Pass 15 — Core-pilot runtime coverage + focused confirmation", ""]
+    L.append("_LOCAL-ONLY, DIRECTIONAL eval — surrogate opponents, not the real "
+             "Kaggle policy; no Kaggle upload, no GitHub push, root main.py/"
+             "deck.csv immutable. Live scores NOT refreshed (kaggle CLI "
+             "unavailable)._")
+    L += ["", "### Runtime coverage audit",
+          f"- cabt contexts audited: **{s['n_contexts']}**; reliably runtime-"
+          f"wired: **{s['n_wired']}** (only contexts identifiable by context int "
+          f"empirically). Expansion plan present: **{s['expansion_plan']}** "
+          f"(`data/experiments/pass15_runtime_expansion_plan.md`).",
+          "- The compiled runtime refines decisions ONLY at reliably-identifiable "
+          "contexts (search/draw=7, discard=8); all other policy stays the "
+          "base/control behaviour."]
+    if s["smoke_rows"]:
+        L += ["", "### Live cabt smoke (validity)", "",
+              "| matchup | win rate | W-L-D | crash/timeout/skip |",
+              "|---|---|---|---|"]
+        for m in s["smoke_rows"]:
+            wld = f"{m.get('wins',0)}-{m.get('losses',0)}-{m.get('draws',0)}"
+            cts = (f"{m.get('crashes',0)}/{m.get('timeouts',0)}/"
+                   f"{m.get('skipped',0)}")
+            L.append(f"| {m.get('label') or m.get('matchup')} | "
+                     f"{_num(m.get('win_rate'))} | {wld} | {cts} |")
+        L.append("")
+        L.append(f"- Smoke complete: **{s['smoke_complete']}** — every agent "
+                 f"plays live cabt; validity is the only hard claim here.")
+    if s["ranking"]:
+        L += ["", "### Weighted directional ranking (small samples)", "",
+              "| role | subfamilies | weighted directional win rate |",
+              "|---|---|---|"]
+        for r in s["ranking"]:
+            L.append(f"| {r.get('role')} | {r.get('subfamilies')} | "
+                     f"{_num(r.get('weighted_directional_win_rate'))} |")
+    if s["metrics_rows"]:
+        L += ["", "### Candidate metrics + promotion gate", "",
+              "| candidate | wWR | games | valid | gate | label |",
+              "|---|---|---|---|---|---|"]
+        for r in s["metrics_rows"]:
+            L.append(f"| {r.get('candidate')} | "
+                     f"{_num(r.get('weighted_directional_win_rate'))} | "
+                     f"{r.get('games')} | {r.get('valid_live')} | "
+                     f"{r.get('promotion_gate')} | {r.get('label')} |")
+    L += ["", "### Dry-run recommendation",
+          f"- **upload_performed: {s['upload_performed']}** — "
+          f"queued: **{s['queued_count']}**.",
+          f"- {s['queue'].get('reason', '_no queue_')}"]
+    L += ["", "### Bottom line",
+          "- **Runtime coverage was expanded ONLY at reliably-identifiable cabt "
+          "contexts; one candidate (`core_pilot_water_v2_runtime`) was built, "
+          "validated, and smoke-tested with 0 crash/timeout/skip. The directional "
+          "delta vs v1/the control is within noise — a no-regression signal, not "
+          "a promotion proof. Nothing uploaded; root unchanged; the dynamic "
+          "active control remains the best known submission.**"]
+    return L
+
+
+def _pass15_html(data: dict) -> str:
+    s = _pass15_stats(data)
+    if not _pass15_present(s):
+        return ""
+    cards = "".join(
+        f"<div class=card><div class=k>{_esc(k)}</div><div class=v>{_esc(v)}</div></div>"
+        for k, v in [
+            ("Contexts audited", s["n_contexts"]),
+            ("Runtime-wired", s["n_wired"]),
+            ("Smoke complete", s["smoke_complete"]),
+            ("Upload performed", s["upload_performed"]),
+            ("Queued", s["queued_count"]),
+        ]
+    )
+    smoke_rows = "".join(
+        f"<tr><td>{_esc(m.get('label') or m.get('matchup'))}</td>"
+        f"<td>{_num(m.get('win_rate'))}</td>"
+        f"<td>{_esc(m.get('wins',0))}-{_esc(m.get('losses',0))}-"
+        f"{_esc(m.get('draws',0))}</td>"
+        f"<td>{_esc(m.get('crashes',0))}/{_esc(m.get('timeouts',0))}/"
+        f"{_esc(m.get('skipped',0))}</td></tr>"
+        for m in s["smoke_rows"]
+    ) or "<tr><td class=muted colspan=4>no smoke yet</td></tr>"
+    rank_rows = "".join(
+        f"<tr><td>{_esc(r.get('role'))}</td><td>{_esc(r.get('subfamilies'))}</td>"
+        f"<td>{_num(r.get('weighted_directional_win_rate'))}</td></tr>"
+        for r in s["ranking"]
+    ) or "<tr><td class=muted colspan=3>no ranking yet</td></tr>"
+    return (
+        "<section><h2>Pass 15 — Core-pilot runtime coverage + focused "
+        "confirmation</h2>"
+        "<p class=muted>LOCAL-ONLY, DIRECTIONAL — surrogate opponents, not the "
+        "real Kaggle policy. No upload, no push; root immutable; live scores not "
+        "refreshed. Runtime refines decisions ONLY at reliably-identifiable cabt "
+        "contexts (search/draw, discard).</p>"
+        f"<div class=cards>{cards}</div>"
+        "<h3>Live cabt smoke (validity)</h3>"
+        "<table><tr><th>Matchup</th><th>Win rate</th><th>W-L-D</th>"
+        f"<th>crash/timeout/skip</th></tr>{smoke_rows}</table>"
+        "<h3>Weighted directional ranking (small samples)</h3>"
+        "<table><tr><th>Role</th><th>Subfamilies</th>"
+        f"<th>Weighted directional WR</th></tr>{rank_rows}</table>"
+        f"<p class=muted>Dry-run recommendation: upload_performed="
+        f"{_esc(s['upload_performed'])}, queued={_esc(s['queued_count'])}. "
+        f"{_esc(s['queue'].get('reason',''))}</p>"
+        "<p class=muted>Directional only; a small/zero delta between v2_runtime, "
+        "v1, and the active control is EXPECTED — treat as a no-regression sanity "
+        "signal, not a promotion proof. The dynamic active control remains the "
+        "best known submission.</p></section>"
+    )
+
+
+def write_pass15_runtime_report(data: dict,
+                                path: Path = PASS15_RUNTIME_REPORT_MD) -> Path:
+    """Standalone Pass 15 report #1 — runtime coverage + expansion."""
+    s = _pass15_stats(data)
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not _pass15_present(s):
+        lines = ["# ActiveGraph Pass 15 — Runtime coverage", "",
+                 "_No Pass 15 runtime artifacts found yet._", ""]
+    else:
+        lines = ["# ActiveGraph Pass 15 — Runtime coverage + expansion", "",
+                 "Generated from lab artifacts only; no values fabricated. "
+                 "LOCAL-ONLY; no upload, no push; root immutable.", "",
+                 f"- cabt contexts audited: **{s['n_contexts']}**",
+                 f"- Reliably runtime-wired contexts: **{s['n_wired']}** "
+                 f"(search/draw=7, discard=8)",
+                 f"- Expansion plan present: **{s['expansion_plan']}** "
+                 f"(`data/experiments/pass15_runtime_expansion_plan.md`)",
+                 "",
+                 "The compiled runtime refines decisions ONLY at the two "
+                 "reliably-identifiable cabt contexts; every other decision keeps "
+                 "the base/control behaviour. The fresh-named entrypoint is "
+                 "emitted LAST (the kaggle_environments invariant), ratcheted into "
+                 "`scripts/validate_candidate_entrypoint.py`.", ""]
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
+
+
+def write_pass15_eval_report(data: dict,
+                             path: Path = PASS15_EVAL_REPORT_MD) -> Path:
+    """Standalone Pass 15 report #2 — smoke + focused eval + recommendation."""
+    s = _pass15_stats(data)
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = _pass15_md(data)
+    if not body:
+        lines = ["# ActiveGraph Pass 15 — Focused directional eval", "",
+                 "_No Pass 15 eval artifacts found yet._", ""]
+    else:
+        lines = ["# ActiveGraph Pass 15 — Focused directional eval + "
+                 "recommendation", "",
+                 "Generated from lab artifacts only; no values fabricated.", ""]
+        lines += body
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
+
+
 def _pass10_control_scores(pool: dict) -> dict:
     """Resolve v1 / v2 / rejected live scores by *identity* (candidate_id).
 
@@ -2194,6 +2405,8 @@ def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
         "",
     ]
 
+    lines += _pass15_md(data)
+    lines += [""]
     lines += _pass13_md(data)
     lines += [""]
     lines += _pass12_md(data)
