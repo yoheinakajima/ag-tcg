@@ -1,0 +1,96 @@
+# Pass 12 — Meta-driven evaluation config.
+#
+# LOCAL research only. This config drives scripts/run_pass12_eval.py. It NEVER
+# uploads or submits. It is derived from (not a replacement for) the live
+# meta_pool (experiments/meta_pool.yaml) and the live score registry
+# (data/kaggle_uploads/live_score_registry.json).
+#
+# HONESTY: surrogate opponents pilot replay-derived DECKS with a generic policy,
+# not the real opponent policy. Results are DIRECTIONAL ONLY and never sufficient
+# to promote/upload a candidate. Live Kaggle scores could NOT be refreshed this
+# pass (kaggle CLI unavailable); the active control below is the last-known-good
+# value carried from the prior pass's registry.
+
+schema: activegraph.pass12.meta_eval/v1
+
+# Resolved dynamically at runtime from live_score_registry.json; pinned here for
+# provenance/auditing. The eval engine re-reads the registry and will warn if it
+# drifts from this pin.
+active_control:
+  filename: combo_full_safety_v3_fixed.tar.gz
+  name: combo_full_safety_v3_fixed
+  public_score: 376.6
+  source: data/kaggle_uploads/live_score_registry.json
+  note: "Last-known-good; live refresh skipped (kaggle CLI unavailable this pass)."
+
+# Opponent archetypes evaluated against. Keys MUST match experiments/meta_pool.yaml
+# archetype keys, and each surrogate_deck MUST be a real replay-derived 60-card
+# deck (no invented ids). is_ours archetypes are NEVER opponents.
+opponent_archetypes:
+  - key: metal_ex_zacian_ramp
+    confidence: confirmed
+    surrogate_deck: data/meta_replays/decks/80503804_p1_deck.csv
+  - key: water_kyogre_abomasnow_maxbelt
+    confidence: confirmed
+    surrogate_deck: data/meta_replays/decks/80504288_p0_deck.csv
+  - key: unknown_ex_tempo
+    confidence: provisional
+    surrogate_deck: data/meta_replays/decks/80504942_p0_deck.csv
+
+# --- Weighting ---------------------------------------------------------------
+# raw_replay_frequency_weights: straight from meta_pool.evaluation_weights (the
+# observed replay frequency mix). The provisional family dominates raw frequency.
+raw_replay_frequency_weights:
+  metal_ex_zacian_ramp: 0.1429
+  water_kyogre_abomasnow_maxbelt: 0.1429
+  unknown_ex_tempo: 0.7143
+
+# provisional_weight_cap: a single PROVISIONAL archetype may not exceed this share
+# of the meta weight. unknown_ex_tempo's raw 0.7143 is capped to 0.60 and the
+# excess (0.1143) is redistributed to the CONFIRMED archetypes in proportion to
+# their existing weights (here equal, so split evenly):
+#   metal:    0.1429 + 0.1143/2 = 0.2000
+#   maxbelt:  0.1429 + 0.1143/2 = 0.2000
+#   unknown:  0.6000  (capped)   sum = 1.0000
+provisional_weight_cap: 0.60
+evaluation_weights:
+  metal_ex_zacian_ramp: 0.20
+  water_kyogre_abomasnow_maxbelt: 0.20
+  unknown_ex_tempo: 0.60
+
+# Self-mirror is a DIAGNOSTIC only (seat-fairness / harness sanity). It is NOT an
+# external opponent and carries zero weight in the weighted meta score.
+self_mirror:
+  key: water_kyogre_abomasnow_passive_mirror
+  role: diagnostic_only
+  weight: 0.0
+  note: "Seat-fairness regression; excluded from the weighted meta score."
+
+# --- Two-stage protocol ------------------------------------------------------
+stages:
+  scout:
+    games_per_seat: 3      # 6 games per matchup (seat-swapped)
+    purpose: "Wide, cheap screen across all validator-passing candidates."
+  focused:
+    games_per_seat: 10     # 20 games per matchup (seat-swapped)
+    select_top_candidates: 4
+    always_include:
+      - active_control
+      - best_transfer
+      - best_chaos          # only if any chaos candidate exists & validates
+    purpose: "Higher-game confirmation on the most promising scout candidates."
+
+# --- Budgets (overridable via env) -------------------------------------------
+budgets:
+  game_timeout_s: 60         # META_EVAL_GAME_TIMEOUT_S
+  global_budget_s: 1800      # META_EVAL_GLOBAL_BUDGET_S
+  note: "Watchdog (SIGALRM) per game; global wall-clock budget skips remaining games."
+
+# --- Promotion gate (mirrors ranker.label_for) -------------------------------
+promotion_gate:
+  min_games: 20
+  wilson_z: 1.2816           # 80% lower bound must exceed 0.50
+  must_beat_active_control: true
+  max_dry_run_queue: 1       # at most ONE candidate may enter the dry-run queue
+  upload_performed: false    # this pass NEVER uploads/submits
+  mirror_overfit_guard: true # candidates that only beat the self-mirror are flagged

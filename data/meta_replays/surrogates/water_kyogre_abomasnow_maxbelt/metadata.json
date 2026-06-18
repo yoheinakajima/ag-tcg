@@ -1,0 +1,9 @@
+{
+  "key": "water_kyogre_abomasnow_maxbelt",
+  "confidence": "confirmed",
+  "role": "opponent",
+  "weight": 0.2,
+  "deck_source": "data/meta_replays/decks/80504288_p0_deck.csv",
+  "pilot": "generic v1 surrogate brain (data/baselines/v1_kaggle_349_8)",
+  "honesty": "DECK-FAITHFUL, POLICY-APPROXIMATE: the 60-card deck is the real replay-derived list (no invented ids); the policy is a generic surrogate, NOT the opponent's real policy."
+}

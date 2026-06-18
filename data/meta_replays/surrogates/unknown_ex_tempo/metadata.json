@@ -1,0 +1,9 @@
+{
+  "key": "unknown_ex_tempo",
+  "confidence": "provisional",
+  "role": "opponent",
+  "weight": 0.6,
+  "deck_source": "data/meta_replays/decks/80504942_p0_deck.csv",
+  "pilot": "generic v1 surrogate brain (data/baselines/v1_kaggle_349_8)",
+  "honesty": "DECK-FAITHFUL, POLICY-APPROXIMATE: the 60-card deck is the real replay-derived list (no invented ids); the policy is a generic surrogate, NOT the opponent's real policy."
+}

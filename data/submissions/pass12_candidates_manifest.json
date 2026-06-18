@@ -1,0 +1,252 @@
+{
+  "schema": "activegraph.pass12.candidates/v1",
+  "note": "LOCAL research only. No upload, no GitHub push, root main.py/deck.csv untouched, no invented card ids. Playbook candidates differ ONLY by the 5 wired guards; deeper tempo is DESIGN-ONLY (see each playbook report_notes).",
+  "controls": [
+    {
+      "id": "combo_full_safety_v3_fixed",
+      "kind": "control",
+      "role": "active_control",
+      "status": "referenced",
+      "validated": true,
+      "artifact": "data/submissions/candidates/combo_full_safety_v3_fixed.tar.gz",
+      "note": "Live active control; the baseline candidates must beat."
+    },
+    {
+      "id": "v1_kaggle_349_8",
+      "kind": "control",
+      "role": "legacy_baseline",
+      "status": "referenced",
+      "validated": true,
+      "artifact": "data/baselines/v1_kaggle_349_8",
+      "note": "v1 legacy baseline (lineage only)."
+    },
+    {
+      "id": "deck_energy_trim_light",
+      "kind": "control",
+      "role": "reference_v2",
+      "status": "referenced",
+      "validated": true,
+      "artifact": "data/submissions/candidates/deck_energy_trim_light.tar.gz",
+      "note": "v2 reference deck."
+    },
+    {
+      "id": "combo_full_safety_v3",
+      "kind": "control",
+      "role": "historical_combo",
+      "status": "referenced",
+      "validated": true,
+      "artifact": "data/submissions/candidates/combo_full_safety_v3.tar.gz",
+      "note": "Pre-fix combo, kept as a historical reference."
+    }
+  ],
+  "built": [
+    {
+      "id": "pb12_kyogre_tempo",
+      "kind": "playbook",
+      "group": "water_playbook",
+      "tarball": "data/submissions/candidates_pass12/pb12_kyogre_tempo.tar.gz",
+      "validated": true,
+      "status": "built",
+      "design_only_note": "DESIGN-ONLY: an 'attack by turn N' deadline is not wired into RULE_MAP; only the 5 guards above are runtime-active.",
+      "hypothesis": "Attacker-first: discard protection + a light deckout guard so Kyogre pressure starts as early as possible."
+    },
+    {
+      "id": "pb12_fast_evolution",
+      "kind": "playbook",
+      "group": "water_playbook",
+      "tarball": "data/submissions/candidates_pass12/pb12_fast_evolution.tar.gz",
+      "validated": true,
+      "status": "built",
+      "design_only_note": "DESIGN-ONLY: an 'evolve by turn N' deadline / forced evolution priority is not wired into RULE_MAP.",
+      "hypothesis": "Rush Snover -> Mega Abomasnow ex: all search/evolution guards on, willing to dig (no deckout decline)."
+    },
+    {
+      "id": "pb12_hybrid_tempo",
+      "kind": "playbook",
+      "group": "water_playbook",
+      "tarball": "data/submissions/candidates_pass12/pb12_hybrid_tempo.tar.gz",
+      "validated": true,
+      "status": "built",
+      "design_only_note": "DESIGN-ONLY: dynamic attack/evolve switching by board tempo is not wired into RULE_MAP.",
+      "hypothesis": "Balance attack and evolution: protect setup + guard the Mega Signal line, stay flexible on evolution search."
+    },
+    {
+      "id": "pb12_bench_safety",
+      "kind": "playbook",
+      "group": "water_playbook",
+      "tarball": "data/submissions/candidates_pass12/pb12_bench_safety.tar.gz",
+      "validated": true,
+      "status": "built",
+      "design_only_note": "DESIGN-ONLY: a 'maintain >=2 benched backups' rule is not wired into RULE_MAP.",
+      "hypothesis": "Healthy bench backup, avoid long-game losses: evolution-orphan guard on + conservative deckout decline (<=12)."
+    },
+    {
+      "id": "pb12_attack_deadline",
+      "kind": "playbook",
+      "group": "water_playbook",
+      "tarball": "data/submissions/candidates_pass12/pb12_attack_deadline.tar.gz",
+      "validated": true,
+      "status": "built",
+      "design_only_note": "DESIGN-ONLY: a hard 'must attack by turn N' deadline is not wired into RULE_MAP; only the deckout threshold is.",
+      "hypothesis": "Attack before over-thinning: minimal search guards + an aggressive deckout decline (<=4) so it commits to attacking."
+    },
+    {
+      "id": "deck12_no_secret_box",
+      "kind": "deck",
+      "group": "water_deck",
+      "tarball": "data/submissions/candidates_pass12/deck12_no_secret_box.tar.gz",
+      "validated": true,
+      "status": "built",
+      "deck_counts": {
+        "3": 30,
+        "721": 4,
+        "722": 4,
+        "723": 4,
+        "1121": 4,
+        "1145": 2,
+        "1163": 2,
+        "1219": 4,
+        "1227": 4,
+        "1262": 2
+      },
+      "hypothesis": "Drop the risky Secret Box; add a Water Energy for steadier fuel."
+    },
+    {
+      "id": "deck12_less_draw_more_attack",
+      "kind": "deck",
+      "group": "water_deck",
+      "tarball": "data/submissions/candidates_pass12/deck12_less_draw_more_attack.tar.gz",
+      "validated": true,
+      "status": "built",
+      "deck_counts": {
+        "3": 33,
+        "721": 4,
+        "722": 4,
+        "723": 4,
+        "1092": 1,
+        "1121": 4,
+        "1145": 2,
+        "1163": 2,
+        "1219": 2,
+        "1227": 2,
+        "1262": 2
+      },
+      "hypothesis": "Trim draw supporters (Lillie/Petrel 4->2), add Water Energy to power attacks sooner."
+    },
+    {
+      "id": "deck12_powerglass_heavy",
+      "kind": "deck",
+      "group": "water_deck",
+      "tarball": "data/submissions/candidates_pass12/deck12_powerglass_heavy.tar.gz",
+      "validated": true,
+      "status": "built",
+      "deck_counts": {
+        "3": 27,
+        "721": 4,
+        "722": 4,
+        "723": 4,
+        "1092": 1,
+        "1121": 4,
+        "1145": 2,
+        "1163": 4,
+        "1219": 4,
+        "1227": 4,
+        "1262": 2
+      },
+      "hypothesis": "More Powerglass acceleration (2->4) at the cost of two energy."
+    },
+    {
+      "id": "deck12_mega_signal_heavy",
+      "kind": "deck",
+      "group": "water_deck",
+      "tarball": "data/submissions/candidates_pass12/deck12_mega_signal_heavy.tar.gz",
+      "validated": true,
+      "status": "built",
+      "deck_counts": {
+        "3": 27,
+        "721": 4,
+        "722": 4,
+        "723": 4,
+        "1092": 1,
+        "1121": 4,
+        "1145": 4,
+        "1163": 2,
+        "1219": 4,
+        "1227": 4,
+        "1262": 2
+      },
+      "hypothesis": "More Mega Signal consistency (2->4) at the cost of two energy."
+    },
+    {
+      "id": "deck12_lean_energy_more_tools",
+      "kind": "deck",
+      "group": "water_deck",
+      "tarball": "data/submissions/candidates_pass12/deck12_lean_energy_more_tools.tar.gz",
+      "validated": true,
+      "status": "built",
+      "deck_counts": {
+        "3": 27,
+        "721": 4,
+        "722": 4,
+        "723": 4,
+        "1092": 1,
+        "1121": 4,
+        "1145": 2,
+        "1163": 3,
+        "1219": 4,
+        "1227": 4,
+        "1262": 3
+      },
+      "hypothesis": "Lean the energy count, add a Powerglass and a Surfing Beach for more board tools."
+    },
+    {
+      "id": "transfer12_metal_ex_zacian_ramp",
+      "kind": "transfer",
+      "group": "transfer",
+      "tarball": "data/submissions/candidates_pass12/transfer12_metal_ex_zacian_ramp.tar.gz",
+      "validated": true,
+      "status": "built",
+      "pilot": "generic v2-family compiled brain (not tuned to this deck); deck read from sibling deck.csv",
+      "deck_source": "data/meta_replays/decks/80503804_p1_deck.csv",
+      "hypothesis": "Does the confirmed metal/Zacian ramp deck transfer under a generic pilot and beat our control?"
+    },
+    {
+      "id": "transfer12_water_maxbelt",
+      "kind": "transfer",
+      "group": "transfer",
+      "tarball": "data/submissions/candidates_pass12/transfer12_water_maxbelt.tar.gz",
+      "validated": true,
+      "status": "built",
+      "pilot": "generic v2-family compiled brain (not tuned to this deck); deck read from sibling deck.csv",
+      "deck_source": "data/meta_replays/decks/80504288_p0_deck.csv",
+      "hypothesis": "Does the confirmed Water/Maximum Belt deck transfer under a generic pilot and beat our control?"
+    },
+    {
+      "id": "transfer12_unknown_ex_tempo",
+      "kind": "transfer",
+      "group": "transfer",
+      "tarball": "data/submissions/candidates_pass12/transfer12_unknown_ex_tempo.tar.gz",
+      "validated": true,
+      "status": "built",
+      "pilot": "generic v2-family compiled brain (not tuned to this deck); deck read from sibling deck.csv",
+      "deck_source": "data/meta_replays/decks/80504942_p0_deck.csv",
+      "hypothesis": "Does the provisional unknown-ex tempo deck transfer under a generic pilot? (provisional archetype \u2014 weak evidence)."
+    }
+  ],
+  "blocked": [
+    {
+      "id": "chaos12_disruption_lock",
+      "kind": "chaos",
+      "group": "chaos",
+      "status": "blocked",
+      "validated": false,
+      "reason": "No confirmed disruption+payoff card ids exist beyond the confirmed 11-card pool, and no runtime chaos trigger is wired into RULE_MAP. Building this would require inventing ids \u2014 refused."
+    }
+  ],
+  "all_built_validated": true,
+  "counts": {
+    "controls": 4,
+    "built": 13,
+    "blocked": 1
+  }
+}

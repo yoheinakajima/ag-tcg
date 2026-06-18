@@ -1,0 +1,7 @@
+candidate,role,group,metal_ex_zacian_ramp,water_kyogre_abomasnow_maxbelt,unknown_ex_tempo,vs_active_control,weighted_meta_score
+combo_full_safety_v3_fixed,active_control,control,0.5,0.55,0.7,,0.63
+pb12_kyogre_tempo,candidate,water_playbook,0.5,0.55,0.45,0.5,0.48
+pb12_hybrid_tempo,candidate,water_playbook,0.3,0.5,0.45,0.4,0.43
+deck12_less_draw_more_attack,candidate,water_deck,0.5,0.7,0.5,0.55,0.54
+deck12_powerglass_heavy,candidate,water_deck,0.7,0.3,0.5,0.65,0.5
+transfer12_water_maxbelt,candidate,transfer,0.55,0.35,0.5,0.55,0.48

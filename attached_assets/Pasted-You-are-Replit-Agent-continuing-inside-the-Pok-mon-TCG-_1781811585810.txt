@@ -1,0 +1,549 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Keep all candidate tarballs top-level main.py + deck.csv only.
+- This is a local meta-driven candidate generation + evaluation pass only.
+
+Current status:
+- Pass 11B replay inbox succeeded.
+- raw replay files found: 9
+- parsed: 9
+- duplicates: 0
+- failed: 0
+- decks extracted: 18
+- real-opponent replays: 7
+- self-mirrors: 2
+- confirmed archetypes:
+  - metal_ex_zacian_ramp
+  - water_kyogre_abomasnow_maxbelt
+- provisional archetype:
+  - unknown_ex_tempo, currently most frequent
+- active control is dynamic.
+- At the last snapshot:
+  - combo_full_safety_v3_fixed: 376.6, active control
+  - v1 deck-loader fix: 363.0
+  - deck_energy_trim_light: 355.2
+- local meta eval showed:
+  - combo_full_safety_v3_fixed weighted meta score: 0.5476
+  - deck_energy_trim_light weighted meta score: 0.4048
+- cabt is runnable locally through kaggle-environments 1.30.1.
+- No upload should happen.
+
+Goal:
+Run Pass 12: Meta-Driven Candidate Generation + Evaluation.
+
+Objectives:
+1. Refresh live scores and dynamic active control.
+2. Use the replay-derived meta pool as the evaluation target.
+3. Generate a controlled set of tempo/deck/playbook candidates.
+4. Include opponent-deck transfer candidates from replay-derived decks.
+5. Add a small chaos-scout lane, but only if measurable and fully validated.
+6. Evaluate candidates against replay-derived surrogate archetypes.
+7. Produce a matchup matrix, weighted rankings, and dry-run upload guidance.
+8. Do not upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Refresh live score registry
+
+Run:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass12.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass12.csv || true
+
+Then run:
+
+python scripts/build_live_score_registry.py
+
+Update:
+- data/kaggle_uploads/live_score_registry.json
+- data/kaggle_uploads/live_score_registry.md
+
+Select active_control as highest publicScore among complete non-error submissions.
+
+Emit ActiveGraph:
+- KaggleScoreUpdated
+- ActiveControlSelected
+- CandidateRejected for complete candidates materially below active control
+
+Important:
+- Live scores drift. Do not hardcode 376.6 / 363.0 / 355.2 except as historical notes.
+- Reports must resolve scores by candidate identity, not by mutable role labels like v1/v2/control.
+
+Part C — Validate replay registry and meta pool
+
+Run:
+
+python scripts/ingest_replay_inbox.py
+python scripts/extract_meta_archetypes.py
+python scripts/analyze_kaggle_replays.py
+python scripts/update_meta_pool_from_replays.py || true
+
+Validate:
+- data/meta_replays/replay_registry.json
+- data/meta_replays/replay_registry.md
+- data/meta_replays/archetypes.yaml
+- data/meta_replays/archetypes.md
+- data/meta_replays/replay_analysis.json
+- experiments/meta_pool.yaml
+- data/meta_replays/decks/*.csv
+
+Requirements:
+- every replay-derived deck is exactly 60 integer IDs
+- every deck has episode/player attribution
+- opponent decks are replay-derived, not invented
+- raw replay payloads remain gitignored
+- self-mirror decks are not overweighted
+- unknown_ex_tempo remains provisional unless enough evidence exists to promote it
+
+Part D — Build Pass 12 meta evaluation config
+
+Create:
+
+experiments/pass12_meta_eval.yaml
+
+It should include:
+
+active_control:
+  source: live_score_registry
+  candidate_id: current highest-scoring complete non-error submission
+
+opponent_archetypes:
+  - metal_ex_zacian_ramp
+  - water_kyogre_abomasnow_maxbelt
+  - unknown_ex_tempo
+
+weights:
+  - use replay-frequency weights from experiments/meta_pool.yaml
+  - cap provisional unknown_ex_tempo at a configurable maximum, e.g. 0.60, unless explicitly overridden
+  - redistribute excess weight proportionally to confirmed archetypes
+  - include self-mirror only as a low-weight diagnostic, not as main meta
+
+evaluation_policy_note:
+  Opponent decks are replay-derived, but opponent agents are local surrogates. This is stronger than mirror testing but still not exact Kaggle reproduction.
+
+Part E — Candidate generation
+
+Generate candidates in four groups.
+
+Group 0 — controls / anchors:
+1. active_control_exact
+2. v1_deck_loader_fix
+3. v2_deck_energy_trim_light
+4. combo_full_safety_v3_fixed
+
+Group 1 — our Water deck tempo/playbook candidates:
+5. playbook_kyogre_tempo_v2
+Hypothesis:
+Prioritize Kyogre pressure and early Water attachment over draw/search loops.
+
+Rules:
+- prefer Kyogre active when available
+- bench backup Kyogre/Snover early
+- attach Water to active Kyogre before optional draw/search
+- attack once Kyogre is online
+- avoid over-search if board pressure is already available
+
+6. playbook_bench_safety_v2
+Hypothesis:
+The deck loses when active Pokémon is KO'd with no backup. Ensure early bench development.
+
+Rules:
+- during SetupBenchPokemon, bench useful backup Pokémon when legal
+- early turns: bench Kyogre/Snover before optional draw
+- avoid empty bench if active is weak or damaged
+
+7. playbook_fast_evolution_v2
+Hypothesis:
+If Snover is active or benched, evolve quickly rather than looping weak basic attacks.
+
+Rules:
+- prioritize Snover → Mega Abomasnow ex line when Snover exists
+- use Ultra Ball/Mega Signal coherently
+- avoid fetching orphan Mega Abomasnow without Snover
+- avoid grinding with Snover when evolution is legal
+
+8. playbook_hybrid_tempo_v2
+Hypothesis:
+Choose Kyogre pressure if available; otherwise pursue Abomasnow evolution line.
+
+Rules:
+- Kyogre + Water Energy = tempo path
+- Snover + Mega/evolution support = evolution path
+- no setup path = draw/search path
+- deckout guard remains active
+
+9. playbook_attack_deadline_v2
+Hypothesis:
+Agents lose to ex decks if they do not apply pressure quickly.
+
+Rules:
+- if no meaningful attack by early threshold, prioritize any legal path to attack
+- penalize repeated draw/search without board improvement
+- prefer attach + attack over optional support actions when behind
+
+Group 2 — our Water deck composition candidates:
+10. deck_no_secret_box_v2
+Hypothesis:
+Secret Box creates high-variance discard/search sequences; removing it may improve consistency.
+
+11. deck_less_draw_more_attack_v2
+Hypothesis:
+Reducing draw/supporter density and increasing attacker/tool density may reduce deckout and passive play.
+
+12. deck_more_kyogre_less_snover_v2
+Hypothesis:
+Kyogre pressure may be more reliable than Snover/Mega setup in the current meta.
+
+13. deck_more_search_less_draw_v2
+Hypothesis:
+Targeted search may outperform generic draw in this deck.
+
+14. deck_no_secret_box_plus_targeted_search_v2
+Hypothesis:
+Remove Secret Box while preserving setup consistency via safer search.
+
+Group 3 — replay-deck transfer candidates:
+15. replay_metal_ex_zacian_ramp_tempo
+Use the replay-derived metal_ex_zacian_ramp deck if a full 60-card deck exists.
+Hypothesis:
+The opponent's metal ramp shell may be inherently stronger than our Water shell under a simple tempo pilot.
+
+Rules:
+- prefer Zacian/ex active if identifiable
+- attach Metal Energy to active attacker
+- bench ex backups
+- attack as soon as possible
+- avoid unnecessary draw loops
+
+16. replay_water_maxbelt_tempo
+Use replay-derived water_kyogre_abomasnow_maxbelt deck if available.
+Hypothesis:
+The TYMU-style Water/Maxbelt support package may be a better version of our Water shell.
+
+Rules:
+- prioritize same Water tempo/evolution path
+- use Maximum Belt/tool support if card ID is confirmed
+- preserve attacker setup
+
+17. replay_unknown_ex_tempo_representative
+Use the most representative unknown_ex_tempo replay deck.
+Hypothesis:
+The unknown_ex_tempo bucket is the largest meta family; using its own shell may reveal stronger generic tempo strategy.
+
+Rules:
+- generic ex tempo:
+  - choose high-HP/high-damage active
+  - attach matching Energy
+  - bench backup attackers
+  - attack early
+  - avoid unsupported complex actions
+
+Group 4 — chaos scout candidates, strictly gated:
+Generate at most 3 chaos scout candidates, and only if all requirements are met:
+- core card IDs confirmed from official metadata or replay
+- disruption card + payoff card both present
+- deck can be legal 60 cards
+- playbook trigger is measurable in local telemetry
+- tarball validator passes
+- no invented IDs
+
+Candidate ideas:
+18. chaos_mill_resource_scout
+Hypothesis:
+Disrupt deck/resources against draw-heavy decks.
+
+19. chaos_status_or_forced_switch_scout
+Hypothesis:
+Status or forced-switch effects may punish simple ex tempo pilots.
+
+20. chaos_hand_or_bench_punish_scout
+Hypothesis:
+Hand-size or bench-size punishment may exploit simple agents that overdraw/overbench.
+
+If requirements are not met, create candidate plans and mark blocked. Do not force generation.
+
+Part F — Candidate validation
+
+Every candidate must pass before evaluation:
+- tarball contains exactly top-level main.py + deck.csv
+- python scripts/validate_candidate_tarball.py <tarball>
+- key-absent / select-null / struct-like deck request returns 60
+- no forbidden imports
+- deck.csv has 60 integer rows
+- no root file mutation
+
+Missing or blocked candidates should be recorded honestly.
+
+Part G — Surrogate opponent setup
+
+For each replay-derived opponent deck, create or reuse a surrogate agent directory:
+- main.py: safest generic/deck-aware local agent available
+- deck.csv: replay-derived opponent deck
+- metadata.json:
+  - episode_id
+  - opponent_name
+  - archetype
+  - source_deck_path
+  - surrogate_policy_type
+
+Important:
+- Do not claim this reproduces the opponent's actual Kaggle policy.
+- It is a deck-faithful, policy-approximate surrogate.
+
+Part H — Stage 1 scout evaluation
+
+Run Stage 1:
+
+- candidates: all validator-passing candidates
+- opponents: confirmed/provisional replay-derived archetype surrogates
+- games per seat per matchup: 3
+- seat swap: yes
+- watchdog: yes
+- fast import stub if safe
+
+Expected total should be manageable because cabt game ≈ 0.3s, but use resumable/durable evaluation if available.
+
+Output:
+- data/experiments/pass12_scout_results.json
+- data/experiments/pass12_scout_results.md
+- data/experiments/pass12_matchup_matrix.csv
+- data/experiments/pass12_candidate_metrics.json
+
+Part I — Stage 2 focused evaluation
+
+Select top candidates from Stage 1:
+- top 4 overall by weighted_meta_score
+- plus active_control anchor
+- include best deck-transfer candidate if it is not already in top 4
+- include best chaos candidate only if it was actually generated and did not fail gates
+
+Run Stage 2:
+- games per seat per matchup: 10
+- seat swap: yes
+- all replay-derived archetype surrogates
+- watchdog: yes
+
+If runtime is too heavy:
+- reduce to top 3 candidates
+- games per seat: 5
+- report reduced fidelity
+
+Output:
+- data/experiments/pass12_focused_results.json
+- data/experiments/pass12_focused_results.md
+- data/experiments/pass12_focused_matchup_matrix.csv
+- data/experiments/pass12_ranking.json
+- data/experiments/pass12_ranking.md
+
+Part J — Metrics
+
+Collect:
+
+Outcome:
+- wins/losses/draws
+- adjusted win rate
+- Wilson 80/95 CI
+- seat split
+- crashes/timeouts/invalid returns
+
+Meta:
+- weighted_meta_score
+- per-archetype score
+- worst-matchup score
+- matchup spread
+- mirror-only overfit tag
+
+Tempo:
+- first meaningful attack step
+- first KO step
+- high-damage attack rate if detectable
+- attack rate
+- pass/end rate
+- average game length
+
+Board:
+- early bench development rate
+- backup attacker present rate
+- stuck_on_basic_snover_rate
+- Kyogre active/attacking rate
+- Mega Abomasnow in play rate
+- evolved_by_threshold rate
+
+Resource:
+- deckout/low-deck count
+- Secret Box played count
+- Ultra Ball/Mega Signal usage
+- optional draw/search near low deck
+
+Chaos, if applicable:
+- disruption_card_played
+- payoff_trigger_met
+- opponent_hand/bench/deck/status changes
+- helped_opponent_setup flag
+- chaos_without_payoff flag
+
+Part K — Ranking labels
+
+Label each candidate:
+
+- meta_promotable
+- meta_promising
+- archetype_specialist
+- mirror_overfit
+- chaos_scout_only
+- live_rejected
+- inconclusive
+- blocked
+
+Promotion gate:
+- validator passes
+- no crashes/timeouts/invalid returns
+- weighted_meta_score beats active control
+- not only mirror-overfit
+- at least one non-mirror archetype improves
+- worst-matchup score not catastrophically below active control
+- Wilson interval is reasonable for sample size
+- clear hypothesis and report entry exists
+
+No upload in this pass.
+
+Dry-run queue may include at most one candidate if it clears the gate, with:
+- upload_performed: false
+- auto_submit_enabled: false
+- require_manual_approval_for_submit: true
+
+Part L — Report site
+
+Update:
+- data/site/index.html
+- data/reports/activegraph_strategy_report.md
+- data/reports/pass12_meta_candidate_eval_report.md
+
+Include:
+- latest live score table
+- active control
+- replay registry coverage
+- archetype weights
+- candidate groups
+- matchup matrix
+- top weighted candidates
+- per-archetype weaknesses
+- chaos lane status
+- no-upload note
+- next recommendation
+
+Part M — Tests
+
+Add/update tests for:
+- pass12 config loads and weights sum correctly
+- candidates require tarball validator before evaluation
+- replay-derived surrogate decks are exactly 60 integer IDs
+- unknown_ex_tempo remains provisional unless enough evidence exists
+- active control selected dynamically
+- mirror-only winner is labelled mirror_overfit
+- weighted_meta_score beats active control before queueing
+- dry-run queue max one candidate
+- no upload flag remains false
+- chaos candidates blocked unless trigger/payoff measurable
+- root files unchanged
+- raw replays remain gitignored
+
+Run targeted tests in small groups.
+
+Part N — Final report
+
+Report exactly:
+
+ActiveGraph Pass 12 Meta-Driven Candidate Evaluation Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Live score registry
+- registry path:
+- active control:
+- active control score:
+- complete submissions:
+- rejected submissions:
+- score drift note:
+
+3. Replay/meta pool
+- replay registry path:
+- raw replays:
+- real-opponent replays:
+- archetypes:
+- weights:
+- coverage:
+- surrogate limitations:
+
+4. Candidate generation
+- controls:
+- Water tempo/playbook candidates:
+- Water deck candidates:
+- replay-deck transfer candidates:
+- chaos scout candidates:
+- blocked candidates and why:
+
+5. Validation gates
+- candidates passing tarball validator:
+- validator failures:
+- smoke/eval eligibility:
+- root files unchanged:
+
+6. Stage 1 scout
+- matchups:
+- games per matchup:
+- candidates evaluated:
+- top 5 scout:
+- crashes/timeouts/invalid returns:
+
+7. Stage 2 focused
+- focused candidates:
+- games per matchup:
+- weighted ranking:
+- best overall:
+- best non-mirror:
+- best deck-transfer:
+- best chaos, if any:
+- worst-matchup analysis:
+- Wilson intervals:
+
+8. Strategic findings
+- active control strengths:
+- active control weaknesses:
+- best tempo direction:
+- best deck direction:
+- best opponent-deck transfer direction:
+- chaos readiness:
+- biggest remaining ladder weakness:
+
+9. Queue/upload guidance
+- queued candidates:
+- upload performed: no
+- submit next: yes/no
+- if yes, candidate and reason:
+- if no, reason:
+
+10. Next recommendation
+- one sentence only.

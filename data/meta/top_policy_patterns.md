@@ -1,6 +1,6 @@
 # Top Policy Patterns (meta engine backlog)
 
-Replays analyzed: **5** (coverage: partial).
+Replays analyzed: **6** (coverage: partial).
 
 Preserved policy seams per strategy track:
 
@@ -18,6 +18,8 @@ Preserved policy seams per strategy track:
 - `data/meta_replays/meta_replay_summary.json` — track=unclassified (confidence low); coverage=partial
   - no steps array; early-game policy is unknown
 - `data/meta_replays/pass10_eval_status.json` — track=unclassified (confidence low); coverage=partial
+  - no steps array; early-game policy is unknown
+- `data/meta_replays/replay_analysis.json` — track=unclassified (confidence low); coverage=partial
   - no steps array; early-game policy is unknown
 - `data/meta_replays/replay_inbox_errors.json` — track=unclassified (confidence low); coverage=partial
   - no steps array; early-game policy is unknown

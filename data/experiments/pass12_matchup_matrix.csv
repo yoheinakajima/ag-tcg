@@ -1,0 +1,16 @@
+candidate,role,group,metal_ex_zacian_ramp,water_kyogre_abomasnow_maxbelt,unknown_ex_tempo,vs_active_control,weighted_meta_score
+combo_full_safety_v3_fixed,active_control,control,0.8333,0.6667,0.3333,,0.5
+v1_kaggle_349_8,legacy_baseline,control,0.8333,0.6667,0.3333,0.3333,0.5
+pb12_kyogre_tempo,candidate,water_playbook,0.6667,0.6667,0.8333,0.5,0.7667
+pb12_fast_evolution,candidate,water_playbook,0.5,0.5,0.5,0.3333,0.5
+pb12_hybrid_tempo,candidate,water_playbook,0.6667,0.1667,0.8333,0.8333,0.6667
+pb12_bench_safety,candidate,water_playbook,0.8333,0.3333,0.3333,0.3333,0.4333
+pb12_attack_deadline,candidate,water_playbook,0.5,0.3333,0.3333,0.3333,0.3666
+deck12_no_secret_box,candidate,water_deck,0.1667,0.3333,0.5,0.5,0.4
+deck12_less_draw_more_attack,candidate,water_deck,0.6667,0.1667,0.8333,0.5,0.6667
+deck12_powerglass_heavy,candidate,water_deck,0.8333,0.3333,0.6667,0.0,0.6333
+deck12_mega_signal_heavy,candidate,water_deck,0.6667,0.5,0.3333,0.3333,0.4333
+deck12_lean_energy_more_tools,candidate,water_deck,0.3333,0.8333,0.5,0.5,0.5333
+transfer12_metal_ex_zacian_ramp,candidate,transfer,0.6667,0.8333,0.3333,1.0,0.5
+transfer12_water_maxbelt,candidate,transfer,0.5,0.5,0.6667,0.5,0.6
+transfer12_unknown_ex_tempo,candidate,transfer,0.3333,0.1667,0.3333,0.0,0.3

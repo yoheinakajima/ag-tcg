@@ -68,6 +68,15 @@ PASS11B_META_POOL_YAML = Path("experiments/meta_pool.yaml")
 PASS11B_META_EVAL_JSON = Path("data/experiments/pass11b_meta_eval.json")
 PASS11B_RANKING_JSON = Path("data/experiments/pass11b_ranking.json")
 PASS11B_REPORT_MD = Path("data/reports/pass11b_replay_inbox_report.md")
+# Pass 12 — meta-driven candidate generation + two-stage directional eval.
+PASS12_CONFIG_YAML = Path("experiments/pass12_meta_eval.yaml")
+PASS12_CANDIDATES_MANIFEST_JSON = Path("data/submissions/pass12_candidates_manifest.json")
+PASS12_SCOUT_JSON = Path("data/experiments/pass12_scout_results.json")
+PASS12_FOCUSED_JSON = Path("data/experiments/pass12_focused_results.json")
+PASS12_CANDIDATE_METRICS_JSON = Path("data/experiments/pass12_candidate_metrics.json")
+PASS12_RANKING_JSON = Path("data/experiments/pass12_ranking.json")
+PASS12_DRY_RUN_QUEUE_JSON = Path("data/experiments/pass12_dry_run_queue.json")
+PASS12_REPORT_MD = Path("data/reports/pass12_meta_candidate_eval_report.md")
 
 # Corrected live baseline scores (see v2 baseline README correction note: the
 # v1 archive dir keeps its historical `349_8` name but live v1 is 356.9).
@@ -211,6 +220,13 @@ def gather(runs_root=RUNS_ROOT) -> dict:
         "pass11b_meta_pool": _load_yaml(PASS11B_META_POOL_YAML) or {},
         "pass11b_meta_eval": _load_json(PASS11B_META_EVAL_JSON) or {},
         "pass11b_ranking": _load_json(PASS11B_RANKING_JSON) or {},
+        "pass12_config": _load_yaml(PASS12_CONFIG_YAML) or {},
+        "pass12_candidates": _load_json(PASS12_CANDIDATES_MANIFEST_JSON) or {},
+        "pass12_scout": _load_json(PASS12_SCOUT_JSON) or {},
+        "pass12_focused": _load_json(PASS12_FOCUSED_JSON) or {},
+        "pass12_metrics": _load_json(PASS12_CANDIDATE_METRICS_JSON) or {},
+        "pass12_ranking": _load_json(PASS12_RANKING_JSON) or {},
+        "pass12_dry_run_queue": _load_json(PASS12_DRY_RUN_QUEUE_JSON) or {},
         "runs": runs,
         "baseline_readme": (BASELINE_DIR / "README.md"),
         "v2_baseline_readme": (V2_BASELINE_DIR / "README.md"),
@@ -329,6 +345,7 @@ def _overview_html(data: dict) -> str:
 
     body = (
         f"<section><h2>Snapshot</h2><div class=cards>{cards}</div></section>"
+        f"{_pass12_html(data)}"
         f"{_pass11b_html(data)}"
         f"{_pass10b_html(data)}"
         f"{_pass10_html(data)}"
@@ -1191,6 +1208,206 @@ def write_pass11b_report(data: dict, path: Path = PASS11B_REPORT_MD) -> Path:
     return path
 
 
+def _pass12_stats(data: dict) -> dict:
+    cfg = data.get("pass12_config") or {}
+    man = data.get("pass12_candidates") or {}
+    scout = data.get("pass12_scout") or {}
+    focused = data.get("pass12_focused") or {}
+    ranking = data.get("pass12_ranking") or {}
+    queue = data.get("pass12_dry_run_queue") or {}
+    built = man.get("built") or []
+    blocked = man.get("blocked") or []
+    foc_rank = ranking.get("ranking") or focused.get("ranking") or []
+    labels = Counter(r.get("label") for r in foc_rank)
+    return {
+        "cfg": cfg, "man": man, "scout": scout, "focused": focused,
+        "ranking": ranking, "queue": queue, "built": built, "blocked": blocked,
+        "scout_rank": scout.get("ranking") or [],
+        "foc_rank": foc_rank, "labels": labels,
+        "weights": cfg.get("evaluation_weights") or {},
+        "active_control": ranking.get("active_control")
+        or scout.get("active_control") or "uncertain",
+        "ac_adj": ranking.get("active_control_adj")
+        or focused.get("active_control_adj"),
+        "upload_ready": ranking.get("upload_ready", False),
+        "upload_performed": queue.get("upload_performed", False),
+        "queued": queue.get("queued") or [],
+        "queue_reason": queue.get("reason") or "",
+        "disclaimer": (scout.get("disclaimer") or ranking.get("disclaimer") or ""),
+        "opponents": scout.get("opponents") or [],
+        "mirror_key": scout.get("mirror_key"),
+        "candidate_notes": scout.get("candidate_notes") or [],
+        "focused_set": focused.get("focused_set") or [],
+    }
+
+
+def _pass12_present(s: dict) -> bool:
+    return bool(s["built"] or s["foc_rank"] or s["scout_rank"] or s["cfg"])
+
+
+def _pass12_md(data: dict) -> list[str]:
+    s = _pass12_stats(data)
+    if not _pass12_present(s):
+        return []
+    L = ["## Pass 12 — Meta-driven candidate generation + directional evaluation", ""]
+    L.append("_LOCAL only — no Kaggle upload, no GitHub push; root main.py/deck.csv "
+             "immutable; no card id invented. Surrogate eval is DIRECTIONAL ONLY: "
+             "opponent decks are real replay-derived lists piloted by a generic "
+             "surrogate policy, never the real opponent policy._")
+    if s["disclaimer"]:
+        L += ["", f"> {s['disclaimer']}"]
+    # Candidate generation.
+    groups = Counter(r.get("group") for r in s["built"])
+    L += ["", "### Candidate generation",
+          f"- Built & validator-passing candidates: **{len(s['built'])}** "
+          + ("(" + ", ".join(f"{g}×{n}" for g, n in sorted(groups.items())) + ")"
+             if groups else ""),
+          f"- Blocked (honest, no invented ids): **{len(s['blocked'])}**"]
+    for b in s["blocked"]:
+        L.append(f"  - `{b.get('id')}`: {b.get('reason')}")
+    # Eval config.
+    w = ", ".join(f"{k}={v}" for k, v in s["weights"].items()) or "_none_"
+    L += ["", "### Evaluation configuration",
+          f"- Active control (dynamic): `{s['active_control']}` "
+          f"(adj win rate {_num(s['ac_adj'])})",
+          f"- Opponent archetypes: "
+          + (", ".join(f"`{o}`" for o in s["opponents"]) or "_none_"),
+          f"- Replay-frequency weights: {w}",
+          f"- Self-mirror diagnostic (excluded from meta score): "
+          f"`{s['mirror_key'] or 'none'}`"]
+    for note in s["candidate_notes"]:
+        L.append(f"- Note: {note}")
+    # Focused ranking table.
+    L += ["", "### Focused ranking (directional, seat-swapped)",
+          "| candidate | group | meta score | adj WR | 80% CI | games | vs AC | "
+          "label |",
+          "|---|---|---|---|---|---|---|---|"]
+    for r in s["foc_rank"]:
+        L.append(f"| `{r.get('candidate')}` | {r.get('group')} | "
+                 f"{_num(r.get('weighted_meta_score'))} | "
+                 f"{_num(r.get('adjusted_win_rate'))} | "
+                 f"{_ci_str(r.get('wilson80'))} | {r.get('games_completed')} | "
+                 f"{_num(r.get('vs_active_control'))} | {r.get('label')} |")
+    if not s["foc_rank"]:
+        L.append("| _none_ |  |  |  |  |  |  |  |")
+    lbls = ", ".join(f"{k}×{v}" for k, v in s["labels"].items() if k) or "_none_"
+    L += ["", f"- Label distribution: {lbls}"]
+    # Promotion gate + dry-run queue.
+    L += ["", "### Promotion gate & dry-run queue",
+          f"- Upload-ready: **{s['upload_ready']}**; upload performed: "
+          f"**{s['upload_performed']}**",
+          f"- Dry-run queued (max 1): **{len(s['queued'])}**"
+          + ("".join(f" — `{q.get('candidate')}`" for q in s["queued"])),
+          f"- Reason: {s['queue_reason']}"]
+    if not s["foc_rank"]:
+        L += ["", "### Bottom line",
+              "- **Candidates were generated but the directional eval has not been "
+              "run yet (no focused ranking present); nothing uploaded, no GitHub "
+              "push, root unchanged.**"]
+    elif any(r.get("label") == "promotable" for r in s["foc_rank"]):
+        L += ["", "### Bottom line",
+              "- **One or more candidates are directionally promotable but surrogate "
+              "evidence is NOT sufficient to upload; at most one entered the dry-run "
+              "queue for MANUAL review. Nothing uploaded; no GitHub push.**"]
+    else:
+        L += ["", "### Bottom line",
+              "- **Directional surrogate evidence only; no candidate cleared the "
+              "promotion gate (>= min games, 80% lower bound > 0.50, beats the active "
+              "control, not mirror-overfit). Queue empty / capped at one; nothing "
+              "uploaded; no GitHub push. The dynamic active control remains the best "
+              "known submission.**"]
+    return L
+
+
+def _pass12_html(data: dict) -> str:
+    s = _pass12_stats(data)
+    if not _pass12_present(s):
+        return ""
+    groups = Counter(r.get("group") for r in s["built"])
+    cards = "".join(
+        f"<div class=card><div class=k>{_esc(k)}</div><div class=v>{_esc(v)}</div></div>"
+        for k, v in [
+            ("Candidates built", len(s["built"])),
+            ("Blocked (no invented ids)", len(s["blocked"])),
+            ("Opponent archetypes", len(s["opponents"])),
+            ("Active control", s["active_control"]),
+            ("Control adj WR", _num(s["ac_adj"])),
+            ("Promotable", s["labels"].get("promotable", 0)),
+            ("Dry-run queued", len(s["queued"])),
+            ("Upload performed", s["upload_performed"]),
+        ]
+    )
+    rank_rows = "".join(
+        f"<tr><td><code>{_esc(r.get('candidate'))}</code></td>"
+        f"<td>{_esc(r.get('group'))}</td>"
+        f"<td>{_esc(_num(r.get('weighted_meta_score')))}</td>"
+        f"<td>{_esc(_num(r.get('adjusted_win_rate')))}</td>"
+        f"<td>{_esc(_ci_str(r.get('wilson80')))}</td>"
+        f"<td>{_esc(r.get('games_completed'))}</td>"
+        f"<td>{_esc(_num(r.get('vs_active_control')))}</td>"
+        f"<td class={'rej' if r.get('label') in ('rejected', 'mirror_overfit') else 'ok'}>"
+        f"{_esc(r.get('label'))}</td></tr>"
+        for r in s["foc_rank"]
+    ) or "<tr><td class=muted colspan=8>focused eval not run</td></tr>"
+    blocked_rows = "".join(
+        f"<tr><td><code>{_esc(b.get('id'))}</code></td>"
+        f"<td>{_esc(b.get('reason'))}</td></tr>"
+        for b in s["blocked"]
+    ) or "<tr><td class=muted colspan=2>none blocked</td></tr>"
+    grp = ", ".join(f"{g}×{n}" for g, n in sorted(groups.items()) if g) or "—"
+    w = ", ".join(f"{k}={v}" for k, v in s["weights"].items()) or "—"
+    return (
+        "<section><h2>Pass 12 — Meta-driven candidate generation + directional "
+        "evaluation</h2>"
+        "<p class=muted>LOCAL only — no upload, no push; root immutable; no card "
+        "id invented. Surrogate eval is <b>directional only</b> (real replay decks, "
+        "generic surrogate policy). Active control "
+        f"<code>{_esc(s['active_control'])}</code> (adj {_esc(_num(s['ac_adj']))}); "
+        f"weights {_esc(w)}; groups {_esc(grp)}.</p>"
+        f"<div class=cards>{cards}</div>"
+        "<h3>Focused ranking (directional, seat-swapped)</h3>"
+        "<table><tr><th>Candidate</th><th>Group</th><th>Meta score</th>"
+        "<th>Adj WR</th><th>80% CI</th><th>Games</th><th>vs AC</th><th>Label</th></tr>"
+        f"{rank_rows}</table>"
+        "<h3>Blocked candidates (metadata insufficient — no invented ids)</h3>"
+        "<table><tr><th>Candidate</th><th>Why blocked</th></tr>"
+        f"{blocked_rows}</table>"
+        f"<p class=muted>Upload-ready: <b>{_esc(s['upload_ready'])}</b>; upload "
+        f"performed: <b>{_esc(s['upload_performed'])}</b>; dry-run queued: "
+        f"<b>{len(s['queued'])}</b> (max 1). {_esc(s['queue_reason'])} "
+        "No candidate cleared the promotion gate; nothing uploaded.</p></section>"
+    )
+
+
+def write_pass12_report(data: dict, path: Path = PASS12_REPORT_MD) -> Path:
+    """Write the standalone Pass 12 meta-candidate evaluation report (Part L)."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = _pass12_md(data)
+    if not body:
+        lines = ["# ActiveGraph Pass 12 — Meta-candidate evaluation report", "",
+                 "_No Pass 12 artifacts found yet._", ""]
+    else:
+        s = _pass12_stats(data)
+        lines = ["# ActiveGraph Pass 12 — Meta-candidate evaluation report", "",
+                 "Generated from lab artifacts only; no values fabricated.", ""]
+        lines += body
+        promising = [r.get("candidate") for r in s["foc_rank"]
+                     if r.get("label") in ("promotable", "confirmation_promising",
+                                            "scout_promising")]
+        lines += ["", "## Next upload recommendation",
+                  "- **None.** Surrogate evaluation is directional only and no "
+                  "candidate cleared the promotion gate; "
+                  + (f"the most promising directional candidates "
+                     f"({', '.join(f'`{c}`' for c in promising)}) need real Kaggle "
+                     "confirmation before any upload could be considered, "
+                     if promising else "no candidate is even directionally promotable; ")
+                  + f"the dynamic active control `{s['active_control']}` remains the "
+                  "best known submission. No GitHub push, no Kaggle upload.", ""]
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
+
+
 def _pass10_control_scores(pool: dict) -> dict:
     """Resolve v1 / v2 / rejected live scores by *identity* (candidate_id).
 
@@ -1808,6 +2025,8 @@ def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
         "",
     ]
 
+    lines += _pass12_md(data)
+    lines += [""]
     lines += _pass11b_md(data)
     lines += [""]
     lines += _pass10b_md(data)
