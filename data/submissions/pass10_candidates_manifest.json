@@ -1,0 +1,116 @@
+{
+  "schema": "activegraph.pass10.candidates/v1",
+  "note": "LOCAL research only. No upload. Tempo behaviours beyond the 5 wired guards are DESIGN-ONLY (see each playbook report_notes).",
+  "built": [
+    {
+      "id": "playbook_kyogre_tempo",
+      "kind": "playbook",
+      "run_dir": "experiments/runs_pass10/20260618_pass10_00_playbook_kyogre_tempo",
+      "tarball": "data/submissions/candidates_pass10/playbook_kyogre_tempo.tar.gz",
+      "validated": true,
+      "status": "built",
+      "design_only_note": "DESIGN-ONLY: an 'attack by turn N' deadline is not wired into RULE_MAP; only the 5 guards above are runtime-active."
+    },
+    {
+      "id": "playbook_fast_evolution",
+      "kind": "playbook",
+      "run_dir": "experiments/runs_pass10/20260618_pass10_01_playbook_fast_evolution",
+      "tarball": "data/submissions/candidates_pass10/playbook_fast_evolution.tar.gz",
+      "validated": true,
+      "status": "built",
+      "design_only_note": "DESIGN-ONLY: an 'evolve by turn N' deadline / forced evolution priority is not wired into RULE_MAP."
+    },
+    {
+      "id": "playbook_hybrid_tempo",
+      "kind": "playbook",
+      "run_dir": "experiments/runs_pass10/20260618_pass10_02_playbook_hybrid_tempo",
+      "tarball": "data/submissions/candidates_pass10/playbook_hybrid_tempo.tar.gz",
+      "validated": true,
+      "status": "built",
+      "design_only_note": "DESIGN-ONLY: dynamic attack/evolve switching by board tempo is not wired into RULE_MAP."
+    },
+    {
+      "id": "playbook_bench_safety",
+      "kind": "playbook",
+      "run_dir": "experiments/runs_pass10/20260618_pass10_03_playbook_bench_safety",
+      "tarball": "data/submissions/candidates_pass10/playbook_bench_safety.tar.gz",
+      "validated": true,
+      "status": "built",
+      "design_only_note": "DESIGN-ONLY: a 'maintain >=2 benched backups' rule is not wired into RULE_MAP."
+    },
+    {
+      "id": "playbook_attack_deadline",
+      "kind": "playbook",
+      "run_dir": "experiments/runs_pass10/20260618_pass10_04_playbook_attack_deadline",
+      "tarball": "data/submissions/candidates_pass10/playbook_attack_deadline.tar.gz",
+      "validated": true,
+      "status": "built",
+      "design_only_note": "DESIGN-ONLY: a hard 'must attack by turn N' deadline is not wired into RULE_MAP; only the deckout threshold is."
+    },
+    {
+      "id": "deck_no_secret_box",
+      "kind": "deck",
+      "run_dir": "experiments/runs_pass10/20260618_pass10_05_deck_no_secret_box",
+      "tarball": "data/submissions/candidates_pass10/deck_no_secret_box.tar.gz",
+      "validated": true,
+      "status": "built",
+      "deck_counts": {
+        "3": 30,
+        "721": 4,
+        "722": 4,
+        "723": 4,
+        "1121": 4,
+        "1145": 2,
+        "1163": 2,
+        "1219": 4,
+        "1227": 4,
+        "1262": 2
+      }
+    },
+    {
+      "id": "deck_less_draw_more_attack",
+      "kind": "deck",
+      "run_dir": "experiments/runs_pass10/20260618_pass10_06_deck_less_draw_more_attack",
+      "tarball": "data/submissions/candidates_pass10/deck_less_draw_more_attack.tar.gz",
+      "validated": true,
+      "status": "built",
+      "deck_counts": {
+        "3": 33,
+        "721": 4,
+        "722": 4,
+        "723": 4,
+        "1092": 1,
+        "1121": 4,
+        "1145": 2,
+        "1163": 2,
+        "1219": 2,
+        "1227": 2,
+        "1262": 2
+      }
+    }
+  ],
+  "blocked": [
+    {
+      "id": "deck_maximum_belt",
+      "kind": "deck",
+      "status": "blocked",
+      "validated": false,
+      "reason": "Maximum Belt id not in confirmed set"
+    },
+    {
+      "id": "deck_cyrano_waitress",
+      "kind": "deck",
+      "status": "blocked",
+      "validated": false,
+      "reason": "Cyrano / Waitress ids not in confirmed set"
+    },
+    {
+      "id": "deck_metal_zacian",
+      "kind": "deck",
+      "status": "blocked",
+      "validated": false,
+      "reason": "metal / Zacian ex ids not in confirmed set"
+    }
+  ],
+  "all_built_validated": true
+}

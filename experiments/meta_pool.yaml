@@ -1,0 +1,81 @@
+# Meta pool — Pass 10 (Meta-Calibrated Evaluation)
+#
+# Describes the opponent meta we want candidates evaluated against, the active
+# control, and the rejected line. This is a HONEST coverage map: only the
+# self-mirror archetype has a real, replay-extracted surrogate deck. The two
+# external archetypes are BLOCKED (their replays are missing and their card ids
+# are unconfirmed) so they contribute no surrogate and no fabricated weight.
+#
+# IMPORTANT LIMITATION: with two of three archetypes blocked AND local self-play
+# unrunnable (cabt/kaggle_environments cannot be imported in this environment),
+# any weighted_meta_score computed here has coverage < 1.0. No candidate may be
+# treated as fully meta-tested or promoted on this pool alone.
+
+schema: activegraph.meta.pool/v1
+pass: 10
+
+# Live Kaggle scores observed this pass (Part A). Trust these over older notes.
+controls:
+  active_control:
+    candidate_id: deck_energy_trim_light
+    baseline_dir: data/baselines/v2_kaggle_479_1_deck_energy_trim_light
+    live_public_score: 355.2          # current live (historical/early was 479.1)
+    status: complete
+    note: >
+      Designated control per Pass 10 instruction. NOTE the v1 line currently
+      scores 363.0 (> 355.2); the v1/v2 live gap has compressed and should be
+      revisited next pass.
+  reference_v1:
+    candidate_id: v1
+    baseline_dir: data/baselines/v1_kaggle_349_8
+    live_public_score: 363.0
+    status: complete
+  rejected:
+    candidate_id: combo_full_safety_v3_fixed
+    live_public_score: 294.0
+    status: complete
+    decision: live_rejected
+    reason: passed_validation_but_underperformed_live_control
+
+# Opponent archetypes. Weights express how much we WOULD weight each matchup if
+# all surrogates existed. They are intentionally left in place for the blocked
+# rows so coverage math is honest (weight mass on blocked rows = missing eval).
+archetypes:
+  - key: water_kyogre_abomasnow_mirror_passive
+    status: confirmed_from_replay
+    weight: 0.34
+    surrogate_deck: data/meta_replays/decks/80374966_p0_deck.csv
+    replay_episode: 80374966
+    note: real self-mirror; only usable surrogate this pass.
+  - key: metal_ex_zacian_ramp
+    status: blocked_missing_replay
+    weight: 0.33
+    surrogate_deck: null
+    replay_episode: null            # expected 80503804 (missing)
+    note: card ids unconfirmed; never invented; blocked.
+  - key: water_kyogre_abomasnow_maxbelt
+    status: blocked_missing_replay
+    weight: 0.33
+    surrogate_deck: null
+    replay_episode: null            # expected tymu water/maxbelt (missing)
+    note: Maximum Belt / Cyrano / Waitress ids unconfirmed; blocked.
+
+# Convenience map consumed by meta.scoring.meta_pool_weights().
+evaluation_weights:
+  water_kyogre_abomasnow_mirror_passive: 0.34
+  metal_ex_zacian_ramp: 0.33
+  water_kyogre_abomasnow_maxbelt: 0.33
+
+coverage:
+  available_archetypes:
+    - water_kyogre_abomasnow_mirror_passive
+  blocked_archetypes:
+    - metal_ex_zacian_ramp
+    - water_kyogre_abomasnow_maxbelt
+  weight_covered: 0.34              # only the mirror surrogate exists
+  weight_missing: 0.66
+  eval_complete: false
+  games_runnable_locally: false    # cabt/kaggle_environments import unavailable
+  conclusion: >
+    Evaluation is INCOMPLETE. With 66% of meta weight on blocked archetypes and
+    no local game runner, no candidate is promotable from this pool. Scout only.

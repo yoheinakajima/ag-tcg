@@ -1,0 +1,106 @@
+schema: activegraph.meta.archetypes/v1
+hard_rules:
+- never invent card ids
+- blocked archetypes contribute no fabricated data
+archetypes:
+- key: water_kyogre_abomasnow_mirror_passive
+  label: Water Kyogre/Abomasnow mirror (passive)
+  status: confirmed_from_replay
+  description: 'The v2 deck_energy_trim_light line itself: slow mirror, weak Snover
+    attack loop, low evolution/bench pressure. Tends to grind and risk self-deckout.'
+  card_ids:
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 721
+  - 721
+  - 721
+  - 721
+  - 722
+  - 722
+  - 722
+  - 722
+  - 723
+  - 723
+  - 723
+  - 723
+  - 1092
+  - 1121
+  - 1121
+  - 1121
+  - 1121
+  - 1145
+  - 1145
+  - 1163
+  - 1163
+  - 1219
+  - 1219
+  - 1219
+  - 1219
+  - 1227
+  - 1227
+  - 1227
+  - 1227
+  - 1262
+  - 1262
+  card_ids_status: confirmed
+  replay_episode: 80374966
+  deck_path: data/meta_replays/decks/80374966_p0_deck.csv
+  notes:
+  - Derived from real self-mirror replay 80374966 (both seats = v2 deck).
+- key: metal_ex_zacian_ramp
+  label: Metal ex Zacian ramp
+  status: blocked_missing_replay
+  description: 'Zacian ex active + Metal Energy ramp; punishes slow setup. Possible
+    support: Genesect ex / Mega Mawile ex / Registeel ex / Togedemaru ex / Magearna
+    (all UNCONFIRMED without a replay).'
+  card_ids: []
+  card_ids_status: unknown
+  replay_episode: null
+  deck_path: null
+  notes:
+  - No replay present (expected episode 80503804). Card ids unknown; never invented.
+    Blocked until raw replay is added.
+- key: water_kyogre_abomasnow_maxbelt
+  label: Water Kyogre/Abomasnow + Maximum Belt
+  status: blocked_missing_replay
+  description: Similar water core with a stronger support package (Maximum Belt, Cyrano,
+    Waitress UNCONFIRMED) and better long-game tempo.
+  card_ids: []
+  card_ids_status: unknown
+  replay_episode: null
+  deck_path: null
+  notes:
+  - No replay present (expected tymu water/maxbelt). Maximum Belt / Cyrano / Waitress
+    ids are NOT in the confirmed set; blocked.
+available_for_eval:
+- water_kyogre_abomasnow_mirror_passive
+blocked_for_eval:
+- metal_ex_zacian_ramp
+- water_kyogre_abomasnow_maxbelt

@@ -1,0 +1,421 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload/submit anything to Kaggle in this pass.
+- Do not modify root main.py or root deck.csv.
+- Preserve v1/v2 baselines and the failed/rejected combo artifacts.
+- Do not print or commit Kaggle credentials.
+- Do not commit official card CSV/PDF data.
+- This is a local ActiveGraph research pass only.
+
+Current live Kaggle state:
+- v1 deck-loader fix: public score around 363.0.
+- v2 deck_energy_trim_light: public score around 386.5.
+- combo_full_safety_v3 failed validation because of deck-selection bug.
+- combo_full_safety_v3_fixed passed validation but dropped to around 330.4 after more games.
+- Therefore:
+  - active live control should remain deck_energy_trim_light.
+  - combo_full_safety_v3_fixed should be marked as live-rejected / not promoted.
+- Important distinction:
+  - combo_full_safety_v3 had strong local head-to-head signal vs v2.
+  - Kaggle live result shows that this local signal did not generalize to the ladder.
+  - The problem is likely meta mismatch / tempo weakness, not packaging.
+
+Goal:
+Run Pass 10: Meta-Calibrated Evaluation + Tempo Playbook.
+
+The goal is to build a better local evaluation target using actual Kaggle replays, then generate tempo-focused candidates that solve the observed ladder failures:
+- too slow,
+- too passive,
+- stuck on basic Snover,
+- weak bench development,
+- failure to turn draw/search into board pressure,
+- losing quickly to fast ex attackers.
+
+No Kaggle upload.
+
+Part A — Record live Kaggle status
+
+Fetch latest submissions:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass10.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass10.csv || true
+
+Parse and record:
+- v1 latest score
+- v2 deck_energy_trim_light latest score
+- combo_full_safety_v3_fixed latest score
+- combo_full_safety_v3 error status
+
+Emit ActiveGraph events:
+- KaggleScoreUpdated for each available score
+- CandidateRejected for combo_full_safety_v3_fixed with reason: passed_validation_but_underperformed_live_control
+- ActiveControlSelected for deck_energy_trim_light
+
+Do not submit.
+
+Part B — Preserve active control
+
+Ensure v2 baseline exists:
+
+data/baselines/v2_kaggle_479_1_deck_energy_trim_light/
+
+If the README still says 479.1 as though canonical, add a note:
+- historical/local/early score was 479.1,
+- current live score observed in Kaggle status is approximately 386.5,
+- active control is chosen because it is currently the best live complete submission.
+
+Do not rename destructively.
+
+Part C — Ingest Kaggle replays
+
+Look for replay JSON files:
+
+find data -maxdepth 5 -type f \( -name '*.json' -o -name '*.jsonl' \) | grep -Ei '80374966|80503804|replay|episode|tellurium|tymu|kaggle' || true
+
+I may need to upload replay JSONs manually. Expected useful replays:
+- self/mirror game,
+- loss vs tellurium_rrr metal ex deck, episode 80503804 if available,
+- loss vs AI Agent By TYMU water mirror / Maximum Belt deck,
+- any other Kaggle replays.
+
+If raw replay JSONs are missing, create:
+
+data/meta_replays/MISSING_REPLAYS.md
+
+with instructions:
+- download replay JSONs from Kaggle submission page,
+- place them under data/meta_replays/raw/,
+- recommended filenames:
+  - 80374966_self_mirror.json
+  - 80503804_tellurium_metal_ex.json
+  - tymu_water_maxbelt.json
+
+Do not fabricate raw replay details from summaries. Use summaries only as provisional notes.
+
+Part D — Replay/deck extractor
+
+Create or extend:
+
+scripts/extract_replay_decks.py
+scripts/analyze_kaggle_replays.py
+src/ptcg_activegraph/replays/kaggle_replay.py
+src/ptcg_activegraph/meta/archetypes.py
+
+For each replay JSON, extract:
+- episode id
+- agent names
+- rewards/statuses
+- step count
+- step-0 submitted deck lists if visible
+- final reward
+- player perspective
+- card IDs by deck
+- card counts
+- observed active/bench development
+- turns to first attack
+- turns to first KO
+- whether our side evolved
+- whether our side benched backup Pokémon
+- whether our side used Kyogre
+- whether our side used Mega Abomasnow ex
+- whether our side got stuck on Snover
+- deckCount trajectory if visible
+- opponent archetype label
+
+Output:
+data/meta_replays/meta_replay_summary.json
+data/meta_replays/meta_replay_summary.md
+data/meta_replays/decks/<episode>_p0_deck.csv
+data/meta_replays/decks/<episode>_p1_deck.csv
+data/meta_replays/archetypes.yaml
+
+Part E — Meta archetype labels
+
+Create archetype labels from real replays.
+
+Known provisional labels from summaries:
+1. water_kyogre_abomasnow_mirror_passive
+   - slow mirror
+   - weak Snover attack loop
+   - low evolution/bench pressure
+
+2. metal_ex_zacian_ramp
+   - Zacian ex active
+   - Metal Energy ramp
+   - Genesect ex / Mega Mawile ex / Registeel ex / Togedemaru ex / Magearna if confirmed by replay
+   - punishes slow setup
+
+3. water_kyogre_abomasnow_maxbelt
+   - similar water core
+   - stronger support package
+   - Maximum Belt, Cyrano, Waitress if confirmed by card IDs/replay
+   - better long-game tempo
+
+If card IDs are not confirmed from replay/card metadata, mark as provisional.
+
+Part F — Build meta evaluation pool
+
+Create:
+
+experiments/meta_pool.yaml
+
+It should define:
+- active_control: deck_energy_trim_light
+- rejected_candidate: combo_full_safety_v3_fixed
+- opponent archetypes
+- replay-derived deck paths
+- evaluation weights
+
+Initial weights:
+- v2 mirror/control: 25%
+- metal_ex_zacian_ramp surrogate: 35%
+- water_maxbelt surrogate: 25%
+- passive mirror / long-game: 15%
+
+If raw replays are missing, keep only v2 mirror and mark external archetypes blocked.
+
+Important:
+Local opponents are surrogates, not exact Kaggle agents. Report this limitation clearly.
+
+Part G — Generate tempo-focused candidates
+
+Use v2 deck as active control.
+
+Generate candidates around these hypotheses.
+
+Policy/playbook candidates:
+
+1. playbook_kyogre_tempo_v1
+Hypothesis:
+The deck should play like a Kyogre pressure deck first, with Mega Abomasnow as secondary payoff.
+Rules:
+- prefer Kyogre active over Snover when both are available unless hand strongly supports fast evolution
+- bench at least one backup Pokémon early
+- bench Snover if available after Kyogre active
+- attach Water Energy to active Kyogre before optional draw/search
+- prioritize attacks once Kyogre is online
+- do not over-search if active Kyogre can pressure
+
+2. playbook_fast_evolution_v1
+Hypothesis:
+If Snover starts active, the deck must evolve quickly rather than grind with basic Snover.
+Rules:
+- prioritize Snover → Mega Abomasnow line
+- use Ultra Ball/Mega Signal to assemble line
+- attach appropriately to evolution line
+- avoid looping weak Snover attacks if evolution is available
+
+3. playbook_hybrid_tempo_v1
+Hypothesis:
+The best pilot is conditional:
+- Kyogre pressure if Kyogre + Water Energy available
+- evolution setup if Snover + Mega Signal/Mega Abomasnow available
+- avoid Secret Box lines that consume setup pieces
+
+4. playbook_bench_safety_v1
+Hypothesis:
+The agent loses by having no backup attacker. Ensure early bench development.
+Rules:
+- during SetupBenchPokemon, bench Kyogre and Snover when available
+- in early turns, bench backup before optional draw
+- do not overbench low-value duplicates if bench is crowded
+
+5. playbook_attack_deadline_v1
+Hypothesis:
+A deck that does not attack meaningfully by a deadline loses to ex decks.
+Rules:
+- if no meaningful attack by turn/step threshold, prioritize any path to attack
+- penalize draw/search loops that do not improve board
+- prefer attaching to active attacker and attacking over more setup
+
+Deck candidates:
+
+6. deck_v2_no_secret_box__mega_signal_confirm
+Hypothesis:
+Secret Box may still create slow, discard-heavy lines; replacing it with targeted search may be better.
+
+7. deck_v2_plus_maximum_belt_if_confirmed
+Hypothesis:
+Opponent water deck used Maximum Belt to win long game; adding it may improve damage output.
+Only generate if card ID is confirmed from official card metadata or replay.
+
+8. deck_v2_plus_cyrano_waitress_if_confirmed
+Hypothesis:
+Opponent supporter package improved consistency/tempo.
+Only generate if IDs are confirmed.
+
+9. deck_v2_less_draw_more_attack
+Hypothesis:
+Too much draw/search causes passive hands; increase attacker/tool density.
+
+10. metal_ex_zacian_replay_deck_candidate
+Hypothesis:
+If the opponent metal deck list is extracted, our simple playbook may pilot it better than current water deck.
+Only generate if a full legal 60-card deck is extracted from replay.
+Use a basic metal-ex tempo playbook:
+- Zacian active if available
+- attach Metal Energy to Zacian
+- bench ex backups
+- attack as soon as possible
+
+Do not invent card IDs.
+Do not generate candidates that violate legal copy limits.
+Smoke/package/validate every candidate tarball if generated.
+
+Part H — Evaluation
+
+Do not evaluate only vs v2.
+
+If meta_pool has replay-derived decks:
+- Stage 1 scout:
+  - each candidate vs v2 control
+  - each candidate vs metal_ex_zacian_ramp surrogate
+  - each candidate vs water_maxbelt surrogate
+  - 3 games per seat per matchup if feasible
+- Stage 2 focused:
+  - top 3 candidates
+  - 10 games per seat per matchup if feasible
+
+If external replay decks are missing:
+- run only v2 mirror scout
+- mark result as incomplete
+- do not queue any candidate as promotable.
+
+Metrics:
+- weighted_meta_score
+- per-archetype win rate
+- v2 mirror win rate
+- metal_ex surrogate win rate
+- water_maxbelt surrogate win rate
+- first meaningful attack turn
+- bench development rate
+- evolved_by_turn_N rate
+- stuck_on_snover_rate
+- no_bench_loss_rate
+- deckout/low-deck rate
+- pass/end rate
+- attack rate
+
+Part I — Ranking
+
+A candidate is promotable only if:
+- package/tarball validator passes
+- no crashes/timeouts/invalid returns
+- beats v2 control or preserves v2 matchup
+- improves weighted_meta_score
+- does not collapse against metal_ex_zacian_ramp surrogate
+- improves at least one of:
+  - first meaningful attack turn
+  - bench development rate
+  - evolved_by_turn_N rate
+  - no_bench_loss_rate
+- has a clear playbook hypothesis
+
+Do not queue candidates from incomplete meta eval unless explicitly marked as scout_only.
+
+Part J — Report site
+
+Update:
+data/site/index.html
+data/reports/activegraph_strategy_report.md
+
+Add:
+- latest live scores
+- combo_full_safety_v3_fixed validation passed but underperformed live
+- local-vs-Kaggle mismatch lesson
+- meta pool design
+- replay-derived archetypes
+- tempo failure taxonomy
+- candidate results by matchup
+- next upload recommendation, probably none unless a candidate clears meta gate
+
+Part K — Tests
+
+Add tests for:
+- Kaggle score ingestion classifies combo_fixed as live-rejected if below v2
+- replay deck extraction from step-0 action
+- archetype YAML generation
+- meta pool weighting
+- weighted_meta_score
+- candidate not promotable if external replay decks missing
+- queue does not include live-rejected candidate
+- tarball validator remains mandatory
+- root files unchanged
+
+Run targeted tests in small groups to avoid sandbox kills.
+
+Final report format:
+
+ActiveGraph Pass 10 Meta-Calibrated Evaluation Report
+
+1. Live Kaggle status
+- v1 score:
+- v2 score:
+- combo_fixed score:
+- active control:
+- rejected candidates:
+- upload performed:
+
+2. Replay ingestion
+- raw replays found:
+- replay summaries generated:
+- decks extracted:
+- archetypes identified:
+- missing replays:
+
+3. Meta pool
+- meta_pool.yaml path:
+- opponent archetypes:
+- replay-derived decks:
+- surrogate limitations:
+- evaluation weights:
+
+4. Candidate generation
+- policy/playbook candidates generated:
+- deck candidates generated:
+- metal replay-deck candidate generated:
+- candidates blocked and why:
+
+5. Evaluation
+- matchups evaluated:
+- games per matchup:
+- candidates evaluated:
+- crashes/timeouts/invalid returns:
+- top 5 weighted candidates:
+  1.
+  2.
+  3.
+  4.
+  5.
+
+6. Strategic findings
+- why combo_full_safety_v3_fixed underperformed:
+- biggest tempo weakness:
+- best tempo candidate:
+- best deck candidate:
+- best anti-metal candidate:
+- metrics improved:
+- metrics still weak:
+
+7. Queue / upload guidance
+- candidates queued:
+- upload performed: no
+- should submit next: yes/no
+- if yes, candidate and reason:
+- if no, reason:
+
+8. Report site
+- site path:
+- markdown report path:
+- most important new lesson:
+
+9. Manual git notes
+- files I should review:
+- files not to commit:
+- generated/ignored files:
+
+10. Next recommendation
+- one sentence only

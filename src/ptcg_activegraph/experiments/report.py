@@ -49,6 +49,11 @@ PASS8_FOCUSED_RANKING_JSON = Path("data/experiments/pass8_focused_ranking.json")
 PASS8_FIXTURE_GATE_JSON = Path("data/experiments/pass8_fixture_gate.json")
 PASS9_FIXTURE_GATE_JSON = Path("data/experiments/pass9_fixture_gate.json")
 META_ARCHETYPES_JSON = Path("data/meta/meta_archetypes.json")
+# Pass 10 — meta-calibrated evaluation + tempo playbook artifacts.
+PASS10_META_SUMMARY_JSON = Path("data/meta_replays/meta_replay_summary.json")
+PASS10_META_POOL_YAML = Path("experiments/meta_pool.yaml")
+PASS10_CANDIDATES_MANIFEST_JSON = Path("data/submissions/pass10_candidates_manifest.json")
+PASS10_EVAL_STATUS_JSON = Path("data/meta_replays/pass10_eval_status.json")
 
 # Corrected live baseline scores (see v2 baseline README correction note: the
 # v1 archive dir keeps its historical `349_8` name but live v1 is 356.9).
@@ -95,6 +100,16 @@ def _load_json(path: Path):
     try:
         return json.loads(Path(path).read_text(encoding="utf-8"))
     except json.JSONDecodeError:
+        return None
+
+
+def _load_yaml(path: Path):
+    if not Path(path).exists():
+        return None
+    try:
+        import yaml  # local import; yaml is available in this repo
+        return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    except Exception:
         return None
 
 
@@ -167,6 +182,10 @@ def gather(runs_root=RUNS_ROOT) -> dict:
         "pass8_fixture_gate": _load_json(PASS8_FIXTURE_GATE_JSON) or {},
         "pass9_fixture_gate": _load_json(PASS9_FIXTURE_GATE_JSON) or {},
         "meta_archetypes": _load_json(META_ARCHETYPES_JSON) or {},
+        "pass10_meta_summary": _load_json(PASS10_META_SUMMARY_JSON) or {},
+        "pass10_meta_pool": _load_yaml(PASS10_META_POOL_YAML) or {},
+        "pass10_candidates": _load_json(PASS10_CANDIDATES_MANIFEST_JSON) or {},
+        "pass10_eval": _load_json(PASS10_EVAL_STATUS_JSON) or {},
         "runs": runs,
         "baseline_readme": (BASELINE_DIR / "README.md"),
         "v2_baseline_readme": (V2_BASELINE_DIR / "README.md"),
@@ -285,6 +304,7 @@ def _overview_html(data: dict) -> str:
 
     body = (
         f"<section><h2>Snapshot</h2><div class=cards>{cards}</div></section>"
+        f"{_pass10_html(data)}"
         f"{_run_ledger_html(data)}"
         f"{_pass8_html(data)}"
         f"{_pass7b_html(data)}"
@@ -800,6 +820,147 @@ def _events_html(data: dict) -> str:
     return _page("Event stream", body)
 
 
+def _pass10_html(data: dict) -> str:
+    summary = data.get("pass10_meta_summary") or {}
+    pool = data.get("pass10_meta_pool") or {}
+    cands = data.get("pass10_candidates") or {}
+    ev = data.get("pass10_eval") or {}
+    if not (summary or pool or cands or ev):
+        return ("<section><h2>Pass 10 — Meta-calibrated evaluation + tempo</h2>"
+                "<div class=empty>No Pass 10 artifacts yet.</div></section>")
+
+    controls = (pool.get("controls") or {})
+    ac = controls.get("active_control") or {}
+    v1ref = controls.get("reference_v1") or {}
+    rej = controls.get("rejected") or {}
+    score_cards = "".join(
+        f"<div class=card><div class=k>{_esc(k)}</div><div class=v>{_esc(v)}</div></div>"
+        for k, v in [
+            ("v2 control (live)", ac.get("live_public_score")),
+            ("v1 reference (live)", v1ref.get("live_public_score")),
+            ("combo_fixed (rejected)", rej.get("live_public_score")),
+            ("weighted meta score", ev.get("weighted_meta_score")),
+            ("Kaggle upload", "none"),
+        ]
+    )
+
+    # Archetypes (from the honest meta pool: weights + coverage status).
+    arch = pool.get("archetypes") or []
+    arch_rows = "".join(
+        f"<tr><td><code>{_esc(a.get('key'))}</code></td>"
+        f"<td class={'ok' if a.get('status') == 'confirmed_from_replay' else 'rej'}>"
+        f"{_esc(a.get('status'))}</td>"
+        f"<td>{_esc(a.get('weight'))}</td>"
+        f"<td>{_esc(a.get('replay_episode') if a.get('replay_episode') is not None else '—')}</td></tr>"
+        for a in arch
+    ) or "<tr><td class=muted colspan=4>no archetypes</td></tr>"
+
+    # Tempo taxonomy (real signals from the replay).
+    sigs = summary.get("tempo_signals") or []
+    sig_html = "<ul>" + "".join(f"<li>{_esc(s)}</li>" for s in sigs) + "</ul>" \
+        if sigs else "<div class=empty>no tempo signals</div>"
+
+    # Candidate results.
+    built = cands.get("built") or []
+    blocked = cands.get("blocked") or []
+    cand_rows = "".join(
+        f"<tr><td><code>{_esc(c.get('id'))}</code></td><td>{_esc(c.get('kind'))}</td>"
+        f"<td class={'ok' if c.get('validated') else 'rej'}>"
+        f"{'validated' if c.get('validated') else 'unvalidated'}</td>"
+        f"<td class=rej>not promotable</td></tr>"
+        for c in built
+    )
+    cand_rows += "".join(
+        f"<tr><td><code>{_esc(c.get('id'))}</code></td><td>{_esc(c.get('kind'))}</td>"
+        f"<td class=rej>BLOCKED</td><td>{_esc(c.get('reason'))}</td></tr>"
+        for c in blocked
+    )
+    cand_rows = cand_rows or "<tr><td class=muted colspan=4>no candidates</td></tr>"
+
+    return (
+        "<section><h2>Pass 10 — Meta-calibrated evaluation + tempo playbook</h2>"
+        f"<div class=cards>{score_cards}</div>"
+        "<p class=muted><b>Local research only — no Kaggle upload, no GitHub push</b>; "
+        "root <code>main.py</code>/<code>deck.csv</code> immutable.</p>"
+        "<p class=muted><b>Local-vs-Kaggle mismatch lesson:</b> the v2 control's "
+        "live score has drifted from its historical 479.1 to ~"
+        f"{_esc(ac.get('live_public_score'))}; the v1 reference now sits at "
+        f"{_esc(v1ref.get('live_public_score'))} (above v2). Local proxies and "
+        "early public scores are unreliable predictors of the settled ladder.</p>"
+        "<h3>Opponent archetypes (mirror real; externals blocked)</h3>"
+        "<table><tr><th>Archetype</th><th>Status</th><th>Weight</th>"
+        f"<th>Replay</th></tr>{arch_rows}</table>"
+        "<h3>Tempo failure taxonomy (from the real self-mirror replay)</h3>"
+        f"{sig_html}"
+        "<h3>Candidates (built + validated, none promotable; unconfirmed ids blocked)</h3>"
+        "<table><tr><th>Candidate</th><th>Kind</th><th>Status</th>"
+        f"<th>Note</th></tr>{cand_rows}</table>"
+        "<h3>Evaluation & queue</h3>"
+        f"<p class=muted>Games runnable locally: <b>{_esc(ev.get('games_runnable_locally'))}</b> "
+        f"(cabt engine absent). Coverage <b>{_esc(ev.get('coverage'))}</b>, "
+        f"complete={_esc(ev.get('eval_complete'))}. "
+        "Evaluation is <b>INCOMPLETE (scout only)</b>: most of the meta is blocked "
+        "and no games could be run.</p>"
+        "<div class=empty><b>Nothing promotable. Queue stays empty. "
+        "Next upload: none.</b></div>"
+        "</section>"
+    )
+
+
+def _pass10_md(data: dict) -> list[str]:
+    summary = data.get("pass10_meta_summary") or {}
+    pool = data.get("pass10_meta_pool") or {}
+    cands = data.get("pass10_candidates") or {}
+    ev = data.get("pass10_eval") or {}
+    if not (summary or pool or cands or ev):
+        return []
+    controls = (pool.get("controls") or {})
+    ac = controls.get("active_control") or {}
+    v1ref = controls.get("reference_v1") or {}
+    rej = controls.get("rejected") or {}
+    lines = ["## Pass 10 — Meta-calibrated evaluation + tempo playbook", ""]
+    lines.append("_Local research only — no Kaggle upload, no GitHub push; root "
+                 "main.py/deck.csv immutable._")
+    lines += ["", "### Live Kaggle scores (Part A)",
+              f"- v2 control `deck_energy_trim_light`: **{ac.get('live_public_score')}** "
+              "(historical/early 479.1)",
+              f"- v1 reference: **{v1ref.get('live_public_score')}** (currently above v2)",
+              f"- `combo_full_safety_v3_fixed`: **{rej.get('live_public_score')}** "
+              "(complete, **live-rejected**)",
+              "",
+              "**Local-vs-Kaggle mismatch lesson:** the v2 control drifted from its "
+              f"historical 479.1 to ~{ac.get('live_public_score')} and v1 "
+              f"({v1ref.get('live_public_score')}) now outscores it; local proxies / "
+              "early public scores do not reliably predict the settled ladder."]
+    # Archetypes (honest meta pool: weights + coverage status).
+    lines += ["", "### Opponent archetypes (meta pool coverage)"]
+    for a in pool.get("archetypes") or []:
+        rep = a.get("replay_episode")
+        lines.append(f"- `{a.get('key')}` — {a.get('status')} "
+                     f"(weight {a.get('weight')}, "
+                     f"replay: {rep if rep is not None else 'missing'})")
+    # Tempo taxonomy.
+    lines += ["", "### Tempo failure taxonomy (real replay)"]
+    for s in summary.get("tempo_signals") or ["_none_"]:
+        lines.append(f"- {s}")
+    # Candidates.
+    lines += ["", "### Candidates (none promotable)"]
+    for c in cands.get("built") or []:
+        lines.append(f"- `{c.get('id')}` ({c.get('kind')}): "
+                     f"validated={c.get('validated')}, promotable=False")
+    for c in cands.get("blocked") or []:
+        lines.append(f"- `{c.get('id')}` ({c.get('kind')}): **BLOCKED** — {c.get('reason')}")
+    # Eval + queue.
+    lines += ["", "### Evaluation & queue",
+              f"- Games runnable locally: **{ev.get('games_runnable_locally')}** "
+              "(cabt engine absent)",
+              f"- weighted_meta_score: **{ev.get('weighted_meta_score')}** "
+              f"(coverage {ev.get('coverage')}, complete={ev.get('eval_complete')})",
+              "- **INCOMPLETE (scout only). Nothing promotable. Queue empty. "
+              "Next upload: none.**"]
+    return lines
+
+
 def write_site(data: dict, site_dir: Path = SITE_DIR) -> list[Path]:
     site_dir = Path(site_dir)
     site_dir.mkdir(parents=True, exist_ok=True)
@@ -1255,6 +1416,8 @@ def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
         "",
     ]
 
+    lines += _pass10_md(data)
+    lines += [""]
     lines += _run_ledger_md(data)
     lines += [""]
     lines += _pass8_md(data)

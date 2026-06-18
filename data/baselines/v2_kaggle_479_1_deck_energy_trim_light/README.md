@@ -29,3 +29,21 @@ Delta from the root/v1 60-card list:
 
 Tarball contains only top-level `main.py` and `deck.csv`. The runtime policy
 (`main.py`) is identical to the v1 control; only the deck list changed.
+
+## Live score drift note (Pass 10, 2026-06-18)
+
+The `479.1` above was the **historical/early** public score recorded when this
+baseline was created. Live Kaggle status fetched during Pass 10 shows the active
+control's **current** public score has settled to approximately **355.2** as the
+ladder accumulated more games (see `data/kaggle_uploads/status_before_pass10.log`).
+
+- historical/local/early score: **479.1**
+- current live score (Pass 10 observation): **~355.2**
+- `deck_energy_trim_light` remains the **designated active control** because it is
+  the best *currently-complete* submission we control for this deck line.
+- Observed discrepancy: the v1 control currently shows **363.0**, slightly above
+  this v2 score (355.2). v2 is retained as the designated control per the Pass 10
+  instruction, but the v1/v2 live gap has compressed and should be revisited.
+
+The directory is intentionally **not** renamed (preserves the historical archive
+path; avoids a destructive rename).

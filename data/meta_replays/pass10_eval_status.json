@@ -1,0 +1,79 @@
+{
+  "schema": "activegraph.pass10.eval/v1",
+  "mode": "scout_only",
+  "games_runnable_locally": false,
+  "runtime_modules": {
+    "cabt": false,
+    "kaggle_environments": true
+  },
+  "weighted_meta_score": null,
+  "coverage": 0.0,
+  "eval_complete": false,
+  "available_archetypes": [],
+  "blocked_archetypes": [
+    "water_kyogre_abomasnow_mirror_passive",
+    "metal_ex_zacian_ramp",
+    "water_kyogre_abomasnow_maxbelt"
+  ],
+  "reason": "Local self-play runtime unavailable AND 2/3 archetypes blocked (missing replays / unconfirmed ids).",
+  "candidates": [
+    {
+      "id": "playbook_kyogre_tempo",
+      "kind": "playbook",
+      "validated": true,
+      "winrate": null,
+      "promotable": false,
+      "reason": "no local games (cabt/kaggle_environments unavailable) + external archetypes blocked"
+    },
+    {
+      "id": "playbook_fast_evolution",
+      "kind": "playbook",
+      "validated": true,
+      "winrate": null,
+      "promotable": false,
+      "reason": "no local games (cabt/kaggle_environments unavailable) + external archetypes blocked"
+    },
+    {
+      "id": "playbook_hybrid_tempo",
+      "kind": "playbook",
+      "validated": true,
+      "winrate": null,
+      "promotable": false,
+      "reason": "no local games (cabt/kaggle_environments unavailable) + external archetypes blocked"
+    },
+    {
+      "id": "playbook_bench_safety",
+      "kind": "playbook",
+      "validated": true,
+      "winrate": null,
+      "promotable": false,
+      "reason": "no local games (cabt/kaggle_environments unavailable) + external archetypes blocked"
+    },
+    {
+      "id": "playbook_attack_deadline",
+      "kind": "playbook",
+      "validated": true,
+      "winrate": null,
+      "promotable": false,
+      "reason": "no local games (cabt/kaggle_environments unavailable) + external archetypes blocked"
+    },
+    {
+      "id": "deck_no_secret_box",
+      "kind": "deck",
+      "validated": true,
+      "winrate": null,
+      "promotable": false,
+      "reason": "no local games (cabt/kaggle_environments unavailable) + external archetypes blocked"
+    },
+    {
+      "id": "deck_less_draw_more_attack",
+      "kind": "deck",
+      "validated": true,
+      "winrate": null,
+      "promotable": false,
+      "reason": "no local games (cabt/kaggle_environments unavailable) + external archetypes blocked"
+    }
+  ],
+  "promotable": [],
+  "queue_action": "none (queue stays empty; no upload this pass)"
+}

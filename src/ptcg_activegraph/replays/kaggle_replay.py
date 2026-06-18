@@ -160,6 +160,96 @@ class KaggleReplay:
                 return obs
         return None
 
+    # -- tempo / board-development metrics --------------------------------
+    # All metrics below read ONLY ground-truth fields from each step's
+    # ``observation.current`` (board state) and ``observation.logs`` (typed
+    # event log). Where a signal is not unambiguously present it is reported as
+    # ``None`` / ``"unknown"`` rather than guessed. Confirmed log ``type`` code
+    # used: 15 == an attack was declared (carries ``attackId``).
+    _ATTACK_LOG_TYPE = 15
+
+    @staticmethod
+    def _own_player(obs: dict) -> dict | None:
+        cur = obs.get("current") if isinstance(obs, dict) else None
+        if not isinstance(cur, dict):
+            return None
+        players = cur.get("players")
+        idx = cur.get("yourIndex")
+        if isinstance(players, list) and isinstance(idx, int) and 0 <= idx < len(players):
+            p = players[idx]
+            return p if isinstance(p, dict) else None
+        return None
+
+    @staticmethod
+    def _zone_card_ids(zone: Any) -> list[int]:
+        out: list[int] = []
+        if isinstance(zone, list):
+            for c in zone:
+                if isinstance(c, dict):
+                    cid = c.get("id")
+                    if isinstance(cid, int) and not isinstance(cid, bool):
+                        out.append(cid)
+        return out
+
+    def board_metrics(self, seat: int) -> dict:
+        """Per-seat tempo / board-development metrics from ground-truth state.
+
+        Returns a dict with explicit ``None`` for any signal not observable in
+        this replay. ``card_ids`` of interest are passed by the caller via the
+        meta layer; this method reports the raw signals it can prove.
+        """
+        steps = self.agent_steps(seat)
+        deckcount_trajectory: list[dict] = []
+        active_ids_by_turn: dict[int, list[int]] = {}
+        bench_size_by_turn: dict[int, int] = {}
+        all_board_ids: set[int] = set()
+        first_attack_turn: int | None = None
+        seen_turns: set[int] = set()
+
+        for rec in steps:
+            obs = rec.get("observation")
+            if not isinstance(obs, dict):
+                continue
+            cur = obs.get("current")
+            turn = cur.get("turn") if isinstance(cur, dict) else None
+            player = self._own_player(obs)
+            if player is not None:
+                deck_count = player.get("deckCount")
+                if isinstance(turn, int) and isinstance(deck_count, int):
+                    if turn not in seen_turns:
+                        deckcount_trajectory.append({"turn": turn, "deckCount": deck_count})
+                        seen_turns.add(turn)
+                active_ids = self._zone_card_ids(player.get("active"))
+                bench_ids = self._zone_card_ids(player.get("bench"))
+                all_board_ids.update(active_ids)
+                all_board_ids.update(bench_ids)
+                if isinstance(turn, int):
+                    if turn not in active_ids_by_turn:
+                        active_ids_by_turn[turn] = active_ids
+                        bench_size_by_turn[turn] = len(bench_ids)
+            logs = obs.get("logs")
+            if isinstance(logs, list):
+                for entry in logs:
+                    if (isinstance(entry, dict)
+                            and entry.get("type") == self._ATTACK_LOG_TYPE
+                            and entry.get("playerIndex") == seat):
+                        if isinstance(turn, int):
+                            if first_attack_turn is None or turn < first_attack_turn:
+                                first_attack_turn = turn
+
+        return {
+            "seat": seat,
+            "final_reward": (self.rewards[seat] if seat < len(self.rewards) else None),
+            "won": (self.final_result().get("winner_seat") == seat),
+            "first_attack_turn": first_attack_turn,
+            "board_card_ids": sorted(all_board_ids),
+            "active_ids_by_turn": {str(k): v for k, v in sorted(active_ids_by_turn.items())},
+            "bench_size_by_turn": {str(k): v for k, v in sorted(bench_size_by_turn.items())},
+            "deckcount_trajectory": deckcount_trajectory,
+            "min_deck_count": (min((d["deckCount"] for d in deckcount_trajectory), default=None)),
+            "turns_observed": (max(seen_turns) if seen_turns else None),
+        }
+
 
 def _coerce_json(text: str) -> dict:
     """Parse a replay payload that may be a dict, a list, or JSON-lines."""

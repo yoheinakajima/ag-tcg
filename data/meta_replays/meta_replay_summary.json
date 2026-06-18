@@ -1,0 +1,550 @@
+{
+  "schema": "activegraph.meta.replay_summary/v1",
+  "replays_analyzed": 1,
+  "missing_replays": [
+    "metal_ex_zacian_ramp",
+    "water_kyogre_abomasnow_maxbelt"
+  ],
+  "replays": [
+    {
+      "episode": 80374966,
+      "source": "data/meta_replays/raw/80374966_self_mirror.json",
+      "agents": [
+        "Yohei Nakajima",
+        "Yohei Nakajima"
+      ],
+      "is_self_mirror": true,
+      "num_steps": 136,
+      "rewards": [
+        -1,
+        1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "winner_seat": 1,
+      "seats": {
+        "0": {
+          "agent": "Yohei Nakajima",
+          "deck_count": 60,
+          "deck_unique": 11,
+          "deck_counts": {
+            "3": 29,
+            "721": 4,
+            "722": 4,
+            "723": 4,
+            "1092": 1,
+            "1121": 4,
+            "1145": 2,
+            "1163": 2,
+            "1219": 4,
+            "1227": 4,
+            "1262": 2
+          },
+          "deck_all_ids_confirmed": true,
+          "final_reward": -1,
+          "won": false,
+          "first_attack_turn": 3,
+          "evolved_mega_abomasnow": false,
+          "used_kyogre": true,
+          "used_snover": true,
+          "stuck_on_basic_snover": true,
+          "max_bench_size": 4,
+          "benched_backup": true,
+          "min_deck_count": 0,
+          "decked_out": true,
+          "turns_observed": 77,
+          "deckcount_trajectory": [
+            {
+              "turn": 0,
+              "deckCount": 60
+            },
+            {
+              "turn": 1,
+              "deckCount": 46
+            },
+            {
+              "turn": 3,
+              "deckCount": 39
+            },
+            {
+              "turn": 5,
+              "deckCount": 36
+            },
+            {
+              "turn": 7,
+              "deckCount": 35
+            },
+            {
+              "turn": 9,
+              "deckCount": 34
+            },
+            {
+              "turn": 11,
+              "deckCount": 33
+            },
+            {
+              "turn": 13,
+              "deckCount": 32
+            },
+            {
+              "turn": 15,
+              "deckCount": 31
+            },
+            {
+              "turn": 17,
+              "deckCount": 30
+            },
+            {
+              "turn": 19,
+              "deckCount": 29
+            },
+            {
+              "turn": 21,
+              "deckCount": 28
+            },
+            {
+              "turn": 23,
+              "deckCount": 27
+            },
+            {
+              "turn": 25,
+              "deckCount": 26
+            },
+            {
+              "turn": 27,
+              "deckCount": 25
+            },
+            {
+              "turn": 29,
+              "deckCount": 24
+            },
+            {
+              "turn": 30,
+              "deckCount": 24
+            },
+            {
+              "turn": 31,
+              "deckCount": 23
+            },
+            {
+              "turn": 33,
+              "deckCount": 21
+            },
+            {
+              "turn": 35,
+              "deckCount": 20
+            },
+            {
+              "turn": 37,
+              "deckCount": 19
+            },
+            {
+              "turn": 39,
+              "deckCount": 18
+            },
+            {
+              "turn": 41,
+              "deckCount": 17
+            },
+            {
+              "turn": 43,
+              "deckCount": 16
+            },
+            {
+              "turn": 45,
+              "deckCount": 15
+            },
+            {
+              "turn": 47,
+              "deckCount": 14
+            },
+            {
+              "turn": 49,
+              "deckCount": 13
+            },
+            {
+              "turn": 51,
+              "deckCount": 12
+            },
+            {
+              "turn": 53,
+              "deckCount": 11
+            },
+            {
+              "turn": 55,
+              "deckCount": 10
+            },
+            {
+              "turn": 57,
+              "deckCount": 9
+            },
+            {
+              "turn": 59,
+              "deckCount": 8
+            },
+            {
+              "turn": 60,
+              "deckCount": 8
+            },
+            {
+              "turn": 61,
+              "deckCount": 7
+            },
+            {
+              "turn": 63,
+              "deckCount": 7
+            },
+            {
+              "turn": 65,
+              "deckCount": 6
+            },
+            {
+              "turn": 67,
+              "deckCount": 5
+            },
+            {
+              "turn": 69,
+              "deckCount": 4
+            },
+            {
+              "turn": 71,
+              "deckCount": 3
+            },
+            {
+              "turn": 73,
+              "deckCount": 2
+            },
+            {
+              "turn": 75,
+              "deckCount": 1
+            },
+            {
+              "turn": 77,
+              "deckCount": 0
+            }
+          ]
+        },
+        "1": {
+          "agent": "Yohei Nakajima",
+          "deck_count": 60,
+          "deck_unique": 11,
+          "deck_counts": {
+            "3": 29,
+            "721": 4,
+            "722": 4,
+            "723": 4,
+            "1092": 1,
+            "1121": 4,
+            "1145": 2,
+            "1163": 2,
+            "1219": 4,
+            "1227": 4,
+            "1262": 2
+          },
+          "deck_all_ids_confirmed": true,
+          "final_reward": 1,
+          "won": true,
+          "first_attack_turn": 3,
+          "evolved_mega_abomasnow": false,
+          "used_kyogre": true,
+          "used_snover": true,
+          "stuck_on_basic_snover": true,
+          "max_bench_size": 2,
+          "benched_backup": true,
+          "min_deck_count": 7,
+          "decked_out": false,
+          "turns_observed": 78,
+          "deckcount_trajectory": [
+            {
+              "turn": 0,
+              "deckCount": 53
+            },
+            {
+              "turn": 2,
+              "deckCount": 46
+            },
+            {
+              "turn": 3,
+              "deckCount": 46
+            },
+            {
+              "turn": 4,
+              "deckCount": 45
+            },
+            {
+              "turn": 6,
+              "deckCount": 43
+            },
+            {
+              "turn": 8,
+              "deckCount": 42
+            },
+            {
+              "turn": 10,
+              "deckCount": 41
+            },
+            {
+              "turn": 12,
+              "deckCount": 40
+            },
+            {
+              "turn": 14,
+              "deckCount": 39
+            },
+            {
+              "turn": 16,
+              "deckCount": 38
+            },
+            {
+              "turn": 18,
+              "deckCount": 37
+            },
+            {
+              "turn": 20,
+              "deckCount": 36
+            },
+            {
+              "turn": 22,
+              "deckCount": 35
+            },
+            {
+              "turn": 24,
+              "deckCount": 34
+            },
+            {
+              "turn": 26,
+              "deckCount": 33
+            },
+            {
+              "turn": 28,
+              "deckCount": 32
+            },
+            {
+              "turn": 30,
+              "deckCount": 31
+            },
+            {
+              "turn": 32,
+              "deckCount": 30
+            },
+            {
+              "turn": 34,
+              "deckCount": 29
+            },
+            {
+              "turn": 36,
+              "deckCount": 28
+            },
+            {
+              "turn": 38,
+              "deckCount": 27
+            },
+            {
+              "turn": 40,
+              "deckCount": 26
+            },
+            {
+              "turn": 42,
+              "deckCount": 25
+            },
+            {
+              "turn": 44,
+              "deckCount": 24
+            },
+            {
+              "turn": 46,
+              "deckCount": 23
+            },
+            {
+              "turn": 48,
+              "deckCount": 22
+            },
+            {
+              "turn": 50,
+              "deckCount": 21
+            },
+            {
+              "turn": 52,
+              "deckCount": 20
+            },
+            {
+              "turn": 54,
+              "deckCount": 19
+            },
+            {
+              "turn": 56,
+              "deckCount": 18
+            },
+            {
+              "turn": 58,
+              "deckCount": 17
+            },
+            {
+              "turn": 60,
+              "deckCount": 16
+            },
+            {
+              "turn": 62,
+              "deckCount": 15
+            },
+            {
+              "turn": 64,
+              "deckCount": 14
+            },
+            {
+              "turn": 66,
+              "deckCount": 13
+            },
+            {
+              "turn": 68,
+              "deckCount": 12
+            },
+            {
+              "turn": 70,
+              "deckCount": 11
+            },
+            {
+              "turn": 72,
+              "deckCount": 10
+            },
+            {
+              "turn": 74,
+              "deckCount": 9
+            },
+            {
+              "turn": 76,
+              "deckCount": 8
+            },
+            {
+              "turn": 78,
+              "deckCount": 7
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "tempo_signals": [
+    "episode 80374966 seat 0: stuck on basic Snover (never evolved Mega Abomasnow ex)",
+    "episode 80374966 seat 0: decked out (deckCount reached 0) \u2014 over-thinning / passive long game",
+    "episode 80374966 seat 1: stuck on basic Snover (never evolved Mega Abomasnow ex)"
+  ],
+  "archetypes": {
+    "schema": "activegraph.meta.archetypes/v1",
+    "hard_rules": [
+      "never invent card ids",
+      "blocked archetypes contribute no fabricated data"
+    ],
+    "archetypes": [
+      {
+        "key": "water_kyogre_abomasnow_mirror_passive",
+        "label": "Water Kyogre/Abomasnow mirror (passive)",
+        "status": "confirmed_from_replay",
+        "description": "The v2 deck_energy_trim_light line itself: slow mirror, weak Snover attack loop, low evolution/bench pressure. Tends to grind and risk self-deckout.",
+        "card_ids": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          721,
+          721,
+          721,
+          721,
+          722,
+          722,
+          722,
+          722,
+          723,
+          723,
+          723,
+          723,
+          1092,
+          1121,
+          1121,
+          1121,
+          1121,
+          1145,
+          1145,
+          1163,
+          1163,
+          1219,
+          1219,
+          1219,
+          1219,
+          1227,
+          1227,
+          1227,
+          1227,
+          1262,
+          1262
+        ],
+        "card_ids_status": "confirmed",
+        "replay_episode": 80374966,
+        "deck_path": "data/meta_replays/decks/80374966_p0_deck.csv",
+        "notes": [
+          "Derived from real self-mirror replay 80374966 (both seats = v2 deck)."
+        ]
+      },
+      {
+        "key": "metal_ex_zacian_ramp",
+        "label": "Metal ex Zacian ramp",
+        "status": "blocked_missing_replay",
+        "description": "Zacian ex active + Metal Energy ramp; punishes slow setup. Possible support: Genesect ex / Mega Mawile ex / Registeel ex / Togedemaru ex / Magearna (all UNCONFIRMED without a replay).",
+        "card_ids": [],
+        "card_ids_status": "unknown",
+        "replay_episode": null,
+        "deck_path": null,
+        "notes": [
+          "No replay present (expected episode 80503804). Card ids unknown; never invented. Blocked until raw replay is added."
+        ]
+      },
+      {
+        "key": "water_kyogre_abomasnow_maxbelt",
+        "label": "Water Kyogre/Abomasnow + Maximum Belt",
+        "status": "blocked_missing_replay",
+        "description": "Similar water core with a stronger support package (Maximum Belt, Cyrano, Waitress UNCONFIRMED) and better long-game tempo.",
+        "card_ids": [],
+        "card_ids_status": "unknown",
+        "replay_episode": null,
+        "deck_path": null,
+        "notes": [
+          "No replay present (expected tymu water/maxbelt). Maximum Belt / Cyrano / Waitress ids are NOT in the confirmed set; blocked."
+        ]
+      }
+    ],
+    "available_for_eval": [
+      "water_kyogre_abomasnow_mirror_passive"
+    ],
+    "blocked_for_eval": [
+      "metal_ex_zacian_ramp",
+      "water_kyogre_abomasnow_maxbelt"
+    ]
+  }
+}
