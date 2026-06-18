@@ -12,12 +12,15 @@ settings:
 
   # Kaggle submission safety (ALL must align before any upload happens).
   kaggle_daily_submission_limit: 3    # competition cap; configurable (limits change)
+  submission_cadence_hours: 8         # min hours between uploads when enabled
   auto_submit_enabled: false          # MUST be true before any upload automation runs
   require_manual_approval_for_submit: true  # protects against accidental submissions
+  no_more_submissions_today: true     # hard stop: queue stays empty regardless of ranking
   submission_message_template: "{branch_id}: {hypothesis}"
 
   # The immutable control every candidate is compared against.
-  current_control_baseline: v1_kaggle_349_8
+  # v2 (deck_energy_trim_light) is the live 479.1 control as of Pass 8.
+  current_control_baseline: v2_kaggle_479_1_deck_energy_trim_light
 
 # Higher priority => generated/tested earlier. These override (per-seam) the
 # default_priority values in strategy_seams.yaml. Add or change freely.

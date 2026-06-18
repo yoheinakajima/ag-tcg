@@ -27,6 +27,24 @@ from . import run_state as rs
 _ELIGIBLE_LABELS = ("scout_promising", "promotable")
 _QUEUE_PATH = Path("data/submission_queue.json")
 _CANDIDATES_DIR = Path("data/submissions/candidates")
+_PLAN_PATH = Path("experiments/experiment_plan.yaml")
+
+
+def _read_plan_settings(plan_path: Path = _PLAN_PATH) -> dict:
+    """Read the hand-editable submission switches from experiment_plan.yaml.
+
+    Returns the ``settings`` mapping (empty on any error). The queue NEVER
+    uploads regardless of these values — they only tighten the dry-run gate.
+    """
+    if not plan_path.exists():
+        return {}
+    try:
+        from .config import load_yaml
+
+        data = load_yaml(plan_path) or {}
+    except Exception:  # noqa: BLE001
+        return {}
+    return (data.get("settings") or {}) if isinstance(data, dict) else {}
 
 
 def _branch_path_for(run_id: str, candidate_id: str, artifacts_root=None) -> str | None:
@@ -58,7 +76,18 @@ def _build_tarball(branch_dir: Path, candidate_id: str) -> dict:
 
 
 def _select_candidate(rank: dict) -> tuple[dict | None, str]:
-    """Pick the single best eligible candidate or explain why none qualify."""
+    """Pick the single best eligible candidate or explain why none qualify.
+
+    Enforces the Pass 8 queue invariants explicitly (defence in depth — the
+    ranking labels already encode most of these):
+
+    * never queue control anchors (``role != "candidate"``),
+    * never queue a candidate failing the HARD fixture gate
+      (``fixture_gate_status == "fail"``),
+    * never queue an unstable candidate (crash/timeout/stale),
+    * never queue a candidate below the v2 control (``adjusted_win_rate <= 0.5``)
+      unless it carries an explicit ``diversity_label``.
+    """
     cands = rank.get("candidates", [])
     if not cands:
         return None, "no candidates in ranking"
@@ -66,9 +95,15 @@ def _select_candidate(rank: dict) -> tuple[dict | None, str]:
     for c in cands:
         if c.get("role") != "candidate":
             continue
+        if c.get("fixture_gate_status") == "fail":
+            continue
         if c.get("promotion_label") not in _ELIGIBLE_LABELS:
             continue
         if c.get("crashes") or c.get("timeouts") or c.get("stale"):
+            continue
+        adj = c.get("adjusted_win_rate")
+        below_control = adj is not None and adj <= 0.5
+        if below_control and not c.get("diversity_label"):
             continue
         eligible.append(c)
     if not eligible:
@@ -95,9 +130,25 @@ def build_dry_run_queue(
     rank: dict,
     artifacts_root=None,
     queue_path: Path = _QUEUE_PATH,
+    no_more_submissions_today: bool | None = None,
 ) -> dict:
-    """Build the dry-run queue from a ranking dict. Writes ``queue_path``."""
-    selected, reason = _select_candidate(rank)
+    """Build the dry-run queue from a ranking dict. Writes ``queue_path``.
+
+    ``no_more_submissions_today`` defaults to ``None`` (read the live
+    ``experiment_plan.yaml`` setting); pass an explicit bool to override it
+    (used by tests so they do not depend on the repo-level plan file).
+    """
+    if no_more_submissions_today is None:
+        no_more_today = bool(_read_plan_settings().get("no_more_submissions_today"))
+    else:
+        no_more_today = bool(no_more_submissions_today)
+    if no_more_today:
+        selected, reason = None, (
+            "no_more_submissions_today=true in experiment_plan.yaml — queue held "
+            "empty (dry-run never uploads regardless)"
+        )
+    else:
+        selected, reason = _select_candidate(rank)
     queue: list[dict] = []
     if selected is not None:
         cid = selected["candidate_id"]
@@ -137,6 +188,7 @@ def build_dry_run_queue(
         "auto_submit_enabled": False,
         "require_manual_approval_for_submit": True,
         "upload_performed": False,
+        "no_more_submissions_today": no_more_today,
         "max_queue_size": 1,
         "active_control": rank.get("control"),
         "queue": queue[:1],

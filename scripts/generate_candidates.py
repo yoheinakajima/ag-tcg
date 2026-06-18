@@ -37,6 +37,8 @@ from ptcg_activegraph.experiments.generator import (
     plan_pass6,
     plan_pass6_chaos,
     plan_pass6_decks,
+    plan_pass8,
+    plan_pass8_decks,
 )
 from ptcg_activegraph.graph.event_store import EventStore
 from ptcg_activegraph.graph.events import EventType, new_event
@@ -51,11 +53,13 @@ def main() -> int:
                         help="1 = priority single-seam plan; 2 = control + "
                              "single-seam confirmations + combination candidates")
     parser.add_argument("--group",
-                        choices=["pass4", "pass5_replay_policy", "pass6"], default=None,
+                        choices=["pass4", "pass5_replay_policy", "pass6", "pass8"],
+                        default=None,
                         help="pass4 = replay-derived effect-resolution + chaos "
                              "scout batch; pass5_replay_policy = replay-informed "
                              "board-aware candidates over the v2 deck; pass6 = "
-                             "policy v3 combos + deck variants + buildable chaos "
+                             "policy v3 combos + deck variants + buildable chaos; "
+                             "pass8 = fixture-first effect-safety candidates "
                              "(all override --generation)")
     parser.add_argument("--no-optional-combos", action="store_true",
                         help="generation 2: skip the optional (non-required) combos")
@@ -78,6 +82,12 @@ def main() -> int:
         full_plan = (plan_pass6(config)
                      + plan_pass6_decks(config)
                      + plan_pass6_chaos(config))
+    elif args.group == "pass8":
+        # Pass 8 = fixture-first effect-safety candidates (anchor + 4 single
+        # guards + 4 combos over the v2 deck with injected p8_rules) PLUS the
+        # deck-neighborhood batch around the Secret Box risk. The blocked
+        # copy-limit variant is surfaced honestly via plan_pass8_decks.
+        full_plan = plan_pass8(config) + plan_pass8_decks(config)
     elif args.generation == 2:
         full_plan = plan_generation2(config, include_optional=not args.no_optional_combos)
         full_plan = full_plan[: args.limit] if args.limit and args.limit > 0 else full_plan

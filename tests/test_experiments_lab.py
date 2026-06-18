@@ -899,14 +899,26 @@ def test_telemetry_contract_json_marks_triggers_observable():
     contract = json.loads(
         (REPO / "data" / "experiments" / "chaos_telemetry_contract.json").read_text()
     )
-    assert contract["pass"] == 6
+    # Pass 8 correction: the opponent's PUBLIC board state (counts/visible ids/
+    # status/discard/logs) IS observable; only hand contents and causal attribution
+    # stay hidden, so chaos is partially_observable at best and never "available".
+    assert contract["telemetry_conclusion_corrected_in_pass"] == 8
     by_id = {s["seam_id"]: s for s in contract["seams"]}
-    # Seams whose trigger is a pure opponent count/board/status are observable now.
+    # Each of these seams keys off an observable opponent count, so the public
+    # board signal is recognised as observable (the correction), but the seam is
+    # still NOT promotable: its decisive proof is causal/own-side and unavailable.
     for sid in ("chaos.hand_avalanche_froslass",
                 "chaos.bench_bloat_punisher",
                 "chaos.mill_resource_destruction"):
-        assert by_id[sid]["policy_trigger_observable"] is True
-        assert by_id[sid]["telemetry_availability"] == "available"
+        seam = by_id[sid]
+        assert seam["opponent_side_observable"], sid
+        assert seam["telemetry_availability"] != "available", sid
+    # Mill keys only off observable counts → partially_observable; froslass and
+    # bench still need own-side attack-damage attribution the harness omits → blocked.
+    assert by_id["chaos.mill_resource_destruction"]["telemetry_availability"] == \
+        "partially_observable"
+    assert by_id["chaos.hand_avalanche_froslass"]["telemetry_availability"] == "blocked"
+    assert by_id["chaos.bench_bloat_punisher"]["telemetry_availability"] == "blocked"
     # All seams remain enabled=False until a legal decklist passes the build gate.
     assert all(s["enabled"] is False for s in contract["seams"])
 
@@ -1593,3 +1605,179 @@ def test_build_dry_run_queue_refuses_when_auto_submit_enabled():
     cfg.settings = {**dict(cfg.settings), "auto_submit_enabled": True}
     with pytest.raises(RuntimeError):
         p6.build_dry_run_queue([], cfg, {}, max_per_day=1)
+
+
+# --------------------------------------------------------------------------
+# Pass 8 (A–J) — fixture-first effect-safety policy + deck-neighborhood
+# --------------------------------------------------------------------------
+
+_PASS8_FIXTURE_IDS = {
+    "ultra_ball_discard_energy_safe",
+    "ultra_ball_search_missing_basic_or_evolution",
+    "secret_box_forced_discard_all",
+    "secret_box_to_hand_coherent_package",
+    "mega_signal_no_orphan_mega",
+    "deckout_guard_low_deck",
+    "setup_active_kyogre_vs_snover__kyogre",
+    "setup_active_kyogre_vs_snover__snover",
+    "secret_box_play_safety",
+}
+
+# The four HARD gradeable safety fixtures (the promotion gate keys off these).
+_PASS8_HARD_IDS = {
+    "ultra_ball_discard_energy_safe",
+    "secret_box_forced_discard_all",
+    "mega_signal_no_orphan_mega",
+    "deckout_guard_low_deck",
+}
+
+
+def _extract_pass8(tmp_path):
+    extract = _load_script("extract_pass8_fixtures")
+    out_json = tmp_path / "p8_fixtures.json"
+    out_md = tmp_path / "p8_fixtures.md"
+    written = extract.write_pass8_fixtures(extract.DEFAULT_REPLAY,
+                                           str(out_json), str(out_md))
+    return extract, out_json, written
+
+
+def test_pass8_extract_produces_nine_named_fixtures(tmp_path):
+    _extract, out_json, written = _extract_pass8(tmp_path)
+    assert {f["id"] for f in written} == _PASS8_FIXTURE_IDS
+    # Every gradeable fixture carries a real observation prompt; the json/md write.
+    for f in written:
+        if f.get("gradeable", True):
+            assert isinstance(f["observation"], dict), f["id"]
+    assert out_json.exists()
+    assert (out_json.parent / "p8_fixtures.md").exists()
+
+
+def test_pass8_fixture_severities_and_forced_nuance(tmp_path):
+    _extract, _out, written = _extract_pass8(tmp_path)
+    by_id = {f["id"]: f for f in written}
+    # Exactly the four hard safety fixtures are gradeable+severity hard.
+    hard = {f["id"] for f in written
+            if f.get("gradeable", True) and f.get("severity") == "hard"}
+    assert hard == _PASS8_HARD_IDS
+    # secret_box_forced_discard_all: minCount==maxCount==n_options -> forced_all,
+    # which the grader resolves to "na" and the gate can NEVER count as a failure.
+    fx = by_id["secret_box_forced_discard_all"]
+    assert fx["check"]["preference"]["kind"] == "forced_all"
+    assert fx["min_count"] == fx["n_options"]
+    # secret_box_play_safety is a documented, non-gradeable pre-play seam.
+    play = by_id["secret_box_play_safety"]
+    assert play.get("gradeable", True) is False
+    assert play["check"]["preference"]["kind"] == "documented_seam"
+
+
+def _grade_pass8(branch_id, fixtures_file, runs_root, is_anchor=False):
+    gate = _load_script("run_pass8_fixture_gate")
+    spec = next(s for s in generator.PASS8_COMBO_SPECS
+                if s["branch_id"] == branch_id)
+    b = generator.generate_combo_candidate(
+        spec, BASELINE_MAIN, BASELINE_DECK, runs_root=runs_root, ts=branch_id[:6]
+    )
+    sev_map = gate._load_severity_map(str(fixtures_file))
+    return gate._grade_candidate(branch_id, b.run_dir, str(fixtures_file),
+                                 sev_map, is_anchor=is_anchor)
+
+
+def test_pass8_gate_blocks_anchor_and_never_fails_forced_discard(tmp_path):
+    _extract, fixtures_file, _written = _extract_pass8(tmp_path)
+    runs = tmp_path / "runs"
+    res = _grade_pass8("pass8_control_v2_anchor", fixtures_file, runs, is_anchor=True)
+    # The v2 anchor reproduces the baseline hard failures -> blocked from promotion.
+    assert res["promotable_gate"] is False
+    assert res["hard_failures"], "anchor must reproduce >=1 hard failure"
+    # The forced-discard fixture is na and is NEVER recorded as a hard failure.
+    hard_ids = {hf["fixture"] for hf in res["hard_failures"]}
+    assert "secret_box_forced_discard_all" not in hard_ids
+    pf = {p["fixture"]: p for p in res["per_fixture"]}
+    assert pf["secret_box_forced_discard_all"]["preference"] == "na"
+
+
+def test_pass8_gate_promotes_full_safety_combo(tmp_path):
+    _extract, fixtures_file, _written = _extract_pass8(tmp_path)
+    runs = tmp_path / "runs"
+    res = _grade_pass8("combo_full_safety_v3", fixtures_file, runs)
+    # The full-safety combo clears every HARD fixture -> eligible (gate passes).
+    assert res["promotable_gate"] is True, res["hard_failures"]
+    assert res["hard_failures"] == []
+    pf = {p["fixture"]: p for p in res["per_fixture"]}
+    # The forced discard stays na; the other three hard fixtures flip to pass.
+    assert pf["secret_box_forced_discard_all"]["preference"] == "na"
+    for fid in ("mega_signal_no_orphan_mega", "deckout_guard_low_deck",
+                "ultra_ball_discard_energy_safe"):
+        assert pf[fid]["preference"] == "pass", fid
+
+
+def test_pass8_single_guards_flip_their_target_fixture(tmp_path):
+    """Mega-line guard flips the orphan-Mega seam; deckout guard flips low-deck."""
+    _extract, fixtures_file, _written = _extract_pass8(tmp_path)
+    runs = tmp_path / "runs"
+
+    def _pref(branch_id):
+        res = _grade_pass8(branch_id, fixtures_file, runs)
+        return {p["fixture"]: p["preference"] for p in res["per_fixture"]}
+
+    mega = _pref("policy_mega_signal_line_guard_v1")
+    assert mega["mega_signal_no_orphan_mega"] == "pass"
+
+    deckout = _pref("policy_deckout_guard_v2_p8")
+    assert deckout["deckout_guard_low_deck"] == "pass"
+
+
+def test_pass8_to_hand_guard_flips_advisory_and_play_guard_seam_non_gradeable(tmp_path):
+    """ToHand role-priority fixes the advisory coherent-package seam; the Secret-Box
+    play-guard governs a documented, non-gradeable pre-play seam (never scored)."""
+    _extract, fixtures_file, _written = _extract_pass8(tmp_path)
+    runs = tmp_path / "runs"
+
+    anchor = _grade_pass8("pass8_control_v2_anchor", fixtures_file, runs,
+                          is_anchor=True)
+    apf = {p["fixture"]: p["preference"] for p in anchor["per_fixture"]}
+    # The v2 anchor mishandles the advisory to-hand coherence seam.
+    assert apf["secret_box_to_hand_coherent_package"] == "fail"
+
+    to_hand = _grade_pass8("policy_to_hand_role_priority_v1", fixtures_file, runs)
+    thpf = {p["fixture"]: p["preference"] for p in to_hand["per_fixture"]}
+    assert thpf["secret_box_to_hand_coherent_package"] == "pass"
+
+    play = _grade_pass8("policy_secret_box_play_guard_v1", fixtures_file, runs)
+    graded_ids = {p["fixture"] for p in play["per_fixture"]}
+    # secret_box_play_safety is documented-only: the grader never scores it.
+    assert "secret_box_play_safety" not in graded_ids
+
+
+def test_pass8_deck_plan_records_blocked_copy_limit_variant():
+    cfg = config_mod.load_config()
+    plan = generator.plan_pass8_decks(cfg)
+    by_id = {p["branch_id"]: p for p in plan}
+    blocked = by_id["deck_v2_no_secret_box__lillie"]
+    # The 5th-Lillie variant is recorded but NOT generated (copy-limit), with reason.
+    assert blocked["testable"] is False
+    assert "4-copy" in blocked["reason"]
+    # Blocked items sort last; every testable deck/combo precedes it.
+    assert plan[-1]["branch_id"] == "deck_v2_no_secret_box__lillie"
+
+
+def test_pass8_candidate_tarball_is_main_and_deck_only(tmp_path):
+    from ptcg_activegraph.cards import load_card_db
+    from ptcg_activegraph.packaging.make_submission import (
+        build_submission, inspect_tarball,
+    )
+    runs = tmp_path / "runs"
+    spec = next(s for s in generator.PASS8_COMBO_SPECS
+                if s["branch_id"] == "combo_full_safety_v3")
+    b = generator.generate_combo_candidate(
+        spec, BASELINE_MAIN, BASELINE_DECK, runs_root=runs, ts="tar"
+    )
+    run_dir = Path(b.run_dir)
+    out = tmp_path / "submission.tar.gz"
+    build_submission(
+        run_dir / "main.py", run_dir / "deck.csv",
+        out_path=out, card_db=load_card_db(),
+    )
+    # A promotable Pass 8 candidate must ship EXACTLY the two top-level files.
+    members = sorted(inspect_tarball(out)["members"])
+    assert members == ["deck.csv", "main.py"]

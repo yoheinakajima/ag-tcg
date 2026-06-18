@@ -143,7 +143,8 @@ def test_dry_run_queue_queues_one_clean_winner(runner, tmp_path):
     runner.execute(run_id, executor=_win_executor)
     rank = rank_run(run_id, ledger=runner.ledger)
     doc = build_dry_run_queue(run_id, rank, artifacts_root=runner.artifacts_root,
-                              queue_path=tmp_path / "queue.json")
+                              queue_path=tmp_path / "queue.json",
+                              no_more_submissions_today=False)
     assert doc["queued_candidate_count"] == 1
     q = doc["queue"][0]
     assert q["candidate_id"] == "policy_winner"
@@ -151,6 +152,24 @@ def test_dry_run_queue_queues_one_clean_winner(runner, tmp_path):
     assert sorted(q["tarball_members"]) == ["deck.csv", "main.py"]
     assert doc["max_queue_size"] == 1
     assert doc["require_manual_approval_for_submit"] is True
+
+
+def test_dry_run_queue_honors_no_more_submissions_today(runner, tmp_path):
+    """Even a clean winner is held back when the daily cap flag is set."""
+    root = tmp_path / "runs"
+    _make_candidate(root, "policy_winner")
+    ctrl = _make_control(tmp_path)
+    run_id = runner.plan(root, ctrl, "pass8_focused", games_per_seat=3, seats=(0, 1),
+                         candidate_ids=["policy_winner"])
+    runner.execute(run_id, executor=_win_executor)
+    rank = rank_run(run_id, ledger=runner.ledger)
+    doc = build_dry_run_queue(run_id, rank, artifacts_root=runner.artifacts_root,
+                              queue_path=tmp_path / "queue.json",
+                              no_more_submissions_today=True)
+    assert doc["queued_candidate_count"] == 0
+    assert doc["no_more_submissions_today"] is True
+    assert "no_more_submissions_today" in doc["selection_reason"]
+    assert doc["upload_performed"] is False
 
 
 def test_write_ranking_emits_json_and_md(runner, tmp_path):

@@ -1,0 +1,464 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle in this pass.
+- Do not modify root main.py or root deck.csv.
+- Preserve v1 and v2 baselines.
+- Do not print or commit Kaggle credentials.
+- Do not commit official card CSV/PDF data.
+- Keep all candidate tarballs top-level main.py + deck.csv only.
+- This is a local ActiveGraph research pass only.
+
+Current situation:
+- v1 live Kaggle score: 356.9.
+- v2 deck_energy_trim_light live Kaggle score: 479.1.
+- Active control baseline: data/baselines/v2_kaggle_479_1_deck_energy_trim_light/
+- Pass 7B completed durable fast scout:
+  - 54 scout games completed, 0 crashes/timeouts.
+  - Fast import stub validated, 7.8x faster import.
+  - Two scout leaders tied at 0.833.
+  - Focused micro-confirmation dropped both leaders to 0.60 over 10 games each.
+  - No candidate is promotable.
+  - No upload was performed.
+- Key lesson:
+  The current bottleneck is not legality or generic attack priority. It is effect-resolution safety, especially Secret Box / Ultra Ball / Mega Signal / deckout guard.
+- Replay evidence:
+  The replay shows low/zero deckCount states and discard piles containing key setup cards, so deckout and effect-sequencing are real issues.
+- Today we are done with submissions. Do not upload.
+
+Goal:
+Run ActiveGraph Pass 8: fixture-first effect-safety patches plus Secret Box / Mega Signal deck-neighborhood experiments.
+
+The pass should:
+1. Turn replay-derived failure situations into deterministic fixtures.
+2. Implement policy candidates only if they pass those fixtures.
+3. Generate deck-neighborhood candidates around removing or reducing Secret Box risk.
+4. Evaluate candidates locally against v2 control.
+5. Rebuild report site and dry-run queue.
+6. No Kaggle upload.
+
+Part A — Baseline and status safety
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+
+Verify root files are unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Verify v2 baseline exists:
+
+ls -la data/baselines/v2_kaggle_479_1_deck_energy_trim_light
+tar -tzf data/baselines/v2_kaggle_479_1_deck_energy_trim_light/submission.tar.gz
+
+Fetch Kaggle status only. Do not submit:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass8.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass8.csv || true
+
+Record latest visible v1/v2 scores into ActiveGraph if the status command succeeds.
+
+Part B — Replay fixture extraction
+
+Use the uploaded replay if present:
+
+data/replays/80374966.json
+
+If absent, search for it:
+
+find . -name '80374966.json' -o -name '*80374966*' -o -name '*replay*.json'
+
+If still absent, use the existing replay analyzer outputs if available, but report that replay-based fixtures are limited.
+
+Create or extend:
+
+data/fixtures/replay_80374966_effect_resolution.json
+data/fixtures/replay_80374966_effect_resolution.md
+
+Extract deterministic fixture cases from the replay, including:
+
+1. ultra_ball_discard_energy_safe
+Situation:
+- Ultra Ball discard context.
+- Hand contains multiple Water Energy plus key cards.
+Expected:
+- discard excess Basic Water Energy first.
+- do not discard only remaining setup pieces when safe Energy discards exist.
+
+2. ultra_ball_search_missing_basic_or_evolution
+Situation:
+- Ultra Ball ToHand context.
+- Deck options include Snover, Kyogre, Mega Abomasnow ex.
+Expected:
+- if no Snover on board, prefer Snover over Mega Abomasnow ex.
+- if Snover on board, prefer Mega Abomasnow ex.
+- if no attacker exists, prefer Kyogre or Snover over generic trainers.
+
+3. secret_box_play_safety
+Situation:
+- Main context includes Play Secret Box.
+- Hand after playing Secret Box would have fewer than 3 safe discards.
+Expected:
+- do not choose Play Secret Box if alternative productive action exists.
+- if forced, mark as forced_bad or unsafe, but do not blame discard subprompt.
+
+4. secret_box_forced_discard_all
+Situation:
+- Secret Box Discard context with minCount=maxCount=3 and exactly 3 options.
+Expected:
+- selecting all three is forced and should be classified as forced_all/na, not a policy failure.
+
+5. secret_box_to_hand_coherent_package
+Situation:
+- Secret Box ToHand context with choices like Mega Signal, Powerglass, Lillie, Surfing Beach, Ultra Ball.
+Expected:
+- prefer coherent package:
+  - Powerglass if current attacker exists and no tool attached.
+  - Mega Signal only if Snover line exists or is preserved.
+  - Lillie/Petrel only if deckCount is healthy.
+  - avoid redundant Stadium if stadium already in play.
+
+6. mega_signal_no_orphan_mega
+Situation:
+- Mega Signal is playable or resolving.
+- No Snover is in active/bench/hand.
+Expected:
+- do not play Mega Signal or do not fetch Mega Abomasnow ex unless a Snover line is available.
+
+7. deckout_guard_low_deck
+Situation:
+- own deckCount <= 6, <= 4, <= 2.
+Expected:
+- heavily penalize optional draw/search.
+- choose attack, attach, ability, or end over optional draw/search unless immediate tactical payoff exists.
+
+8. setup_active_kyogre_vs_snover
+Situation:
+- opening hand has Kyogre and Snover.
+Expected:
+- create both expected variants as fixtures, not a hard-coded answer:
+  - Kyogre active if immediate attack/energy plan is strong.
+  - Snover active if evolution support is strong.
+
+Add tests for fixture loading and expected candidate behavior.
+
+Part C — Implement fixture gate as a hard promotion filter
+
+Extend the fixture gate so each candidate gets:
+
+- fixture_pass_count
+- fixture_fail_count
+- fixture_na_count
+- fixture_advisory_findings
+- hard_failures
+
+Promotion rule:
+- A policy candidate cannot be queued unless it passes all hard safety fixtures.
+- `secret_box_forced_discard_all` must not be counted as failure.
+- Failing optional preference fixtures can be advisory, but must be reported.
+
+Part D — Generate policy candidates
+
+Use v2 baseline deck as control. Generate isolated candidates only, not root edits.
+
+Policy candidates:
+
+1. policy_secret_box_play_guard_v1
+Hypothesis:
+Avoid playing Secret Box when there are fewer than three safe discards.
+
+Rules:
+- In Main context, if option is Play and hand card is Secret Box ID 1092:
+  - estimate post-play hand.
+  - count safe discards: excess Basic Water Energy first.
+  - unsafe discards: only Snover, only Mega Abomasnow ex, only current attacker, only search card.
+  - heavily penalize Secret Box if safe_discard_count < 3 and another productive action exists.
+- In forced discard context, if minCount=maxCount=available options, select all and mark forced_all/na.
+
+2. policy_mega_signal_line_guard_v1
+Hypothesis:
+Mega Signal is bad if it fetches Mega Abomasnow ex without a Snover line.
+
+Rules:
+- Penalize playing Mega Signal if no Snover is active/benched/in hand.
+- In ToHand context for Mega Signal, prefer Mega Abomasnow ex only if Snover exists in active/bench/hand.
+- If no Snover line exists, choose the least harmful legal option or decline if allowed.
+
+3. policy_deckout_guard_v2
+Hypothesis:
+Low-deck draw/search avoidance prevents long-game self-loss.
+
+Rules:
+- If own deckCount <= 8, reduce optional draw/search/supporter/stadium effects.
+- If own deckCount <= 4, heavily penalize optional draw/search.
+- If own deckCount <= 2, prefer attack/attach/end over draw/search unless draw/search directly enables immediate KO or survival.
+- Never select positive draw count if zero is legal and deckCount is low.
+
+4. policy_to_hand_role_priority_v1
+Hypothesis:
+Generic ToHand target priority improves Ultra Ball, Secret Box, and Mega Signal.
+
+Rules:
+- Resolve option card IDs through select.deck and option.index.
+- Role priority depends on board:
+  - missing Basic attacker/setup: Snover or Kyogre.
+  - Snover exists: Mega Abomasnow ex.
+  - attacker exists with no tool: Powerglass.
+  - healthy deck: Lillie/Petrel.
+  - low deck: avoid draw supporters.
+  - avoid Basic Energy from search unless no other useful card.
+
+5. combo_secret_box_guard__mega_signal_guard
+6. combo_secret_box_guard__deckout_guard
+7. combo_all_effect_safety_v1
+8. combo_all_effect_safety__role_priority
+
+All candidates must:
+- keep candidate main.py stdlib-only
+- return deck on select=None
+- validate/clamp indices
+- never raise outward
+- pass package verify
+- pass candidate smoke
+- pass hard fixture gates
+- not mutate root files
+
+Part E — Generate deck-neighborhood candidates
+
+Because the only proven Kaggle improvement came from deck shape, generate deck candidates around Secret Box risk and search consistency.
+
+Use v2 as the base deck. Do not invent card IDs. Enforce legality.
+
+Candidates:
+
+1. deck_v2_no_secret_box__mega_signal_confirm
+Hypothesis:
+Secret Box is high variance; replacing it with another Mega Signal may preserve setup while avoiding forced discard risk.
+
+2. deck_v2_no_secret_box__powerglass
+Hypothesis:
+Replacing Secret Box with Powerglass improves attacker scaling without risky discard/search chains.
+
+3. deck_v2_no_secret_box__water_energy
+Hypothesis:
+Replacing Secret Box with one Water Energy tests whether avoiding Secret Box alone is beneficial.
+
+4. deck_v2_no_secret_box__lillie
+Hypothesis:
+Replacing Secret Box with Lillie improves draw but may increase deckout risk.
+
+5. deck_v2_minus_lillie__mega_signal
+Hypothesis:
+Reducing draw density for more targeted search may reduce deckout while preserving setup.
+
+6. deck_v2_minus_petrel__mega_signal
+Hypothesis:
+Reducing Petrel/draw disruption for targeted setup may improve consistency.
+
+7. deck_v2_secret_box_kept__less_draw
+Hypothesis:
+Secret Box may be safe if total draw pressure is reduced.
+
+8. combo_deck_no_secret_box__secret_box_play_guard
+Hypothesis:
+Deck-level Secret Box removal plus policy guard should be redundant; if both help, Secret Box risk is a major failure source.
+
+If a replacement would violate copy limits or card availability, block it and explain why.
+
+Part F — Evaluation plan
+
+Stage 1: fixture gate
+- Run all policy candidates through fixture gate.
+- Run package verify + candidate smoke for all policy and deck candidates.
+
+Stage 2: local scout
+- Control: data/baselines/v2_kaggle_479_1_deck_energy_trim_light
+- candidates: all passing policy candidates + deck-neighborhood candidates
+- games per seat: 5
+- seat swap: yes
+- watchdog: yes
+
+Stage 3: focused confirmation
+- candidates: top 4 from Stage 2, excluding control
+- games per seat: 20
+- seat swap: yes
+- watchdog: yes
+
+Commands should be approximately:
+
+python scripts/generate_candidates.py --group pass8_effect_safety_and_secret_box_decks
+python scripts/run_fixture_gate.py --group pass8_effect_safety_and_secret_box_decks
+python scripts/run_experiment_batch.py --stage pass8_scout --control data/baselines/v2_kaggle_479_1_deck_energy_trim_light --games-per-seat 5 --seat-swap --fast-import-stub
+python scripts/rank_candidates.py --stage pass8_scout
+python scripts/run_experiment_batch.py --stage pass8_focused --control data/baselines/v2_kaggle_479_1_deck_energy_trim_light --top 4 --games-per-seat 20 --seat-swap --fast-import-stub
+python scripts/rank_candidates.py --stage pass8_focused
+python scripts/build_report_site.py
+python scripts/queue_submissions.py --dry-run
+
+Adapt command names to actual scripts. Do not upload.
+
+Part G — Chaos stream status
+
+Do not generate chaos decks in this pass unless it is already trivial. Instead update the chaos readiness docs with the corrected telemetry conclusion:
+
+Available:
+- opponent handCount
+- opponent deckCount
+- opponent bench count
+- visible active/bench IDs
+- status flags
+- discard contents
+- game logs
+
+Still missing / uncertain:
+- opponent hand contents
+- causal attribution of chaos cards
+- whether chaos helps opponent setup
+
+Chaos remains a research stream, not the next upload stream.
+
+Part H — Submission cadence config
+
+Add or update config, but keep upload disabled:
+
+experiments/experiment_plan.yaml
+
+Set:
+- kaggle_daily_submission_limit: 3
+- submission_cadence_hours: 8
+- auto_submit_enabled: false
+- require_manual_approval_for_submit: true
+- no_more_submissions_today: true
+
+Queue builder should respect:
+- no upload today
+- max 1 queued candidate unless explicitly overridden
+- never queue control anchors
+- never queue candidates failing hard fixtures
+- never queue candidates below v2 control without diversity label
+
+Part I — Reporting
+
+Update report site and markdown report with:
+
+- v1 score 356.9
+- v2 score 479.1
+- Pass 7B conclusion: infra success, no promotion
+- replay-derived Secret Box / Mega Signal / deckout lessons
+- fixture gate results
+- deck-neighborhood results
+- focused confirmation results
+- dry-run queue
+- no-upload note
+- chaos telemetry correction
+
+Part J — Tests and validation
+
+Add tests for:
+- replay fixture extraction
+- Secret Box forced discard classified as forced_all/na
+- Secret Box play guard fixture
+- Mega Signal orphan line guard fixture
+- deckout guard fixture
+- ToHand role priority fixture
+- deck candidate generation blocks copy-limit violations
+- candidate tarball contains only main.py + deck.csv
+- queue does not include control anchors
+- queue respects no_more_submissions_today
+- root files remain unchanged
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Final report format:
+
+ActiveGraph Pass 8 Fixture-First Effect Safety Report
+
+1. Baseline safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- active control baseline:
+- v1 live score:
+- v2 live score:
+- package verify:
+- pytest:
+- Kaggle upload performed:
+
+2. Replay fixtures
+- replay file used:
+- fixtures extracted:
+- fixture path:
+- hard fixture count:
+- advisory fixture count:
+- most important fixture:
+
+3. Policy candidates
+- generated:
+- passed hard fixture gate:
+- failed hard fixture gate:
+- blocked and why:
+- best policy candidate:
+
+4. Deck-neighborhood candidates
+- generated:
+- blocked and why:
+- best deck candidate:
+- Secret Box risk conclusion:
+
+5. Evaluation
+- scout candidates evaluated:
+- scout games per candidate:
+- focused candidates evaluated:
+- focused games per candidate:
+- crashes/timeouts/invalid returns:
+- top 5 focused:
+  1.
+  2.
+  3.
+  4.
+  5.
+
+6. Ranking / queue
+- promotable candidates:
+- scout_promising candidates:
+- dry-run queue path:
+- queued candidate:
+- candidate tarball path:
+- upload performed: no
+- no_more_submissions_today honored:
+
+7. Chaos stream
+- telemetry correction made:
+- chaos still blocked by:
+- next chaos action:
+
+8. Report site
+- site path:
+- markdown report path:
+- most important new lesson:
+
+9. Manual git notes
+- files I should review:
+- files not to commit:
+- generated/ignored files:
+
+10. Recommendation
+- Submit next candidate: yes/no
+- If yes, candidate ID and why:
+- If no, why:
+- Next prompt:
+  - one concise prompt only

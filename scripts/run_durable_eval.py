@@ -56,7 +56,30 @@ def _parse_seats(args) -> tuple[int, ...]:
     return (0, 1)
 
 
+def _strip_run_prefix(candidate_id: str) -> str:
+    """Strip a ``YYYYMMDD_HHMMSS_NN_`` run-dir prefix to recover the branch_id.
+
+    Gate JSON keys candidates by their generated run-dir name; the durable
+    ranking keys by branch_id, so we normalise to branch_id for the join.
+    """
+    parts = candidate_id.split("_")
+    if (
+        len(parts) >= 4
+        and len(parts[0]) == 8 and parts[0].isdigit()
+        and len(parts[1]) == 6 and parts[1].isdigit()
+        and parts[2].isdigit()
+    ):
+        return "_".join(parts[3:])
+    return candidate_id
+
+
 def _load_fixture_status(path: str | None) -> dict[str, str]:
+    """Map branch_id -> fixture gate status (``pass``/``fail``/``advisory``).
+
+    Understands the Pass 8 fixture-gate schema (``promotable_gate`` boolean +
+    ``hard_failures`` list, run-dir-prefixed candidate ids) and the older
+    ``status`` schema. HARD failures => ``fail`` (blocks the queue).
+    """
     if not path:
         return {}
     p = Path(path)
@@ -70,8 +93,21 @@ def _load_fixture_status(path: str | None) -> dict[str, str]:
     rows = data.get("results") or data.get("candidates") or []
     for row in rows:
         cid = row.get("candidate_id")
-        if cid:
-            out[cid] = row.get("status", "advisory")
+        if not cid:
+            continue
+        branch_id = _strip_run_prefix(cid)
+        if "promotable_gate" in row or "hard_failures" in row:
+            if not row.get("loaded", True):
+                status = "fail"
+            elif row.get("promotable_gate"):
+                status = "pass"
+            elif row.get("hard_failures"):
+                status = "fail"
+            else:
+                status = "advisory"
+        else:
+            status = row.get("status", "advisory")
+        out[branch_id] = status
     return out
 
 

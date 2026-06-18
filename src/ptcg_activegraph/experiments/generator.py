@@ -1018,6 +1018,257 @@ PASS6_COMBO_SPECS: list[dict] = [
 
 
 # ---------------------------------------------------------------------------
+# Pass 8: fixture-first effect-safety candidates (board-aware selection rewrite)
+#
+# All candidates are combos over the v2 control deck so the ONLY variable vs the
+# pass8 anchor is the injected p8_rules block (render_p8_block). They are
+# self-contained: each carries its merged ``p8_rules`` inline (no policy_refs),
+# so the 4 "combo" candidates are simply unions of the 4 single-rule guards.
+# Promotion is gated on the HARD replay fixtures (see scripts/run_pass8_fixture_gate.py).
+# ---------------------------------------------------------------------------
+
+PASS8_COMBO_SPECS: list[dict] = [
+    {
+        "branch_id": "pass8_control_v2_anchor",
+        "seam_id": "archetype.baseline_exploit",
+        "archetype": "baseline_exploit",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": (
+            "Exact v2 control deck with no effect-safety override; anchors the "
+            "Pass 8 batch and re-confirms the v2 control reproduces. Expected to "
+            "FAIL the hard fixture gate (it is the unpatched failure regime)."
+        ),
+        "required": True,
+    },
+    {
+        "branch_id": "policy_secret_box_play_guard_v1",
+        "seam_id": "policy.secret_box_mode_selection",
+        "archetype": "effect_safety",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": (
+            "Secret Box to-hand should not fetch an orphan Mega Signal (1145) "
+            "when no Snover line is on board. The literal play-time decline is a "
+            "documented non-extractable seam; this enforces the resolvable half."
+        ),
+        "p8_rules": {"search_avoid_orphan_mega_signal": True},
+        "required": True,
+    },
+    {
+        "branch_id": "policy_mega_signal_line_guard_v1",
+        "seam_id": "policy.line_coherence",
+        "archetype": "effect_safety",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": (
+            "Decline Mega Signal when every target is Mega Abomasnow ex (723) and "
+            "no Snover (722) is on board, and avoid fetching an orphan Mega in "
+            "ordinary searches. Fixes step-17 orphan-Mega failure."
+        ),
+        "p8_rules": {
+            "decline_mega_signal_no_snover": True,
+            "search_avoid_orphan_evolution": True,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "policy_deckout_guard_v2_p8",
+        "seam_id": "policy.deckout_awareness",
+        "archetype": "effect_safety",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": (
+            "Decline an optional ctx-7 search/draw when own deckCount <= 8 so the "
+            "agent never thins itself into a deckout loss. Fixes step-112."
+        ),
+        "p8_rules": {"deckout_decline_threshold": 8},
+        "required": True,
+    },
+    {
+        "branch_id": "policy_to_hand_role_priority_v1",
+        "seam_id": "policy.to_hand_role_priority",
+        "archetype": "effect_safety",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": (
+            "When paying a discard cost, discard plain Basic W Energy before any "
+            "setup Pokemon (721/722/723); when searching to hand, prefer the "
+            "missing Snover/Kyogre basics over orphan evolutions. Fixes step-28."
+        ),
+        "p8_rules": {
+            "discard_protect_setup": True,
+            "search_avoid_orphan_evolution": True,
+            "search_avoid_orphan_mega_signal": True,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "combo_safety_core_v3",
+        "seam_id": "policy.line_coherence",
+        "archetype": "effect_safety",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": (
+            "Mega-signal line guard + deckout guard: covers the two highest-value "
+            "hard fixtures (orphan Mega and deckout) in one block."
+        ),
+        "p8_rules": {
+            "decline_mega_signal_no_snover": True,
+            "search_avoid_orphan_evolution": True,
+            "deckout_decline_threshold": 8,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "combo_discard_safe__deckout_v3",
+        "seam_id": "policy.to_hand_role_priority",
+        "archetype": "effect_safety",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": (
+            "ToHand role priority (discard-protect + search-avoid-orphan) + "
+            "deckout guard: covers the Ultra-Ball discard hard fixture plus the "
+            "deckout hard fixture."
+        ),
+        "p8_rules": {
+            "discard_protect_setup": True,
+            "search_avoid_orphan_evolution": True,
+            "search_avoid_orphan_mega_signal": True,
+            "deckout_decline_threshold": 8,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "combo_play_guard__mega_signal_v3",
+        "seam_id": "policy.secret_box_mode_selection",
+        "archetype": "effect_safety",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": (
+            "Secret Box play guard + Mega-signal line guard: the two "
+            "Secret-Box/Mega-Signal coherence guards together."
+        ),
+        "p8_rules": {
+            "search_avoid_orphan_mega_signal": True,
+            "decline_mega_signal_no_snover": True,
+            "search_avoid_orphan_evolution": True,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "combo_full_safety_v3",
+        "seam_id": "policy.effect_resolution_targeting",
+        "archetype": "effect_safety",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": (
+            "Lead candidate: ALL four effect-safety guards merged. Designed to "
+            "pass every HARD replay fixture (Ultra-Ball discard, Mega orphan, "
+            "deckout) and every advisory preference at once."
+        ),
+        "p8_rules": {
+            "discard_protect_setup": True,
+            "search_avoid_orphan_evolution": True,
+            "search_avoid_orphan_mega_signal": True,
+            "decline_mega_signal_no_snover": True,
+            "deckout_decline_threshold": 8,
+        },
+        "required": True,
+    },
+]
+
+
+# ---------------------------------------------------------------------------
+# Pass 8: deck-neighborhood candidates around the Secret Box risk.
+#
+# All deltas are ROOT-relative and INCLUDE the v2 deltas ({3:-4, 721:+2,
+# 1121:+2}) so the result is "v2 plus one swap". Buildable variants are in
+# PASS8_DECK_SPECS; copy-limit / availability violations are recorded honestly in
+# PASS8_DECK_BLOCKED (never silently dropped). The two existing Pass-6 swaps
+# (no-Secret-Box -> Powerglass / Mega Signal) are reused by plan_pass8_decks
+# rather than re-declared. v2 counts: Water(3)x29, Kyogre(721)x4, Snover(722)x4,
+# Mega Abomasnow ex(723)x4, Secret Box(1092)x1, Ultra Ball(1121)x4, Mega
+# Signal(1145)x2, Powerglass(1163)x2, Petrel(1219)x4, Lillie(1227)x4,
+# Surfing Beach(1262)x2.
+# ---------------------------------------------------------------------------
+
+PASS8_DECK_SPECS: list[dict] = [
+    {
+        "branch_id": "deck_v2_no_secret_box__water_energy",
+        "seam_id": "deck.secret_box_swap",
+        "archetype": "consistency_engine",
+        "hypothesis": "Cut the lone Secret Box (1092) for a 30th Water Energy (3) "
+        "to test whether raw energy density beats the one-shot Secret Box toolbox "
+        "over the v2 control.",
+        "deltas": {ENERGY_ID: -3, 721: +2, 1121: +2, 1092: -1},
+    },
+    {
+        "branch_id": "deck_v2_minus_lillie__mega_signal",
+        "seam_id": "deck.lillie_swap",
+        "archetype": "consistency_engine",
+        "hypothesis": "Trim one Lillie (1227, baseline x4) for a 3rd Mega Signal "
+        "(1145) to bias toward fetching the Snover -> Mega Abomasnow ex line at the "
+        "cost of one draw supporter, keeping the Secret Box.",
+        "deltas": {ENERGY_ID: -4, 721: +2, 1121: +2, 1227: -1, 1145: +1},
+    },
+    {
+        "branch_id": "deck_v2_minus_petrel__mega_signal",
+        "seam_id": "deck.petrel_swap",
+        "archetype": "consistency_engine",
+        "hypothesis": "Trim one Team Rocket's Petrel (1219, baseline x4) for a 3rd "
+        "Mega Signal (1145) to test more line-fetching versus the fourth disruption "
+        "supporter, keeping the Secret Box.",
+        "deltas": {ENERGY_ID: -4, 721: +2, 1121: +2, 1219: -1, 1145: +1},
+    },
+    {
+        "branch_id": "deck_v2_secret_box_kept__less_draw",
+        "seam_id": "deck.draw_trim",
+        "archetype": "tempo_control",
+        "hypothesis": "Keep the Secret Box but trim one Lillie (1227) for a 30th "
+        "Water Energy (3) to test whether the toolbox is better served by fewer "
+        "all-in draw resets and a steadier energy base.",
+        "deltas": {ENERGY_ID: -3, 721: +2, 1121: +2, 1227: -1},
+    },
+]
+
+
+# Deck-neighborhood candidates that CANNOT be built legally — surfaced honestly.
+PASS8_DECK_BLOCKED: list[dict] = [
+    {
+        "branch_id": "deck_v2_no_secret_box__lillie",
+        "seam_id": "deck.secret_box_swap",
+        "archetype": "consistency_engine",
+        "hypothesis": "Cut the lone Secret Box (1092) for a 5th Lillie (1227) to "
+        "maximize draw-reset consistency.",
+        "deltas": {ENERGY_ID: -4, 721: +2, 1121: +2, 1092: -1, 1227: +1},
+        "blocked_reason": "Lillie (1227) is already at the 4-copy limit in the v2 "
+        "deck; adding a 5th to replace Secret Box would exceed the TCG 4-copy rule. "
+        "Recorded for completeness; not generated.",
+    },
+]
+
+
+# Pass 8 deck x policy combo: the Secret Box play-guard policy over a
+# no-Secret-Box deck, to confirm the guard is harmless (or helpful) once the
+# card it most directly governs is gone.
+PASS8_DECK_COMBO_SPECS: list[dict] = [
+    {
+        "branch_id": "combo_deck_no_secret_box__secret_box_play_guard",
+        "seam_id": "policy.secret_box_mode_selection",
+        "archetype": "effect_safety",
+        "policy_refs": [],
+        "deck_ref": "deck_v2_no_secret_box__mega_signal",
+        "hypothesis": "Run the Secret Box play-guard (avoid fetching an orphan Mega "
+        "Signal with no Snover line) over the no-Secret-Box / +Mega Signal deck to "
+        "test the deck x policy interaction at the Mega Signal line.",
+        "p8_rules": {"search_avoid_orphan_mega_signal": True},
+        "required": True,
+    },
+]
+
+
+# ---------------------------------------------------------------------------
 # Override rendering / injection
 # ---------------------------------------------------------------------------
 
@@ -1305,6 +1556,216 @@ _embedded_agent = _p6_embedded
 '''
 
 
+def render_p8_block(branch_id: str, seam_id: str, rules: dict) -> str:
+    """Render the Pass-8 board-aware *effect-safety* override block.
+
+    Where Pass-5 can only re-weight and Pass-6 can only decline, several replay
+    failures need an actual *selection rewrite*: discarding plain Basic {{W}}
+    Energy instead of a setup Pokemon to pay a cost (Ultra Ball), or fetching the
+    missing Snover/Kyogre basic instead of an orphan Mega / Mega Signal. This
+    block wraps the host ``_embedded_agent`` and, for own-observation-only
+    conditions, returns a safe selection; otherwise it defers to the original
+    embedded policy. Every returned selection is run through the host
+    ``_validate_action`` so it is always legal. It never raises (falls back to
+    the original embedded policy) and never touches the deck-return path. All
+    card ids are confirmed in data/cards/EN_Card_Data.csv (Basic {{W}} Energy 3,
+    Kyogre 721, Snover 722, Mega Abomasnow ex 723, Mega Signal 1145).
+
+    Rule keys (all optional, all boolean unless noted):
+      deckout_decline_threshold   int: decline ctx-7 search/draw when own
+                                  deckCount <= threshold (minCount 0 only).
+      decline_mega_signal_no_snover: decline ctx-7 when every offered target is
+                                  Mega Abomasnow ex (723) and no Snover (722) is
+                                  on board.
+      search_avoid_orphan_evolution: in ctx-7 search-to-hand, avoid fetching
+                                  Mega Abomasnow ex (723) when no Snover line is
+                                  on board; prefer the Snover/Kyogre basics.
+      search_avoid_orphan_mega_signal: in ctx-7 search-to-hand, avoid fetching
+                                  Mega Signal (1145) when no Snover line exists.
+      discard_protect_setup       in ctx-8 discard cost, never discard a setup
+                                  Pokemon (721/722/723) when enough non-setup
+                                  fodder (Basic {{W}} Energy first) can cover the
+                                  whole cost.
+    """
+    rules_lit = repr(dict(rules))
+    return f'''
+# === PASS8 EFFECT-SAFETY OVERRIDE: {branch_id} (seam={seam_id}) ===
+# Wraps _embedded_agent: returns a safe, validated selection for own-observation
+# effect-resolution rules (decline / discard-protect / search-avoid-orphan);
+# otherwise defers to the original embedded policy. Reads only the candidate's
+# own board / deckCount / hand and the offered option card ids.
+_P8_RULES = {rules_lit}
+_P8_ORIG_EMBEDDED = _embedded_agent
+_P8_SNOVER = 722
+_P8_KYOGRE = 721
+_P8_MEGA = 723
+_P8_MEGA_SIGNAL = 1145
+_P8_ENERGY = 3
+_P8_SETUP = (721, 722, 723)
+
+
+def _p8_me(obs):
+    try:
+        cur = obs.get("current")
+        me = cur.get("yourIndex")
+        players = cur.get("players")
+        if isinstance(players, list) and isinstance(me, int) and 0 <= me < len(players):
+            return players[me]
+    except Exception:
+        return None
+    return None
+
+
+def _p8_resolve(option, obs):
+    try:
+        if not isinstance(option, dict):
+            return None
+        area = option.get("area")
+        index = option.get("index")
+        if not isinstance(index, int) or isinstance(index, bool):
+            return None
+        sel = obs.get("select") if isinstance(obs, dict) else None
+        if area == 1 and isinstance(sel, dict):
+            deck = sel.get("deck")
+            if isinstance(deck, list) and 0 <= index < len(deck):
+                c = deck[index]
+                return c.get("id") if isinstance(c, dict) else None
+        if area == 2:
+            p = _p8_me(obs)
+            hand = p.get("hand") if isinstance(p, dict) else None
+            if isinstance(hand, list) and 0 <= index < len(hand):
+                c = hand[index]
+                return c.get("id") if isinstance(c, dict) else None
+    except Exception:
+        return None
+    return None
+
+
+def _p8_board_ids(obs):
+    ids = []
+    try:
+        p = _p8_me(obs) or {{}}
+        for slot in ("active", "bench"):
+            for e in p.get(slot) or []:
+                if isinstance(e, dict) and isinstance(e.get("id"), int):
+                    ids.append(e["id"])
+    except Exception:
+        return ids
+    return ids
+
+
+def _p8_deck_count(obs):
+    try:
+        p = _p8_me(obs)
+        dc = p.get("deckCount") if isinstance(p, dict) else None
+        return dc if isinstance(dc, int) and not isinstance(dc, bool) else None
+    except Exception:
+        return None
+
+
+def _p8_should_decline(obs, sel, options, mn, mx):
+    try:
+        R = _P8_RULES
+        if mn != 0 or mx <= 0:
+            return False
+        ctx = sel.get("context")
+        thr = R.get("deckout_decline_threshold")
+        if ctx == 7 and isinstance(thr, int) and not isinstance(thr, bool):
+            dc = _p8_deck_count(obs)
+            if isinstance(dc, int) and dc <= thr:
+                return True
+        if ctx == 7 and R.get("decline_mega_signal_no_snover"):
+            board = _p8_board_ids(obs)
+            cids = [_p8_resolve(o, obs) for o in options]
+            cids = [c for c in cids if c is not None]
+            if cids and all(c == _P8_MEGA for c in cids) and _P8_SNOVER not in board:
+                return True
+    except Exception:
+        return False
+    return False
+
+
+def _p8_discard_pick(obs, sel, options, mn, mx):
+    try:
+        R = _P8_RULES
+        if not R.get("discard_protect_setup"):
+            return None
+        need = mn if mn > 0 else mx
+        if need <= 0:
+            return None
+        ids = [_p8_resolve(o, obs) for o in options]
+        setup_idx = [i for i, c in enumerate(ids) if c in _P8_SETUP]
+        if not setup_idx:
+            return None
+        safe_idx = [i for i, c in enumerate(ids)
+                    if c is not None and c not in _P8_SETUP]
+        if len(safe_idx) < need:
+            return None
+        safe_idx.sort(key=lambda i: (0 if ids[i] == _P8_ENERGY else 1, i))
+        return sorted(safe_idx[:need])
+    except Exception:
+        return None
+
+
+def _p8_search_pick(obs, sel, options, mn, mx):
+    try:
+        R = _P8_RULES
+        board = _p8_board_ids(obs)
+        no_snover = _P8_SNOVER not in board
+        avoid = set()
+        if R.get("search_avoid_orphan_evolution") and no_snover:
+            avoid.add(_P8_MEGA)
+        if R.get("search_avoid_orphan_mega_signal") and no_snover:
+            avoid.add(_P8_MEGA_SIGNAL)
+        if not avoid:
+            return None
+        ids = [_p8_resolve(o, obs) for o in options]
+        bad = [i for i, c in enumerate(ids) if c in avoid]
+        if not bad:
+            return None
+        good = [i for i, c in enumerate(ids)
+                if c is not None and c not in avoid]
+        if good:
+            pref = {{_P8_SNOVER: 0, _P8_KYOGRE: 1}}
+            good.sort(key=lambda i: (pref.get(ids[i], 2), i))
+            need = mn if mn > 0 else 1
+            need = min(need, mx, len(good))
+            return sorted(good[:need]) if need > 0 else []
+        if mn == 0:
+            return []
+        return None
+    except Exception:
+        return None
+
+
+def _p8_embedded(obs):
+    try:
+        sel = _get_select(obs)
+        if isinstance(sel, dict):
+            options = _get_options(sel)
+            if options:
+                mn, mx = _get_min_max_count(sel, len(options))
+                if _p8_should_decline(obs, sel, options, mn, mx):
+                    return []
+                ctx = sel.get("context")
+                if ctx == 8:
+                    pick = _p8_discard_pick(obs, sel, options, mn, mx)
+                    if pick is not None:
+                        return _validate_action(pick, len(options), mn, mx)
+                if ctx == 7:
+                    pick = _p8_search_pick(obs, sel, options, mn, mx)
+                    if pick is not None:
+                        return _validate_action(pick, len(options), mn, mx)
+    except Exception:
+        pass
+    return _P8_ORIG_EMBEDDED(obs)
+
+
+_embedded_agent = _p8_embedded
+# === END PASS8 OVERRIDE ===
+'''
+
+
 def inject_override(baseline_src: str, block: str) -> str:
     """Insert ``block`` just before the ``if __name__`` guard (or at EOF)."""
     idx = baseline_src.find(_INJECT_ANCHOR)
@@ -1543,7 +2004,7 @@ def _policy_by_id(branch_id: str) -> dict:
 
 
 def _deck_by_id(branch_id: str) -> dict:
-    for s in DECK_SPECS:
+    for s in DECK_SPECS + PASS6_DECK_SPECS + PASS8_DECK_SPECS:
         if s["branch_id"] == branch_id:
             return s
     raise KeyError(f"unknown deck spec ref: {branch_id}")
@@ -1623,6 +2084,14 @@ def generate_combo_candidate(
         p6_block = render_p6_block(spec["branch_id"], spec["seam_id"], p6_rules)
         candidate_src = inject_override(candidate_src, p6_block)
 
+    # Pass-8 candidates inject a board-aware *effect-safety* layer that can
+    # rewrite the selection (decline / discard-protect / search-avoid-orphan),
+    # not just re-weight or decline. Applied last so it wraps any earlier layer.
+    p8_rules = spec.get("p8_rules")
+    if p8_rules:
+        p8_block = render_p8_block(spec["branch_id"], spec["seam_id"], p8_rules)
+        candidate_src = inject_override(candidate_src, p8_block)
+
     run_dir = make_run_dir(spec["branch_id"], root=runs_root, ts=ts)
     (run_dir / "main.py").write_text(candidate_src, encoding="utf-8")
     save_deck(run_dir / "deck.csv", new_ids)
@@ -1632,6 +2101,8 @@ def generate_combo_candidate(
         policy_record["p5_rules"] = dict(p5_rules)
     if p6_rules:
         policy_record["p6_rules"] = dict(p6_rules)
+    if p8_rules:
+        policy_record["p8_rules"] = dict(p8_rules)
     diff = deck_diff(baseline_ids, new_ids)
     branch = Branch(
         branch_id=spec["branch_id"],
@@ -1650,10 +2121,11 @@ def generate_combo_candidate(
             "warnings": result.warnings,
             "policy_refs": list(spec.get("policy_refs", [])),
             "deck_ref": spec["deck_ref"],
-            "board_aware": bool(p5_rules),
+            "board_aware": bool(p5_rules or p8_rules),
         },
         notes=[
-            "board-aware p5 policy over " + spec["deck_ref"] if p5_rules
+            "board-aware p8 effect-safety policy over " + spec["deck_ref"] if p8_rules
+            else "board-aware p5 policy over " + spec["deck_ref"] if p5_rules
             else f"combo of {'+'.join(spec.get('policy_refs', []))} x {spec['deck_ref']}"
         ],
     )
@@ -1937,5 +2409,84 @@ def plan_pass6_chaos(config: ExperimentConfig) -> list[dict]:
             "reason": spec["blocked_reason"],
             "generation": 6,
         })
+    items.sort(key=lambda x: (not x["testable"], -x["priority"], x["branch_id"]))
+    return items
+
+
+def plan_pass8(config: ExperimentConfig) -> list[dict]:
+    """Plan the Pass 8 fixture-first effect-safety candidate batch.
+
+    Returns ordered ``{spec, track, ...}`` items, ``generation=8``:
+      1. the v2 control anchor (v2 deck, no effect-safety override),
+      2. the eight effect-safety candidates (4 single-rule guards + 4 combos),
+         highest priority first.
+
+    All candidates are combos over the v2 deck so the only variable vs the anchor
+    is the injected board-aware effect-safety policy (render_p8_block). Promotion
+    to any submission queue is gated separately on the HARD replay fixtures.
+    """
+    def _meta(spec: dict, track: str) -> dict:
+        return {
+            "spec": spec,
+            "track": track,
+            "seam_id": spec["seam_id"],
+            "branch_id": spec["branch_id"],
+            "priority": config.priority_for(spec["seam_id"]),
+            "testable": True,
+            "reason": "",
+            "generation": 8,
+        }
+
+    plan: list[dict] = []
+    anchor = next(
+        c for c in PASS8_COMBO_SPECS if c["branch_id"] == "pass8_control_v2_anchor"
+    )
+    plan.append(_meta(anchor, "combo"))
+    rest = [
+        _meta(c, "combo")
+        for c in PASS8_COMBO_SPECS
+        if c["branch_id"] != "pass8_control_v2_anchor"
+    ]
+    rest.sort(key=lambda x: (-x["priority"], x["branch_id"]))
+    plan.extend(rest)
+    return plan
+
+
+def plan_pass8_decks(config: ExperimentConfig) -> list[dict]:
+    """Plan the Pass 8 deck-neighborhood batch around the Secret Box risk.
+
+    Returns ordered items, ``generation=8``:
+      * two REUSED Pass-6 swaps (no-Secret-Box -> Powerglass / Mega Signal),
+      * four NEW v2 single-swap variants (PASS8_DECK_SPECS), track="deck",
+      * one deck x policy combo (Secret Box play-guard over the no-Secret-Box
+        deck), track="combo",
+      * the blocked copy-limit variant (5th Lillie), ``testable=False`` with its
+        exact reason so nothing is silently dropped.
+    """
+    def _meta(spec: dict, track: str, testable: bool = True,
+              reason: str = "") -> dict:
+        return {
+            "spec": spec,
+            "track": track,
+            "seam_id": spec["seam_id"],
+            "branch_id": spec["branch_id"],
+            "priority": config.priority_for(spec["seam_id"]),
+            "testable": testable,
+            "reason": reason,
+            "generation": 8,
+        }
+
+    items: list[dict] = []
+    # Reuse the two existing Pass-6 Secret-Box swaps rather than re-declaring them.
+    for did in ("deck_v2_no_secret_box__mega_signal",
+                "deck_v2_no_secret_box__powerglass"):
+        items.append(_meta(_deck_by_id(did), "deck"))
+    for spec in PASS8_DECK_SPECS:
+        items.append(_meta(spec, "deck"))
+    for spec in PASS8_DECK_COMBO_SPECS:
+        items.append(_meta(spec, "combo"))
+    for spec in PASS8_DECK_BLOCKED:
+        items.append(_meta(spec, "deck", testable=False,
+                           reason=spec.get("blocked_reason", "blocked")))
     items.sort(key=lambda x: (not x["testable"], -x["priority"], x["branch_id"]))
     return items

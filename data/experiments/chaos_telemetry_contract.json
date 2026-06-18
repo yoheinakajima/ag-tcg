@@ -1,6 +1,24 @@
 {
-  "pass": 6,
-  "note": "Local-only research artifact. CORRECTED in Pass 6: opponent COUNTS (handCount, deckCount), BOARD (active/bench revealed ids), DISCARD, PRIZE COUNT and STATUS FLAGS are observable to our seat; only opponent hand/deck/prize CONTENTS (and face-down identities) stay hidden. Verified against replay 80374966 observation.current.players[i]. The chaos POLICY TRIGGERS are therefore observable; the remaining gate to ship a chaos candidate is building a legal 60-card decklist from confirmed ids (no invented ids) and a smoke pass. No conclusions fabricated.",
+  "pass": 5,
+  "telemetry_conclusion_corrected_in_pass": 8,
+  "note": "Local-only research artifact. Pass 8 correction: the opponent's PUBLIC board state IS observable from our seat (counts, visible ids, status, discard, logs); only hand contents and causal attribution stay hidden. Chaos seams are therefore partially_observable at best and stay a research stream. No card ids invented; no conclusions fabricated.",
+  "telemetry_correction": {
+    "available": [
+      "opponent handCount",
+      "opponent deckCount",
+      "opponent bench count",
+      "visible active/bench IDs",
+      "status flags",
+      "discard contents",
+      "game logs"
+    ],
+    "still_missing_or_uncertain": [
+      "opponent hand contents",
+      "causal attribution of chaos cards",
+      "whether chaos helps opponent setup"
+    ],
+    "conclusion": "Chaos remains a research stream, not the next upload stream."
+  },
   "available_own_telemetry": [
     "candidate_won",
     "context_counts",
@@ -11,15 +29,22 @@
     "max_hand_seen",
     "min_deck_count",
     "search_decisions",
-    "steps",
-    "opp_hand_count (observable)",
-    "opp_deck_count (observable)",
-    "opp_bench_count (observable)",
-    "opp_active_ids (observable)",
-    "opp_bench_ids (observable)",
-    "opp_discard_ids (observable)",
-    "opp_status_flags (observable)",
-    "opp_prize_count (observable)"
+    "steps"
+  ],
+  "opponent_observable_telemetry": [
+    "game_logs",
+    "opponent_active_id",
+    "opponent_bench_ids",
+    "opponent_bench_size",
+    "opponent_deck_count",
+    "opponent_discard_contents",
+    "opponent_hand_size",
+    "opponent_status_flags"
+  ],
+  "opponent_hidden_telemetry": [
+    "opponent_hand_contents",
+    "opponent_lost_turns",
+    "own_attack_damage_dealt"
   ],
   "seams": [
     {
@@ -35,26 +60,24 @@
       "required_telemetry": [
         {
           "signal": "opponent_hand_size",
-          "side": "opponent",
-          "observable": true,
-          "basis": "opponent players[opp].handCount is a real integer (hand CONTENTS are null/hidden)"
+          "side": "opponent"
         },
         {
           "signal": "own_attack_damage_dealt",
-          "side": "own",
-          "observable": false,
-          "basis": "the harness records win/loss + decision telemetry, not per-attack damage dealt; proxy = candidate_won / steps"
+          "side": "own"
         },
         {
           "signal": "candidate_won",
-          "side": "own",
-          "observable": true,
-          "basis": "own final reward vs opponent"
+          "side": "own"
         }
       ],
       "opponent_side_signals": [
         "opponent_hand_size"
       ],
+      "opponent_side_observable": [
+        "opponent_hand_size"
+      ],
+      "opponent_side_hidden": [],
       "own_side_signals": [
         "own_attack_damage_dealt",
         "candidate_won"
@@ -66,7 +89,7 @@
         "candidate_won",
         "steps"
       ],
-      "telemetry_availability": "available",
+      "telemetry_availability": "blocked",
       "confirmed_card_ids": [
         {
           "id": 861,
@@ -110,25 +133,17 @@
         },
         {
           "id": 1197,
-          "name": "Xerosic’s Machinations",
+          "name": "Xerosic\u2019s Machinations",
           "status": "MISMATCH"
         }
       ],
       "blockers": [
-        "payoff-proof signals not recorded by the harness (win/loss proxy only): own_attack_damage_dealt",
+        "opponent PUBLIC board state IS observable (Pass 8 correction), but only as counts/visible ids, not proof of causation: opponent_hand_size",
+        "own-side signals not recorded by the harness: own_attack_damage_dealt",
         "some core card ids are not a clean MATCH against the official card table (see status field)",
-        "REMAINING BUILD GATE: a legal 60-card decklist must be confirmed (no invented ids) and pass package verify + smoke before this seam can be evaluated"
+        "no full legal 60-card chaos decklist confirmed without inventing card ids (chaos_decklist_confirmed gate)"
       ],
-      "min_metric_to_unblock": "trigger is observable: measure win rate vs v2 control while the policy fires on the observable opponent signal (opponent_hand_size). Direct payoff (e.g. damage dealt) is not recorded, so causation stays a win-rate proxy, not a proven mechanism.",
-      "policy_trigger_observable": true,
-      "observable_signals": [
-        "opponent_hand_size",
-        "candidate_won"
-      ],
-      "proxy_or_unavailable_signals": [
-        "own_attack_damage_dealt"
-      ],
-      "remaining_gate": "chaos_decklist_confirmed (legal 60-card list + smoke)"
+      "min_metric_to_unblock": "partial \u2014 opponent hand SIZE is observable from our seat, but our own per-attack damage dealt is not recorded, so the damage-vs-hand-size relationship cannot be measured directly."
     },
     {
       "seam_id": "chaos.bench_bloat_punisher",
@@ -143,26 +158,24 @@
       "required_telemetry": [
         {
           "signal": "opponent_bench_size",
-          "side": "opponent",
-          "observable": true,
-          "basis": "opponent players[opp].bench is a real list of revealed card ids; length is the bench size"
+          "side": "opponent"
         },
         {
           "signal": "own_attack_damage_dealt",
-          "side": "own",
-          "observable": false,
-          "basis": "the harness records win/loss + decision telemetry, not per-attack damage dealt; proxy = candidate_won / steps"
+          "side": "own"
         },
         {
           "signal": "candidate_won",
-          "side": "own",
-          "observable": true,
-          "basis": "own final reward vs opponent"
+          "side": "own"
         }
       ],
       "opponent_side_signals": [
         "opponent_bench_size"
       ],
+      "opponent_side_observable": [
+        "opponent_bench_size"
+      ],
+      "opponent_side_hidden": [],
       "own_side_signals": [
         "own_attack_damage_dealt",
         "candidate_won"
@@ -174,7 +187,7 @@
         "candidate_won",
         "steps"
       ],
-      "telemetry_availability": "available",
+      "telemetry_availability": "blocked",
       "confirmed_card_ids": [
         {
           "id": 1091,
@@ -213,30 +226,22 @@
         },
         {
           "id": 1187,
-          "name": "Morty’s Conviction",
+          "name": "Morty\u2019s Conviction",
           "status": "MISMATCH"
         },
         {
           "id": 1204,
-          "name": "Lisia’s Appeal",
+          "name": "Lisia\u2019s Appeal",
           "status": "MISMATCH"
         }
       ],
       "blockers": [
-        "payoff-proof signals not recorded by the harness (win/loss proxy only): own_attack_damage_dealt",
+        "opponent PUBLIC board state IS observable (Pass 8 correction), but only as counts/visible ids, not proof of causation: opponent_bench_size",
+        "own-side signals not recorded by the harness: own_attack_damage_dealt",
         "some core card ids are not a clean MATCH against the official card table (see status field)",
-        "REMAINING BUILD GATE: a legal 60-card decklist must be confirmed (no invented ids) and pass package verify + smoke before this seam can be evaluated"
+        "no full legal 60-card chaos decklist confirmed without inventing card ids (chaos_decklist_confirmed gate)"
       ],
-      "min_metric_to_unblock": "trigger is observable: measure win rate vs v2 control while the policy fires on the observable opponent signal (opponent_bench_size). Direct payoff (e.g. damage dealt) is not recorded, so causation stays a win-rate proxy, not a proven mechanism.",
-      "policy_trigger_observable": true,
-      "observable_signals": [
-        "opponent_bench_size",
-        "candidate_won"
-      ],
-      "proxy_or_unavailable_signals": [
-        "own_attack_damage_dealt"
-      ],
-      "remaining_gate": "chaos_decklist_confirmed (legal 60-card list + smoke)"
+      "min_metric_to_unblock": "partial \u2014 opponent bench SIZE is observable from our seat, but our own per-attack damage dealt is not recorded, so the damage-vs-bench-count relationship cannot be measured directly."
     },
     {
       "seam_id": "chaos.mill_resource_destruction",
@@ -251,33 +256,30 @@
       "required_telemetry": [
         {
           "signal": "opponent_deck_count",
-          "side": "opponent",
-          "observable": true,
-          "basis": "opponent players[opp].deckCount is a real integer (deck contents absent from observation)"
+          "side": "opponent"
         },
         {
           "signal": "opponent_hand_size",
-          "side": "opponent",
-          "observable": true,
-          "basis": "opponent players[opp].handCount is a real integer (hand CONTENTS are null/hidden)"
+          "side": "opponent"
         },
         {
           "signal": "candidate_won",
-          "side": "own",
-          "observable": true,
-          "basis": "own final reward vs opponent"
+          "side": "own"
         },
         {
           "signal": "steps",
-          "side": "own",
-          "observable": true,
-          "basis": "own game length"
+          "side": "own"
         }
       ],
       "opponent_side_signals": [
         "opponent_deck_count",
         "opponent_hand_size"
       ],
+      "opponent_side_observable": [
+        "opponent_deck_count",
+        "opponent_hand_size"
+      ],
+      "opponent_side_hidden": [],
       "own_side_signals": [
         "candidate_won",
         "steps"
@@ -291,7 +293,7 @@
         "steps",
         "min_deck_count"
       ],
-      "telemetry_availability": "available",
+      "telemetry_availability": "partially_observable",
       "confirmed_card_ids": [
         {
           "id": 198,
@@ -340,18 +342,11 @@
         }
       ],
       "blockers": [
-        "REMAINING BUILD GATE: a legal 60-card decklist must be confirmed (no invented ids) and pass package verify + smoke before this seam can be evaluated"
+        "opponent PUBLIC board state IS observable (Pass 8 correction), but only as counts/visible ids, not proof of causation: opponent_deck_count, opponent_hand_size",
+        "causal attribution unavailable: cannot prove our chaos play (not the opponent's own line) caused the observed board change, nor rule out that it helped them set up",
+        "no full legal 60-card chaos decklist confirmed without inventing card ids (chaos_decklist_confirmed gate)"
       ],
-      "min_metric_to_unblock": "trigger is observable: measure win rate vs v2 control while the policy fires on the observable opponent signal (opponent_deck_count, opponent_hand_size). Direct payoff (e.g. damage dealt) is not recorded, so causation stays a win-rate proxy, not a proven mechanism.",
-      "policy_trigger_observable": true,
-      "observable_signals": [
-        "opponent_deck_count",
-        "opponent_hand_size",
-        "candidate_won",
-        "steps"
-      ],
-      "proxy_or_unavailable_signals": [],
-      "remaining_gate": "chaos_decklist_confirmed (legal 60-card list + smoke)"
+      "min_metric_to_unblock": "partial \u2014 opponent deck count and hand SIZE are observable from our seat, so opponent deckout pressure CAN be tracked directly via the public count; only the causal share from our mill actions is unproven."
     },
     {
       "seam_id": "chaos.status_confusion_lock",
@@ -366,25 +361,25 @@
       "required_telemetry": [
         {
           "signal": "opponent_status_flags",
-          "side": "opponent",
-          "observable": true,
-          "basis": "opponent players[opp].{asleep,burned,confused,paralyzed,poisoned} are real booleans"
+          "side": "opponent"
         },
         {
           "signal": "opponent_lost_turns",
-          "side": "opponent",
-          "observable": false,
-          "basis": "not a direct observation field; could only be weakly inferred from opponent status flags persisting across turns (uncertain)"
+          "side": "opponent"
         },
         {
           "signal": "candidate_won",
-          "side": "own",
-          "observable": true,
-          "basis": "own final reward vs opponent"
+          "side": "own"
         }
       ],
       "opponent_side_signals": [
         "opponent_status_flags",
+        "opponent_lost_turns"
+      ],
+      "opponent_side_observable": [
+        "opponent_status_flags"
+      ],
+      "opponent_side_hidden": [
         "opponent_lost_turns"
       ],
       "own_side_signals": [
@@ -397,7 +392,7 @@
         "candidate_won",
         "steps"
       ],
-      "telemetry_availability": "partial",
+      "telemetry_availability": "blocked",
       "confirmed_card_ids": [
         {
           "id": 1095,
@@ -416,7 +411,7 @@
         },
         {
           "id": 1204,
-          "name": "Lisia’s Appeal",
+          "name": "Lisia\u2019s Appeal",
           "status": "MISMATCH"
         },
         {
@@ -441,20 +436,12 @@
         }
       ],
       "blockers": [
-        "some opponent-side signals still unavailable: opponent_lost_turns",
+        "opponent PUBLIC board state IS observable (Pass 8 correction), but only as counts/visible ids, not proof of causation: opponent_status_flags",
+        "opponent hidden/causal telemetry still not available to our seat: opponent_lost_turns",
         "some core card ids are not a clean MATCH against the official card table (see status field)",
-        "REMAINING BUILD GATE: a legal 60-card decklist must be confirmed (no invented ids) and pass package verify + smoke before this seam can be evaluated"
+        "no full legal 60-card chaos decklist confirmed without inventing card ids (chaos_decklist_confirmed gate)"
       ],
-      "min_metric_to_unblock": "uncertain — opponent_lost_turns not observable to our seat.",
-      "policy_trigger_observable": false,
-      "observable_signals": [
-        "opponent_status_flags",
-        "candidate_won"
-      ],
-      "proxy_or_unavailable_signals": [
-        "opponent_lost_turns"
-      ],
-      "remaining_gate": "chaos_decklist_confirmed (legal 60-card list + smoke)"
+      "min_metric_to_unblock": "partial \u2014 opponent status flags are observable from our seat (public board), but opponent lost turns are not surfaced as a metric, so the lock's turn-denial effect can only be inferred indirectly."
     },
     {
       "seam_id": "chaos.vivillon_decidueye_four_card_lock",
@@ -469,26 +456,24 @@
       "required_telemetry": [
         {
           "signal": "opponent_hand_size",
-          "side": "opponent",
-          "observable": true,
-          "basis": "opponent players[opp].handCount is a real integer (hand CONTENTS are null/hidden)"
+          "side": "opponent"
         },
         {
           "signal": "own_attack_enabled",
-          "side": "own",
-          "observable": true,
-          "basis": "derivable from our own select.options (attack option type present)"
+          "side": "own"
         },
         {
           "signal": "candidate_won",
-          "side": "own",
-          "observable": true,
-          "basis": "own final reward vs opponent"
+          "side": "own"
         }
       ],
       "opponent_side_signals": [
         "opponent_hand_size"
       ],
+      "opponent_side_observable": [
+        "opponent_hand_size"
+      ],
+      "opponent_side_hidden": [],
       "own_side_signals": [
         "own_attack_enabled",
         "candidate_won"
@@ -501,7 +486,7 @@
         "steps",
         "context_counts"
       ],
-      "telemetry_availability": "available",
+      "telemetry_availability": "blocked",
       "confirmed_card_ids": [
         {
           "id": 1017,
@@ -555,42 +540,11 @@
         }
       ],
       "blockers": [
-        "REMAINING BUILD GATE: a legal 60-card decklist must be confirmed (no invented ids) and pass package verify + smoke before this seam can be evaluated"
+        "opponent PUBLIC board state IS observable (Pass 8 correction), but only as counts/visible ids, not proof of causation: opponent_hand_size",
+        "own-side signals not recorded by the harness: own_attack_enabled",
+        "no full legal 60-card chaos decklist confirmed without inventing card ids (chaos_decklist_confirmed gate)"
       ],
-      "min_metric_to_unblock": "trigger is observable: measure win rate vs v2 control while the policy fires on the observable opponent signal (opponent_hand_size). Direct payoff (e.g. damage dealt) is not recorded, so causation stays a win-rate proxy, not a proven mechanism.",
-      "policy_trigger_observable": true,
-      "observable_signals": [
-        "opponent_hand_size",
-        "own_attack_enabled",
-        "candidate_won"
-      ],
-      "proxy_or_unavailable_signals": [],
-      "remaining_gate": "chaos_decklist_confirmed (legal 60-card list + smoke)"
+      "min_metric_to_unblock": "partial \u2014 the exact-4 opponent hand SIZE condition IS observable from our seat (public count), so the lock state can be confirmed; only whether our own attack was enabled by it is unrecorded."
     }
-  ],
-  "observability_correction": {
-    "prior_pass5_claim": "all opponent state hidden -> all chaos seams blocked (too conservative)",
-    "corrected_principle": "opponent counts + revealed board + discard + status flags are observable; only contents of face-down zones (hand/deck/prize) are hidden",
-    "opponent_observable": [
-      "handCount",
-      "deckCount",
-      "active ids",
-      "bench ids",
-      "benchMax",
-      "discard",
-      "prize count",
-      "asleep",
-      "burned",
-      "confused",
-      "paralyzed",
-      "poisoned"
-    ],
-    "opponent_hidden": [
-      "opponent_hand_contents (players[opp].hand is null)",
-      "opponent_deck_contents (no deck list in observation, only deckCount)",
-      "opponent_prize_contents (prize is a list of null placeholders; count observable, identities hidden)",
-      "any face-down / unrevealed card identity"
-    ],
-    "telemetry_helper": "src/ptcg_activegraph/experiments/telemetry.py read_observation()"
-  }
+  ]
 }

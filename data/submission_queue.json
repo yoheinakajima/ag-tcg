@@ -1,37 +1,15 @@
 {
   "schema": "ptcg_dry_run_submission_queue_v1",
-  "generated_at": 1781755851.1840463,
-  "run_id": "run_pass7b_focused_20260618_040109_fd8762",
-  "stage": "pass7b_focused",
+  "generated_at": 1781762185.397603,
+  "run_id": "run_pass8_focused_20260618_054456_e7efe6",
+  "stage": "pass8_focused",
   "auto_submit_enabled": false,
   "require_manual_approval_for_submit": true,
   "upload_performed": false,
+  "no_more_submissions_today": true,
   "max_queue_size": 1,
   "active_control": "v2_deck_energy_trim_light_479_1",
-  "queue": [
-    {
-      "candidate_id": "combo_effect_resolution_v3__secret_box_safety",
-      "run_id": "run_pass7b_focused_20260618_040109_fd8762",
-      "branch_path": "experiments/runs_pass6/20260618_023610_05_combo_effect_resolution_v3__secret_box_safety",
-      "promotion_label": "scout_promising",
-      "adjusted_win_rate": 0.6,
-      "games_completed": 10,
-      "wilson_95": [
-        0.3127,
-        0.8318
-      ],
-      "crashes": 0,
-      "timeouts": 0,
-      "stale": 0,
-      "tarball": "data/submissions/candidates/combo_effect_resolution_v3__secret_box_safety.tar.gz",
-      "tarball_members": [
-        "deck.csv",
-        "main.py"
-      ],
-      "tarball_size_bytes": 7077,
-      "status": "queued_dry_run"
-    }
-  ],
-  "queued_candidate_count": 1,
-  "selection_reason": "selected top eligible candidate"
+  "queue": [],
+  "queued_candidate_count": 0,
+  "selection_reason": "no_more_submissions_today=true in experiment_plan.yaml \u2014 queue held empty (dry-run never uploads regardless)"
 }

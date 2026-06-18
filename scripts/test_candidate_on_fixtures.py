@@ -132,9 +132,34 @@ def evaluate_preference(action: list[int], fixture: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 def load_fixtures(fixtures_dir: str | Path) -> list[dict]:
-    d = Path(fixtures_dir)
+    """Load gradeable fixtures from either a directory of per-fixture JSON files
+    (legacy ``data/replay_fixtures/``) or a single combined JSON file
+    (Pass 8 ``{"fixtures": [...]}``). Non-gradeable / observation-less entries
+    are skipped so a candidate ``agent`` is only ever fed real prompts.
+    """
+    p = Path(fixtures_dir)
     fixtures: list[dict] = []
-    for path in sorted(d.glob("*.json")):
+
+    if p.is_file():
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return fixtures
+        if isinstance(data, dict) and isinstance(data.get("fixtures"), list):
+            items = data["fixtures"]
+        elif isinstance(data, list):
+            items = data
+        elif isinstance(data, dict) and "observation" in data:
+            items = [data]
+        else:
+            items = []
+        for fx in items:
+            if (isinstance(fx, dict) and fx.get("gradeable", True)
+                    and fx.get("observation") is not None):
+                fixtures.append(fx)
+        return fixtures
+
+    for path in sorted(p.glob("*.json")):
         if path.name.startswith("_"):
             continue
         try:

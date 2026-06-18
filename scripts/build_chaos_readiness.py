@@ -5,16 +5,21 @@ For each ``chaos.*`` archetype seam this writes a machine-readable contract
 (``data/experiments/chaos_telemetry_contract.json``) and a human-readable
 requirements doc (``data/experiments/chaos_candidate_requirements.md``).
 
-Honesty rules (Pass 5):
+Honesty rules (Pass 5, telemetry conclusion corrected in Pass 8):
 - Required telemetry, confirmed card ids and blockers are *derived* from
   ``experiments/strategy_seams.yaml`` + ``data/cards/pass4_id_confirmation.json``
   and the telemetry that ``experiments/runner.py`` actually records. Nothing is
   invented.
-- Every chaos seam's decisive signal lives on the *opponent's* hidden side
-  (their hand size, deck count, bench, status). Our seat's observation never
-  exposes that, so availability is reported as ``blocked`` with only weak
-  own-side proxies, and the minimum metric stays ``uncertain`` where it cannot
-  be measured. No fabricated conclusions.
+- Pass 8 correction: earlier passes wrongly treated *every* opponent-side signal
+  as hidden. In fact our seat's observation DOES expose the opponent's PUBLIC
+  board state — their hand *count*, deck count, bench count, visible active/bench
+  card ids, status flags, discard-pile contents, and the public game logs. What
+  stays genuinely hidden/uncertain is the opponent's hand *contents* (which
+  specific cards they hold), the *causal attribution* of a chaos card to an
+  outcome, and whether a chaos play actually *helped* the opponent set up.
+- Because the decisive proof for every chaos seam is causal ("did OUR disruption
+  cause this?"), and that attribution is unavailable, chaos seams are at best
+  ``partially_observable`` and remain a **research stream, not an upload stream**.
 """
 
 from __future__ import annotations
@@ -47,6 +52,48 @@ AVAILABLE_OWN_TELEMETRY = {
     "steps",
 }
 
+# Pass 8 telemetry correction. Opponent-side signals our seat's observation DOES
+# expose (their PUBLIC board state). Mapping note in parentheses ties each to the
+# raw field name in the spec's "Available" list.
+OPPONENT_OBSERVABLE_TELEMETRY = {
+    "opponent_hand_size",         # handCount
+    "opponent_deck_count",        # deckCount
+    "opponent_bench_size",        # bench count
+    "opponent_active_id",         # visible active id
+    "opponent_bench_ids",         # visible bench ids
+    "opponent_status_flags",      # status flags
+    "opponent_discard_contents",  # discard pile contents
+    "game_logs",                  # public game logs
+}
+
+# Opponent-side / causal signals that stay genuinely hidden or unmeasurable from
+# our seat — the reason chaos stays a research stream.
+OPPONENT_HIDDEN_TELEMETRY = {
+    "opponent_hand_contents",     # which specific cards they hold
+    "opponent_lost_turns",        # causal: turns actually lost to status
+    "own_attack_damage_dealt",    # causal: damage attributable to our play
+}
+
+# Spec-level corrected conclusion (Pass 8), surfaced verbatim at the top of both
+# the JSON contract and the markdown doc so the headline is unambiguous.
+TELEMETRY_CORRECTION = {
+    "available": [
+        "opponent handCount",
+        "opponent deckCount",
+        "opponent bench count",
+        "visible active/bench IDs",
+        "status flags",
+        "discard contents",
+        "game logs",
+    ],
+    "still_missing_or_uncertain": [
+        "opponent hand contents",
+        "causal attribution of chaos cards",
+        "whether chaos helps opponent setup",
+    ],
+    "conclusion": "Chaos remains a research stream, not the next upload stream.",
+}
+
 # Per chaos seam: the telemetry it would need to *prove* the disruption worked,
 # tagged by which side the signal lives on. "opponent" signals are hidden from
 # our seat; "own" signals map onto AVAILABLE_OWN_TELEMETRY.
@@ -60,8 +107,9 @@ CHAOS_TELEMETRY_SPEC = {
             {"signal": "candidate_won", "side": "own"},
         ],
         "own_proxies": ["candidate_won", "steps"],
-        "min_metric": "uncertain — opponent hand size is hidden from our seat, "
-        "so the damage-vs-hand-size relationship cannot be measured directly.",
+        "min_metric": "partial — opponent hand SIZE is observable from our seat, "
+        "but our own per-attack damage dealt is not recorded, so the "
+        "damage-vs-hand-size relationship cannot be measured directly.",
     },
     "chaos.bench_bloat_punisher": {
         "goal": "Crowd the opponent's bench with Accompanying Flute, then punish "
@@ -72,8 +120,9 @@ CHAOS_TELEMETRY_SPEC = {
             {"signal": "candidate_won", "side": "own"},
         ],
         "own_proxies": ["candidate_won", "steps"],
-        "min_metric": "uncertain — opponent bench size is hidden from our seat; "
-        "only our own win/loss is observable.",
+        "min_metric": "partial — opponent bench SIZE is observable from our seat, "
+        "but our own per-attack damage dealt is not recorded, so the "
+        "damage-vs-bench-count relationship cannot be measured directly.",
     },
     "chaos.mill_resource_destruction": {
         "goal": "Disrupt the opponent's deck / hand / energy so a brittle bot "
@@ -85,9 +134,9 @@ CHAOS_TELEMETRY_SPEC = {
             {"signal": "steps", "side": "own"},
         ],
         "own_proxies": ["candidate_won", "steps", "min_deck_count"],
-        "min_metric": "uncertain — opponent deck count is hidden; opponent "
-        "deckout can only be inferred weakly from a long game that we win, "
-        "not measured directly.",
+        "min_metric": "partial — opponent deck count and hand SIZE are observable "
+        "from our seat, so opponent deckout pressure CAN be tracked directly via "
+        "the public count; only the causal share from our mill actions is unproven.",
     },
     "chaos.status_confusion_lock": {
         "goal": "Stack Confusion / Burn / Sleep + forced switching so the bot "
@@ -98,8 +147,9 @@ CHAOS_TELEMETRY_SPEC = {
             {"signal": "candidate_won", "side": "own"},
         ],
         "own_proxies": ["candidate_won", "steps"],
-        "min_metric": "uncertain — opponent status conditions and lost turns are "
-        "hidden from our seat.",
+        "min_metric": "partial — opponent status flags are observable from our seat "
+        "(public board), but opponent lost turns are not surfaced as a metric, so "
+        "the lock's turn-denial effect can only be inferred indirectly.",
     },
     "chaos.vivillon_decidueye_four_card_lock": {
         "goal": "Use Vivillon / Judge to pin the opponent at exactly 4 cards, "
@@ -110,8 +160,9 @@ CHAOS_TELEMETRY_SPEC = {
             {"signal": "candidate_won", "side": "own"},
         ],
         "own_proxies": ["candidate_won", "steps", "context_counts"],
-        "min_metric": "uncertain — the exact-4 opponent hand condition is hidden "
-        "from our seat, so the lock cannot be confirmed from telemetry.",
+        "min_metric": "partial — the exact-4 opponent hand SIZE condition IS "
+        "observable from our seat (public count), so the lock state can be "
+        "confirmed; only whether our own attack was enabled by it is unrecorded.",
     },
 }
 
@@ -138,11 +189,16 @@ def main() -> int:
 
     contract = {
         "pass": 5,
-        "note": "Local-only research artifact. Chaos seams stay blocked; this "
-        "contract records exactly what telemetry each would need and why our "
-        "seat cannot currently supply it. No card ids invented; no conclusions "
-        "fabricated.",
+        "telemetry_conclusion_corrected_in_pass": 8,
+        "note": "Local-only research artifact. Pass 8 correction: the opponent's "
+        "PUBLIC board state IS observable from our seat (counts, visible ids, "
+        "status, discard, logs); only hand contents and causal attribution stay "
+        "hidden. Chaos seams are therefore partially_observable at best and stay "
+        "a research stream. No card ids invented; no conclusions fabricated.",
+        "telemetry_correction": TELEMETRY_CORRECTION,
         "available_own_telemetry": sorted(AVAILABLE_OWN_TELEMETRY),
+        "opponent_observable_telemetry": sorted(OPPONENT_OBSERVABLE_TELEMETRY),
+        "opponent_hidden_telemetry": sorted(OPPONENT_HIDDEN_TELEMETRY),
         "seams": [],
     }
 
@@ -167,20 +223,45 @@ def main() -> int:
             t["signal"] for t in spec["required_telemetry"] if t["side"] == "own"
         ]
         own_available = [s for s in own_signals if s in AVAILABLE_OWN_TELEMETRY]
-        # A seam is telemetry-ready only if it needs no opponent-side signal and
-        # all of its own-side signals are recorded by the harness.
-        telemetry_ready = not opponent_signals and all(
-            s in AVAILABLE_OWN_TELEMETRY for s in own_signals
-        )
-        availability = "available" if telemetry_ready else "blocked"
+        # Pass 8 split: opponent signals are no longer uniformly hidden — public
+        # board state is observable; only hand contents / causal signals are not.
+        opp_observable = [s for s in opponent_signals
+                          if s in OPPONENT_OBSERVABLE_TELEMETRY]
+        opp_hidden = [s for s in opponent_signals
+                      if s not in OPPONENT_OBSERVABLE_TELEMETRY]
+        missing_own = [s for s in own_signals if s not in AVAILABLE_OWN_TELEMETRY]
+        # Availability tiers:
+        #   available            — no opponent signal at all + all own recorded
+        #   partially_observable — every opponent signal is public board state and
+        #                          own signals recorded, but causal attribution
+        #                          (the decisive proof) is still unavailable
+        #   blocked              — needs a genuinely hidden signal (hand contents /
+        #                          causal) or an own signal the harness omits
+        if not opponent_signals and not missing_own:
+            availability = "available"
+        elif not opp_hidden and not missing_own:
+            availability = "partially_observable"
+        else:
+            availability = "blocked"
 
         blockers = []
-        if opponent_signals:
+        if opp_observable:
             blockers.append(
-                "opponent hidden-state telemetry not exposed to our seat: "
-                + ", ".join(sorted(set(opponent_signals)))
+                "opponent PUBLIC board state IS observable (Pass 8 correction), "
+                "but only as counts/visible ids, not proof of causation: "
+                + ", ".join(sorted(set(opp_observable)))
             )
-        missing_own = [s for s in own_signals if s not in AVAILABLE_OWN_TELEMETRY]
+        if opp_hidden:
+            blockers.append(
+                "opponent hidden/causal telemetry still not available to our seat: "
+                + ", ".join(sorted(set(opp_hidden)))
+            )
+        if availability == "partially_observable":
+            blockers.append(
+                "causal attribution unavailable: cannot prove our chaos play (not "
+                "the opponent's own line) caused the observed board change, nor "
+                "rule out that it helped them set up"
+            )
         if missing_own:
             blockers.append(
                 "own-side signals not recorded by the harness: "
@@ -207,6 +288,8 @@ def main() -> int:
                 "goal": spec["goal"],
                 "required_telemetry": spec["required_telemetry"],
                 "opponent_side_signals": opponent_signals,
+                "opponent_side_observable": opp_observable,
+                "opponent_side_hidden": opp_hidden,
                 "own_side_signals": own_signals,
                 "own_side_signals_available": own_available,
                 "own_proxies_available": [
@@ -234,17 +317,35 @@ def main() -> int:
     )
     lines.append("")
     lines.append(
-        "**Key finding:** every chaos seam's decisive signal lives on the "
-        "opponent's hidden side (their hand size, deck count, bench, or status). "
-        "The Pass 5 harness records rich *own-side* telemetry (deck proximity, "
-        "search/discard contexts, bench/hand high-water marks) but cannot observe "
-        "the opponent's hidden state, so all five seams remain **blocked** and "
-        "their unblock metric stays **uncertain**."
+        "**Key finding (Pass 8 correction):** earlier passes wrongly concluded "
+        "that *all* opponent-side telemetry was hidden. In fact our seat observes "
+        "the opponent's PUBLIC board state. The decisive proof for every chaos "
+        "seam is nonetheless *causal* — \"did OUR disruption cause this?\" — and "
+        "that attribution (plus the opponent's hand *contents*) remains "
+        "unavailable. So the seams are **partially_observable** at best and chaos "
+        "stays a **research stream, not the next upload stream**."
     )
     lines.append("")
-    lines.append("Own-side telemetry now recorded by the harness:")
+    lines.append("### Available (corrected)")
+    lines.append("")
+    for item in TELEMETRY_CORRECTION["available"]:
+        lines.append(f"- {item}")
+    lines.append("")
+    lines.append("### Still missing / uncertain")
+    lines.append("")
+    for item in TELEMETRY_CORRECTION["still_missing_or_uncertain"]:
+        lines.append(f"- {item}")
+    lines.append("")
+    lines.append(f"**Conclusion:** {TELEMETRY_CORRECTION['conclusion']}")
+    lines.append("")
+    lines.append("Own-side telemetry recorded by the harness:")
     lines.append("")
     for sig in sorted(AVAILABLE_OWN_TELEMETRY):
+        lines.append(f"- `{sig}`")
+    lines.append("")
+    lines.append("Opponent-side telemetry that IS observable (public board state):")
+    lines.append("")
+    for sig in sorted(OPPONENT_OBSERVABLE_TELEMETRY):
         lines.append(f"- `{sig}`")
     lines.append("")
 
@@ -261,10 +362,15 @@ def main() -> int:
                 f"`{t['signal']}` ({t['side']})" for t in entry["required_telemetry"]
             )
         )
-        if entry["opponent_side_signals"]:
+        if entry["opponent_side_observable"]:
             lines.append(
-                "- **Hidden (opponent-side) signals:** "
-                + ", ".join(f"`{s}`" for s in entry["opponent_side_signals"])
+                "- **Opponent-side signals observable (public board state):** "
+                + ", ".join(f"`{s}`" for s in entry["opponent_side_observable"])
+            )
+        if entry["opponent_side_hidden"]:
+            lines.append(
+                "- **Opponent-side signals still hidden/causal:** "
+                + ", ".join(f"`{s}`" for s in entry["opponent_side_hidden"])
             )
         if entry["own_proxies_available"]:
             lines.append(

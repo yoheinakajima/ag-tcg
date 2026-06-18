@@ -6,3 +6,4 @@
 - [Ledger status projection](ledger-status-projection.md) — event-sourced run/game status is derived; completion must come from remaining work and every state needs a schema-map entry or inspect silently misreports.
 - [Sandbox kills background procs](sandbox-kills-background-procs.md) — nohup/background runs die when the tool call ends; run long durable evals foreground in bounded chunks and resume via the ledger.
 - [Queue artifact test leak](queue-artifact-test-leak.md) — queue builders default to real data/submission_queue.json + CANDIDATES_DIR; tests must redirect them or they clobber the live artifact; renderers accept both queue schemas.
+- [Chaos telemetry observability](chaos-telemetry-observability.md) — opponent PUBLIC board (counts/status/discard/ids) IS observable; only hand contents + own-side damage attribution hidden → partially_observable, not blocked (corrected Pass 8).

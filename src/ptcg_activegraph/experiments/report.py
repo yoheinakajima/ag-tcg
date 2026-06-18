@@ -44,6 +44,9 @@ PASS7B_SCOUT_RANKING_JSON = Path("data/experiments/pass7b_scout_ranking.json")
 PASS7B_FOCUSED_RANKING_JSON = Path("data/experiments/pass7b_focused_ranking.json")
 PASS7B_FIXTURE_GATE_JSON = Path("data/experiments/pass7b_fixture_gate.json")
 PASS7B_BENCHMARK_JSON = Path("data/experiments/cabt_import_benchmark_pass7b.json")
+PASS8_SCOUT_RANKING_JSON = Path("data/experiments/pass8_scout_ranking.json")
+PASS8_FOCUSED_RANKING_JSON = Path("data/experiments/pass8_focused_ranking.json")
+PASS8_FIXTURE_GATE_JSON = Path("data/experiments/pass8_fixture_gate.json")
 META_ARCHETYPES_JSON = Path("data/meta/meta_archetypes.json")
 
 # Corrected live baseline scores (see v2 baseline README correction note: the
@@ -158,6 +161,9 @@ def gather(runs_root=RUNS_ROOT) -> dict:
         "pass7b_focused_ranking": _load_json(PASS7B_FOCUSED_RANKING_JSON) or {},
         "pass7b_fixture_gate": _load_json(PASS7B_FIXTURE_GATE_JSON) or {},
         "pass7b_benchmark": _load_json(PASS7B_BENCHMARK_JSON) or {},
+        "pass8_scout_ranking": _load_json(PASS8_SCOUT_RANKING_JSON) or {},
+        "pass8_focused_ranking": _load_json(PASS8_FOCUSED_RANKING_JSON) or {},
+        "pass8_fixture_gate": _load_json(PASS8_FIXTURE_GATE_JSON) or {},
         "meta_archetypes": _load_json(META_ARCHETYPES_JSON) or {},
         "runs": runs,
         "baseline_readme": (BASELINE_DIR / "README.md"),
@@ -278,6 +284,7 @@ def _overview_html(data: dict) -> str:
     body = (
         f"<section><h2>Snapshot</h2><div class=cards>{cards}</div></section>"
         f"{_run_ledger_html(data)}"
+        f"{_pass8_html(data)}"
         f"{_pass7b_html(data)}"
         f"{_pass4_html(data)}"
         f"{_pass5_html(data)}"
@@ -602,6 +609,116 @@ def _pass7b_html(data: dict) -> str:
         f"{q_html}"
         "<h3>Meta engine strategy backlog</h3>"
         f"{meta_html}"
+        "</section>"
+    )
+
+
+def _pass8_gate_html(gate: dict) -> str:
+    """Render the Pass 8 fixture gate (hard promotion filter schema)."""
+    if not gate:
+        return "<div class=empty>No Pass 8 fixture gate yet.</div>"
+    results = [r for r in (gate.get("results") or []) if not r.get("is_anchor")]
+    eligible = gate.get("eligible") or []
+    blocked = gate.get("blocked") or []
+    rows = ""
+    for r in results:
+        hard = r.get("hard_failures") or []
+        hard_str = "; ".join(
+            f"{h.get('fixture')} ({h.get('detail') or h.get('reason')})" for h in hard
+        ) if hard else "<span class=muted>none</span>"
+        status = "eligible" if r.get("promotable_gate") else "blocked"
+        cls = "ok" if r.get("promotable_gate") else "rej"
+        rows += (
+            f"<tr><td>{_esc(r.get('candidate_id'))}</td>"
+            f"<td class={cls}>{status}</td>"
+            f"<td>{_esc(r.get('fixture_pass_count'))}/{_esc(r.get('fixture_fail_count'))}/"
+            f"{_esc(r.get('fixture_na_count'))}</td>"
+            f"<td>{hard_str}</td></tr>"
+        )
+    rows = rows or "<tr><td class=muted colspan=4>no candidates graded</td></tr>"
+    return (
+        f"<p class=muted>{_esc(gate.get('n_hard_fixtures'))} HARD of "
+        f"{_esc(gate.get('n_gradeable_fixtures'))} gradeable fixtures. "
+        f"Eligible (all hard fixtures pass): <b>{_esc(', '.join(eligible) or 'none')}</b>; "
+        f"blocked: {_esc(str(len(blocked)))} candidate(s).</p>"
+        f"<p class=muted>{_esc(gate.get('forced_discard_note') or '')}</p>"
+        "<table><tr><th>Candidate</th><th>Gate</th><th>pass/fail/na</th>"
+        f"<th>Hard failures</th></tr>{rows}</table>"
+    )
+
+
+def _pass8_html(data: dict) -> str:
+    scout = data.get("pass8_scout_ranking") or {}
+    focused = data.get("pass8_focused_ranking") or {}
+    gate = data.get("pass8_fixture_gate") or {}
+    queue = data.get("queue") or {}
+    chaos = data.get("chaos_contract") or {}
+
+    if not (scout or focused or gate):
+        return ("<section><h2>Pass 8 — Fixture-first effect safety</h2><div class=empty>"
+                "No Pass 8 artifacts found yet.</div></section>")
+
+    baseline_cards = "".join(
+        f"<div class=card><div class=k>{_esc(k)}</div><div class=v>{_esc(v)}</div></div>"
+        for k, v in [
+            ("v2 active control", V2_LIVE_SCORE),
+            ("v1 control (live)", V1_LIVE_SCORE),
+            ("Eligible (hard gate)", len(gate.get("eligible") or [])),
+            ("Kaggle upload", "no"),
+        ]
+    )
+
+    # Dry-run queue.
+    q_items = queue.get("queue") or queue.get("candidates") or []
+    if q_items:
+        q_html = "<ul>" + "".join(
+            f"<li><code>{_esc(c.get('candidate_id') or c.get('branch_id'))}</code> "
+            f"[{_esc(c.get('promotion_label') or c.get('label'))}] "
+            f"→ <code>{_esc(c.get('tarball'))}</code> (NOT uploaded)</li>"
+            for c in q_items
+        ) + "</ul>"
+    else:
+        reason = queue.get("selection_reason") or "no candidate qualified"
+        q_html = f"<div class=empty>Queue empty — {_esc(reason)}.</div>"
+    q_meta = (
+        f"<p class=muted>auto_submit={_esc(queue.get('auto_submit_enabled'))}, "
+        f"manual_approval={_esc(queue.get('require_manual_approval_for_submit'))}, "
+        f"no_more_submissions_today={_esc(queue.get('no_more_submissions_today'))}, "
+        f"upload_performed={_esc(queue.get('upload_performed'))}, "
+        f"max={_esc(queue.get('max_queue_size'))}.</p>"
+    )
+
+    # Chaos telemetry correction surface.
+    correction = (chaos or {}).get("telemetry_correction") or {}
+    chaos_html = ""
+    if correction:
+        avail = correction.get("available") or correction.get("opponent_observable") or []
+        missing = (correction.get("still_missing_or_uncertain")
+                   or correction.get("opponent_hidden") or [])
+        chaos_html = (
+            "<h3>Chaos telemetry correction</h3>"
+            f"<p class=muted><b>Observable:</b> {_esc(', '.join(avail) or '—')}</p>"
+            f"<p class=muted><b>Still hidden:</b> {_esc(', '.join(missing) or '—')}</p>"
+            f"<p class=muted>{_esc(correction.get('conclusion') or '')}</p>"
+        )
+
+    return (
+        "<section><h2>Pass 8 — Fixture-first effect safety</h2>"
+        f"<div class=cards>{baseline_cards}</div>"
+        "<p class=muted>Local research only — <b>no Kaggle upload, no GitHub push</b>; "
+        "root <code>main.py</code>/<code>deck.csv</code> immutable. Replay failures are "
+        "turned into deterministic fixtures; the HARD fixture gate is a strict promotion "
+        "filter. <code>secret_box_forced_discard_all</code> is forced_all/na and never a "
+        "failure.</p>"
+        "<h3>Fixture gate (HARD = promotion filter)</h3>"
+        f"{_pass8_gate_html(gate)}"
+        "<h3>Scout ranking (vs v2 control; gate-failers excluded from queue)</h3>"
+        f"{_pass7b_rank_rows_html(scout)}"
+        "<h3>Focused seat-swap confirmation</h3>"
+        f"{_pass7b_rank_rows_html(focused)}"
+        "<h3>Dry-run submission queue (≤1, no upload)</h3>"
+        f"{q_meta}{q_html}"
+        f"{chaos_html}"
         "</section>"
     )
 
@@ -992,6 +1109,87 @@ def _pass7b_md(data: dict) -> list[str]:
     return lines
 
 
+def _pass8_md(data: dict) -> list[str]:
+    scout = data.get("pass8_scout_ranking") or {}
+    focused = data.get("pass8_focused_ranking") or {}
+    gate = data.get("pass8_fixture_gate") or {}
+    queue = data.get("queue") or {}
+    chaos = data.get("chaos_contract") or {}
+
+    lines = ["## Pass 8 — Fixture-first effect safety", ""]
+    if not (scout or focused or gate):
+        lines.append("_No Pass 8 artifacts found yet._")
+        return lines
+
+    lines += [
+        f"- Active control: v2 `deck_energy_trim_light` live **{V2_LIVE_SCORE}** "
+        f"(v1 live **{V1_LIVE_SCORE}**).",
+        "- Scope: local research only — **no Kaggle upload, no GitHub push**; root "
+        "`main.py`/`deck.csv` immutable.",
+        "- Replay failures are turned into deterministic fixtures; the HARD fixture gate "
+        "is a strict promotion filter. `secret_box_forced_discard_all` is forced_all/na "
+        "and is never counted as a failure.",
+        "",
+        "### Fixture gate (HARD = promotion filter)",
+    ]
+    results = [r for r in (gate.get("results") or []) if not r.get("is_anchor")]
+    if results:
+        eligible = ", ".join(gate.get("eligible") or []) or "none"
+        lines.append(f"- {gate.get('n_hard_fixtures')} HARD of "
+                     f"{gate.get('n_gradeable_fixtures')} gradeable fixtures; "
+                     f"eligible (all hard fixtures pass): **{eligible}**.")
+        if gate.get("forced_discard_note"):
+            lines.append(f"- {gate.get('forced_discard_note')}")
+        lines += ["", "| Candidate | Gate | pass/fail/na | Hard failures |",
+                  "|-----------|------|--------------|---------------|"]
+        for r in results:
+            hard = r.get("hard_failures") or []
+            hard_str = "; ".join(
+                f"{h.get('fixture')} ({h.get('detail') or h.get('reason')})" for h in hard
+            ) if hard else "none"
+            status = "eligible" if r.get("promotable_gate") else "blocked"
+            lines.append(
+                f"| {r.get('candidate_id')} | {status} | "
+                f"{r.get('fixture_pass_count')}/{r.get('fixture_fail_count')}/"
+                f"{r.get('fixture_na_count')} | {hard_str} |")
+    else:
+        lines.append("_No fixture gate results._")
+
+    lines += [""]
+    lines += _pass7b_rank_md(scout, "Scout ranking (gate-failers excluded from queue)")
+    lines += [""]
+    lines += _pass7b_rank_md(focused, "Focused seat-swap confirmation")
+
+    lines += ["", "### Dry-run submission queue (≤1, no upload)"]
+    q_items = queue.get("queue") or queue.get("candidates") or []
+    lines.append(f"- auto_submit={queue.get('auto_submit_enabled')}, "
+                 f"manual_approval={queue.get('require_manual_approval_for_submit')}, "
+                 f"no_more_submissions_today={queue.get('no_more_submissions_today')}, "
+                 f"upload_performed={queue.get('upload_performed')}, "
+                 f"max={queue.get('max_queue_size')}.")
+    if q_items:
+        for c in q_items:
+            cid = c.get("candidate_id") or c.get("branch_id")
+            label = c.get("promotion_label") or c.get("label")
+            lines.append(f"  - {cid} [{label}] -> `{c.get('tarball')}` (NOT uploaded)")
+    else:
+        reason = queue.get("selection_reason") or "no candidate qualified"
+        lines.append(f"  - _Queue empty — {reason}._")
+
+    correction = (chaos or {}).get("telemetry_correction") or {}
+    if correction:
+        avail = correction.get("available") or correction.get("opponent_observable") or []
+        missing = (correction.get("still_missing_or_uncertain")
+                   or correction.get("opponent_hidden") or [])
+        lines += ["", "### Chaos telemetry correction",
+                  f"- Observable: {', '.join(avail) or '—'}",
+                  f"- Still hidden: {', '.join(missing) or '—'}"]
+        if correction.get("conclusion"):
+            lines.append(f"- {correction.get('conclusion')}")
+
+    return lines
+
+
 def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1028,6 +1226,8 @@ def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
     ]
 
     lines += _run_ledger_md(data)
+    lines += [""]
+    lines += _pass8_md(data)
     lines += [""]
     lines += _pass7b_md(data)
     lines += [""]
