@@ -1,0 +1,515 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle in this pass.
+- Do not modify root main.py or root deck.csv.
+- Preserve v1 and v2 baselines.
+- Do not print or commit Kaggle credentials.
+- Do not commit official card CSV/PDF data.
+- Keep all candidate tarballs top-level main.py + deck.csv only.
+- This is a local ActiveGraph research + architecture pass only.
+
+Current status:
+- v1 live Kaggle score: 356.9.
+- v2 deck_energy_trim_light live Kaggle score: 479.1.
+- Active control baseline: data/baselines/v2_kaggle_479_1_deck_energy_trim_light/
+- Pass 8 completed fixture-first effect-safety research.
+- 238 tests passed.
+- Root main.py/deck.csv are byte-identical to baseline.
+- No Kaggle upload was performed.
+- Every win-rate leader failed the hard fixture gate.
+- The only gate-pass candidate was combo_full_safety_v3:
+  - focused adjusted win rate: 0.60
+  - confidence interval still crosses 0.5
+  - label: scout_promising, not promotable
+- Key Pass 8 principle:
+  Win rate loses to hard safety gates. A candidate that wins locally but fails replay-derived hard fixtures is not uploadable.
+- Key architecture lesson:
+  We need deck-specific pilots/playbooks, not a giant generic Pokémon policy.
+
+Goal:
+Run ActiveGraph Pass 9: build deck-specific playbook architecture and run a higher-power confirmation of combo_full_safety_v3.
+
+Pass 9 has two tracks:
+
+Track A — High-power confirmation:
+Re-evaluate combo_full_safety_v3 against the v2 control with enough games to decide whether it is truly promotable.
+
+Track B — Playbook architecture:
+Create a declarative v2 Kyogre/Snover/Mega Abomasnow playbook and compile it into a stdlib-only candidate main.py. The playbook should make strategy explicit and reportable.
+
+No Kaggle upload.
+
+Part A — Baseline safety
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Verify active control exists:
+
+ls -la data/baselines/v2_kaggle_479_1_deck_energy_trim_light
+tar -tzf data/baselines/v2_kaggle_479_1_deck_energy_trim_light/submission.tar.gz
+
+Fetch Kaggle status read-only only:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass9.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass9.csv || true
+
+Do not upload.
+
+Part B — Record Pass 8 lessons
+
+Update the ActiveGraph report and docs with these Pass 8 lessons:
+
+1. Fixture gate beats raw win rate.
+2. Secret Box forced-discard-all is not a policy failure when minCount=maxCount=all options.
+3. Secret Box pre-play safety is not deterministically gradeable from the current main-menu option schema.
+4. Effect-resolution card targeting is deck-specific.
+5. The deck-specific pilot abstraction is now required.
+
+Emit ActiveGraph events:
+- ArchitectureDecisionRecorded
+- PlaybookArchitectureStarted
+- ConfirmationPassStarted
+
+If these event types do not exist, add them.
+
+Part C — Create playbook architecture
+
+Create:
+
+playbooks/
+  README.md
+  v2_kyogre_abomasnow.yaml
+  chaos_hand_avalanche_froslass.yaml
+  chaos_bench_bloat_punisher.yaml
+
+src/ptcg_activegraph/playbooks/
+  __init__.py
+  schema.py
+  loader.py
+  compiler.py
+  validator.py
+  report.py
+
+scripts/
+  validate_playbook.py
+  compile_playbook.py
+  generate_playbook_candidate.py
+
+Do not overbuild. Keep this simple and testable.
+
+The playbook system should support:
+
+- deck_id
+- baseline_id
+- card IDs
+- role tags
+- gameplan
+- opening rules
+- main-phase priorities
+- effect-resolution rules
+- discard safety rules
+- search target rules
+- deckout guard
+- attachment target rules
+- fixture requirements
+- report notes
+
+Playbook validation should check:
+- required fields exist
+- card IDs are integers
+- referenced card IDs exist in the deck or metadata when available
+- no invented card IDs
+- rules are serializable
+- playbook can produce a report summary
+
+The compiler should generate a candidate run directory with:
+- main.py
+- deck.csv
+- playbook.yaml
+- branch.yaml
+- report.md
+
+Generated main.py must:
+- be stdlib-only
+- be self-contained
+- return deck on select=None
+- validate/clamp indices
+- never raise outward
+- preserve fallback behavior
+- use playbook constants compiled into the file
+- not import src modules
+
+Part D — Create v2 Kyogre/Snover/Mega Abomasnow playbook
+
+Create playbooks/v2_kyogre_abomasnow.yaml.
+
+Use confirmed card IDs:
+
+- 3 Basic {W} Energy
+- 721 Kyogre
+- 722 Snover
+- 723 Mega Abomasnow ex
+- 1092 Secret Box
+- 1121 Ultra Ball
+- 1145 Mega Signal
+- 1163 Powerglass
+- 1219 Team Rocket's Petrel
+- 1227 Lillie's Determination
+- 1262 Surfing Beach
+
+Playbook should encode:
+
+gameplan:
+- primary: Kyogre pressure
+- secondary: Snover → Mega Abomasnow setup
+- avoid: self-deckout and orphan Mega Abomasnow line
+
+roles:
+- primary_attackers: Kyogre
+- setup_basics: Snover
+- evolution_payoffs: Mega Abomasnow ex
+- search_cards: Ultra Ball, Mega Signal
+- risky_search_cards: Secret Box
+- draw_cards: Lillie's Determination, Team Rocket's Petrel, Surfing Beach
+- tools: Powerglass
+- energy: Basic Water
+
+opening:
+- active priority:
+  - Kyogre when available with Water/search support
+  - Snover when evolution support is strong
+- bench priority:
+  - Kyogre
+  - Snover
+  - avoid unnecessary benching if no payoff
+
+discard safety:
+- prefer discarding excess Basic Water Energy
+- avoid discarding only Snover
+- avoid discarding only Mega Abomasnow when Snover exists
+- avoid discarding only attacker
+- avoid discarding only search card if setup incomplete
+
+Ultra Ball:
+- discard excess Water first
+- if no Snover on board/hand, search Snover over Mega Abomasnow
+- if Snover exists, search Mega Abomasnow
+- if no attacker exists, search Kyogre or Snover
+- avoid low-value duplicate search
+
+Secret Box:
+- play safety is advisory, not hard-fixtured, because main option schema is not deterministic enough
+- forced discard all is not failure
+- ToHand package priority:
+  - Powerglass if Kyogre active and no tool
+  - Mega Signal only if Snover line exists or is preserved
+  - Lillie/Petrel only when deck count is healthy
+  - Surfing Beach only if not already in play
+  - avoid redundant stadium
+
+Mega Signal:
+- if Snover exists active/bench/hand, prefer Mega Abomasnow
+- if no Snover line exists, avoid orphan Mega Abomasnow if decline/alternative exists
+
+deckout guard:
+- deckCount <= 8: penalize optional draw/search
+- deckCount <= 4: heavily penalize optional draw/search
+- deckCount <= 2: prefer attack/attach/end over draw/search unless immediate win/survival
+
+attachment:
+- attach Water to active Kyogre if attacking plan
+- attach tool Powerglass to active Kyogre if no tool
+- otherwise attach to next attacker
+- avoid attaching to low-value target when better target exists
+
+fixture requirements:
+- must pass all hard Pass 8 fixtures
+- Secret Box forced_all is NA, not fail
+- ToHand role priority should improve advisory fixtures
+
+Part E — Compile playbook candidate
+
+Compile the playbook into a candidate:
+
+candidate_id:
+playbook_v2_kyogre_abomasnow_v1
+
+Hypothesis:
+A declarative deck-specific playbook should reproduce the safety improvements of combo_full_safety_v3 while making strategic intent explicit and easier to iterate.
+
+Run:
+
+python scripts/validate_playbook.py playbooks/v2_kyogre_abomasnow.yaml
+python scripts/compile_playbook.py playbooks/v2_kyogre_abomasnow.yaml --candidate-id playbook_v2_kyogre_abomasnow_v1
+
+Adapt exact command names if needed.
+
+Candidate must pass:
+- package verify
+- candidate smoke
+- Pass 8 hard fixture gate
+
+Part F — Create playbook ablation candidates
+
+Generate small playbook variants:
+
+1. playbook_v2_no_secret_box_play
+Hypothesis:
+If Secret Box is too risky, heavily deprioritizing it may improve consistency.
+
+2. playbook_v2_kyogre_pressure
+Hypothesis:
+A Kyogre-first pilot may outperform evolution setup by simplifying decisions.
+
+3. playbook_v2_abomasnow_setup
+Hypothesis:
+A Snover/Mega Abomasnow-focused pilot may improve ceiling if setup is protected.
+
+4. playbook_v2_deckout_conservative
+Hypothesis:
+Stronger deckout guard may reduce long-game losses, but may skip useful draw/search.
+
+5. playbook_v2_effect_safety_max
+Hypothesis:
+Maximum safety around Ultra Ball / Secret Box / Mega Signal may reduce catastrophic line breaks, even if it misses some upside.
+
+Each variant must:
+- compile to stdlib-only candidate main.py
+- pass package verify
+- pass smoke
+- run through fixture gate
+- not mutate root files
+
+Part G — High-power confirmation of combo_full_safety_v3
+
+Locate candidate:
+
+find experiments/runs -maxdepth 2 -type f -name branch.yaml | xargs grep -l "combo_full_safety_v3" || true
+find data/submissions/candidates -name '*combo_full_safety_v3*.tar.gz' || true
+
+If missing, regenerate it from Pass 8 specs.
+
+Run high-power confirmation:
+
+- control: v2 baseline
+- candidate: combo_full_safety_v3
+- games per seat: 40
+- total games: 80
+- seat swap: yes
+- watchdog: yes
+- fast import stub: yes
+- durable ledger/resume: yes
+
+If 40 per seat is too slow, run 25 per seat and report reduced power.
+
+Part H — Evaluate playbook candidates
+
+Stage 1: fixture gate
+- all playbook candidates must pass hard fixtures before full evaluation
+- failed fixture candidates may still be logged but cannot be queued
+
+Stage 2: scout
+- all hard-gate-passing playbook candidates
+- games per seat: 5
+- seat swap: yes
+
+Stage 3: focused
+- top 3 playbook candidates plus combo_full_safety_v3 if not already included
+- games per seat: 20
+- seat swap: yes
+
+Use v2 baseline as control.
+
+Suggested commands, adapt to actual script interfaces:
+
+python scripts/generate_playbook_candidate.py --playbook playbooks/v2_kyogre_abomasnow.yaml --candidate-id playbook_v2_kyogre_abomasnow_v1
+python scripts/generate_candidates.py --group pass9_playbooks
+python scripts/run_pass8_fixture_gate.py --group pass9_playbooks
+python scripts/run_experiment_batch.py --stage pass9_combo_confirm --control data/baselines/v2_kaggle_479_1_deck_energy_trim_light --candidate combo_full_safety_v3 --games-per-seat 40 --seat-swap --fast-import-stub
+python scripts/run_experiment_batch.py --stage pass9_playbook_scout --control data/baselines/v2_kaggle_479_1_deck_energy_trim_light --games-per-seat 5 --seat-swap --fast-import-stub
+python scripts/rank_candidates.py --stage pass9_playbook_scout
+python scripts/run_experiment_batch.py --stage pass9_playbook_focused --control data/baselines/v2_kaggle_479_1_deck_energy_trim_light --top 3 --games-per-seat 20 --seat-swap --fast-import-stub
+python scripts/rank_candidates.py --stage pass9_playbook_focused
+python scripts/build_report_site.py
+python scripts/queue_submissions.py --dry-run
+
+Do not upload.
+
+Part I — Queue policy
+
+Dry-run queue only.
+
+Queue at most one candidate if:
+- it passes all hard fixtures
+- package verify passes
+- smoke passes
+- no crashes/timeouts/invalid returns
+- adjusted win rate beats v2 control
+- 80% Wilson lower bound clears 0.50
+- not a control anchor
+- no_more_submissions_today remains true unless explicitly changed
+
+Do not upload.
+
+Part J — Chaos playbooks as documentation only
+
+Create chaos playbook skeletons but do not generate candidates unless trivial:
+
+playbooks/chaos_hand_avalanche_froslass.yaml
+playbooks/chaos_bench_bloat_punisher.yaml
+
+Each should include:
+- card IDs confirmed from metadata if available
+- gameplan
+- payoff cards
+- chaos cards
+- required telemetry
+- policy requirements
+- blocked/not-ready reason
+
+Do not invent card IDs.
+Do not evaluate chaos candidates in this pass unless already fully supported.
+
+Part K — Report site
+
+Update:
+
+data/site/index.html
+data/reports/activegraph_strategy_report.md
+
+Include:
+- v1 score 356.9
+- v2 score 479.1
+- Pass 8 conclusion: fixture gate blocked win-rate-only candidates
+- playbook architecture rationale
+- v2 playbook summary
+- playbook candidate results
+- combo_full_safety_v3 high-power confirmation result
+- dry-run queue
+- no upload note
+- next recommended candidate if any
+
+Part L — Tests
+
+Add tests for:
+- playbook schema validation
+- playbook loader
+- compiler creates candidate dir
+- compiled main.py is stdlib-only/self-contained
+- compiled candidate returns deck on select=None
+- compiled candidate passes hard fixture gate
+- candidate tarball contains only main.py + deck.csv
+- playbook report summary
+- chaos skeletons do not invent card IDs
+- root files unchanged
+- queue respects no_more_submissions_today and excludes control anchors
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+
+Verify root unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Final report format:
+
+ActiveGraph Pass 9 Deck Playbook Report
+
+1. Baseline safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- active control baseline:
+- v1 live score:
+- v2 live score:
+- pytest:
+- package verify:
+- root smoke:
+- Kaggle upload performed:
+
+2. Playbook architecture
+- playbook directory:
+- schema implemented:
+- compiler implemented:
+- validator implemented:
+- report integration:
+- generated main.py stdlib-only:
+- ActiveGraph events emitted:
+
+3. v2 Kyogre/Abomasnow playbook
+- playbook path:
+- card IDs encoded:
+- rules encoded:
+- fixture requirements:
+- validation result:
+
+4. Playbook candidates
+- candidates generated:
+- candidates passing hard fixture gate:
+- candidates failing hard fixture gate:
+- candidates smoke/package passed:
+- best playbook candidate:
+
+5. combo_full_safety_v3 confirmation
+- games per seat:
+- total games:
+- adjusted win rate:
+- Wilson 80% CI:
+- Wilson 95% CI:
+- promotion label:
+- interpretation:
+
+6. Evaluation results
+- scout playbook games:
+- focused playbook games:
+- crashes/timeouts/invalid returns:
+- top 5 candidates:
+  1.
+  2.
+  3.
+  4.
+  5.
+
+7. Queue
+- dry-run queue path:
+- queued candidate:
+- candidate tarball:
+- upload performed: no
+- no_more_submissions_today honored:
+
+8. Chaos playbooks
+- skeletons created:
+- card IDs confirmed:
+- blocked/not-ready reasons:
+
+9. Report site
+- site path:
+- markdown report path:
+- most important new lesson:
+
+10. Manual git notes
+- files I should review:
+- files not to commit:
+- generated/ignored files:
+
+11. Recommendation
+- Submit next candidate: yes/no
+- If yes, candidate ID and why:
+- If no, why:
+- Next prompt:
+  - one concise prompt only

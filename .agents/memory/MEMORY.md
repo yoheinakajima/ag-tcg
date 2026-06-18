@@ -7,3 +7,6 @@
 - [Sandbox kills background procs](sandbox-kills-background-procs.md) — nohup/background runs die when the tool call ends; run long durable evals foreground in bounded chunks and resume via the ledger.
 - [Queue artifact test leak](queue-artifact-test-leak.md) — queue builders default to real data/submission_queue.json + CANDIDATES_DIR; tests must redirect them or they clobber the live artifact; renderers accept both queue schemas.
 - [Chaos telemetry observability](chaos-telemetry-observability.md) — opponent PUBLIC board (counts/status/discard/ids) IS observable; only hand contents + own-side damage attribution hidden → partially_observable, not blocked (corrected Pass 8).
+- [ActiveGraph canonical scores](activegraph-canonical-scores.md) — v1 live=356.9 (archive dir keeps stale `349_8` name), v2 control live=479.1; report.py V1_LIVE_SCORE=356.9, never a literal.
+- [Playbook validator card-ids](playbook-validator-card-ids.md) — card-id lists outside cards/roles (e.g. discard_safety) are unchecked unless their (section,key) is in schema.CARD_ID_LIST_FIELDS.
+- [Report candidate gate labels](report-candidate-gate-labels.md) — derive gate label from hard fixture gate (eligible/blocked), not package_ok/smoke_ok; newer run dirs lack those keys → false GATE-FAIL.

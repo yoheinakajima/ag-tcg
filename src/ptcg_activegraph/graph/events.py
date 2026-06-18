@@ -68,6 +68,11 @@ class EventType(str, Enum):
     ReplayImported = "ReplayImported"
     ReplayAnalyzed = "ReplayAnalyzed"
 
+    # --- Pass 9: playbook architecture + confirmation ---------------------
+    ArchitectureDecisionRecorded = "ArchitectureDecisionRecorded"
+    PlaybookArchitectureStarted = "PlaybookArchitectureStarted"
+    ConfirmationPassStarted = "ConfirmationPassStarted"
+
 
 @dataclass
 class Event:

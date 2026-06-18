@@ -47,6 +47,7 @@ PASS7B_BENCHMARK_JSON = Path("data/experiments/cabt_import_benchmark_pass7b.json
 PASS8_SCOUT_RANKING_JSON = Path("data/experiments/pass8_scout_ranking.json")
 PASS8_FOCUSED_RANKING_JSON = Path("data/experiments/pass8_focused_ranking.json")
 PASS8_FIXTURE_GATE_JSON = Path("data/experiments/pass8_fixture_gate.json")
+PASS9_FIXTURE_GATE_JSON = Path("data/experiments/pass9_fixture_gate.json")
 META_ARCHETYPES_JSON = Path("data/meta/meta_archetypes.json")
 
 # Corrected live baseline scores (see v2 baseline README correction note: the
@@ -164,6 +165,7 @@ def gather(runs_root=RUNS_ROOT) -> dict:
         "pass8_scout_ranking": _load_json(PASS8_SCOUT_RANKING_JSON) or {},
         "pass8_focused_ranking": _load_json(PASS8_FOCUSED_RANKING_JSON) or {},
         "pass8_fixture_gate": _load_json(PASS8_FIXTURE_GATE_JSON) or {},
+        "pass9_fixture_gate": _load_json(PASS9_FIXTURE_GATE_JSON) or {},
         "meta_archetypes": _load_json(META_ARCHETYPES_JSON) or {},
         "runs": runs,
         "baseline_readme": (BASELINE_DIR / "README.md"),
@@ -184,7 +186,7 @@ def _page(title: str, body: str) -> str:
             f"<title>{_esc(title)}</title><link rel=stylesheet href=style.css></head>"
             f"<body><header><h1>ActiveGraph Strategy Lab</h1>"
             f"<p>{_esc(title)} — transparent experiment factory around the v1 control"
-            f" (Kaggle public 349.8)</p></header>{nav}<main>{body}</main>"
+            f" (live {V1_LIVE_SCORE})</p></header>{nav}<main>{body}</main>"
             f"<footer>Generated from lab artifacts. No values fabricated; "
             f"empty sections mean no data yet.</footer></body></html>")
 
@@ -723,6 +725,23 @@ def _pass8_html(data: dict) -> str:
     )
 
 
+def _fixture_gate_status_for(branch_id: str, data: dict) -> str | None:
+    """Return ``eligible``/``blocked`` from the loaded hard fixture gates.
+
+    Gate JSONs key candidates by their run-dir-prefixed id, so we match by
+    suffix against ``branch_id``. Returns ``None`` when no gate covers it.
+    """
+    for key in ("pass9_fixture_gate", "pass8_fixture_gate"):
+        gate = data.get(key) or {}
+        for cid in gate.get("eligible") or []:
+            if cid == branch_id or cid.endswith(f"_{branch_id}"):
+                return "eligible"
+        for cid in gate.get("blocked") or []:
+            if cid == branch_id or cid.endswith(f"_{branch_id}"):
+                return "blocked"
+    return None
+
+
 def _candidates_html(data: dict) -> str:
     runs = data["runs"]
     if not runs:
@@ -734,7 +753,17 @@ def _candidates_html(data: dict) -> str:
         m = r["metrics"] or {}
         diff = b.deck_diff or b.policy_diff or {}
         diff_str = _esc(json.dumps(diff)) if diff else "<span class=muted>none (control)</span>"
-        gate = "ok" if (m.get("package_ok") and m.get("smoke_ok")) else "GATE-FAIL"
+        # Prefer the hard fixture gate; fall back to package/smoke metrics; and
+        # never label a not-yet-evaluated candidate as a failure.
+        gate_status = _fixture_gate_status_for(b.branch_id, data)
+        if gate_status == "eligible":
+            gate = "ok"
+        elif gate_status == "blocked":
+            gate = "GATE-FAIL"
+        elif m.get("package_ok") is not None or m.get("smoke_ok") is not None:
+            gate = "ok" if (m.get("package_ok") and m.get("smoke_ok")) else "GATE-FAIL"
+        else:
+            gate = "not evaluated"
         rows = "".join(
             f"<tr><td>{_esc(k)}</td><td>{_esc(m.get(k))}</td></tr>"
             for k in ("games_completed", "win_rate", "attack_rate", "pass_rate",
@@ -743,7 +772,8 @@ def _candidates_html(data: dict) -> str:
         ) or "<tr><td class=muted colspan=2>not evaluated yet</td></tr>"
         blocks.append(
             f"<section><h2>{_esc(b.branch_id)} "
-            f"<span class={'ok' if gate=='ok' else 'rej'}>[{gate}]</span></h2>"
+            f"<span class={'ok' if gate=='ok' else ('muted' if gate=='not evaluated' else 'rej')}>"
+            f"[{gate}]</span></h2>"
             f"<p class=muted>{_esc(b.seam_id)} · {_esc(b.kind)} · "
             f"parent {_esc(b.parent)}</p>"
             f"<p><b>Hypothesis:</b> {_esc(b.hypothesis)}</p>"

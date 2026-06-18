@@ -1,0 +1,39 @@
+# CHAOS PLAYBOOK SKELETON — documentation only (NOT compiled this pass).
+# Card ids confirmed in data/cards/EN_Card_Data.csv: Snorunt 103, Froslass 104,
+# Mega Froslass ex 861. No ids are invented; unconfirmed pieces are omitted.
+
+deck_id: chaos_hand_avalanche_froslass
+baseline_id: null            # no buildable baseline yet
+status: blocked
+
+gameplan:
+  primary: hand-size avalanche disruption via the Froslass line
+  secondary: convert opponent hand pressure into tempo
+  avoid: self-mill / running out of disruption fuel
+
+payoff_cards:
+  snorunt: 103
+  froslass: 104
+  mega_froslass_ex: 861
+
+chaos_cards:
+  # Hand-manipulation / avalanche enablers are deck-list dependent and not yet
+  # confirmed for this archetype; intentionally left empty to avoid inventing ids.
+  hand_disruption: []
+
+required_telemetry:
+  - opponent hand size (public count is observable)
+  - own deck count (deckout risk)
+  - own/opponent bench occupancy (public)
+  # NOT observable: opponent hand contents, own-side damage attribution.
+
+policy_requirements:
+  - a deck-specific pilot for the Froslass disruption line
+  - hard fixtures for the disruption decision points (not yet extracted)
+  - deckout guard tuned for a slower, grind plan
+
+blocked_reason: >
+  Not ready this pass. No buildable baseline deck list, the chaos/disruption
+  card ids are unconfirmed (would require inventing ids), and no replay-derived
+  hard fixtures exist for the Froslass disruption decisions. Documented as a
+  future archetype only; not generated or evaluated.

@@ -1,0 +1,39 @@
+# CHAOS PLAYBOOK SKELETON — documentation only (NOT compiled this pass).
+# Any card id below is confirmed in data/cards/EN_Card_Data.csv. Card ids whose
+# exact effect/line is not yet confirmed are deliberately omitted (never invented).
+
+deck_id: chaos_bench_bloat_punisher
+baseline_id: null            # no buildable baseline yet
+status: blocked
+
+gameplan:
+  primary: punish wide benches with bench-scaling damage
+  secondary: force the opponent to under-develop or take spread damage
+  avoid: bricking when the opponent keeps a narrow board
+
+payoff_cards:
+  # Bench-interaction payoff cards exist in metadata, but the exact attacker
+  # line + numbers for this archetype are not yet confirmed. Left empty to avoid
+  # mis-attributing effects or inventing ids.
+  bench_scalers: []
+
+chaos_cards:
+  bench_fillers: []
+
+required_telemetry:
+  - opponent bench occupancy / count (public, observable)
+  - opponent active + bench card ids (public, observable)
+  - own energy in play vs attack cost
+  # NOT observable: opponent hand contents.
+
+policy_requirements:
+  - a deck-specific pilot that reads opponent bench width
+  - confirmed bench-scaling attacker line + damage math
+  - hard fixtures for the "attack now vs develop" decision (not yet extracted)
+
+blocked_reason: >
+  Not ready this pass. No buildable baseline deck list, the bench-scaling
+  attacker line and its card ids are unconfirmed for this archetype (including
+  them would risk inventing ids or mis-attributing effects), and no
+  replay-derived hard fixtures exist yet. Documented as a future archetype only;
+  not generated or evaluated.

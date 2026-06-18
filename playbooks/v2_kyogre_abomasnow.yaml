@@ -1,0 +1,118 @@
+# ActiveGraph Pass 9 — deck-specific playbook for the v2 control.
+# Kyogre pressure + Snover -> Mega Abomasnow ex setup over deck_energy_trim_light.
+# All card ids are confirmed in data/cards/EN_Card_Data.csv (never invented).
+# The compiler derives the proven Pass-8 effect-safety guards from the rule
+# sections below; this playbook enables the FULL set (== combo_full_safety_v3).
+
+deck_id: v2_kyogre_abomasnow
+baseline_id: v2_kaggle_479_1_deck_energy_trim_light
+
+cards:
+  basic_water_energy: 3
+  kyogre: 721
+  snover: 722
+  mega_abomasnow_ex: 723
+  secret_box: 1092
+  ultra_ball: 1121
+  mega_signal: 1145
+  powerglass: 1163
+  petrel: 1219
+  lillie: 1227
+  surfing_beach: 1262
+
+roles:
+  primary_attackers: [721]      # Kyogre
+  setup_basics: [722]           # Snover
+  evolution_payoffs: [723]      # Mega Abomasnow ex
+  search_cards: [1121, 1145]    # Ultra Ball, Mega Signal
+  risky_search_cards: [1092]    # Secret Box
+  draw_cards: [1227, 1219, 1262]  # Lillie, Petrel, Surfing Beach
+  tools: [1163]                 # Powerglass
+  energy: [3]                   # Basic {W} Energy
+
+gameplan:
+  primary: Kyogre pressure
+  secondary: Snover -> Mega Abomasnow ex setup
+  avoid: self-deckout and orphan Mega Abomasnow line
+
+opening:
+  active_priority:
+    - Kyogre when available with Water/search support
+    - Snover when evolution support is strong
+  bench_priority:
+    - Kyogre
+    - Snover
+    - avoid unnecessary benching if no payoff
+
+main_phase_priorities:
+  - develop Kyogre attacker and attach Water
+  - establish Snover -> Mega Abomasnow ex line when payoff is reachable
+  - use Ultra Ball / Mega Signal to complete the missing piece, not duplicates
+  - draw with Lillie / Petrel only when deck count is healthy
+  - never thin into a deckout
+
+# --- rule sections (compiled into Pass-8 effect-safety guards) --------------
+
+effect_resolution:
+  # Decline Mega Signal when every target is Mega Abomasnow ex (723) and no
+  # Snover (722) is on board (and an empty pick is legal).
+  decline_mega_signal_no_snover: true
+  notes:
+    - effect-resolution card targeting is deck-specific (Pass 8 lesson)
+
+discard_safety:
+  # Pay discard costs with plain Basic {W} Energy before any setup Pokemon.
+  protect_setup: true
+  prefer_discard: [3]
+  never_discard_only: [722, 723, 721]  # Snover, Mega Abomasnow, attacker
+  avoid_discarding_only_search_if_setup_incomplete: true
+
+search:
+  # Ultra Ball / general search: avoid fetching an orphan evolution / Mega
+  # Signal when no Snover line exists; prefer the missing Snover/Kyogre basics.
+  avoid_orphan_evolution: true
+  avoid_orphan_mega_signal: true
+  ultra_ball:
+    - discard excess Water first
+    - if no Snover on board/hand, search Snover over Mega Abomasnow
+    - if Snover exists, search Mega Abomasnow
+    - if no attacker exists, search Kyogre or Snover
+    - avoid low-value duplicate search
+
+secret_box:
+  # Play safety is advisory (the main-menu option schema is not deterministic
+  # enough to hard-fixture); forced discard-all is NOT a failure.
+  play_safety: advisory
+  forced_discard_all_is_failure: false
+  to_hand_priority:
+    - Powerglass if Kyogre active and no tool
+    - Mega Signal only if Snover line exists or is preserved
+    - Lillie/Petrel only when deck count is healthy
+    - Surfing Beach only if not already in play
+    - avoid redundant stadium
+
+deckout_guard:
+  # Penalize / decline optional ctx-7 draw/search as the deck thins.
+  decline_threshold: 8
+  tiers:
+    - deckCount <= 8: penalize optional draw/search
+    - deckCount <= 4: heavily penalize optional draw/search
+    - deckCount <= 2: prefer attack/attach/end unless immediate win/survival
+
+attachment:
+  - attach Water to active Kyogre if attacking plan
+  - attach tool Powerglass to active Kyogre if no tool
+  - otherwise attach to next attacker
+  - avoid attaching to a low-value target when a better target exists
+
+fixture_requirements:
+  must_pass_hard: true
+  secret_box_forced_all_is_na: true
+  improves_advisory_to_hand_priority: true
+
+report_notes:
+  - Fixture gate beats raw win rate (Pass 8).
+  - Secret Box forced-discard-all is NA, not a policy failure.
+  - Secret Box pre-play safety is not deterministically gradeable.
+  - Effect-resolution card targeting is deck-specific.
+  - Deck-specific pilot abstraction is now required.
