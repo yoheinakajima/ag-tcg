@@ -1,93 +1,138 @@
-# Meta pool — Pass 10 (Meta-Calibrated Evaluation)
+# Meta pool — Pass 11B (replay-derived, auto-generated)
 #
-# Describes the opponent meta we want candidates evaluated against, the active
-# control, and the rejected line. This is a HONEST coverage map: only the
-# self-mirror archetype has a real, replay-extracted surrogate deck. The two
-# external archetypes are BLOCKED (their replays are missing and their card ids
-# are unconfirmed) so they contribute no surrogate and no fabricated weight.
-#
-# IMPORTANT LIMITATION: two of three archetypes are still blocked (their replays
-# are missing and their card ids are unconfirmed), so any weighted_meta_score
-# computed here has coverage < 1.0. No candidate may be treated as fully
-# meta-tested or promoted on this pool alone.
-#
-# PASS 10B UPDATE: local cabt self-play IS runnable again (kaggle-environments
-# 1.30.1 ships a working cabt engine; see data/experiments/cabt_diagnostic.json).
-# The earlier "games_runnable_locally: false" conclusion was incorrect. The
-# active control is now selected DYNAMICALLY (highest publicScore among complete
-# non-error live submissions) rather than a hardcoded v1/v2 label.
+# Regenerate with: python scripts/update_meta_pool_from_replays.py
+# Active control is DYNAMIC (live score registry); archetype confidence
+# and surrogate decks come from real extracted replays. No card id is
+# invented. metal_ex_zacian_ramp and water_kyogre_abomasnow_maxbelt are
+# now CONFIRMED (their replays were acquired in Pass 11B).
 
-schema: activegraph.meta.pool/v1
-pass: 10b
-
-# Live Kaggle scores observed this pass (Part A). Trust these over older notes.
+schema: activegraph.meta.pool/v2
+pass: 11b
+generated_by: scripts/update_meta_pool_from_replays.py
+sources:
+  archetypes: data/meta_replays/archetypes.yaml
+  live_scores: data/kaggle_uploads/live_score_registry.json
+  replay_analysis: data/meta_replays/replay_analysis.json
 controls:
-  # DYNAMIC active control (Pass 10B): highest publicScore among complete,
-  # non-error live submissions. Source: data/kaggle_uploads/live_score_registry.json.
   active_control:
-    candidate_id: v1
-    submission_file: submission.tar.gz
-    baseline_dir: data/baselines/v1_kaggle_349_8
-    live_public_score: 363.0
+    candidate_id: combo_full_safety_v3_fixed
+    submission_file: combo_full_safety_v3_fixed.tar.gz
+    live_public_score: 376.6
     status: complete
     selection_rule: highest publicScore among complete non-error submissions
-    note: >
-      v1 deck-loader fix is the current live leader (363.0 > v2 355.2). The
-      active control is no longer a hardcoded label; re-derive it from the live
-      score registry each pass.
+    note: Dynamic active control from the live score registry. Promoted from Pass-10
+      live_rejected@294 after live scores shifted; see historical_combo.
+  reference_v1:
+    candidate_id: v1
+    submission_file: submission.tar.gz
+    live_public_score: 363.0
+    status: complete
   reference_v2:
     candidate_id: deck_energy_trim_light
-    baseline_dir: data/baselines/v2_kaggle_479_1_deck_energy_trim_light
-    live_public_score: 355.2          # current live (historical/early was 479.1)
+    live_public_score: 355.2
     status: complete
-  rejected:
-    candidate_id: combo_full_safety_v3_fixed
+  historical_combo:
+    candidate_id: combo_full_safety_v3_fixed_historical
     live_public_score: 294.0
     status: complete
     decision: live_rejected
-    reason: passed_validation_but_underperformed_live_control
-
-# Opponent archetypes. Weights express how much we WOULD weight each matchup if
-# all surrogates existed. They are intentionally left in place for the blocked
-# rows so coverage math is honest (weight mass on blocked rows = missing eval).
+    superseded_by: active_control
+    note: Pass-10-era score, superseded in Pass 11B.
 archetypes:
-  - key: water_kyogre_abomasnow_mirror_passive
-    status: confirmed_from_replay
-    weight: 0.34
-    surrogate_deck: data/meta_replays/decks/80374966_p0_deck.csv
-    replay_episode: 80374966
-    note: real self-mirror; only usable surrogate this pass.
-  - key: metal_ex_zacian_ramp
-    status: blocked_missing_replay
-    weight: 0.33
-    surrogate_deck: null
-    replay_episode: null            # expected 80503804 (missing)
-    note: card ids unconfirmed; never invented; blocked.
-  - key: water_kyogre_abomasnow_maxbelt
-    status: blocked_missing_replay
-    weight: 0.33
-    surrogate_deck: null
-    replay_episode: null            # expected tymu water/maxbelt (missing)
-    note: Maximum Belt / Cyrano / Waitress ids unconfirmed; blocked.
-
-# Convenience map consumed by meta.scoring.meta_pool_weights().
+- key: metal_ex_zacian_ramp
+  status: confirmed_from_replay
+  confidence: confirmed
+  is_ours: false
+  surrogate_deck: data/meta_replays/decks/80503804_p1_deck.csv
+  replay_episode: 80503804
+  replay_episodes:
+  - 80503804
+  evidence_card_ids:
+  - 8
+  - 336
+  - 547
+  - 695
+  - 988
+  weight: 0.1429
+- key: unknown_ex_tempo
+  status: provisional
+  confidence: provisional
+  is_ours: false
+  surrogate_deck: data/meta_replays/decks/80504942_p0_deck.csv
+  replay_episode: 80504942
+  replay_episodes:
+  - 80504942
+  - 80505567
+  - 80506042
+  - 80515553
+  - 80516161
+  evidence_card_ids:
+  - 121
+  - 269
+  - 678
+  - 756
+  weight: 0.7143
+- key: water_kyogre_abomasnow_maxbelt
+  status: confirmed_from_replay
+  confidence: confirmed
+  is_ours: false
+  surrogate_deck: data/meta_replays/decks/80504288_p0_deck.csv
+  replay_episode: 80504288
+  replay_episodes:
+  - 80504288
+  evidence_card_ids:
+  - 721
+  - 722
+  - 723
+  - 1205
+  - 1235
+  weight: 0.1429
+- key: water_kyogre_abomasnow_passive_mirror
+  status: confirmed_from_replay
+  confidence: confirmed
+  is_ours: true
+  surrogate_deck: data/meta_replays/decks/80374966_p0_deck.csv
+  replay_episode: 80374966
+  replay_episodes:
+  - 80374966
+  - 80503687
+  - 80503804
+  - 80504288
+  - 80504942
+  - 80505567
+  - 80506042
+  - 80515553
+  - 80516161
+  evidence_card_ids:
+  - 721
+  - 722
+  - 723
+  weight: null
 evaluation_weights:
-  water_kyogre_abomasnow_mirror_passive: 0.34
-  metal_ex_zacian_ramp: 0.33
-  water_kyogre_abomasnow_maxbelt: 0.33
-
+  metal_ex_zacian_ramp: 0.1429
+  unknown_ex_tempo: 0.7143
+  water_kyogre_abomasnow_maxbelt: 0.1429
 coverage:
+  coverage_status: usable
+  confirmed_archetypes:
+  - metal_ex_zacian_ramp
+  - water_kyogre_abomasnow_maxbelt
+  provisional_archetypes:
+  - unknown_ex_tempo
+  blocked_archetypes: []
   available_archetypes:
-    - water_kyogre_abomasnow_mirror_passive
-  blocked_archetypes:
-    - metal_ex_zacian_ramp
-    - water_kyogre_abomasnow_maxbelt
-  weight_covered: 0.34              # only the mirror surrogate exists
-  weight_missing: 0.66
+  - metal_ex_zacian_ramp
+  - unknown_ex_tempo
+  - water_kyogre_abomasnow_maxbelt
+  - water_kyogre_abomasnow_passive_mirror
+  weight_confirmed: 0.2858
+  weight_provisional: 0.7143
+  weight_missing: 0.0
   eval_complete: false
-  games_runnable_locally: true     # Pass 10B: cabt self-play confirmed runnable
-  conclusion: >
-    Local game evaluation is UNBLOCKED (cabt runs), but meta COVERAGE is still
-    INCOMPLETE: 66% of meta weight sits on blocked archetypes whose replays are
-    missing. No candidate is promotable from this pool until those replays are
-    acquired. Scout only; self-mirror surrogate is the sole real opponent deck.
+  games_runnable_locally: true
+  conclusion: 'Meta coverage is USABLE: 2 opponent archetype(s) are CONFIRMED from
+    real extracted replays (metal_ex_zacian_ramp, water_kyogre_abomasnow_maxbelt),
+    and 1 provisional bucket(s) (unknown_ex_tempo) hold real surrogate decks but lack
+    a precise named signature (71% of opponent weight). Local cabt self-play is runnable,
+    so candidates can be evaluated against these surrogates — but the provisional
+    bucket means the eval is not a fully named meta and no candidate is auto-promotable.'

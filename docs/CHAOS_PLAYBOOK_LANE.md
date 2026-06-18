@@ -43,6 +43,33 @@ lines attack those assumptions:
 - forced-switch logs (who was forced, into what)
 - missed-attack / pass-after-disruption events
 
+## Replay inbox now supplies this telemetry (Pass 11B)
+
+The replay inbox (`docs/REPLAY_WORKFLOW.md`) gives us the raw opponent-side
+telemetry needed to *measure* chaos for the first time. From the parsed replays we
+can read:
+
+- opponent `handCount`
+- opponent `deckCount`
+- opponent bench count
+- status flags
+- discard events
+- forced active/bench movement **if it is logged in the replay**
+
+That closes the *measurement* gap, but it does **not** open the chaos gate. Chaos
+is still **not upload-ready** until **all** of the following hold:
+
+1. payoff cards are confirmed (a real win condition, with confirmed card ids),
+2. the chaos trigger is **measurable** from the telemetry above,
+3. the cabt evaluation includes **replay-derived archetypes** as opponents, and
+4. the chaos candidate is shown to **not help the opponent set up**.
+
+As of Pass 11B the cabt eval *does* include replay-derived archetypes
+(`scripts/run_meta_pool_eval.py`), but those results are **surrogate-based and
+directional only**, the dominant opponent family is still **provisional**, and no
+payoff card / measurable trigger is confirmed — so conditions 1, 2, and 4 remain
+unmet and the gate stays **closed**.
+
 ## Candidate families to revisit (later, gated)
 
 - `hand_avalanche_froslass`

@@ -58,6 +58,16 @@ PASS10_EVAL_STATUS_JSON = Path("data/meta_replays/pass10_eval_status.json")
 PASS10B_LIVE_REGISTRY_JSON = Path("data/kaggle_uploads/live_score_registry.json")
 PASS10B_CABT_DIAG_JSON = Path("data/experiments/cabt_diagnostic.json")
 PASS10B_EVAL_SMOKE_JSON = Path("data/experiments/pass10b_eval_smoke.json")
+# Pass 11B — replay inbox + meta-pool automation artifacts.
+PASS11B_REPLAY_REGISTRY_JSON = Path("data/meta_replays/replay_registry.json")
+PASS11B_PROCESSING_STATE_JSON = Path("data/meta_replays/replay_processing_state.json")
+PASS11B_INBOX_ERRORS_JSON = Path("data/meta_replays/replay_inbox_errors.json")
+PASS11B_REPLAY_ANALYSIS_JSON = Path("data/meta_replays/replay_analysis.json")
+PASS11B_ARCHETYPES_YAML = Path("data/meta_replays/archetypes.yaml")
+PASS11B_META_POOL_YAML = Path("experiments/meta_pool.yaml")
+PASS11B_META_EVAL_JSON = Path("data/experiments/pass11b_meta_eval.json")
+PASS11B_RANKING_JSON = Path("data/experiments/pass11b_ranking.json")
+PASS11B_REPORT_MD = Path("data/reports/pass11b_replay_inbox_report.md")
 
 # Corrected live baseline scores (see v2 baseline README correction note: the
 # v1 archive dir keeps its historical `349_8` name but live v1 is 356.9).
@@ -193,6 +203,14 @@ def gather(runs_root=RUNS_ROOT) -> dict:
         "pass10b_live_registry": _load_json(PASS10B_LIVE_REGISTRY_JSON) or {},
         "pass10b_cabt_diag": _load_json(PASS10B_CABT_DIAG_JSON) or {},
         "pass10b_eval_smoke": _load_json(PASS10B_EVAL_SMOKE_JSON) or {},
+        "pass11b_replay_registry": _load_json(PASS11B_REPLAY_REGISTRY_JSON) or {},
+        "pass11b_processing_state": _load_json(PASS11B_PROCESSING_STATE_JSON) or {},
+        "pass11b_inbox_errors": _load_json(PASS11B_INBOX_ERRORS_JSON) or {},
+        "pass11b_replay_analysis": _load_json(PASS11B_REPLAY_ANALYSIS_JSON) or {},
+        "pass11b_archetypes": _load_yaml(PASS11B_ARCHETYPES_YAML) or {},
+        "pass11b_meta_pool": _load_yaml(PASS11B_META_POOL_YAML) or {},
+        "pass11b_meta_eval": _load_json(PASS11B_META_EVAL_JSON) or {},
+        "pass11b_ranking": _load_json(PASS11B_RANKING_JSON) or {},
         "runs": runs,
         "baseline_readme": (BASELINE_DIR / "README.md"),
         "v2_baseline_readme": (V2_BASELINE_DIR / "README.md"),
@@ -311,6 +329,7 @@ def _overview_html(data: dict) -> str:
 
     body = (
         f"<section><h2>Snapshot</h2><div class=cards>{cards}</div></section>"
+        f"{_pass11b_html(data)}"
         f"{_pass10b_html(data)}"
         f"{_pass10_html(data)}"
         f"{_run_ledger_html(data)}"
@@ -931,6 +950,247 @@ def _pass10b_md(data: dict) -> list[str]:
     return lines
 
 
+def _pass11b_stats(data: dict) -> dict:
+    """Collect the Pass 11B replay-inbox numbers used by every renderer.
+
+    Every field degrades to a safe default so the section renders even when an
+    artifact is missing. No value is fabricated — only counted from artifacts.
+    """
+    reg = data.get("pass11b_replay_registry") or {}
+    proc = data.get("pass11b_processing_state") or {}
+    errs = data.get("pass11b_inbox_errors") or {}
+    analysis = data.get("pass11b_replay_analysis") or {}
+    arch = data.get("pass11b_archetypes") or {}
+    pool = data.get("pass11b_meta_pool") or {}
+    ev = data.get("pass11b_meta_eval") or {}
+    ranking = data.get("pass11b_ranking") or {}
+
+    records = reg.get("records") or []
+    perspectives = Counter(r.get("perspective") for r in records)
+    confirmed = arch.get("confirmed_opponent_archetypes") or []
+    provisional = arch.get("provisional_archetypes") or []
+    arch_list = arch.get("archetypes") or []
+    unknown = [a.get("archetype_id") for a in arch_list
+               if a.get("confidence") == "unknown"]
+    ac = (pool.get("controls") or {}).get("active_control") or {}
+    rec = analysis.get("record") or {}
+    per_cand = ev.get("per_candidate") or {}
+    # Coverage block is nested under ``coverage:`` (fall back to top-level).
+    cov = pool.get("coverage") or {}
+    coverage_status = cov.get("coverage_status") or pool.get("coverage_status")
+    eval_complete = (cov.get("eval_complete") if "eval_complete" in cov
+                     else pool.get("eval_complete"))
+    blocked_archetypes = (cov.get("blocked_archetypes")
+                          or pool.get("blocked_archetypes") or [])
+
+    # Replay counts per archetype, sourced from the meta pool.
+    by_archetype = {}
+    for a in pool.get("archetypes") or []:
+        eps = a.get("replay_episodes") or ([a.get("replay_episode")]
+                                           if a.get("replay_episode") else [])
+        by_archetype[a.get("key")] = len([e for e in eps if e is not None])
+
+    return {
+        "reg": reg, "proc": proc, "errs": errs, "analysis": analysis,
+        "arch": arch, "pool": pool, "ev": ev, "ranking": ranking,
+        "records": records, "perspectives": perspectives,
+        "confirmed": confirmed, "provisional": provisional, "unknown": unknown,
+        "arch_list": arch_list, "active_control": ac, "record": rec,
+        "per_candidate": per_cand, "by_archetype": by_archetype,
+        "coverage_status": coverage_status, "eval_complete": eval_complete,
+        "blocked_archetypes": blocked_archetypes,
+        "raw_found": reg.get("replays_total"),
+        "parsed": reg.get("replays_registered"),
+        "duplicates": len(reg.get("duplicates_skipped") or []),
+        "errors": len(reg.get("errors") or []),
+        "decks_written": len(proc.get("decks_written") or []),
+        "known_own_decks": len(reg.get("known_own_decks") or []),
+    }
+
+
+def _pass11b_md(data: dict) -> list[str]:
+    s = _pass11b_stats(data)
+    if not (s["reg"] or s["analysis"] or s["arch"] or s["ev"]):
+        return []
+    rec = s["record"]
+    ev = s["ev"]
+    rk = s["ranking"]
+    persp = s["perspectives"]
+    lines = ["## Pass 11B — Replay inbox + meta-pool automation", ""]
+    lines.append("_Infrastructure pass — no Kaggle upload, no GitHub push, no new "
+                 "gameplay candidates; root main.py/deck.csv immutable; no card id "
+                 "invented._")
+    lines += ["", "### Replay inbox",
+              f"- Raw replay files found: **{s['raw_found']}**",
+              f"- Parsed / registered: **{s['parsed']}**",
+              f"- Duplicates skipped: **{s['duplicates']}**",
+              f"- Errors: **{s['errors']}**",
+              f"- Decks extracted: **{s['decks_written']}**",
+              f"- Perspectives: "
+              + (", ".join(f"{k}={v}" for k, v in sorted(persp.items())
+                          if k) or "_none_"),
+              f"- Registry: `{PASS11B_REPLAY_REGISTRY_JSON}`; "
+              f"processing state: `{PASS11B_PROCESSING_STATE_JSON}`"]
+    lines += ["", "### Deck attribution & archetypes",
+              f"- Known own-deck fingerprints: **{s['known_own_decks']}** "
+              "(our decks recognised by ordered-deck SHA-256)",
+              f"- Confirmed opponent archetypes: "
+              + (", ".join(f"`{a}`" for a in s["confirmed"]) or "_none_"),
+              f"- Provisional archetypes: "
+              + (", ".join(f"`{a}`" for a in s["provisional"]) or "_none_"),
+              f"- Unknown archetypes: "
+              + (", ".join(f"`{a}`" for a in s["unknown"]) or "_none_"),
+              f"- Archetypes file: `{PASS11B_ARCHETYPES_YAML}`"]
+    for a in s["arch_list"]:
+        names = ", ".join(a.get("evidence_card_names") or []) or "_no evidence_"
+        lines.append(f"  - `{a.get('archetype_id')}` ({a.get('confidence')}): "
+                     f"{names}")
+    lines += ["", "### Replay analysis",
+              f"- Record (our seat): **{rec.get('wins', 0)}W-"
+              f"{rec.get('losses', 0)}L-{rec.get('draws', 0)}D** "
+              f"({rec.get('self_mirrors', 0)} self-mirror)",
+              f"- Fast losses: "
+              + (", ".join(s["analysis"].get("fast_losses") or []) or "_none_"),
+              f"- Long / deckout games: "
+              + (", ".join(s["analysis"].get("long_or_deckout_games") or [])
+                 or "_none_"),
+              "- Recurring failure tags: "
+              + (", ".join(f"{k}×{v}" for k, v in
+                          (s["analysis"].get("recurring_failure_tags") or {}).items())
+                 or "_none_"),
+              f"- Analysis file: `{PASS11B_REPLAY_ANALYSIS_JSON}`"]
+    # Meta pool coverage.
+    pool = s["pool"]
+    ac = s["active_control"]
+    lines += ["", "### Meta pool",
+              f"- Active control (dynamic): `{ac.get('candidate_id')}` @ "
+              f"**{ac.get('live_public_score')}**",
+              f"- Coverage status: **{s['coverage_status'] or 'unknown'}** "
+              f"(eval_complete={s['eval_complete']})",
+              "- Replay count by archetype: "
+              + (", ".join(f"{k}={v}" for k, v in s["by_archetype"].items())
+                 or "_none_"),
+              f"- Blocked archetypes: "
+              + (", ".join(f"`{a}`" for a in s["blocked_archetypes"])
+                 or "_none_"),
+              f"- Meta pool file: `{PASS11B_META_POOL_YAML}`"]
+    # Local evaluation.
+    lines += ["", "### Local evaluation"]
+    if ev:
+        lines += [f"- cabt runnable: **{ev.get('cabt_available')}**, status: "
+                  f"**{ev.get('status')}** ({ev.get('external_meta_eval')})",
+                  f"- Opponent families: "
+                  + (", ".join(f"`{f}`" for f in ev.get('opponent_families') or [])
+                     or "_none_"),
+                  f"- Candidates evaluated: "
+                  + (", ".join(f"`{c}`" for c in ev.get('candidates_evaluated') or [])
+                     or "_none_")]
+        for cid, c in (s["per_candidate"]).items():
+            lines.append(f"  - `{cid}` ({c.get('role')}): weighted_meta_score "
+                         f"**{_num(c.get('weighted_meta_score'))}**, "
+                         f"vs_active_control {c.get('vs_active_control')}")
+            for k, m in (c.get("per_archetype") or {}).items():
+                lines.append(f"    - {k}: WR {_num(m.get('win_rate'))} "
+                             f"({m.get('wins')}-{m.get('losses')}-{m.get('draws')}, "
+                             f"crashes {m.get('crashes')}, timeouts {m.get('timeouts')})")
+        lines.append(f"- Upload-ready: **{rk.get('upload_ready')}** "
+                     "(directional local proxy only)")
+    else:
+        lines.append("_Eval not run._")
+    lines += ["", "### Bottom line",
+              "- **Eval is directional only; meta coverage is usable but not yet "
+              "complete (provisional buckets still need confirming replays) and no "
+              "candidate is upload-ready. Queue empty. Next upload: none.**"]
+    return lines
+
+
+def _pass11b_html(data: dict) -> str:
+    s = _pass11b_stats(data)
+    if not (s["reg"] or s["analysis"] or s["arch"] or s["ev"]):
+        return ""
+    rec = s["record"]
+    ev = s["ev"]
+    cards = "".join(
+        f"<div class=card><div class=k>{_esc(k)}</div><div class=v>{_esc(v)}</div></div>"
+        for k, v in [
+            ("Raw replays", s["raw_found"]),
+            ("Parsed", s["parsed"]),
+            ("Duplicates", s["duplicates"]),
+            ("Errors", s["errors"]),
+            ("Decks extracted", s["decks_written"]),
+            ("Confirmed archetypes", len(s["confirmed"])),
+            ("Provisional", len(s["provisional"])),
+            ("Record", f"{rec.get('wins', 0)}-{rec.get('losses', 0)}-"
+                       f"{rec.get('draws', 0)}"),
+        ]
+    )
+    arch_rows = "".join(
+        f"<tr><td><code>{_esc(a.get('archetype_id'))}</code></td>"
+        f"<td>{_esc(a.get('confidence'))}</td>"
+        f"<td>{_esc(', '.join(a.get('evidence_card_names') or []) or '—')}</td></tr>"
+        for a in s["arch_list"]
+    ) or "<tr><td class=muted colspan=3>no archetypes</td></tr>"
+    eval_rows = "".join(
+        f"<tr><td><code>{_esc(cid)}</code></td><td>{_esc(c.get('role'))}</td>"
+        f"<td>{_esc(_num(c.get('weighted_meta_score')))}</td>"
+        f"<td>{_esc(c.get('vs_active_control'))}</td></tr>"
+        for cid, c in s["per_candidate"].items()
+    ) or "<tr><td class=muted colspan=4>eval not run</td></tr>"
+    ac = s["active_control"]
+    upload = s["ranking"].get("upload_ready")
+    return (
+        "<section><h2>Pass 11B — Replay inbox + meta-pool automation</h2>"
+        "<p class=muted>Infrastructure pass — no upload, no push, no new "
+        "candidates; root immutable; no card id invented. Active control "
+        f"<code>{_esc(ac.get('candidate_id'))}</code> @ "
+        f"{_esc(ac.get('live_public_score'))}; coverage "
+        f"<b>{_esc(s['coverage_status'] or 'unknown')}</b>.</p>"
+        f"<div class=cards>{cards}</div>"
+        "<h3>Opponent archetypes (replay-derived evidence)</h3>"
+        "<table><tr><th>Archetype</th><th>Confidence</th><th>Evidence cards</th></tr>"
+        f"{arch_rows}</table>"
+        "<h3>Local evaluation (directional)</h3>"
+        "<table><tr><th>Candidate</th><th>Role</th><th>Weighted meta score</th>"
+        f"<th>vs active control</th></tr>{eval_rows}</table>"
+        f"<p class=muted>Upload-ready: <b>{_esc(upload)}</b>. "
+        "Eval is a directional local proxy; meta coverage partial; "
+        "queue empty; next upload: none.</p></section>"
+    )
+
+
+def write_pass11b_report(data: dict, path: Path = PASS11B_REPORT_MD) -> Path:
+    """Write the standalone Pass 11B replay-inbox report (Part L)."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = _pass11b_md(data)
+    if not body:
+        lines = ["# ActiveGraph Pass 11B — Replay inbox report", "",
+                 "_No Pass 11B artifacts found yet._", ""]
+    else:
+        lines = ["# ActiveGraph Pass 11B — Replay inbox report", "",
+                 "Generated from lab artifacts only; no values fabricated.", ""]
+        lines += body
+        # Missing replay types + next upload recommendation (spec Part L).
+        s = _pass11b_stats(data)
+        missing = [a.get("archetype_id") for a in s["arch_list"]
+                   if a.get("confidence") != "confirmed"]
+        lines += ["", "## Missing replay types",
+                  "- Provisional/unknown archetypes still need more replays for "
+                  "confirmation: "
+                  + (", ".join(f"`{m}`" for m in missing) or "_none_"),
+                  "- The meta pool stays at coverage "
+                  f"**{(s['coverage_status'] or 'unknown')}** until those "
+                  "are upgraded to confirmed.",
+                  "", "## Next upload recommendation",
+                  "- **None.** Local evaluation is directional only and no "
+                  "candidate is upload-ready; the dynamic active control "
+                  f"`{s['active_control'].get('candidate_id')}` "
+                  f"(@{s['active_control'].get('live_public_score')}) remains the "
+                  "best known submission. No GitHub push, no Kaggle upload.", ""]
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
+
+
 def _pass10_control_scores(pool: dict) -> dict:
     """Resolve v1 / v2 / rejected live scores by *identity* (candidate_id).
 
@@ -1548,6 +1808,8 @@ def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
         "",
     ]
 
+    lines += _pass11b_md(data)
+    lines += [""]
     lines += _pass10b_md(data)
     lines += [""]
     lines += _pass10_md(data)

@@ -1,0 +1,167 @@
+{
+  "schema": "activegraph.meta_replays.replay_analysis/v1",
+  "pass": "11b",
+  "replays_analyzed": 9,
+  "record": {
+    "wins": 3,
+    "losses": 4,
+    "draws": 0,
+    "self_mirrors": 2,
+    "opponent_only_or_unknown": 0
+  },
+  "fast_losses": [
+    "80503804",
+    "80505567"
+  ],
+  "long_or_deckout_games": [
+    "80374966",
+    "80504942",
+    "80506042",
+    "80516161"
+  ],
+  "recurring_failure_tags": {
+    "stuck_on_basic_snover": 7,
+    "fast_loss": 2
+  },
+  "opponent_archetype_counts": {
+    "unknown_ex_tempo": 5,
+    "metal_ex_zacian_ramp": 1,
+    "water_kyogre_abomasnow_maxbelt": 1
+  },
+  "thresholds": {
+    "fast_loss_steps": 60,
+    "long_game_steps": 140
+  },
+  "per_replay": [
+    {
+      "episode": 80374966,
+      "perspective": "self_mirror",
+      "our_seat": [
+        0,
+        1
+      ],
+      "num_steps": 136,
+      "opponent_archetype": null,
+      "our_decked_out": false,
+      "stuck_on_basic_snover": false,
+      "fast_loss": false,
+      "long_game": true,
+      "failure_tags": []
+    },
+    {
+      "episode": 80503687,
+      "perspective": "self_mirror",
+      "our_seat": [
+        0,
+        1
+      ],
+      "num_steps": 79,
+      "opponent_archetype": null,
+      "our_decked_out": false,
+      "stuck_on_basic_snover": false,
+      "fast_loss": false,
+      "long_game": false,
+      "failure_tags": []
+    },
+    {
+      "episode": 80503804,
+      "perspective": "our_loss",
+      "our_seat": 0,
+      "num_steps": 37,
+      "opponent_archetype": "metal_ex_zacian_ramp",
+      "our_decked_out": false,
+      "stuck_on_basic_snover": true,
+      "fast_loss": true,
+      "long_game": false,
+      "failure_tags": [
+        "fast_loss",
+        "stuck_on_basic_snover"
+      ]
+    },
+    {
+      "episode": 80504288,
+      "perspective": "our_loss",
+      "our_seat": 1,
+      "num_steps": 134,
+      "opponent_archetype": "water_kyogre_abomasnow_maxbelt",
+      "our_decked_out": false,
+      "stuck_on_basic_snover": true,
+      "fast_loss": false,
+      "long_game": false,
+      "failure_tags": [
+        "stuck_on_basic_snover"
+      ]
+    },
+    {
+      "episode": 80504942,
+      "perspective": "our_win",
+      "our_seat": 1,
+      "num_steps": 202,
+      "opponent_archetype": "unknown_ex_tempo",
+      "our_decked_out": false,
+      "stuck_on_basic_snover": true,
+      "fast_loss": false,
+      "long_game": true,
+      "failure_tags": [
+        "stuck_on_basic_snover"
+      ]
+    },
+    {
+      "episode": 80505567,
+      "perspective": "our_loss",
+      "our_seat": 1,
+      "num_steps": 28,
+      "opponent_archetype": "unknown_ex_tempo",
+      "our_decked_out": false,
+      "stuck_on_basic_snover": true,
+      "fast_loss": true,
+      "long_game": false,
+      "failure_tags": [
+        "fast_loss",
+        "stuck_on_basic_snover"
+      ]
+    },
+    {
+      "episode": 80506042,
+      "perspective": "our_loss",
+      "our_seat": 1,
+      "num_steps": 156,
+      "opponent_archetype": "unknown_ex_tempo",
+      "our_decked_out": false,
+      "stuck_on_basic_snover": true,
+      "fast_loss": false,
+      "long_game": true,
+      "failure_tags": [
+        "stuck_on_basic_snover"
+      ]
+    },
+    {
+      "episode": 80515553,
+      "perspective": "our_win",
+      "our_seat": 1,
+      "num_steps": 138,
+      "opponent_archetype": "unknown_ex_tempo",
+      "our_decked_out": false,
+      "stuck_on_basic_snover": true,
+      "fast_loss": false,
+      "long_game": false,
+      "failure_tags": [
+        "stuck_on_basic_snover"
+      ]
+    },
+    {
+      "episode": 80516161,
+      "perspective": "our_win",
+      "our_seat": 1,
+      "num_steps": 196,
+      "opponent_archetype": "unknown_ex_tempo",
+      "our_decked_out": false,
+      "stuck_on_basic_snover": true,
+      "fast_loss": false,
+      "long_game": true,
+      "failure_tags": [
+        "stuck_on_basic_snover"
+      ]
+    }
+  ]
+}

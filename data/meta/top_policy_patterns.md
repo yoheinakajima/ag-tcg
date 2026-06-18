@@ -1,6 +1,6 @@
 # Top Policy Patterns (meta engine backlog)
 
-Replays analyzed: **0** (coverage: empty).
+Replays analyzed: **5** (coverage: partial).
 
 Preserved policy seams per strategy track:
 
@@ -13,10 +13,21 @@ Preserved policy seams per strategy track:
 - **Chaos as engine-supported disruption** — policy seam: _payoff condition tied to an observable opponent signal_
   - signals: Froslass handCount / Durant deckCount / bench-bloat / status — visible signals only
 
-_No replays present; early-game policy patterns will be filled once real top-player replays are added._
+## Per-replay early-policy fingerprints
+
+- `data/meta_replays/meta_replay_summary.json` — track=unclassified (confidence low); coverage=partial
+  - no steps array; early-game policy is unknown
+- `data/meta_replays/pass10_eval_status.json` — track=unclassified (confidence low); coverage=partial
+  - no steps array; early-game policy is unknown
+- `data/meta_replays/replay_inbox_errors.json` — track=unclassified (confidence low); coverage=partial
+  - no steps array; early-game policy is unknown
+- `data/meta_replays/replay_processing_state.json` — track=unclassified (confidence low); coverage=partial
+  - no steps array; early-game policy is unknown
+- `data/meta_replays/replay_registry.json` — track=unclassified (confidence low); coverage=partial
+  - no steps array; early-game policy is unknown
 
 ## Uncertainty
 
-- No replays present — archetypes not yet extracted (scaffolding only).
+- Replays present but track matcher is a future-work hook; assignments are 'unclassified'.
 - Card ids are never invented; unknown ids stay unknown.
 - Four strategy tracks are preserved as the labelling vocabulary.

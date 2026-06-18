@@ -28,6 +28,19 @@ from pathlib import Path
 import _bootstrap  # noqa: F401
 from analyze_meta_replay import analyze_replay
 
+try:
+    import yaml  # type: ignore
+except Exception:  # pragma: no cover
+    yaml = None
+
+REPO = Path(__file__).resolve().parents[1]
+REGISTRY_JSON = REPO / "data" / "meta_replays" / "replay_registry.json"
+ARCHETYPES_YAML = REPO / "data" / "meta_replays" / "archetypes.yaml"
+ARCHETYPES_MD = REPO / "data" / "meta_replays" / "archetypes.md"
+
+# Confidence ordering: a single confirmed seat outranks any number of provisionals.
+_CONFIDENCE_RANK = {"confirmed": 2, "provisional": 1, "unknown": 0}
+
 # Preserved strategy tracks (labels + policy seam). Card NAMES come from
 # docs/META_ENGINE_STRATEGIES.md; no numeric ids are asserted here.
 STRATEGY_TRACKS = [
@@ -174,6 +187,129 @@ def _write_skeletons_md(summary: dict, out_path: Path) -> None:
     out_path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def build_replay_archetypes(registry: dict) -> dict:
+    """Aggregate the registry's per-seat classifications into archetype rows.
+
+    Each archetype row carries: ``archetype_id``, ``confidence`` (best across
+    contributing seats), ``evidence_card_ids`` / ``evidence_card_names`` (union),
+    ``replay_episode_ids``, ``player_indices`` (``"<episode>:p<seat>"``),
+    ``deck_fingerprints`` and ``notes``. Card ids are only ever the union of ids
+    that the classifier already saw in real extracted decks — none are invented.
+    """
+    rows: dict[str, dict] = {}
+    for rec in registry.get("records", []):
+        ep = rec.get("episode_id")
+        for seat in rec.get("seats", []):
+            arch = seat.get("archetype")
+            if not arch:
+                continue
+            aid = arch.get("archetype_id", "unknown")
+            row = rows.setdefault(aid, {
+                "archetype_id": aid,
+                "confidence": "unknown",
+                "evidence_card_ids": set(),
+                "evidence_card_names": set(),
+                "replay_episode_ids": set(),
+                "player_indices": set(),
+                "deck_fingerprints": set(),
+                "is_ours": bool(seat.get("is_ours")),
+                "notes": set(),
+            })
+            if _CONFIDENCE_RANK.get(arch.get("confidence"), 0) > \
+                    _CONFIDENCE_RANK.get(row["confidence"], 0):
+                row["confidence"] = arch.get("confidence", "unknown")
+            row["evidence_card_ids"].update(arch.get("evidence_card_ids", []))
+            row["evidence_card_names"].update(arch.get("evidence_card_names", []))
+            if ep is not None:
+                row["replay_episode_ids"].add(ep)
+            row["player_indices"].add(f"{ep}:p{seat.get('seat')}")
+            fpr = seat.get("fingerprint") or {}
+            if fpr.get("multiset_deck_sha256"):
+                row["deck_fingerprints"].add(fpr["multiset_deck_sha256"])
+            row["is_ours"] = row["is_ours"] or bool(seat.get("is_ours"))
+            for n in arch.get("notes", []):
+                row["notes"].add(n)
+
+    archetypes = []
+    for aid in sorted(rows):
+        r = rows[aid]
+        archetypes.append({
+            "archetype_id": aid,
+            "confidence": r["confidence"],
+            "is_ours": r["is_ours"],
+            "evidence_card_ids": sorted(r["evidence_card_ids"]),
+            "evidence_card_names": sorted(r["evidence_card_names"]),
+            "replay_episode_ids": sorted(r["replay_episode_ids"], key=str),
+            "player_indices": sorted(r["player_indices"]),
+            "deck_fingerprints": sorted(r["deck_fingerprints"]),
+            "notes": sorted(r["notes"]),
+        })
+
+    confirmed = [a["archetype_id"] for a in archetypes
+                 if a["confidence"] == "confirmed" and not a["is_ours"]]
+    provisional = [a["archetype_id"] for a in archetypes
+                   if a["confidence"] == "provisional"]
+    return {
+        "schema": "activegraph.meta_replays.archetypes/v1",
+        "pass": "11b",
+        "hard_rules": [
+            "never invent card ids; evidence ids come only from extracted decks",
+            "confidence is confirmed/provisional/unknown; unknown carries no claim",
+        ],
+        "source_registry": str(REGISTRY_JSON.relative_to(REPO)),
+        "n_archetypes": len(archetypes),
+        "confirmed_opponent_archetypes": sorted(set(confirmed)),
+        "provisional_archetypes": sorted(set(provisional)),
+        "archetypes": archetypes,
+    }
+
+
+def _write_replay_archetypes_md(obj: dict, out_path: Path) -> None:
+    lines = ["# Replay-derived archetypes (Pass 11B)", ""]
+    lines.append(f"- archetypes found: **{obj['n_archetypes']}**")
+    lines.append(f"- confirmed opponent archetypes: "
+                 f"{', '.join(obj['confirmed_opponent_archetypes']) or 'none'}")
+    lines.append(f"- provisional archetypes: "
+                 f"{', '.join(obj['provisional_archetypes']) or 'none'}")
+    lines.append(f"- source: `{obj['source_registry']}`")
+    lines.append("")
+    lines.append("| archetype | confidence | ours | episodes | evidence ids |")
+    lines.append("|---|---|---|---|---|")
+    for a in obj["archetypes"]:
+        lines.append(
+            f"| {a['archetype_id']} | {a['confidence']} | "
+            f"{'yes' if a['is_ours'] else 'no'} | "
+            f"{', '.join(str(e) for e in a['replay_episode_ids']) or '-'} | "
+            f"{', '.join(str(c) for c in a['evidence_card_ids']) or '-'} |"
+        )
+    lines.append("")
+    for a in obj["archetypes"]:
+        lines.append(f"## {a['archetype_id']} ({a['confidence']})")
+        names = ", ".join(a["evidence_card_names"]) or "—"
+        lines.append(f"- evidence cards: {names}")
+        lines.append(f"- seats: {', '.join(a['player_indices'])}")
+        for n in a["notes"]:
+            lines.append(f"- note: {n}")
+        lines.append("")
+    out_path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def write_replay_archetypes(registry_path: Path = REGISTRY_JSON) -> dict:
+    """Build + persist ``archetypes.{yaml,md}`` from the replay registry."""
+    if not registry_path.exists():
+        return {}
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    obj = build_replay_archetypes(registry)
+    if yaml is not None:
+        ARCHETYPES_YAML.write_text(
+            yaml.safe_dump(obj, sort_keys=False, allow_unicode=True),
+            encoding="utf-8")
+    else:  # pragma: no cover - yaml always present in this repo
+        ARCHETYPES_YAML.write_text(json.dumps(obj, indent=2), encoding="utf-8")
+    _write_replay_archetypes_md(obj, ARCHETYPES_MD)
+    return obj
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -189,13 +325,21 @@ def main() -> int:
     _write_policy_md(summary, out_dir / "top_policy_patterns.md")
     _write_skeletons_md(summary, out_dir / "top_deck_skeletons.md")
 
+    # Pass 11B: replay-derived archetypes aggregated from the registry.
+    replay_obj = write_replay_archetypes()
+
     print(json.dumps({
         "n_replays": summary["n_replays"],
         "n_archetypes_extracted": summary["n_archetypes_extracted"],
+        "replay_archetypes": replay_obj.get("n_archetypes", 0) if replay_obj else 0,
+        "confirmed_opponent_archetypes":
+            replay_obj.get("confirmed_opponent_archetypes", []) if replay_obj else [],
         "out": [
             str(out_dir / "meta_archetypes.json"),
             str(out_dir / "top_policy_patterns.md"),
             str(out_dir / "top_deck_skeletons.md"),
+            str(ARCHETYPES_YAML.relative_to(REPO)) if replay_obj else None,
+            str(ARCHETYPES_MD.relative_to(REPO)) if replay_obj else None,
         ],
     }, indent=2))
     return 0

@@ -66,35 +66,58 @@ def _load_pool() -> dict:
 # --------------------------------------------------------------------------- #
 # Part A — score ingestion / control selection
 # --------------------------------------------------------------------------- #
-def test_combo_fixed_classified_live_rejected():
+def test_combo_live_rejected_role_preserved_as_historical():
+    """Pass 11B promotes combo to the active control after its live score rose.
+
+    Its Pass-10 live_rejected@294 outcome must NOT be erased -- it is preserved
+    by identity under ``historical_combo`` so the regression remains auditable.
+    """
     pool = _load_pool()
-    rej = pool["controls"]["rejected"]
-    assert rej["candidate_id"] == "combo_full_safety_v3_fixed"
-    assert rej["decision"] == "live_rejected"
-    assert rej["reason"] == "passed_validation_but_underperformed_live_control"
-    assert rej["status"] == "complete"
+    hist = pool["controls"]["historical_combo"]
+    assert hist["candidate_id"] == "combo_full_safety_v3_fixed_historical"
+    assert hist["decision"] == "live_rejected"
+    assert hist["live_public_score"] == 294.0
+    assert hist["superseded_by"] == "active_control"
 
 
-def test_v2_remains_active_control_with_v1_discrepancy_noted():
+def test_combo_is_now_active_control_with_v1_discrepancy_noted():
     pool = _load_pool()
     ctrl = pool["controls"]
-    assert ctrl["active_control"]["candidate_id"] == "deck_energy_trim_light"
-    # The v1/v2 live discrepancy (v1 > v2) must be visible, not hidden.
+    # Pass 11B: combo is the dynamic active control off the live registry.
+    assert ctrl["active_control"]["candidate_id"] == "combo_full_safety_v3_fixed"
+    assert ctrl["active_control"]["live_public_score"] == 376.6
+    # The v1 > v2 live discrepancy must still be visible, not hidden.
     assert ctrl["reference_v1"]["live_public_score"] > \
-        ctrl["active_control"]["live_public_score"]
+        ctrl["reference_v2"]["live_public_score"]
+    # The active control now out-scores v1 (that is why it was promoted).
+    assert ctrl["active_control"]["live_public_score"] > \
+        ctrl["reference_v1"]["live_public_score"]
 
 
 # --------------------------------------------------------------------------- #
 # Replay deck extraction
 # --------------------------------------------------------------------------- #
-def test_extracted_replay_decks_use_confirmed_ids_only():
+def test_extracted_replay_decks_are_60_integer_rows():
+    """Pass 11B extracts real OPPONENT decks too, which legitimately contain card
+    ids outside our conservative 11-card CONFIRMED_CARDS playbook set. The
+    invariant is therefore structural (60 integer rows from the real replay), not
+    membership in the playbook set. Our OWN extracted decks (those that
+    fingerprint-match a known own deck) must still be playbook-confirmed only.
+    """
+    from ptcg_activegraph.replays import fingerprints as fp
+    from ptcg_activegraph.replays.registry import load_known_own_decks
+
     decks = sorted(DECKS_DIR.glob("*_deck.csv"))
     assert decks, "expected at least one extracted replay deck"
+    known_own = load_known_own_decks(REPO)
     for deck in decks:
         ids = [int(x) for x in deck.read_text().split() if x.strip()]
-        assert ids, f"{deck.name} should not be empty"
-        unknown = sorted(set(ids) - CONFIRMED_IDS)
-        assert not unknown, f"{deck.name} contains unconfirmed ids {unknown}"
+        assert len(ids) == 60, f"{deck.name} should be 60 cards, got {len(ids)}"
+        # If this seat is one of our own decks, it must use confirmed ids only.
+        if fp.match_multiset(ids, known_own) is not None:
+            unknown = sorted(set(ids) - CONFIRMED_IDS)
+            assert not unknown, \
+                f"our own deck {deck.name} contains unconfirmed ids {unknown}"
 
 
 # --------------------------------------------------------------------------- #
@@ -123,12 +146,15 @@ def test_archetype_yaml_no_invented_ids_anywhere():
 def test_meta_pool_weights_loaded():
     pool = load_meta_pool(META_POOL)
     weights = meta_pool_weights(pool)
+    # Pass 11B: weights are over the *opponent* archetypes (our own mirror is not
+    # an eval opponent and carries no evaluation weight).
     assert set(weights) == {
-        "water_kyogre_abomasnow_mirror_passive",
         "metal_ex_zacian_ramp",
+        "unknown_ex_tempo",
         "water_kyogre_abomasnow_maxbelt",
     }
-    assert abs(sum(weights.values()) - 1.0) < 1e-6
+    # Weights are stored rounded to 4 decimals, so allow rounding slack.
+    assert abs(sum(weights.values()) - 1.0) < 1e-3
 
 
 def test_weighted_meta_score_full_coverage():
@@ -173,15 +199,23 @@ def test_eval_incomplete_and_nothing_promotable():
     assert all(c["promotable"] is False for c in status["candidates"])
 
 
-def test_blocked_externals_recorded_in_pool_coverage():
+def test_external_archetypes_confirmed_in_pool_coverage():
+    """Pass 11B acquired the metal + maxbelt replays, so those externals moved
+    from blocked -> confirmed_from_replay. Nothing is blocked any more, but the
+    eval is still NOT complete because a provisional bucket holds most weight."""
     pool = _load_pool()
     cov = pool["coverage"]
-    assert set(cov["blocked_archetypes"]) == {
+    assert cov["blocked_archetypes"] == []
+    assert cov["weight_missing"] == 0.0
+    assert set(cov["confirmed_archetypes"]) == {
         "metal_ex_zacian_ramp",
         "water_kyogre_abomasnow_maxbelt",
     }
+    assert cov["provisional_archetypes"] == ["unknown_ex_tempo"]
+    # Coverage is usable but not a fully named meta -> eval stays incomplete.
+    assert cov["coverage_status"] == "usable"
     assert cov["eval_complete"] is False
-    assert cov["weight_missing"] > 0
+    assert cov["weight_provisional"] > 0
 
 
 # --------------------------------------------------------------------------- #

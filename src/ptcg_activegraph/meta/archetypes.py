@@ -126,6 +126,109 @@ def attach_mirror_deck(card_ids: list[int], episode: Any, deck_path: str) -> Non
         arch.notes.append("deck ids not fully in confirmed set; kept provisional")
 
 
+# --------------------------------------------------------------------------
+# Pass 11B: replay-deck archetype classification
+#
+# Signature card ids below were each OBSERVED in a real, extracted replay deck;
+# their names were confirmed against the local official card metadata
+# (data/cards/EN_Card_Data.csv). No id is invented: the classifier only keys off
+# ids that actually appear in the deck handed to it. Names are a curated
+# signature subset (the same pattern as CONFIRMED_CARDS), not a copy of the
+# official CSV.
+# --------------------------------------------------------------------------
+
+SIGNATURE_CARDS: dict[int, str] = {
+    721: "Kyogre",
+    722: "Snover",
+    723: "Mega Abomasnow ex",
+    8: "Basic {M} Energy",
+    336: "Zacian ex",
+    547: "Genesect ex",
+    988: "Registeel ex",
+    695: "Mega Mawile ex",
+    1205: "Cyrano",
+    1235: "Waitress",
+    121: "Dragapult ex",
+    678: "Mega Lucario ex",
+    756: "Mega Kangaskhan ex",
+    269: "Iono's Bellibolt ex",
+}
+
+# Archetype-defining id sets (all confirmed from replays + official metadata).
+_WATER_CORE = {721, 723}            # Kyogre + Mega Abomasnow ex
+_WATER_SNOVER = 722                  # Snover (evolution line into Abomasnow)
+_MAXBELT_SUPPORT = {1205, 1235}     # Cyrano / Waitress support package
+_METAL_CORE = {336, 8}              # Zacian ex + Basic Metal Energy
+_EX_TEMPO_MARKERS = {121, 678, 756, 269, 547, 988, 695}  # confirmed ex attackers
+
+
+def classify_deck(
+    ids: list[int],
+    *,
+    is_own_deck: bool = False,
+    card_names: dict[int, str] | None = None,
+) -> dict:
+    """Classify a replay-extracted 60-card deck into a meta archetype.
+
+    Returns ``{archetype_id, confidence, evidence_card_ids, evidence_card_names,
+    notes}``. Card ids come ONLY from the deck handed in (extracted from a real
+    replay); names are resolved from ``card_names`` (the local official metadata)
+    falling back to the curated ``SIGNATURE_CARDS`` map. No id is ever invented.
+
+    ``confidence`` is one of ``confirmed`` / ``provisional`` / ``unknown``.
+    """
+    clean = [int(i) for i in ids if not isinstance(i, bool)]
+    present = set(clean)
+    notes: list[str] = []
+
+    def _name(cid: int) -> str:
+        if card_names and cid in card_names:
+            return card_names[cid]
+        return SIGNATURE_CARDS.get(cid, f"card {cid}")
+
+    def _result(arch_id: str, confidence: str, evidence: list[int]) -> dict:
+        ev = sorted(set(evidence))
+        return {
+            "archetype_id": arch_id,
+            "confidence": confidence,
+            "evidence_card_ids": ev,
+            "evidence_card_names": [_name(c) for c in ev],
+            "notes": notes,
+        }
+
+    if not clean:
+        notes.append("empty deck; cannot classify")
+        return _result("unknown", "unknown", [])
+
+    # Water Kyogre / Mega Abomasnow family (our own line + external water decks).
+    if _WATER_CORE <= present and _WATER_SNOVER in present:
+        ev = [c for c in (721, 722, 723) if c in present]
+        if is_own_deck:
+            return _result("water_kyogre_abomasnow_passive_mirror", "confirmed", ev)
+        if _MAXBELT_SUPPORT & present:
+            ev += sorted(_MAXBELT_SUPPORT & present)
+            return _result("water_kyogre_abomasnow_maxbelt", "confirmed", ev)
+        return _result("water_kyogre_abomasnow", "confirmed", ev)
+
+    # Metal ex / Zacian ramp.
+    if _METAL_CORE <= present:
+        ev = [c for c in (336, 8, 547, 988, 695) if c in present]
+        return _result("metal_ex_zacian_ramp", "confirmed", ev)
+
+    # A confirmed ex attacker is present but the precise external list is not in
+    # our named set -> honest provisional bucket (no fabricated detail).
+    markers = _EX_TEMPO_MARKERS & present
+    if markers:
+        notes.append(
+            "contains a confirmed ex attacker but does not match a named "
+            "archetype signature; bucketed as generic ex tempo"
+        )
+        return _result("unknown_ex_tempo", "provisional", sorted(markers))
+
+    notes.append("no confirmed archetype signature matched")
+    return _result("unknown", "unknown", [])
+
+
 def archetype_table() -> list[dict]:
     return [a.to_dict() for a in ARCHETYPES.values()]
 

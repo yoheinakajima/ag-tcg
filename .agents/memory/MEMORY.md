@@ -1,2 +1,3 @@
 - [Kaggle deck-selection obs](kaggle-deck-selection-obs.md) — cabt deck step = select & current both None; obs may be key-absent dict or attribute object, not just dict; local self-play can't reproduce. Validate all 3 shapes.
 - [Live scores drift](activegraph-canonical-scores.md) — v1/v2 live Kaggle scores change each pass; dir names are stale anchors; source report values from the pass's own artifacts, not old constants. Don't assume v2>v1.
+- [Two archetype lenses](archetype-two-lens.md) — legacy static ARCHETYPES dict vs live replay-derived classifier are intentionally separate; don't merge them.

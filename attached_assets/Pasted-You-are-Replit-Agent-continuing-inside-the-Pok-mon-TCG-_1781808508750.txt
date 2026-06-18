@@ -1,0 +1,504 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not invent card IDs.
+- Do not commit Kaggle credentials, official card CSV/PDF data, or raw private replay payloads unless explicitly approved.
+- This is a replay-ingestion + meta-pool + local-evaluation pass only.
+
+Current situation:
+- I uploaded several raw Kaggle replay JSON files into:
+  data/meta_replays/raw/
+- Filenames are arbitrary numeric names, e.g. 80503687.json.
+- I do not want to rename them manually.
+- The lab should automatically track:
+  - which replays have been analyzed,
+  - which deck/submission each replay applies to,
+  - whether the replay is a win/loss/draw/error,
+  - opponent deck/archetype,
+  - replay-derived deck fingerprints,
+  - whether the replay is usable in the meta pool.
+- cabt is runnable locally through kaggle_environments; Pass 10B proved make("cabt") + env.run can complete games.
+- Active control should be dynamic: highest publicScore among complete non-error submissions.
+- No upload should happen.
+
+Goal:
+Run Pass 11B: Replay Inbox + Meta Pool Automation.
+
+Objectives:
+1. Treat data/meta_replays/raw/*.json as an append-only replay inbox.
+2. Parse every replay without requiring manual renaming.
+3. Build a replay registry with dedupe, analysis status, deck fingerprints, submission/deck attribution, and archetype labels.
+4. Extract deck CSVs for every player in every replay.
+5. Update meta_pool.yaml from the replay registry.
+6. Run a small local cabt evaluation using the replay-derived meta pool if enough replay decks are available.
+7. Produce a report and no-upload recommendation.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Refresh live score registry
+
+Run read-only Kaggle status:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass11b.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass11b.csv || true
+
+Run or update:
+
+python scripts/build_live_score_registry.py
+
+Outputs:
+- data/kaggle_uploads/live_score_registry.json
+- data/kaggle_uploads/live_score_registry.md
+
+Determine active_control dynamically:
+- highest publicScore among complete non-error submissions.
+- ignore error/pending submissions.
+
+Emit ActiveGraph events:
+- KaggleScoreUpdated
+- ActiveControlSelected
+- CandidateRejected for complete submissions below active control if not already recorded
+
+Part C — Build replay inbox registry
+
+Create or update:
+
+scripts/ingest_replay_inbox.py
+src/ptcg_activegraph/replays/inbox.py
+src/ptcg_activegraph/replays/fingerprints.py
+src/ptcg_activegraph/replays/registry.py
+
+Input:
+- data/meta_replays/raw/*.json
+
+Do not require filenames to be meaningful.
+
+For each JSON file:
+- compute file_sha256
+- parse EpisodeId
+- parse module_version
+- parse configuration
+- parse agent names / team names
+- parse statuses
+- parse rewards
+- parse step count
+- parse final result
+- determine if one or both players are us using:
+  - agent/team name containing Yohei Nakajima / Yohei / theyohei if present
+  - deck fingerprint matching known submissions if name is ambiguous
+- extract step-0 deck lists for both players if available
+- write deck CSVs:
+  data/meta_replays/decks/<episode_id>_p0_deck.csv
+  data/meta_replays/decks/<episode_id>_p1_deck.csv
+- compute deck fingerprints:
+  - ordered_deck_sha256
+  - multiset_deck_sha256
+  - card_counts
+  - unique_card_count
+- match deck fingerprints against known decks:
+  - root deck.csv
+  - data/baselines/*/deck.csv
+  - data/submissions/candidates/*.tar.gz
+  - data/submissions/candidates_pass10/*.tar.gz if present
+  - any generated candidate deck.csv under experiments/runs*
+- assign deck_label:
+  - v1_deck_loader_fix
+  - v2_deck_energy_trim_light
+  - combo_full_safety_v3_fixed
+  - pass10_candidate_<id>
+  - unknown_own_deck
+  - opponent_unknown
+- classify replay perspective:
+  - our_win
+  - our_loss
+  - our_draw
+  - self_mirror
+  - opponent_only_or_unknown
+  - error_or_invalid
+- status:
+  - parsed
+  - parsed_with_warnings
+  - failed_parse
+  - duplicate_episode
+  - duplicate_file_hash
+- preserve original file path; do not move or rename raw files.
+
+Outputs:
+- data/meta_replays/replay_registry.json
+- data/meta_replays/replay_registry.md
+- data/meta_replays/replay_inbox_errors.json
+- data/meta_replays/replay_processing_state.json
+
+Optional:
+- create canonical copies under data/meta_replays/by_episode/<EpisodeId>.json only if safe, but leave raw originals untouched.
+
+Part D — Archetype classification
+
+Create or update:
+
+src/ptcg_activegraph/meta/archetypes.py
+scripts/extract_meta_archetypes.py
+
+For each extracted deck, classify archetype using confirmed card IDs and names.
+
+Known labels to support:
+- water_kyogre_abomasnow
+- water_kyogre_abomasnow_passive_mirror
+- water_kyogre_abomasnow_maxbelt
+- metal_ex_zacian_ramp
+- unknown_ex_tempo
+- unknown_control_or_disruption
+- unknown
+
+Important:
+- Do not invent card IDs.
+- If a label depends on cards like Maximum Belt, Zacian ex, Cyrano, Waitress, etc., confirm those IDs from replay deck list and card metadata.
+- If not confirmed, mark provisional and explain.
+
+Outputs:
+- data/meta_replays/archetypes.yaml
+- data/meta_replays/archetypes.md
+
+Each archetype entry should include:
+- archetype_id
+- confidence: confirmed / provisional / unknown
+- evidence_card_ids
+- evidence_card_names
+- replay_episode_ids
+- player_indices
+- deck_fingerprints
+- notes
+
+Part E — Replay analysis metrics
+
+Create or update:
+
+scripts/analyze_kaggle_replays.py
+
+For every parsed replay, compute:
+- winner
+- loser
+- our player index if any
+- our reward
+- game length / steps
+- deckCount trajectory if visible
+- handCount trajectory if visible
+- first meaningful attack turn/step
+- first KO turn/step if inferable
+- first Kyogre active/bench
+- first Snover active/bench
+- first Mega Abomasnow ex in play
+- whether our side evolved
+- whether opponent evolved
+- whether our side benched backup Pokémon
+- stuck_on_snover_rate / stuck_on_snover flag
+- no_bench_loss flag
+- deckout_or_zero_deck_seen
+- pass/end rate
+- attack rate
+- major effect cards played:
+  - Ultra Ball
+  - Secret Box
+  - Mega Signal
+  - Lillie’s Determination
+  - Team Rocket’s Petrel
+  - Surfing Beach
+  - Powerglass
+- for chaos-readiness:
+  - forced switch count if detectable
+  - status conditions seen
+  - opponent handCount/deckCount/benchCount time series
+  - discard/recovery events if detectable
+
+Outputs:
+- data/meta_replays/replay_analysis.json
+- data/meta_replays/replay_analysis.md
+
+Part F — Update meta pool from replay registry
+
+Create or update:
+
+scripts/update_meta_pool_from_replays.py
+
+Input:
+- replay_registry.json
+- archetypes.yaml
+- live_score_registry.json
+
+Output:
+- experiments/meta_pool.yaml
+- data/meta_replays/meta_pool_summary.md
+
+Rules:
+- active_control comes from live_score_registry.
+- Include archetypes with confirmed replay decks.
+- Do not fabricate missing archetypes.
+- Weighting:
+  - start with equal weights across confirmed opponent archetypes,
+  - ensure self-mirror does not dominate,
+  - include active-control mirror as a small regression weight,
+  - give recent losses higher diagnostic weight but not unlimited weight.
+- If only one archetype is present, mark meta coverage incomplete.
+- If at least 3 distinct archetypes are present, mark meta coverage usable.
+
+Suggested fields:
+- active_control
+- active_control_score
+- replay_count_total
+- replay_count_by_submission
+- replay_count_by_archetype
+- confirmed_archetype_count
+- coverage_status: incomplete / partial / usable
+- missing_replay_targets
+- weights
+
+Part G — Local surrogate evaluation design
+
+Important:
+Opponent replays give us opponent deck lists, not opponent policies. Local evaluation is surrogate-based.
+
+Create or update a surrogate opponent agent if needed:
+
+src/ptcg_activegraph/sim/surrogate_agents.py
+scripts/run_meta_pool_eval.py
+
+Surrogate agent requirements:
+- can return an arbitrary supplied 60-card deck on select=None
+- uses safe generic legal-action heuristic for gameplay
+- stdlib-only if packaged, but this can be lab-only
+- does not need to be strong; it is a stable proxy opponent
+
+Evaluation types:
+1. active_control vs active_control
+2. candidate vs active_control
+3. candidate vs replay-derived opponent deck with surrogate opponent policy
+4. candidate vs opponent archetype family
+
+Do not claim surrogate results equal Kaggle results. They are directional only.
+
+Part H — Run a small replay-informed evaluation if feasible
+
+If cabt is runnable and at least 2 distinct replay-derived deck/archetype families are present:
+
+Run:
+- scout: 3 games per seat per matchup
+- candidates:
+  - active_control
+  - v2 deck_energy_trim_light if different from active control
+  - combo_full_safety_v3_fixed as live-rejected reference
+  - pass10 tempo candidates if tarballs exist and validate:
+    - playbook_kyogre_tempo
+    - playbook_fast_evolution
+    - playbook_hybrid_tempo
+    - playbook_bench_safety
+    - playbook_attack_deadline
+    - deck_no_secret_box
+    - deck_less_draw_more_attack
+
+If only self-mirror is present:
+- run a small control regression only
+- mark external meta eval blocked/incomplete
+- do not queue anything.
+
+Outputs:
+- data/experiments/pass11b_meta_eval.json
+- data/experiments/pass11b_meta_eval.md
+- data/experiments/pass11b_ranking.json
+- data/experiments/pass11b_ranking.md
+
+Metrics:
+- weighted_meta_score
+- per-archetype win rate
+- active-control mirror win rate
+- first meaningful attack turn
+- first Kyogre pressure
+- first evolution
+- stuck_on_snover_rate
+- no_bench_loss_rate
+- deckout/low-deck rate
+- attack/pass rate
+- crashes/timeouts/invalid returns
+
+Part I — Replay upload process docs
+
+Create:
+
+docs/REPLAY_WORKFLOW.md
+
+Explain:
+- Drop raw Kaggle replay JSONs into data/meta_replays/raw/.
+- Filenames can be arbitrary numeric names like 80503687.json.
+- Do not rename manually.
+- Run:
+  python scripts/ingest_replay_inbox.py
+  python scripts/extract_meta_archetypes.py
+  python scripts/analyze_kaggle_replays.py
+  python scripts/update_meta_pool_from_replays.py
+- Registry dedupes by EpisodeId and file hash.
+- Recommended collection cadence:
+  - after each new submission scores: download 8–12 replays, prioritizing losses and diverse opponents
+  - for active control: keep 20–30 replays total
+  - for old baselines: keep 5–10 anchor replays
+  - before each new upload: add latest 5–10 relevant replays
+- What to prioritize:
+  - losses to high-scoring opponents
+  - fast losses
+  - long deckout/attrition losses
+  - wins against common archetypes
+  - rare archetypes / disruption decks
+- Raw replay files should generally not be committed unless explicitly approved.
+
+Part J — Chaos lane update
+
+Update:
+
+docs/CHAOS_PLAYBOOK_LANE.md
+
+Add:
+- replay inbox now provides the telemetry needed to measure chaos:
+  - opponent handCount
+  - opponent deckCount
+  - opponent bench count
+  - status flags
+  - discard events
+  - forced active/bench movement if logged
+- chaos is still not upload-ready until:
+  - payoff cards are confirmed
+  - chaos trigger is measurable
+  - cabt eval includes replay-derived archetypes
+  - chaos candidate does not help opponent setup
+- keep these future candidates:
+  - hand_avalanche_froslass
+  - bench_bloat_punisher
+  - mill_resource_destruction
+  - status_confusion_lock
+  - discard_recovery_trap
+
+No chaos candidate generation in this pass unless the infrastructure already supports it trivially. This pass is about replay indexing and meta-pool readiness.
+
+Part K — Tests
+
+Add tests for:
+- arbitrary numeric raw replay filenames are accepted
+- EpisodeId is parsed from JSON, not filename
+- registry dedupes duplicate EpisodeId
+- registry computes deck fingerprints
+- deck fingerprint matches known baseline/candidate decks
+- extracted deck CSV has 60 integer rows
+- archetype classifier does not invent IDs
+- meta_pool coverage is incomplete when only one archetype exists
+- meta_pool coverage becomes partial/usable when multiple archetypes exist
+- replay workflow doc exists and says no manual renaming required
+- raw replay files are not required to be committed
+- root files unchanged
+
+Run tests in small groups to avoid sandbox kills.
+
+Part L — Report site
+
+Update:
+- data/site/index.html
+- data/reports/activegraph_strategy_report.md
+- data/reports/pass11b_replay_inbox_report.md
+
+Include:
+- number of raw replays discovered
+- number parsed
+- duplicates
+- errors
+- decks extracted
+- deck labels matched
+- archetypes confirmed/provisional
+- meta coverage status
+- local eval results if run
+- missing replay types
+- next upload recommendation, likely none unless evaluation is strong
+
+Part M — Final report
+
+Report exactly:
+
+ActiveGraph Pass 11B Replay Inbox Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Replay inbox
+- raw replay files found:
+- parsed:
+- duplicates:
+- failed:
+- registry path:
+- processing state path:
+
+3. Deck attribution
+- decks extracted:
+- known deck matches:
+- unknown decks:
+- submissions/decks identified:
+- deck fingerprint method:
+
+4. Archetypes
+- confirmed archetypes:
+- provisional archetypes:
+- unknown archetypes:
+- missing evidence:
+- archetypes path:
+
+5. Replay analysis
+- analysis path:
+- wins/losses/draws:
+- fast losses:
+- long attrition/deckout games:
+- recurring failure tags:
+- notable opponent patterns:
+
+6. Meta pool
+- meta_pool path:
+- active control:
+- coverage status:
+- replay count by archetype:
+- weights:
+- limitations:
+
+7. Local evaluation
+- cabt runnable:
+- eval attempted:
+- candidates evaluated:
+- matchups:
+- top candidates:
+- crashes/timeouts/invalid returns:
+- reason no candidate is upload-ready, if applicable:
+
+8. Replay workflow
+- docs path:
+- can upload arbitrary numeric JSON filenames:
+- recommended replay collection cadence:
+- next manual replay targets:
+
+9. Chaos lane
+- chaos doc updated:
+- chaos candidates generated:
+- chaos readiness:
+- next chaos step:
+
+10. Next recommendation
+- one sentence only

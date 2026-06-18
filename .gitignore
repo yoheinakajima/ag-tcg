@@ -21,6 +21,12 @@ data/submissions/*.tar.gz
 data/decks/*.csv
 data/cards/*.csv
 
+# Raw private replay payloads (Pass 11B inbox). The registry/meta-pool artifacts
+# derived from them ARE committed, but the raw episode JSONs are not, unless a
+# specific replay was explicitly approved (the self-mirror was approved earlier).
+data/meta_replays/raw/*.json
+!data/meta_replays/raw/80374966_self_mirror.json
+
 # Official/proprietary Kaggle card data (never commit, in any directory)
 data/cards/*.pdf
 Card_ID*.pdf

@@ -151,15 +151,22 @@ def test_acquisition_doc_lists_required_replay_files():
         assert fname in text, f"missing required filename in acquisition doc: {fname}"
 
 
-def test_missing_replay_keeps_archetype_blocked():
+def test_acquired_replay_confirms_archetype_with_surrogate():
+    """Pass 11B acquired the metal + maxbelt replays. Each archetype is now
+    CONFIRMED from a real extracted replay, carries a surrogate deck + episode,
+    and is no longer in the blocked list. (Pass-10B kept these blocked while the
+    replays were missing; the gate flips only once the real payload arrives.)"""
     pool = yaml.safe_load(META_POOL.read_text(encoding="utf-8"))
     by_key = {a["key"]: a for a in pool["archetypes"]}
     for key in ("metal_ex_zacian_ramp", "water_kyogre_abomasnow_maxbelt"):
         a = by_key[key]
-        assert a["status"].startswith("blocked")
-        assert a["surrogate_deck"] is None
-        assert a["replay_episode"] is None
-    assert key in pool["coverage"]["blocked_archetypes"]
+        assert a["status"] == "confirmed_from_replay"
+        assert a["confidence"] == "confirmed"
+        assert a["surrogate_deck"] is not None
+        assert (REPO / a["surrogate_deck"]).exists()
+        assert a["replay_episode"] is not None
+        assert key not in pool["coverage"]["blocked_archetypes"]
+    assert pool["coverage"]["blocked_archetypes"] == []
 
 
 def test_chaos_doc_exists_with_no_queue_or_upload_instruction():

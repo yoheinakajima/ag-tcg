@@ -1,0 +1,1011 @@
+{
+  "schema": "activegraph.replays.registry/v1",
+  "pass": "11b",
+  "replays_total": 9,
+  "replays_registered": 9,
+  "duplicates_skipped": [],
+  "errors": [],
+  "known_own_decks": [
+    "combo_full_safety_v3_fixed",
+    "pass10_candidate_cand_a",
+    "pass10_candidate_combo_effect_resolution_v3__secret_box_safety",
+    "pass10_candidate_combo_full_safety_v3",
+    "pass10_candidate_combo_full_safety_v3_fixed",
+    "pass10_candidate_deck_energy_trim_light",
+    "pass10_candidate_deck_energy_trim_medium",
+    "pass10_candidate_deck_less_draw_more_attack",
+    "pass10_candidate_deck_no_secret_box",
+    "pass10_candidate_playbook_attack_deadline",
+    "pass10_candidate_playbook_bench_safety",
+    "pass10_candidate_playbook_fast_evolution",
+    "pass10_candidate_playbook_hybrid_tempo",
+    "pass10_candidate_playbook_kyogre_tempo",
+    "pass10_candidate_policy_pass_avoidant",
+    "pass10_candidate_policy_winner",
+    "v1_deck_loader_fix",
+    "v2_deck_energy_trim_light"
+  ],
+  "records": [
+    {
+      "episode_id": 80374966,
+      "filename": "80374966_self_mirror.json",
+      "file_sha256": "a23386d1297a5aab1a6d53b33a8c65df75b6db8d248003b67d73864c28a9e659",
+      "status": "parsed",
+      "module_version": "1.30.1",
+      "agents": [
+        "Yohei Nakajima",
+        "Yohei Nakajima"
+      ],
+      "rewards": [
+        -1,
+        1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "num_steps": 136,
+      "warnings": [],
+      "seats": [
+        {
+          "seat": 0,
+          "agent": "Yohei Nakajima",
+          "is_ours": true,
+          "deck_label": "v2_deck_energy_trim_light",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 11,
+            "ordered_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "multiset_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "card_counts": {
+              "3": 29,
+              "721": 4,
+              "722": 4,
+              "723": 4,
+              "1092": 1,
+              "1121": 4,
+              "1145": 2,
+              "1163": 2,
+              "1219": 4,
+              "1227": 4,
+              "1262": 2
+            }
+          },
+          "archetype": {
+            "archetype_id": "water_kyogre_abomasnow_passive_mirror",
+            "confidence": "confirmed",
+            "evidence_card_ids": [
+              721,
+              722,
+              723
+            ],
+            "evidence_card_names": [
+              "Kyogre",
+              "Snover",
+              "Mega Abomasnow ex"
+            ],
+            "notes": []
+          }
+        },
+        {
+          "seat": 1,
+          "agent": "Yohei Nakajima",
+          "is_ours": true,
+          "deck_label": "v2_deck_energy_trim_light",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 11,
+            "ordered_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "multiset_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "card_counts": {
+              "3": 29,
+              "721": 4,
+              "722": 4,
+              "723": 4,
+              "1092": 1,
+              "1121": 4,
+              "1145": 2,
+              "1163": 2,
+              "1219": 4,
+              "1227": 4,
+              "1262": 2
+            }
+          },
+          "archetype": {
+            "archetype_id": "water_kyogre_abomasnow_passive_mirror",
+            "confidence": "confirmed",
+            "evidence_card_ids": [
+              721,
+              722,
+              723
+            ],
+            "evidence_card_names": [
+              "Kyogre",
+              "Snover",
+              "Mega Abomasnow ex"
+            ],
+            "notes": []
+          }
+        }
+      ],
+      "perspective": "self_mirror",
+      "our_seat": [
+        0,
+        1
+      ],
+      "our_reward": null
+    },
+    {
+      "episode_id": 80503687,
+      "filename": "80503687.json",
+      "file_sha256": "a06fc291d98b11f7bd9a95424ffdb7ece42e4a6ef300c4611c2df7a9c1f35d60",
+      "status": "parsed",
+      "module_version": "1.30.1",
+      "agents": [
+        "Yohei Nakajima",
+        "Yohei Nakajima"
+      ],
+      "rewards": [
+        -1,
+        1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "num_steps": 79,
+      "warnings": [],
+      "seats": [
+        {
+          "seat": 0,
+          "agent": "Yohei Nakajima",
+          "is_ours": true,
+          "deck_label": "v2_deck_energy_trim_light",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 11,
+            "ordered_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "multiset_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "card_counts": {
+              "3": 29,
+              "721": 4,
+              "722": 4,
+              "723": 4,
+              "1092": 1,
+              "1121": 4,
+              "1145": 2,
+              "1163": 2,
+              "1219": 4,
+              "1227": 4,
+              "1262": 2
+            }
+          },
+          "archetype": {
+            "archetype_id": "water_kyogre_abomasnow_passive_mirror",
+            "confidence": "confirmed",
+            "evidence_card_ids": [
+              721,
+              722,
+              723
+            ],
+            "evidence_card_names": [
+              "Kyogre",
+              "Snover",
+              "Mega Abomasnow ex"
+            ],
+            "notes": []
+          }
+        },
+        {
+          "seat": 1,
+          "agent": "Yohei Nakajima",
+          "is_ours": true,
+          "deck_label": "v2_deck_energy_trim_light",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 11,
+            "ordered_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "multiset_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "card_counts": {
+              "3": 29,
+              "721": 4,
+              "722": 4,
+              "723": 4,
+              "1092": 1,
+              "1121": 4,
+              "1145": 2,
+              "1163": 2,
+              "1219": 4,
+              "1227": 4,
+              "1262": 2
+            }
+          },
+          "archetype": {
+            "archetype_id": "water_kyogre_abomasnow_passive_mirror",
+            "confidence": "confirmed",
+            "evidence_card_ids": [
+              721,
+              722,
+              723
+            ],
+            "evidence_card_names": [
+              "Kyogre",
+              "Snover",
+              "Mega Abomasnow ex"
+            ],
+            "notes": []
+          }
+        }
+      ],
+      "perspective": "self_mirror",
+      "our_seat": [
+        0,
+        1
+      ],
+      "our_reward": null
+    },
+    {
+      "episode_id": 80503804,
+      "filename": "80503804.json",
+      "file_sha256": "f41e8d3d31a2add88b12c3b4c6b99b1d3ce707b77e767e834700cd264c264db8",
+      "status": "parsed",
+      "module_version": "1.30.1",
+      "agents": [
+        "Yohei Nakajima",
+        "tellurium_rrr"
+      ],
+      "rewards": [
+        -1,
+        1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "num_steps": 37,
+      "warnings": [],
+      "seats": [
+        {
+          "seat": 0,
+          "agent": "Yohei Nakajima",
+          "is_ours": true,
+          "deck_label": "v2_deck_energy_trim_light",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 11,
+            "ordered_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "multiset_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "card_counts": {
+              "3": 29,
+              "721": 4,
+              "722": 4,
+              "723": 4,
+              "1092": 1,
+              "1121": 4,
+              "1145": 2,
+              "1163": 2,
+              "1219": 4,
+              "1227": 4,
+              "1262": 2
+            }
+          },
+          "archetype": {
+            "archetype_id": "water_kyogre_abomasnow_passive_mirror",
+            "confidence": "confirmed",
+            "evidence_card_ids": [
+              721,
+              722,
+              723
+            ],
+            "evidence_card_names": [
+              "Kyogre",
+              "Snover",
+              "Mega Abomasnow ex"
+            ],
+            "notes": []
+          }
+        },
+        {
+          "seat": 1,
+          "agent": "tellurium_rrr",
+          "is_ours": false,
+          "deck_label": "opponent_unknown",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 12,
+            "ordered_deck_sha256": "da468fe7259709e9274e01b5cb78c09609ba2cc762c10bf7cf37ac8b713eae0f",
+            "multiset_deck_sha256": "eabce55e2eb444e92894724520d571adf173fcfcae7e26bf465914a036c6dd53",
+            "card_counts": {
+              "8": 30,
+              "297": 2,
+              "336": 4,
+              "547": 4,
+              "695": 3,
+              "988": 2,
+              "990": 1,
+              "1097": 3,
+              "1102": 3,
+              "1121": 4,
+              "1123": 2,
+              "1182": 2
+            }
+          },
+          "archetype": {
+            "archetype_id": "metal_ex_zacian_ramp",
+            "confidence": "confirmed",
+            "evidence_card_ids": [
+              8,
+              336,
+              547,
+              695,
+              988
+            ],
+            "evidence_card_names": [
+              "Basic {M} Energy",
+              "Zacian ex",
+              "Genesect ex",
+              "Mega Mawile ex",
+              "Registeel ex"
+            ],
+            "notes": []
+          }
+        }
+      ],
+      "perspective": "our_loss",
+      "our_seat": 0,
+      "our_reward": -1
+    },
+    {
+      "episode_id": 80504288,
+      "filename": "80504288.json",
+      "file_sha256": "533a9e934953f906d28ad8ad4c8672e3c4147af33bdc1450c5f0b007cb63fa08",
+      "status": "parsed",
+      "module_version": "1.30.1",
+      "agents": [
+        "AI Agent By TYMU",
+        "Yohei Nakajima"
+      ],
+      "rewards": [
+        1,
+        -1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "num_steps": 134,
+      "warnings": [],
+      "seats": [
+        {
+          "seat": 0,
+          "agent": "AI Agent By TYMU",
+          "is_ours": false,
+          "deck_label": "opponent_unknown",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 9,
+            "ordered_deck_sha256": "13ccdfcc44db89d6656fcc2b1ba03f06fb7cedaaefb6aea5e3b2508f30ce48bc",
+            "multiset_deck_sha256": "b702e251e3b56104f84b60fddff309b0e5d4fae865e4dbb57311d4b0d45ec17e",
+            "card_counts": {
+              "3": 35,
+              "721": 2,
+              "722": 4,
+              "723": 4,
+              "1145": 4,
+              "1158": 1,
+              "1205": 2,
+              "1227": 4,
+              "1235": 4
+            }
+          },
+          "archetype": {
+            "archetype_id": "water_kyogre_abomasnow_maxbelt",
+            "confidence": "confirmed",
+            "evidence_card_ids": [
+              721,
+              722,
+              723,
+              1205,
+              1235
+            ],
+            "evidence_card_names": [
+              "Kyogre",
+              "Snover",
+              "Mega Abomasnow ex",
+              "Cyrano",
+              "Waitress"
+            ],
+            "notes": []
+          }
+        },
+        {
+          "seat": 1,
+          "agent": "Yohei Nakajima",
+          "is_ours": true,
+          "deck_label": "v2_deck_energy_trim_light",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 11,
+            "ordered_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "multiset_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "card_counts": {
+              "3": 29,
+              "721": 4,
+              "722": 4,
+              "723": 4,
+              "1092": 1,
+              "1121": 4,
+              "1145": 2,
+              "1163": 2,
+              "1219": 4,
+              "1227": 4,
+              "1262": 2
+            }
+          },
+          "archetype": {
+            "archetype_id": "water_kyogre_abomasnow_passive_mirror",
+            "confidence": "confirmed",
+            "evidence_card_ids": [
+              721,
+              722,
+              723
+            ],
+            "evidence_card_names": [
+              "Kyogre",
+              "Snover",
+              "Mega Abomasnow ex"
+            ],
+            "notes": []
+          }
+        }
+      ],
+      "perspective": "our_loss",
+      "our_seat": 1,
+      "our_reward": -1
+    },
+    {
+      "episode_id": 80504942,
+      "filename": "80504942.json",
+      "file_sha256": "678b139d5bcff31c257972b97a9dbd993df382bf1cfb8786db405bd0835001f1",
+      "status": "parsed",
+      "module_version": "1.30.1",
+      "agents": [
+        "Ingenio",
+        "Yohei Nakajima"
+      ],
+      "rewards": [
+        -1,
+        1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "num_steps": 202,
+      "warnings": [],
+      "seats": [
+        {
+          "seat": 0,
+          "agent": "Ingenio",
+          "is_ours": false,
+          "deck_label": "opponent_unknown",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 16,
+            "ordered_deck_sha256": "f0bb62e668657eb533eb300b11e4ef75cf5fc75a8cbfa308ecc43099818a6f54",
+            "multiset_deck_sha256": "ac4f3ff6f387fbf54648e93e56fe80c322e13926728b110b26c54a88038472ec",
+            "card_counts": {
+              "6": 19,
+              "235": 1,
+              "675": 2,
+              "676": 3,
+              "677": 4,
+              "678": 4,
+              "1086": 4,
+              "1097": 2,
+              "1121": 4,
+              "1122": 2,
+              "1123": 2,
+              "1145": 4,
+              "1158": 1,
+              "1182": 2,
+              "1205": 2,
+              "1227": 4
+            }
+          },
+          "archetype": {
+            "archetype_id": "unknown_ex_tempo",
+            "confidence": "provisional",
+            "evidence_card_ids": [
+              678
+            ],
+            "evidence_card_names": [
+              "Mega Lucario ex"
+            ],
+            "notes": [
+              "contains a confirmed ex attacker but does not match a named archetype signature; bucketed as generic ex tempo"
+            ]
+          }
+        },
+        {
+          "seat": 1,
+          "agent": "Yohei Nakajima",
+          "is_ours": true,
+          "deck_label": "v2_deck_energy_trim_light",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 11,
+            "ordered_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "multiset_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "card_counts": {
+              "3": 29,
+              "721": 4,
+              "722": 4,
+              "723": 4,
+              "1092": 1,
+              "1121": 4,
+              "1145": 2,
+              "1163": 2,
+              "1219": 4,
+              "1227": 4,
+              "1262": 2
+            }
+          },
+          "archetype": {
+            "archetype_id": "water_kyogre_abomasnow_passive_mirror",
+            "confidence": "confirmed",
+            "evidence_card_ids": [
+              721,
+              722,
+              723
+            ],
+            "evidence_card_names": [
+              "Kyogre",
+              "Snover",
+              "Mega Abomasnow ex"
+            ],
+            "notes": []
+          }
+        }
+      ],
+      "perspective": "our_win",
+      "our_seat": 1,
+      "our_reward": 1
+    },
+    {
+      "episode_id": 80505567,
+      "filename": "80505567.json",
+      "file_sha256": "c63e5fa9a3cf00718713f18a6e8293d49f29d6b212a68c4cbff4f2c2148eee27",
+      "status": "parsed",
+      "module_version": "1.30.1",
+      "agents": [
+        "Zenith08",
+        "Yohei Nakajima"
+      ],
+      "rewards": [
+        1,
+        -1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "num_steps": 28,
+      "warnings": [],
+      "seats": [
+        {
+          "seat": 0,
+          "agent": "Zenith08",
+          "is_ours": false,
+          "deck_label": "opponent_unknown",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 3,
+            "ordered_deck_sha256": "9de8b3a9d444f14e271bd938cfb9bededf9244d7e82795547bd32b0b5620ad46",
+            "multiset_deck_sha256": "25675a165bef046c27c330ea3ec9f72d7d8cff3e9b4ccbfcb209627de8338c08",
+            "card_counts": {
+              "1": 55,
+              "12": 1,
+              "756": 4
+            }
+          },
+          "archetype": {
+            "archetype_id": "unknown_ex_tempo",
+            "confidence": "provisional",
+            "evidence_card_ids": [
+              756
+            ],
+            "evidence_card_names": [
+              "Mega Kangaskhan ex"
+            ],
+            "notes": [
+              "contains a confirmed ex attacker but does not match a named archetype signature; bucketed as generic ex tempo"
+            ]
+          }
+        },
+        {
+          "seat": 1,
+          "agent": "Yohei Nakajima",
+          "is_ours": true,
+          "deck_label": "v2_deck_energy_trim_light",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 11,
+            "ordered_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "multiset_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "card_counts": {
+              "3": 29,
+              "721": 4,
+              "722": 4,
+              "723": 4,
+              "1092": 1,
+              "1121": 4,
+              "1145": 2,
+              "1163": 2,
+              "1219": 4,
+              "1227": 4,
+              "1262": 2
+            }
+          },
+          "archetype": {
+            "archetype_id": "water_kyogre_abomasnow_passive_mirror",
+            "confidence": "confirmed",
+            "evidence_card_ids": [
+              721,
+              722,
+              723
+            ],
+            "evidence_card_names": [
+              "Kyogre",
+              "Snover",
+              "Mega Abomasnow ex"
+            ],
+            "notes": []
+          }
+        }
+      ],
+      "perspective": "our_loss",
+      "our_seat": 1,
+      "our_reward": -1
+    },
+    {
+      "episode_id": 80506042,
+      "filename": "80506042.json",
+      "file_sha256": "b9bfb7c675a74af170f8e9727b5091e42b6b73ef467c78bf69307b96e2478615",
+      "status": "parsed",
+      "module_version": "1.30.1",
+      "agents": [
+        "rotto",
+        "Yohei Nakajima"
+      ],
+      "rewards": [
+        1,
+        -1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "num_steps": 156,
+      "warnings": [],
+      "seats": [
+        {
+          "seat": 0,
+          "agent": "rotto",
+          "is_ours": false,
+          "deck_label": "opponent_unknown",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 17,
+            "ordered_deck_sha256": "f2ea87ee0f38f3725dd79f257dca4d9cb1716a3421a673a42fff4b21b7f61eca",
+            "multiset_deck_sha256": "e1fbde2075cce5d417687345f8af9875f03ab2cfc755b68bd3faf3f96f4a7f22",
+            "card_counts": {
+              "1": 8,
+              "6": 13,
+              "344": 3,
+              "345": 3,
+              "673": 3,
+              "674": 3,
+              "677": 3,
+              "678": 3,
+              "1086": 4,
+              "1123": 2,
+              "1147": 2,
+              "1152": 2,
+              "1159": 1,
+              "1182": 2,
+              "1212": 2,
+              "1224": 4,
+              "1264": 2
+            }
+          },
+          "archetype": {
+            "archetype_id": "unknown_ex_tempo",
+            "confidence": "provisional",
+            "evidence_card_ids": [
+              678
+            ],
+            "evidence_card_names": [
+              "Mega Lucario ex"
+            ],
+            "notes": [
+              "contains a confirmed ex attacker but does not match a named archetype signature; bucketed as generic ex tempo"
+            ]
+          }
+        },
+        {
+          "seat": 1,
+          "agent": "Yohei Nakajima",
+          "is_ours": true,
+          "deck_label": "v2_deck_energy_trim_light",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 11,
+            "ordered_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "multiset_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "card_counts": {
+              "3": 29,
+              "721": 4,
+              "722": 4,
+              "723": 4,
+              "1092": 1,
+              "1121": 4,
+              "1145": 2,
+              "1163": 2,
+              "1219": 4,
+              "1227": 4,
+              "1262": 2
+            }
+          },
+          "archetype": {
+            "archetype_id": "water_kyogre_abomasnow_passive_mirror",
+            "confidence": "confirmed",
+            "evidence_card_ids": [
+              721,
+              722,
+              723
+            ],
+            "evidence_card_names": [
+              "Kyogre",
+              "Snover",
+              "Mega Abomasnow ex"
+            ],
+            "notes": []
+          }
+        }
+      ],
+      "perspective": "our_loss",
+      "our_seat": 1,
+      "our_reward": -1
+    },
+    {
+      "episode_id": 80515553,
+      "filename": "80515553.json",
+      "file_sha256": "1e73b4da9e67f4e7e275dcbaecd6c060fe553b836fde0250aed658e4ad103e66",
+      "status": "parsed",
+      "module_version": "1.30.1",
+      "agents": [
+        "Kerminal",
+        "Yohei Nakajima"
+      ],
+      "rewards": [
+        -1,
+        1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "num_steps": 138,
+      "warnings": [],
+      "seats": [
+        {
+          "seat": 0,
+          "agent": "Kerminal",
+          "is_ours": false,
+          "deck_label": "opponent_unknown",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 28,
+            "ordered_deck_sha256": "fb5296f80e498119f2a327d94f9c713405c59250fc72400d02b82358e1ca156a",
+            "multiset_deck_sha256": "070131755d73b17ceef6ba6bb9f58b3f9245534ce7751c7463c75a70d8546973",
+            "card_counts": {
+              "2": 3,
+              "5": 3,
+              "7": 2,
+              "112": 1,
+              "119": 4,
+              "120": 4,
+              "121": 3,
+              "131": 2,
+              "132": 1,
+              "133": 1,
+              "140": 1,
+              "172": 1,
+              "173": 1,
+              "235": 2,
+              "1071": 2,
+              "1079": 2,
+              "1080": 1,
+              "1086": 4,
+              "1097": 2,
+              "1121": 4,
+              "1152": 4,
+              "1182": 2,
+              "1198": 2,
+              "1201": 1,
+              "1227": 4,
+              "1240": 1,
+              "1256": 1,
+              "1260": 1
+            }
+          },
+          "archetype": {
+            "archetype_id": "unknown_ex_tempo",
+            "confidence": "provisional",
+            "evidence_card_ids": [
+              121
+            ],
+            "evidence_card_names": [
+              "Dragapult ex"
+            ],
+            "notes": [
+              "contains a confirmed ex attacker but does not match a named archetype signature; bucketed as generic ex tempo"
+            ]
+          }
+        },
+        {
+          "seat": 1,
+          "agent": "Yohei Nakajima",
+          "is_ours": true,
+          "deck_label": "v2_deck_energy_trim_light",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 11,
+            "ordered_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "multiset_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "card_counts": {
+              "3": 29,
+              "721": 4,
+              "722": 4,
+              "723": 4,
+              "1092": 1,
+              "1121": 4,
+              "1145": 2,
+              "1163": 2,
+              "1219": 4,
+              "1227": 4,
+              "1262": 2
+            }
+          },
+          "archetype": {
+            "archetype_id": "water_kyogre_abomasnow_passive_mirror",
+            "confidence": "confirmed",
+            "evidence_card_ids": [
+              721,
+              722,
+              723
+            ],
+            "evidence_card_names": [
+              "Kyogre",
+              "Snover",
+              "Mega Abomasnow ex"
+            ],
+            "notes": []
+          }
+        }
+      ],
+      "perspective": "our_win",
+      "our_seat": 1,
+      "our_reward": 1
+    },
+    {
+      "episode_id": 80516161,
+      "filename": "80516161.json",
+      "file_sha256": "7f61ae195d433484584040f21331d4662584914ed6114add510401d99f8eef95",
+      "status": "parsed",
+      "module_version": "1.30.1",
+      "agents": [
+        "AMIBEN",
+        "Yohei Nakajima"
+      ],
+      "rewards": [
+        -1,
+        1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "num_steps": 196,
+      "warnings": [],
+      "seats": [
+        {
+          "seat": 0,
+          "agent": "AMIBEN",
+          "is_ours": false,
+          "deck_label": "opponent_unknown",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 15,
+            "ordered_deck_sha256": "e1504fdff8cc4332f1c8c27e90624c794585e327be0859710d258ea10ab3e580",
+            "multiset_deck_sha256": "7dc29ba6002f31aefaaacab06721d54e39b31e866b54c34e9b973d5133795f8c",
+            "card_counts": {
+              "4": 22,
+              "265": 3,
+              "268": 3,
+              "269": 3,
+              "270": 3,
+              "271": 3,
+              "1086": 3,
+              "1097": 2,
+              "1110": 1,
+              "1118": 1,
+              "1121": 3,
+              "1152": 2,
+              "1227": 4,
+              "1233": 4,
+              "1254": 3
+            }
+          },
+          "archetype": {
+            "archetype_id": "unknown_ex_tempo",
+            "confidence": "provisional",
+            "evidence_card_ids": [
+              269
+            ],
+            "evidence_card_names": [
+              "Iono\u2019s Bellibolt ex"
+            ],
+            "notes": [
+              "contains a confirmed ex attacker but does not match a named archetype signature; bucketed as generic ex tempo"
+            ]
+          }
+        },
+        {
+          "seat": 1,
+          "agent": "Yohei Nakajima",
+          "is_ours": true,
+          "deck_label": "v2_deck_energy_trim_light",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 11,
+            "ordered_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "multiset_deck_sha256": "6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4",
+            "card_counts": {
+              "3": 29,
+              "721": 4,
+              "722": 4,
+              "723": 4,
+              "1092": 1,
+              "1121": 4,
+              "1145": 2,
+              "1163": 2,
+              "1219": 4,
+              "1227": 4,
+              "1262": 2
+            }
+          },
+          "archetype": {
+            "archetype_id": "water_kyogre_abomasnow_passive_mirror",
+            "confidence": "confirmed",
+            "evidence_card_ids": [
+              721,
+              722,
+              723
+            ],
+            "evidence_card_names": [
+              "Kyogre",
+              "Snover",
+              "Mega Abomasnow ex"
+            ],
+            "notes": []
+          }
+        }
+      ],
+      "perspective": "our_win",
+      "our_seat": 1,
+      "our_reward": 1
+    }
+  ]
+}

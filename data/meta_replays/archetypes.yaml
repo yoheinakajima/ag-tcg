@@ -1,106 +1,127 @@
-schema: activegraph.meta.archetypes/v1
+schema: activegraph.meta_replays.archetypes/v1
+pass: 11b
 hard_rules:
-- never invent card ids
-- blocked archetypes contribute no fabricated data
-archetypes:
-- key: water_kyogre_abomasnow_mirror_passive
-  label: Water Kyogre/Abomasnow mirror (passive)
-  status: confirmed_from_replay
-  description: 'The v2 deck_energy_trim_light line itself: slow mirror, weak Snover
-    attack loop, low evolution/bench pressure. Tends to grind and risk self-deckout.'
-  card_ids:
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 3
-  - 721
-  - 721
-  - 721
-  - 721
-  - 722
-  - 722
-  - 722
-  - 722
-  - 723
-  - 723
-  - 723
-  - 723
-  - 1092
-  - 1121
-  - 1121
-  - 1121
-  - 1121
-  - 1145
-  - 1145
-  - 1163
-  - 1163
-  - 1219
-  - 1219
-  - 1219
-  - 1219
-  - 1227
-  - 1227
-  - 1227
-  - 1227
-  - 1262
-  - 1262
-  card_ids_status: confirmed
-  replay_episode: 80374966
-  deck_path: data/meta_replays/decks/80374966_p0_deck.csv
-  notes:
-  - Derived from real self-mirror replay 80374966 (both seats = v2 deck).
-- key: metal_ex_zacian_ramp
-  label: Metal ex Zacian ramp
-  status: blocked_missing_replay
-  description: 'Zacian ex active + Metal Energy ramp; punishes slow setup. Possible
-    support: Genesect ex / Mega Mawile ex / Registeel ex / Togedemaru ex / Magearna
-    (all UNCONFIRMED without a replay).'
-  card_ids: []
-  card_ids_status: unknown
-  replay_episode: null
-  deck_path: null
-  notes:
-  - No replay present (expected episode 80503804). Card ids unknown; never invented.
-    Blocked until raw replay is added.
-- key: water_kyogre_abomasnow_maxbelt
-  label: Water Kyogre/Abomasnow + Maximum Belt
-  status: blocked_missing_replay
-  description: Similar water core with a stronger support package (Maximum Belt, Cyrano,
-    Waitress UNCONFIRMED) and better long-game tempo.
-  card_ids: []
-  card_ids_status: unknown
-  replay_episode: null
-  deck_path: null
-  notes:
-  - No replay present (expected tymu water/maxbelt). Maximum Belt / Cyrano / Waitress
-    ids are NOT in the confirmed set; blocked.
-available_for_eval:
-- water_kyogre_abomasnow_mirror_passive
-blocked_for_eval:
+- never invent card ids; evidence ids come only from extracted decks
+- confidence is confirmed/provisional/unknown; unknown carries no claim
+source_registry: data/meta_replays/replay_registry.json
+n_archetypes: 4
+confirmed_opponent_archetypes:
 - metal_ex_zacian_ramp
 - water_kyogre_abomasnow_maxbelt
+provisional_archetypes:
+- unknown_ex_tempo
+archetypes:
+- archetype_id: metal_ex_zacian_ramp
+  confidence: confirmed
+  is_ours: false
+  evidence_card_ids:
+  - 8
+  - 336
+  - 547
+  - 695
+  - 988
+  evidence_card_names:
+  - Basic {M} Energy
+  - Genesect ex
+  - Mega Mawile ex
+  - Registeel ex
+  - Zacian ex
+  replay_episode_ids:
+  - 80503804
+  player_indices:
+  - 80503804:p1
+  deck_fingerprints:
+  - eabce55e2eb444e92894724520d571adf173fcfcae7e26bf465914a036c6dd53
+  notes: []
+- archetype_id: unknown_ex_tempo
+  confidence: provisional
+  is_ours: false
+  evidence_card_ids:
+  - 121
+  - 269
+  - 678
+  - 756
+  evidence_card_names:
+  - Dragapult ex
+  - Iono’s Bellibolt ex
+  - Mega Kangaskhan ex
+  - Mega Lucario ex
+  replay_episode_ids:
+  - 80504942
+  - 80505567
+  - 80506042
+  - 80515553
+  - 80516161
+  player_indices:
+  - 80504942:p0
+  - 80505567:p0
+  - 80506042:p0
+  - 80515553:p0
+  - 80516161:p0
+  deck_fingerprints:
+  - 070131755d73b17ceef6ba6bb9f58b3f9245534ce7751c7463c75a70d8546973
+  - 25675a165bef046c27c330ea3ec9f72d7d8cff3e9b4ccbfcb209627de8338c08
+  - 7dc29ba6002f31aefaaacab06721d54e39b31e866b54c34e9b973d5133795f8c
+  - ac4f3ff6f387fbf54648e93e56fe80c322e13926728b110b26c54a88038472ec
+  - e1fbde2075cce5d417687345f8af9875f03ab2cfc755b68bd3faf3f96f4a7f22
+  notes:
+  - contains a confirmed ex attacker but does not match a named archetype signature;
+    bucketed as generic ex tempo
+- archetype_id: water_kyogre_abomasnow_maxbelt
+  confidence: confirmed
+  is_ours: false
+  evidence_card_ids:
+  - 721
+  - 722
+  - 723
+  - 1205
+  - 1235
+  evidence_card_names:
+  - Cyrano
+  - Kyogre
+  - Mega Abomasnow ex
+  - Snover
+  - Waitress
+  replay_episode_ids:
+  - 80504288
+  player_indices:
+  - 80504288:p0
+  deck_fingerprints:
+  - b702e251e3b56104f84b60fddff309b0e5d4fae865e4dbb57311d4b0d45ec17e
+  notes: []
+- archetype_id: water_kyogre_abomasnow_passive_mirror
+  confidence: confirmed
+  is_ours: true
+  evidence_card_ids:
+  - 721
+  - 722
+  - 723
+  evidence_card_names:
+  - Kyogre
+  - Mega Abomasnow ex
+  - Snover
+  replay_episode_ids:
+  - 80374966
+  - 80503687
+  - 80503804
+  - 80504288
+  - 80504942
+  - 80505567
+  - 80506042
+  - 80515553
+  - 80516161
+  player_indices:
+  - 80374966:p0
+  - 80374966:p1
+  - 80503687:p0
+  - 80503687:p1
+  - 80503804:p0
+  - 80504288:p1
+  - 80504942:p1
+  - 80505567:p1
+  - 80506042:p1
+  - 80515553:p1
+  - 80516161:p1
+  deck_fingerprints:
+  - 6a7de97fca3eb794d9bd2dd3e1ef2278a8643e1d871ef81ebc55df66091c3ed4
+  notes: []
