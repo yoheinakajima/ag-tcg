@@ -1,0 +1,3 @@
+candidate,role,weighted_meta_score,metal_ex_zacian_ramp,water_kyogre_abomasnow_maxbelt,mega_lucario_ex_tempo,mega_kangaskhan_energy_stack,dragapult_ex,lightning_bellibolt,vs_anchor
+core_pilot_water_v3_context,candidate_v3,0.62,0.45,0.55,0.7,0.55,0.8,0.75,0.35
+core_pilot_water_v2_runtime,reference_v2,0.678,0.65,0.55,0.85,0.6,0.7,0.65,0.55

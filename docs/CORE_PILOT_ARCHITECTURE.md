@@ -118,3 +118,40 @@ the existing embedded agent. The candidate stays stdlib-only and never imports `
 Because the **fixtures grade the same `core_pilot_decide` the compiler embeds**, the
 deterministic core-competency gate tests the decision logic that actually ships — there is no
 divergence between "what we tested" and "what we submit".
+
+---
+
+## Runtime context coverage (`_CP_RUNTIME_CONTEXTS`)
+
+The compiler only overrides cabt contexts that are listed in the `_CP_RUNTIME_CONTEXTS`
+literal embedded in the candidate. Every other context (including **broad Main, ctx 0**)
+stays delegated to the underlying embedded agent. A context is added to that tuple ONLY after
+the empirical context map (`scripts/build_cabt_context_map.py`) confirms its option shape
+across **both** raw replays and live self-play traces.
+
+Confirmed-safe, narrowly-typed contexts and their handlers:
+
+- **ctx 1 — setup active.** `type1`, exactly 1 basic to place → `setup_active`.
+- **ctx 2 — setup bench (multi).** `type1`, place 0..N basics → `setup_bench_multi`
+  (count-preserving top-N via `bench_pick_count`; chooses WHICH, never HOW-MANY-options).
+- **ctx 7 — search / to-hand.** `type1`, `opt_type 3` (n≈325) → `search_to_hand`.
+- **ctx 8 — discard.** `type1`, fixed count → `discard`.
+- **ctx 38 — draw count (numeric).** `type8`, `opt_type 0` with a `number` field →
+  `draw_count` (low-deck draw-avoid; always keeps ≥1 card in deck).
+
+Each handler is gated by membership in `_CP_RUNTIME_CONTEXTS`, so the same compiler can emit
+v2 (contexts 7,8) and v3 (contexts 1,2,7,8,38) from one code path.
+
+**Deferred (NOT wired), with reason:**
+
+- **ctx 0 (broad Main)** — heterogeneous option types (`inPlayArea`/`inPlayIndex`/`attackId`);
+  not narrowable to one safe action class. MUST stay delegated.
+- **ctx 3,4,5** — place-basic shapes ambiguous between promote/setup/bench; defer until the
+  context map disambiguates them.
+- **ctx 22,41** — confirmed cross-source but ambiguous semantics (binary YesNo / IsFirst);
+  defer until action mapping is unambiguous.
+- **ctx 34** — live-trace only, no raw-replay confirmation; single-source contexts are deferred.
+
+**Empirical lesson (Pass 16):** adding contexts 1,2,38 on top of 7,8 did NOT improve
+directional surrogate performance (v3 underperformed v2). Runtime coverage is expanded only
+when evidence shows it helps — never on the assumption that more wiring is safer.

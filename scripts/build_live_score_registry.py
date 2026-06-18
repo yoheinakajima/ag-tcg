@@ -96,9 +96,31 @@ def select_active_control(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
     return max(complete_scored, key=lambda r: r["public_score"])
 
 
-def classify_submissions(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Annotate each row with a ``classification`` field (in place) + return."""
-    active = select_active_control(rows)
+def _find_pinned(rows: list[dict[str, Any]], pin_filename: str) -> dict[str, Any] | None:
+    """Return the complete, scored row matching ``pin_filename`` (highest score
+    if several share the name), or None. Never fabricates a score."""
+    matches = [
+        r for r in rows
+        if r["filename"] == pin_filename
+        and r["status"] == "complete"
+        and r["public_score"] is not None
+    ]
+    if not matches:
+        return None
+    return max(matches, key=lambda r: r["public_score"])
+
+
+def classify_submissions(
+    rows: list[dict[str, Any]], pinned: dict[str, Any] | None = None
+) -> list[dict[str, Any]]:
+    """Annotate each row with a ``classification`` field (in place) + return.
+
+    When ``pinned`` is given it is used as the active control instead of the
+    auto-selected highest score. This is how the *maintained candidate anchor*
+    (e.g. ``combo_full_safety_v3_fixed``) is kept as the control even when an
+    unmaintained raw deck/submission baseline posts a higher live score.
+    """
+    active = pinned if pinned is not None else select_active_control(rows)
     active_key = (active["filename"], active["date"]) if active else None
     active_score = active["public_score"] if active else None
     for r in rows:
@@ -123,9 +145,17 @@ def classify_submissions(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return rows
 
 
-def build_registry(rows: list[dict[str, Any]], *, competition: str) -> dict[str, Any]:
-    rows = classify_submissions(rows)
-    active = select_active_control(rows)
+def build_registry(
+    rows: list[dict[str, Any]],
+    *,
+    competition: str,
+    pin_filename: str | None = None,
+    extra_notes: list[str] | None = None,
+) -> dict[str, Any]:
+    pinned = _find_pinned(rows, pin_filename) if pin_filename else None
+    rows = classify_submissions(rows, pinned=pinned)
+    active = pinned if pinned is not None else select_active_control(rows)
+    auto = select_active_control(rows)
     counts = {
         "total": len(rows),
         "complete": sum(1 for r in rows if r["status"] == "complete"),
@@ -141,6 +171,28 @@ def build_registry(rows: list[dict[str, Any]], *, competition: str) -> dict[str,
     if active is None:
         notes.append("No complete non-error scored submission found; active "
                      "control is ambiguous -- not guessed.")
+    if pinned is not None:
+        notes.append(
+            f"Active control PINNED to maintained candidate anchor "
+            f"`{pinned['filename']}` @ {pinned['public_score']} "
+            f"(--pin-active-control)."
+        )
+        if auto is not None and (auto["filename"], auto["date"]) != (
+            pinned["filename"], pinned["date"]
+        ):
+            notes.append(
+                f"Highest raw live score in listing is `{auto['filename']}` @ "
+                f"{auto['public_score']} (unmaintained deck-variant baseline; "
+                f"deck-search is out of scope, so it is NOT the maintained "
+                f"control)."
+            )
+    elif pin_filename:
+        notes.append(
+            f"--pin-active-control {pin_filename} requested but no complete, "
+            f"scored row matched; fell back to auto-selection. Nothing fabricated."
+        )
+    if extra_notes:
+        notes.extend(extra_notes)
     return {
         "competition": competition,
         "generated_at": time.time(),
@@ -226,6 +278,14 @@ def main() -> int:
     parser.add_argument("--competition", default="pokemon-tcg-ai-battle")
     parser.add_argument("--no-events", action="store_true",
                         help="skip emitting ActiveGraph events")
+    parser.add_argument("--pin-active-control", default=None,
+                        help="filename (e.g. combo_full_safety_v3_fixed.tar.gz) to "
+                             "pin as the maintained active-control anchor instead of "
+                             "the auto-selected highest score. Must be complete+scored "
+                             "in the CSV; never fabricated.")
+    parser.add_argument("--note", action="append", default=None,
+                        help="extra note(s) to record in the registry (repeatable), "
+                             "e.g. a stale-snapshot caveat.")
     args = parser.parse_args()
 
     csv_path = Path(args.csv)
@@ -234,7 +294,9 @@ def main() -> int:
               "listing first (Part B). Nothing fabricated.")
         return 2
     rows = parse_submissions_csv(csv_path.read_text(encoding="utf-8"))
-    reg = build_registry(rows, competition=args.competition)
+    reg = build_registry(rows, competition=args.competition,
+                         pin_filename=args.pin_active_control,
+                         extra_notes=args.note)
 
     REGISTRY_JSON.parent.mkdir(parents=True, exist_ok=True)
     REGISTRY_JSON.write_text(json.dumps(reg, indent=2), encoding="utf-8")

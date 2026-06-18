@@ -107,6 +107,71 @@ def choose_setup_bench(options, board, playbook):
                    rationale="develop a useful backup/setup basic")
 
 
+def choose_setup_bench_multi(options, board, playbook):
+    """Bench refinement that preserves a base-committed COUNT and only reorders
+    WHICH basics are benched. ``board['bench_pick_count']`` carries the count the
+    base policy already committed to (so the runtime hook never changes how many
+    basics are placed -- it only swaps in higher-value backups)."""
+    ri = load_playbook_roles(playbook)
+    if not options:
+        return _result(action_kind="setup_bench", rationale="no options")
+    need = 1
+    if isinstance(board, dict) and isinstance(board.get("bench_pick_count"), int) \
+            and not isinstance(board.get("bench_pick_count"), bool):
+        need = max(1, board["bench_pick_count"])
+    ranked = sorted(
+        range(len(options)),
+        key=lambda i: (-score_basic_bench(options[i], board, ri),
+                       (card_id(options[i]) if isinstance(card_id(options[i]), int)
+                        else 1 << 30), i),
+    )
+    chosen_idx = ranked[:need]
+    chosen_ids = [card_id(options[i]) for i in sorted(chosen_idx)]
+    return _result(chosen_ids[0] if chosen_ids else None, chosen_ids,
+                   action_kind="setup_bench", rationale="develop best backup basics")
+
+
+def choose_draw_count(options, board, playbook):
+    """Pick a numeric quantity (cabt ``select.type==8``; options carry a ``number``
+    field) at a 'choose a number' decision. Policy is a conservative *low-deck
+    draw-avoid* guard: draw as much as offered while keeping at least one card in
+    the deck, so the pilot never decks itself out. With deck size unknown it
+    defaults to the maximum offered number.
+
+    Returns the usual result dict plus a ``chosen_number`` key (the selected
+    quantity). This is a safety guard, not a strategic override: at the SELECT
+    level exactly one option is still chosen -- only WHICH number changes."""
+    nums = []
+    for o in options:
+        n = o.get("number") if isinstance(o, dict) else None
+        if isinstance(n, int) and not isinstance(n, bool):
+            nums.append(n)
+    if not nums:
+        r = _result(action_kind="draw_count", rationale="no numeric options")
+        r["chosen_number"] = None
+        return r
+    deck_count = None
+    if isinstance(board, dict):
+        dc = board.get("deck_count")
+        if isinstance(dc, int) and not isinstance(dc, bool):
+            deck_count = dc
+    if deck_count is not None:
+        # Keep >= 1 card in deck after the draw to avoid self-deckout.
+        safe = [n for n in nums if deck_count - n >= 1]
+        if safe:
+            chosen = max(safe)
+            rat = "max safe draw keeping deck non-empty (deck=%d)" % deck_count
+        else:
+            chosen = min(nums)
+            rat = "deck critically low (deck=%d); minimal draw" % deck_count
+    else:
+        chosen = max(nums)
+        rat = "deck size unknown; default to max offered"
+    r = _result(action_kind="draw_count", rationale=rat)
+    r["chosen_number"] = chosen
+    return r
+
+
 def choose_attach_target(options, board, playbook, attach_kind="energy"):
     ri = load_playbook_roles(playbook)
     if not options:
@@ -252,6 +317,8 @@ _DISPATCH = {
     "setup_active": lambda o, b, p: choose_setup_active(o, b, p),
     "promote_after_ko": lambda o, b, p: choose_promote_after_ko(o, b, p),
     "setup_bench": lambda o, b, p: choose_setup_bench(o, b, p),
+    "setup_bench_multi": lambda o, b, p: choose_setup_bench_multi(o, b, p),
+    "draw_count": lambda o, b, p: choose_draw_count(o, b, p),
     "attach_energy": lambda o, b, p: choose_attach_target(o, b, p, "energy"),
     "attach_tool": lambda o, b, p: choose_attach_target(o, b, p, "tool"),
     "evolve": lambda o, b, p: choose_evolution(o, b, p),

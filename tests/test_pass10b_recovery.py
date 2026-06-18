@@ -111,14 +111,30 @@ def test_registry_no_complete_is_ambiguous_not_guessed(registry_mod):
     assert any("ambiguous" in n.lower() for n in reg["notes"])
 
 
-def test_live_registry_artifact_matches_dynamic_rule():
+def test_live_registry_artifact_matches_dynamic_rule_or_pinned():
     reg_path = REPO / "data" / "kaggle_uploads" / "live_score_registry.json"
     reg = json.loads(reg_path.read_text(encoding="utf-8"))
     completes = [s for s in reg["submissions"]
                  if s["status"] == "complete" and s["public_score"] is not None]
     best = max(completes, key=lambda s: s["public_score"])
-    assert reg["active_control"]["filename"] == best["filename"]
-    assert reg["active_control"]["public_score"] == best["public_score"]
+    ac = reg["active_control"]
+    pinned = any("pinned" in n.lower() for n in reg.get("notes", []))
+    if not pinned:
+        # Pure dynamic rule: active control is the highest complete score.
+        assert ac["filename"] == best["filename"]
+        assert ac["public_score"] == best["public_score"]
+    else:
+        # Pinned maintained anchor: must still be a real complete+scored row,
+        # and the pin (plus the higher raw baseline, if any) must be disclosed.
+        assert any(
+            s["filename"] == ac["filename"]
+            and s["public_score"] == ac["public_score"]
+            and s["status"] == "complete"
+            for s in reg["submissions"]
+        )
+        if ac["filename"] != best["filename"]:
+            assert any("highest raw live score" in n.lower()
+                       for n in reg.get("notes", []))
 
 
 def test_eval_smoke_blocked_when_cabt_unavailable(smoke_mod, tmp_path, monkeypatch):

@@ -210,3 +210,29 @@ the CLI may still be absent.
   decomposition into evidence-grounded subfamilies.
 - **Workflow requirement for long evals.** Detached background shells die between
   tool calls; long evals must run under a Replit workflow.
+
+### Pass 16 lessons (empirical context map + runtime coverage v3)
+
+- **Cross-source confirmation is mandatory.** A cabt context is only "safely
+  identifiable" when its option shape matches across BOTH raw replays AND live
+  self-play traces. Single-source contexts (e.g. ctx 34, live-only) are deferred,
+  not wired — one source can be an artifact of a particular game state.
+- **Broad Main (ctx 0) stays delegated.** Its option types are heterogeneous
+  (`inPlayArea` / `inPlayIndex` / `attackId` mixed) and cannot be narrowed to a
+  single safe action class; wiring it would risk overriding correct delegated play.
+- **Context-map first, then wire.** Build the empirical context map BEFORE adding
+  any runtime rule. Wiring a context that has not been confirmed across sources is
+  guessing at the action space.
+- **Fixture pass ≠ live runtime coverage.** The core-competency gate grading
+  `core_pilot_decide` PASS does not prove the wired context helps in real games:
+  v3 passed every gate fixture yet underperformed v2 live-directionally. The gate
+  proves decision *correctness on known shapes*, not *net benefit in play*.
+- **More runtime contexts ≠ better.** v3 wired the confirmed-safe setup/draw-count
+  contexts (1,2,38) on top of v2's search/discard (7,8), yet scored *lower* in
+  surrogate eval (weighted 0.62 / vs-anchor 0.35 vs v2's 0.678 / 0.55). Coverage
+  must be earned by evidence of improvement, never assumed from "more is safer".
+- **Entrypoint validity is per-artifact, independent of live score.** The live
+  anchor `combo_full_safety_v3_fixed` scores 376.6 yet FAILS the entrypoint
+  validator (its last top-level callable returns 0 cards → would INVALID). A good
+  live score does not imply a valid entrypoint; only promote validator-passing
+  artifacts, and keep a fresh-named entrypoint-safe clone for local anchoring.

@@ -153,8 +153,37 @@ def _cp_embedded(obs):
         # not a safety decline).
         if not (isinstance(base, list) and len(base) >= 1):
             return base
+        # Refine WHICH basic becomes the active Pokemon at setup (count is fixed
+        # at exactly 1 by the engine -- only the choice changes; Kyogre > Snover).
+        if ctx == 1 and 1 in _CP_RUNTIME_CONTEXTS and mn == 1 and mx == 1 and len(base) == 1:
+            built = [{{"card_id": resolve_option_card(obs, o)}} for o in options]
+            board = build_board(obs)
+            res = core_pilot_decide("setup_active", board, built)
+            cid = res.get("chosen_card_id")
+            if cid is not None:
+                idxs = _cp_indices_for_ids(built, [cid])
+                if idxs:
+                    refined = _validate_action(idxs, len(options), mn, mx)
+                    if refined and len(refined) == 1:
+                        return refined
+        # Refine WHICH basics go to the bench at setup, keeping exactly the COUNT
+        # the base policy already committed to (never benches more/fewer).
+        elif ctx == 2 and 2 in _CP_RUNTIME_CONTEXTS:
+            need = len(base)
+            if mn <= need <= mx and need >= 1:
+                built = [{{"card_id": resolve_option_card(obs, o)}} for o in options]
+                board = build_board(obs)
+                if isinstance(board, dict):
+                    board["bench_pick_count"] = need
+                res = core_pilot_decide("setup_bench_multi", board, built)
+                chosen_ids = res.get("chosen_card_ids") or []
+                idxs = _cp_indices_for_ids(built, chosen_ids)
+                if len(idxs) == need:
+                    refined = _validate_action(idxs, len(options), mn, mx)
+                    if refined and len(refined) == need:
+                        return refined
         # Refine the search target at the ToHand-search context.
-        if ctx == 7 and 7 in _CP_RUNTIME_CONTEXTS and mx >= 1:
+        elif ctx == 7 and 7 in _CP_RUNTIME_CONTEXTS and mx >= 1:
             built = [{{"card_id": resolve_option_card(obs, o)}} for o in options]
             board = build_board(obs)
             res = core_pilot_decide("search_to_hand", board, built)
@@ -181,6 +210,27 @@ def _cp_embedded(obs):
                     refined = _validate_action(idxs, len(options), mn, mx)
                     if refined and len(refined) == need:
                         return refined
+        # Refine a numeric 'choose a number' select (e.g. draw-count): pick the
+        # quantity that avoids self-deckout. Still exactly ONE option selected --
+        # only WHICH number changes; deck size comes from build_board (the select
+        # itself carries no deck info).
+        elif ctx == 38 and 38 in _CP_RUNTIME_CONTEXTS and mn == 1 and mx == 1:
+            numbers = [o.get("number") if isinstance(o, dict) else None
+                       for o in options]
+            if all(isinstance(n, int) and not isinstance(n, bool) for n in numbers):
+                board = build_board(obs)
+                res = core_pilot_decide("draw_count", board, options)
+                chosen_number = res.get("chosen_number")
+                if isinstance(chosen_number, int) and not isinstance(chosen_number, bool):
+                    pick = None
+                    for i, o in enumerate(options):
+                        if isinstance(o, dict) and o.get("number") == chosen_number:
+                            pick = i
+                            break
+                    if pick is not None:
+                        refined = _validate_action([pick], len(options), mn, mx)
+                        if refined and len(refined) == 1:
+                            return refined
     except Exception:
         pass
     return base

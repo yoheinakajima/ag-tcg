@@ -1,0 +1,562 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not generate broad deck-search candidates.
+- Do not generate chaos candidates in this pass.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Keep all candidate tarballs top-level main.py + deck.csv only.
+- Read docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md, docs/NEXT_AGENT_README.md, docs/CORE_PILOT_ARCHITECTURE.md, data/reports/pass14_final_report.md, and data/reports/pass15_final_report.md before making changes.
+- This is a context-map + runtime-coverage + real-sample confirmation pass only.
+
+Current status:
+- Pass 15 completed.
+- Full test suite passed: 372 tests.
+- No Kaggle upload, no GitHub push.
+- Root main.py/deck.csv unchanged.
+- Active live control remains combo_full_safety_v3_fixed from last-known-good registry, score 376.6.
+- Active control is a directional anchor only:
+  - it scores best live,
+  - but it FAILS the new entrypoint-invariant validator,
+  - therefore it must never be treated as upload-safe unless rebuilt.
+- core_pilot_water_v1:
+  - validator PASS
+  - entrypoint PASS
+  - live smoke PASS
+  - runtime coverage limited
+- core_pilot_water_v2_runtime:
+  - validator PASS
+  - entrypoint PASS
+  - live smoke PASS
+  - runtime coverage: ctx 7 ToHand/search + ctx 8 discard
+  - directional small-sample score: 0.5833 vs active-control anchor 0.4167
+  - insufficient sample: 12 games < 20 required
+- Important Pass 15 finding:
+  - setup_active, setup_bench, count/draw-count, and attach are still not wired because the previous audit did not treat their live context integers as confirmed.
+  - However, replay traces appear to expose these contexts. We need an empirical context map across raw replays and live games before wiring more.
+- No candidate is currently upload-ready.
+
+Goal:
+Run Pass 16: Empirical Context Map + Runtime Coverage v3 + Real-Sample Confirmation.
+
+Objectives:
+1. Build an empirical cabt context map from raw replays and fresh live traces.
+2. Confirm whether setup active, setup bench, draw/count, and narrow attach contexts can be safely identified.
+3. Build at most one new runtime candidate: core_pilot_water_v3_context.
+4. Wire only contexts that are empirically confirmed and safe.
+5. Run a real-sample focused evaluation against refined Pass 13 subfamilies.
+6. Produce a dry-run recommendation only.
+7. No upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Live score state
+
+Try read-only status fetch:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass16.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass16.csv || true
+
+Then run:
+
+python scripts/build_live_score_registry.py
+
+If Kaggle CLI is unavailable:
+- use last-known-good registry,
+- record stale-score caveat,
+- do not silently overwrite active control from stale/default snapshots.
+
+Update:
+- data/kaggle_uploads/live_score_registry.json
+- data/kaggle_uploads/live_score_registry.md
+
+Part C — Empirical context map
+
+Create or update:
+
+scripts/build_cabt_context_map.py
+
+Inputs:
+- data/meta_replays/raw/*.json
+- any available local smoke traces
+- optional fresh live games from candidate/control vs self/control
+
+Outputs:
+- data/experiments/pass16_context_map.json
+- data/experiments/pass16_context_map.md
+- data/experiments/pass16_context_examples.jsonl
+
+For every observed select context, collect:
+- raw select.context integer
+- visual/context name if available from replay visualize/select
+- raw select.type
+- option.type distribution
+- minCount/maxCount distribution
+- option shapes
+- whether options resolve to hand/deck/board cards
+- whether option area/index fields are stable
+- example episode/step
+- candidate semantic label
+- confidence: confirmed / likely / ambiguous / unsafe
+- recommended action: wire / defer / never-wire
+
+Minimum contexts to map:
+- Deck selection
+- IsFirst / YesNo
+- SetupActivePokemon
+- SetupBenchPokemon
+- Main
+- Discard
+- ToHand
+- DrawCount / Count / Number
+- Attack
+- Promote / choose-new-active if visible
+- Attach, Play, Ability, End option types inside Main
+
+Empirical confirmation rules:
+- A context is "confirmed" only if examples show stable raw integer + stable option shape across at least two sources or repeated live/replay observations.
+- A context can be "likely" with one source but should not be wired unless low-risk.
+- Broad Main context must remain deferred unless the sub-action can be resolved with high confidence.
+- If a context name is only visible in replay visualization but not raw obs, record both.
+
+Part D — Runtime expansion plan v2
+
+Create:
+
+data/experiments/pass16_runtime_expansion_plan.md
+
+Use pass16_context_map.json.
+
+Classify contexts:
+
+Safe to wire if confirmed:
+1. SetupActivePokemon
+2. SetupBenchPokemon
+3. Discard
+4. ToHand
+5. DrawCount / Count only for low-deck guard
+6. Narrow Main attach only when card and target resolve cleanly
+
+Unsafe / defer:
+- broad Main action ranking
+- broad Play card logic
+- broad Ability logic
+- attacks with complex target ordering
+- forced switch / chaos
+- any context with unstable option shape
+
+Document exactly why each context is wired or deferred.
+
+Part E — Build entrypoint-safe anchor clone for local comparison only
+
+Because active_control combo_full_safety_v3_fixed fails the new entrypoint validator, build a local-only repaired clone for evaluation sanity:
+
+candidate_id: combo_full_safety_v3_entrypoint_safe_local
+
+Requirements:
+- same deck and same strategy as combo_full_safety_v3_fixed
+- fresh-named final top-level callable
+- passes validate_candidate_tarball.py
+- passes validate_candidate_entrypoint.py
+- live cabt smoke PASS
+- not uploaded
+- not treated as a new strategy candidate
+- report as "packaging-equivalent local anchor"
+
+Output:
+- data/submissions/candidates_pass16/combo_full_safety_v3_entrypoint_safe_local.tar.gz
+
+If rebuilding it safely is hard, skip and record why. Do not mutate old tarballs.
+
+Part F — Build core runtime v3 only if context map supports it
+
+Build at most one new strategy candidate:
+
+candidate_id: core_pilot_water_v3_context
+
+Base:
+- same deck as core_pilot_water_v2_runtime
+- same playbook: playbooks/v2_kyogre_abomasnow_core_pilot.yaml
+- same robust deck-selection wrapper
+- same last-callable invariant
+- preserves Pass-8 effect-safety policy
+- preserves ctx 7 and ctx 8 behavior from v2_runtime
+
+Wire only confirmed safe contexts.
+
+Candidate runtime behavior:
+
+1. SetupActivePokemon
+If confirmed:
+- choose highest active score.
+- For current Water shell, Kyogre should generally beat Snover as active.
+- Delegate if option cards cannot be resolved.
+
+2. SetupBenchPokemon
+If confirmed:
+- bench useful backup/setup Pokémon up to maxCount.
+- prefer backup attacker + setup basic.
+- respect minCount/maxCount.
+- if maxCount > 1, return multiple useful choices if legal and scores clear threshold.
+- delegate if option cards cannot be resolved.
+
+3. Discard
+Already wired at ctx 8:
+- preserve v2 behavior.
+- prefer excess Basic Water Energy.
+- avoid only attacker/setup/evolution payoff.
+- if forced count equals all options, return all.
+
+4. ToHand
+Already wired at ctx 7:
+- preserve v2 behavior.
+- choose missing setup piece:
+  - no Snover line => prefer Snover over orphan Mega
+  - Snover exists => prefer Mega Abomasnow
+  - active attacker exists => tool/search/support by role
+
+5. DrawCount / Count
+Wire only if context confirmed and options are numeric:
+- if deckCount <= 8, prefer lower draw count when legal.
+- if deckCount <= 4, prefer zero draw count if legal.
+- otherwise delegate to prior agent.
+
+6. Narrow Main attach
+Wire only if all are true:
+- context is Main
+- option type is Attach
+- attached card resolves from hand
+- target resolves to active/bench Pokémon
+- card is Basic Water Energy or Powerglass
+- no uncertain Play/Ability action is being overridden
+- score margin is clear
+Actions:
+- attach Water to active attacker or next attacker.
+- attach Powerglass to active/primary attacker.
+- delegate if uncertain.
+
+Do not wire:
+- broad Main action ranking
+- Play cards
+- Ability choices
+- attack targeting
+- chaos/disruption
+
+Output:
+- experiments/runs_pass16/core_pilot_water_v3_context/
+- data/submissions/candidates_pass16/core_pilot_water_v3_context.tar.gz
+
+Part G — Validators and gates
+
+Run for every candidate evaluated:
+
+python scripts/validate_candidate_tarball.py <tarball>
+python scripts/validate_candidate_entrypoint.py <tarball>
+
+Run core gate:
+
+python scripts/run_core_competency_gate.py --candidate data/submissions/candidates_pass16/core_pilot_water_v3_context.tar.gz --fixtures data/fixtures/core_competency
+
+Also run core gate for:
+- core_pilot_water_v2_runtime
+- active control anchor if available
+- entrypoint-safe clone if built
+
+Expected:
+- v3_context passes all hard fixtures.
+- v2_runtime still passes.
+- active control may fail core fixtures or entrypoint; record honestly.
+
+Part H — Live cabt smoke
+
+Run live cabt smoke for:
+- core_pilot_water_v3_context vs active control anchor, both seats
+- core_pilot_water_v3_context self-play
+- core_pilot_water_v2_runtime vs active control anchor, if cheap
+- entrypoint-safe clone vs active control, if built
+
+Required:
+- DONE statuses
+- no INVALID
+- no ERROR
+- no TIMEOUT
+- finite rewards
+
+Output:
+- data/experiments/pass16_live_smoke.json
+- data/experiments/pass16_live_smoke.md
+
+Part I — Real-sample focused evaluation
+
+Evaluate only validator-passing artifacts.
+
+Candidates:
+1. active_control_combo_full_safety_v3_fixed
+   - allowed as directional anchor only even if entrypoint validator fails
+   - not promotion target
+2. combo_full_safety_v3_entrypoint_safe_local, if built
+   - local packaging-equivalent anchor
+3. core_pilot_water_v2_runtime
+4. core_pilot_water_v3_context
+5. deck12_less_draw_more_attack, if tarball exists and passes validator
+6. pb12_kyogre_tempo, if tarball exists and passes validator
+
+Opponent pool:
+Use refined Pass 13 subfamilies:
+
+experiments/pass13_refined_meta_pool.yaml
+
+Subfamilies:
+- metal_ex_zacian_ramp
+- water_kyogre_abomasnow_maxbelt
+- mega_lucario_ex_tempo
+- mega_kangaskhan_energy_stack
+- dragapult_ex
+- lightning_bellibolt
+
+Self-mirror diagnostic:
+- optional
+- zero/diagnostic weight only
+
+Budget:
+- Target: 20 games per seat per subfamily
+- Minimum: 10 games per seat per subfamily
+- seat-swapped
+- watchdog enabled
+- use Replit workflow for runtime
+- no upload
+
+Outputs:
+- data/experiments/pass16_focused_eval.json
+- data/experiments/pass16_focused_eval.md
+- data/experiments/pass16_matchup_matrix.csv
+- data/experiments/pass16_ranking.json
+- data/experiments/pass16_ranking.md
+
+Part J — Metrics
+
+Collect:
+
+Validation:
+- tarball validator pass/fail
+- entrypoint validator pass/fail
+- live smoke pass/fail
+- core competency gate pass/fail
+
+Runtime coverage:
+- setup active wired
+- setup bench wired
+- discard wired
+- ToHand wired
+- Count/DrawCount wired
+- narrow attach wired
+- broad Main delegated
+
+Outcome:
+- wins/losses/draws
+- adjusted win rate
+- Wilson 80/95 CI
+- seat split
+- crashes/timeouts/invalid returns
+
+Competency:
+- setup active correctness
+- setup bench correctness
+- early backup bench rate
+- discard safety
+- ToHand target quality
+- low-deck draw avoidance
+- attach-to-attacker rate if wired
+
+Game:
+- first meaningful attack step
+- first KO step if detectable
+- average game length
+- stuck_on_basic_snover_rate
+- no_bench_loss_rate
+- low-deck draw/search count
+
+Meta:
+- weighted refined meta score
+- per-subfamily score
+- worst-subfamily score
+- matchup spread
+- mirror-only overfit tag
+
+Part K — Ranking / recommendation rules
+
+Labels:
+- core_promotable
+- core_promising
+- runtime_coverage_improved
+- no_regression
+- competency_improved_but_unproven
+- anchor_only
+- fail_entrypoint_validator
+- insufficient_games
+- inconclusive
+- blocked
+- live_rejected
+
+Promotion gate:
+Candidate is not upload-ready unless:
+- tarball validator passes
+- entrypoint validator passes
+- live cabt smoke passes
+- core competency hard gate passes
+- no crashes/timeouts/invalid returns
+- at least 20 games total per evaluated meta slice OR explicit lower-fidelity caveat
+- weighted refined meta score beats active control OR is within small margin while materially improving competency/runtime metrics
+- worst matchup does not collapse
+- not mirror-overfit
+- report explains surrogate limitation
+
+No upload in this pass.
+
+Dry-run queue:
+- at most one candidate
+- upload_performed: false
+- auto_submit_enabled: false
+- require_manual_approval_for_submit: true
+- human_review_required: true
+
+Part L — Update docs
+
+Update:
+- docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md
+- docs/CORE_PILOT_ARCHITECTURE.md
+
+Add lessons:
+- context-map-first before wiring runtime rules
+- fixture pass != live runtime coverage
+- validator-passing active control may still be a fragile anchor if last-callable entrypoint is wrong
+- broad Main must remain delegated unless specific subaction resolution is certain
+
+Part M — Report site
+
+Update:
+- data/site/index.html
+- data/reports/activegraph_strategy_report.md
+- data/reports/pass16_context_map_and_runtime_eval_report.md
+
+Include:
+- context map
+- safe/deferred context table
+- v2 vs v3 runtime coverage
+- live smoke
+- real-sample eval
+- dry-run recommendation
+- no-upload note
+- surrogate limitation
+
+Part N — Tests
+
+Add/update tests for:
+- context map includes observed context ids and labels
+- SetupActive mapping is confirmed only if evidence threshold met
+- SetupBench mapping is confirmed only if evidence threshold met
+- DrawCount/Count mapping handles numeric options
+- unsafe broad Main remains delegated
+- core_pilot_water_v3_context last callable passes entrypoint validator
+- v3 runtime chooses Kyogre over Snover in confirmed SetupActive fixture
+- v3 runtime benches useful backup in confirmed SetupBench fixture
+- v3 runtime avoids low-deck draw when Count context confirmed
+- narrow attach only fires when card/target resolve cleanly
+- all evaluated candidates are validator pre-filtered
+- active control anchor can be eval anchor despite validator fail but cannot be promotion target
+- no upload flag remains false
+- root files unchanged
+- report includes surrogate limitation
+
+Run targeted tests in small groups, then broader suite if feasible.
+
+Part O — Final report
+
+Report exactly:
+
+ActiveGraph Pass 16 Context Map + Runtime v3 Focused Eval Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Live score state
+- registry path:
+- scores refreshed:
+- active control:
+- active control score:
+- stale caveat:
+
+3. Context map
+- context map path:
+- contexts observed:
+- confirmed contexts:
+- likely contexts:
+- ambiguous/unsafe contexts:
+- key evidence:
+
+4. Runtime expansion
+- v3 generated:
+- candidate tarball:
+- contexts wired:
+- contexts deferred:
+- broad Main policy:
+- no invented IDs:
+
+5. Entrypoint / validators
+- tarball validator:
+- entrypoint validator:
+- last-callable invariant:
+- active control validator status:
+- local safe anchor built:
+
+6. Core competency gate
+- active control hard failures:
+- v2 hard failures:
+- v3 hard failures:
+- advisory fixtures:
+- fixture/runtime parity note:
+
+7. Live smoke
+- smoke path:
+- matchups:
+- DONE/no INVALID:
+- crashes/timeouts/errors:
+
+8. Focused eval
+- candidates evaluated:
+- opponents/subfamilies:
+- games per seat:
+- active control score:
+- v2 score:
+- v3 score:
+- best candidate:
+- worst matchup:
+- Wilson intervals:
+- crashes/timeouts/invalid returns:
+
+9. Queue/upload guidance
+- candidates queued:
+- upload performed: no
+- submit next: yes/no:
+- reason:
+
+10. Next recommendation
+- one sentence only.
