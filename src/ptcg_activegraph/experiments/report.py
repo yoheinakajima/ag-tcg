@@ -40,6 +40,11 @@ PASS5_REPLAY_ANALYSIS_JSON = Path("data/replays/80374966_analysis.json")
 CHAOS_TELEMETRY_CONTRACT_JSON = Path("data/experiments/chaos_telemetry_contract.json")
 V2_BASELINE_DIR = Path("data/baselines/v2_kaggle_479_1_deck_energy_trim_light")
 QUEUE_JSON = Path("data/submission_queue.json")
+PASS7B_SCOUT_RANKING_JSON = Path("data/experiments/pass7b_scout_ranking.json")
+PASS7B_FOCUSED_RANKING_JSON = Path("data/experiments/pass7b_focused_ranking.json")
+PASS7B_FIXTURE_GATE_JSON = Path("data/experiments/pass7b_fixture_gate.json")
+PASS7B_BENCHMARK_JSON = Path("data/experiments/cabt_import_benchmark_pass7b.json")
+META_ARCHETYPES_JSON = Path("data/meta/meta_archetypes.json")
 
 # Corrected live baseline scores (see v2 baseline README correction note: the
 # v1 archive dir keeps its historical `349_8` name but live v1 is 356.9).
@@ -149,6 +154,11 @@ def gather(runs_root=RUNS_ROOT) -> dict:
         "pass5_replay": _load_json(PASS5_REPLAY_ANALYSIS_JSON) or {},
         "chaos_contract": _load_json(CHAOS_TELEMETRY_CONTRACT_JSON) or {},
         "queue": _load_json(QUEUE_JSON) or {},
+        "pass7b_scout_ranking": _load_json(PASS7B_SCOUT_RANKING_JSON) or {},
+        "pass7b_focused_ranking": _load_json(PASS7B_FOCUSED_RANKING_JSON) or {},
+        "pass7b_fixture_gate": _load_json(PASS7B_FIXTURE_GATE_JSON) or {},
+        "pass7b_benchmark": _load_json(PASS7B_BENCHMARK_JSON) or {},
+        "meta_archetypes": _load_json(META_ARCHETYPES_JSON) or {},
         "runs": runs,
         "baseline_readme": (BASELINE_DIR / "README.md"),
         "v2_baseline_readme": (V2_BASELINE_DIR / "README.md"),
@@ -268,6 +278,7 @@ def _overview_html(data: dict) -> str:
     body = (
         f"<section><h2>Snapshot</h2><div class=cards>{cards}</div></section>"
         f"{_run_ledger_html(data)}"
+        f"{_pass7b_html(data)}"
         f"{_pass4_html(data)}"
         f"{_pass5_html(data)}"
         f"<section><h2>Stage 1 — Broad scout ranking</h2>"
@@ -456,6 +467,141 @@ def _pass5_html(data: dict) -> str:
         f"<p class=muted>{_esc(_chaos_summary(chaos))}</p>"
         "<table><tr><th>Seam</th><th>Telemetry</th><th>Confirmed ids</th>"
         f"<th>Blockers</th></tr>{chaos_rows}</table>"
+        "</section>"
+    )
+
+
+def _pass7b_rank_rows_html(ranking: dict) -> str:
+    cands = (ranking or {}).get("candidates") or []
+    if not cands:
+        return ("<div class=empty>No Pass 7B ranking yet — run "
+                "<code>scripts/run_durable_eval.py --rank</code>.</div>")
+    rows = "".join(
+        f"<tr><td>{i + 1}</td><td>{_esc(c.get('candidate_id'))}</td>"
+        f"<td>{_esc(c.get('promotion_label'))}</td>"
+        f"<td>{_esc(c.get('games_completed'))}/{_esc(c.get('games_planned'))}</td>"
+        f"<td>{_esc(c.get('wins'))}-{_esc(c.get('losses'))}-{_esc(c.get('draws'))}</td>"
+        f"<td>{_num(c.get('adjusted_win_rate'))}</td>"
+        f"<td>{_ci_str(c.get('wilson_80'))}</td>"
+        f"<td>{_ci_str(c.get('wilson_95'))}</td>"
+        f"<td>{_num(c.get('seat_p0_win_rate'))}/{_num(c.get('seat_p1_win_rate'))}</td>"
+        f"<td>{_esc(c.get('crashes'))}/{_esc(c.get('timeouts'))}/{_esc(c.get('stale'))}</td>"
+        f"<td>{_esc(c.get('fixture_gate_status'))}</td></tr>"
+        for i, c in enumerate(cands)
+    )
+    return ("<table><tr><th>#</th><th>Candidate</th><th>Label</th><th>Games</th>"
+            "<th>W-L-D</th><th>Adj WR</th><th>80% CI</th><th>95% CI</th>"
+            "<th>p0/p1</th><th>cr/to/st</th><th>Fixture</th></tr>"
+            f"{rows}</table>")
+
+
+def _pass7b_html(data: dict) -> str:
+    scout = data.get("pass7b_scout_ranking") or {}
+    focused = data.get("pass7b_focused_ranking") or {}
+    gate = data.get("pass7b_fixture_gate") or {}
+    bench = data.get("pass7b_benchmark") or {}
+    meta = data.get("meta_archetypes") or {}
+    queue = data.get("queue") or {}
+
+    if not (scout or focused or gate or bench or meta or queue):
+        return ("<section><h2>Pass 7B — Durable fast scout</h2><div class=empty>"
+                "No Pass 7B artifacts found yet.</div></section>")
+
+    baseline_cards = "".join(
+        f"<div class=card><div class=k>{_esc(k)}</div><div class=v>{_esc(v)}</div></div>"
+        for k, v in [
+            ("v2 active control", V2_LIVE_SCORE),
+            ("v1 control (live)", V1_LIVE_SCORE),
+            ("import speedup", f"{bench.get('import_speedup_x', '-')}×"),
+            ("Kaggle upload", "no"),
+        ]
+    )
+
+    # Fast-import benchmark.
+    n_imp = (bench.get("normal") or {}).get("import_seconds")
+    f_imp = (bench.get("fast") or {}).get("import_seconds")
+    bench_html = (
+        f"<p>Cold cabt import: normal <b>{_num(n_imp, '{:.2f}')}s</b> → fast "
+        f"<b>{_num(f_imp, '{:.2f}')}s</b> "
+        f"(<b>{_esc(bench.get('import_speedup_x', '-'))}×</b>, validated="
+        f"{_esc(bench.get('fast_validated'))}).</p>"
+    ) if bench else "<div class=empty>No benchmark artifact.</div>"
+
+    # Fixture gate (anchors excluded everywhere, incl. the pass/fail summary).
+    gate_results = [r for r in (gate.get("results") or []) if not r.get("is_anchor")]
+    non_anchor_ids = {r.get("candidate_id") for r in gate_results}
+    passed = [c for c in (gate.get("passed") or []) if not non_anchor_ids or c in non_anchor_ids]
+    failed = [c for c in (gate.get("failed") or []) if not non_anchor_ids or c in non_anchor_ids]
+    gate_rows = "".join(
+        f"<tr><td>{_esc(r.get('candidate_id'))}</td>"
+        f"<td>{_esc(r.get('status'))}</td>"
+        f"<td>{_esc(r.get('seam_covered'))}</td>"
+        f"<td>{_esc(r.get('preference_pass'))}/{_esc(r.get('preference_fail'))}/"
+        f"{_esc(r.get('preference_na'))}</td></tr>"
+        for r in gate_results
+    ) or "<tr><td class=muted colspan=4>no fixture gate</td></tr>"
+    gate_html = (
+        f"<p class=muted>Passing: {_esc(', '.join(passed) or 'none')}; "
+        f"failing: {_esc(', '.join(failed) or 'none')}. "
+        f"Secret Box step-11 nuance preserved (forced 3-of-3 discard = forced_all/na, "
+        "not a policy failure).</p>"
+        "<table><tr><th>Candidate</th><th>Status</th><th>Seam covered</th>"
+        f"<th>pref p/f/na</th></tr>{gate_rows}</table>"
+    )
+
+    # Dry-run queue (supports both the dry-run `queue[]` schema and legacy `candidates[]`).
+    q_items = queue.get("queue") or queue.get("candidates") or []
+    auto_submit = queue.get("auto_submit_enabled", queue.get("auto_submit"))
+    upload = queue.get("upload_performed", queue.get("will_upload"))
+    if q_items:
+        q_html = "".join(
+            f"<li><code>{_esc(c.get('candidate_id') or c.get('branch_id'))}</code> "
+            f"[{_esc(c.get('promotion_label') or c.get('label'))}] "
+            f"→ <code>{_esc(c.get('tarball'))}</code> (NOT uploaded)</li>"
+            for c in q_items
+        )
+        q_html = (f"<p class=muted>auto_submit={_esc(auto_submit)}, "
+                  f"manual_approval={_esc(queue.get('require_manual_approval_for_submit'))}, "
+                  f"upload_performed={_esc(upload)}, "
+                  f"max={_esc(queue.get('max_queue_size', queue.get('max_per_day')))}.</p>"
+                  f"<ul>{q_html}</ul>")
+    else:
+        q_html = "<div class=empty>Queue empty — no candidate qualified.</div>"
+
+    # Meta engine strategy backlog.
+    tracks = (meta.get("strategy_tracks") or [])
+    track_html = "".join(
+        f"<li><b>{_esc(t.get('name'))}</b> — policy seam: <i>{_esc(t.get('policy_seam'))}</i></li>"
+        for t in tracks
+    ) or "<li class=muted>no strategy tracks</li>"
+    meta_html = (
+        f"<p class=muted>Replays present: {_esc(meta.get('n_replays', 0))}; "
+        f"archetypes extracted: {_esc(meta.get('n_archetypes_extracted', 0))} "
+        "(scaffolding only — no card ids invented). "
+        "Docs: <code>docs/META_ENGINE_STRATEGIES.md</code>, "
+        "<code>data/meta_replays/README.md</code>.</p>"
+        f"<ul>{track_html}</ul>"
+    )
+
+    return (
+        "<section><h2>Pass 7B — Durable fast scout</h2>"
+        f"<div class=cards>{baseline_cards}</div>"
+        "<p class=muted>Local research only — <b>no Kaggle upload, no GitHub push</b>; "
+        "root <code>main.py</code>/<code>deck.csv</code> immutable. The durable "
+        "ActiveGraph ledger (above) is the source of truth; tables below are "
+        "projections.</p>"
+        "<h3>Fast-import benchmark</h3>"
+        f"{bench_html}"
+        "<h3>Fixture gate (advisory)</h3>"
+        f"{gate_html}"
+        "<h3>Scout ranking (vs v2 control; controls/anchors excluded from queue)</h3>"
+        f"{_pass7b_rank_rows_html(scout)}"
+        "<h3>Focused micro-confirmation</h3>"
+        f"{_pass7b_rank_rows_html(focused)}"
+        "<h3>Dry-run submission queue (≤1, no upload)</h3>"
+        f"{q_html}"
+        "<h3>Meta engine strategy backlog</h3>"
+        f"{meta_html}"
         "</section>"
     )
 
@@ -720,6 +866,132 @@ def _pass5_md(data: dict) -> list[str]:
     return lines
 
 
+def _pass7b_rank_md(ranking: dict, title: str) -> list[str]:
+    cands = (ranking or {}).get("candidates") or []
+    lines = [f"### {title}"]
+    if not cands:
+        lines.append("_No Pass 7B ranking at this stage._")
+        return lines
+    src = ranking.get("ranking_source")
+    mode = ranking.get("runner_mode")
+    stub = ranking.get("fast_import_stub_used")
+    lines.append(f"_run_id `{ranking.get('run_id')}`; runner={mode}; "
+                 f"fast_import_stub_used={stub}; source={src}._")
+    lines.append("")
+    lines.append("| # | Candidate | Label | Games | W-L-D | Adj WR | 80% CI | 95% CI "
+                 "| p0/p1 | cr/to/st | Fixture |")
+    lines.append("|--:|-----------|-------|------:|-------|-------:|--------|--------"
+                 "|-------|----------|---------|")
+    for i, c in enumerate(cands):
+        lines.append(
+            f"| {i + 1} | {c.get('candidate_id')} | {c.get('promotion_label')} | "
+            f"{c.get('games_completed')}/{c.get('games_planned')} | "
+            f"{c.get('wins')}-{c.get('losses')}-{c.get('draws')} | "
+            f"{_num(c.get('adjusted_win_rate'))} | {_ci_str(c.get('wilson_80'))} | "
+            f"{_ci_str(c.get('wilson_95'))} | "
+            f"{_num(c.get('seat_p0_win_rate'))}/{_num(c.get('seat_p1_win_rate'))} | "
+            f"{c.get('crashes')}/{c.get('timeouts')}/{c.get('stale')} | "
+            f"{c.get('fixture_gate_status')} |")
+    return lines
+
+
+def _pass7b_md(data: dict) -> list[str]:
+    scout = data.get("pass7b_scout_ranking") or {}
+    focused = data.get("pass7b_focused_ranking") or {}
+    gate = data.get("pass7b_fixture_gate") or {}
+    bench = data.get("pass7b_benchmark") or {}
+    meta = data.get("meta_archetypes") or {}
+    queue = data.get("queue") or {}
+
+    lines = ["## Pass 7B — Durable fast scout", ""]
+    if not (scout or focused or gate or bench or meta or queue):
+        lines.append("_No Pass 7B artifacts found yet._")
+        return lines
+
+    lines += [
+        f"- Active control: v2 `deck_energy_trim_light` live **{V2_LIVE_SCORE}** "
+        f"(v1 live **{V1_LIVE_SCORE}**).",
+        "- Scope: local research only — **no Kaggle upload, no GitHub push**; root "
+        "`main.py`/`deck.csv` immutable.",
+        "- Source of truth: durable ActiveGraph ledger "
+        "`data/activegraph/ptcg_ledger_events.jsonl` (Pass 7A fallback ledger — no "
+        "second framework). Tables below are projections of recorded events.",
+        "",
+        "### Fast-import benchmark",
+    ]
+    if bench:
+        n_imp = (bench.get("normal") or {}).get("import_seconds")
+        f_imp = (bench.get("fast") or {}).get("import_seconds")
+        lines.append(
+            f"- Cold cabt import: normal **{_num(n_imp, '{:.2f}')}s** → fast "
+            f"**{_num(f_imp, '{:.2f}')}s** "
+            f"(**{bench.get('import_speedup_x', '-')}×**, both_import_ok="
+            f"{bench.get('both_import_ok')}, fast_validated={bench.get('fast_validated')}).")
+        stub = (bench.get("fast") or {}).get("stub_metadata") or {}
+        if stub:
+            lines.append(f"- Stubbed modules: {stub.get('stubbed_modules')}; "
+                         f"fast_import_stub_enabled={stub.get('fast_import_stub_enabled')}.")
+    else:
+        lines.append("_No benchmark artifact._")
+
+    lines += ["", "### Fixture gate (advisory)"]
+    results = [r for r in (gate.get("results") or []) if not r.get("is_anchor")]
+    if results:
+        non_anchor_ids = {r.get("candidate_id") for r in results}
+        passed = ", ".join(c for c in (gate.get("passed") or [])
+                           if not non_anchor_ids or c in non_anchor_ids) or "none"
+        failed = ", ".join(c for c in (gate.get("failed") or [])
+                           if not non_anchor_ids or c in non_anchor_ids) or "none"
+        lines.append(f"- Passing: {passed}; failing: {failed}.")
+        lines.append("- Secret Box step-11 nuance preserved (a forced 3-of-3 discard "
+                     "reads as forced_all/na, not a policy failure).")
+        lines += ["", "| Candidate | Status | Seam covered | pref p/f/na |",
+                  "|-----------|--------|--------------|-------------|"]
+        for r in results:
+            lines.append(
+                f"| {r.get('candidate_id')} | {r.get('status')} | "
+                f"{r.get('seam_covered')} | {r.get('preference_pass')}/"
+                f"{r.get('preference_fail')}/{r.get('preference_na')} |")
+    else:
+        lines.append("_No fixture gate results._")
+
+    lines += [""]
+    lines += _pass7b_rank_md(scout, "Scout ranking (controls/anchors excluded from queue)")
+    lines += [""]
+    lines += _pass7b_rank_md(focused, "Focused micro-confirmation")
+
+    lines += ["", "### Dry-run submission queue (≤1, no upload)"]
+    q_items = queue.get("queue") or queue.get("candidates") or []
+    if q_items:
+        auto_submit = queue.get("auto_submit_enabled", queue.get("auto_submit"))
+        upload = queue.get("upload_performed", queue.get("will_upload"))
+        lines.append(f"- auto_submit={auto_submit}, "
+                     f"manual_approval={queue.get('require_manual_approval_for_submit')}, "
+                     f"upload_performed={upload}, "
+                     f"max={queue.get('max_queue_size', queue.get('max_per_day'))}.")
+        for c in q_items:
+            cid = c.get("candidate_id") or c.get("branch_id")
+            label = c.get("promotion_label") or c.get("label")
+            lines.append(f"  - {cid} [{label}] -> `{c.get('tarball')}` (NOT uploaded)")
+    else:
+        lines.append("_Queue empty — no candidate qualified (or queue not built)._")
+
+    lines += ["", "### Meta engine strategy backlog"]
+    lines.append(f"- Replays present: {meta.get('n_replays', 0)}; archetypes "
+                 f"extracted: {meta.get('n_archetypes_extracted', 0)} "
+                 f"(coverage={meta.get('coverage', 'empty')}) — scaffolding only, "
+                 "no card ids invented.")
+    lines.append("- Docs: `docs/META_ENGINE_STRATEGIES.md`, "
+                 "`data/meta_replays/README.md`; tools: "
+                 "`scripts/{analyze_meta_replay,compare_meta_decks,extract_meta_archetypes}.py`.")
+    for t in (meta.get("strategy_tracks") or []):
+        lines.append(f"  - **{t.get('name')}** — policy seam: {t.get('policy_seam')}")
+    for note in (meta.get("uncertainty_notes") or []):
+        lines.append(f"  - _uncertainty:_ {note}")
+
+    return lines
+
+
 def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -756,6 +1028,8 @@ def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
     ]
 
     lines += _run_ledger_md(data)
+    lines += [""]
+    lines += _pass7b_md(data)
     lines += [""]
     lines += _pass4_md(data)
     lines += [""]

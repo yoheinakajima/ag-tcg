@@ -1,45 +1,37 @@
 {
+  "schema": "ptcg_dry_run_submission_queue_v1",
+  "generated_at": 1781755851.1840463,
+  "run_id": "run_pass7b_focused_20260618_040109_fd8762",
+  "stage": "pass7b_focused",
   "auto_submit_enabled": false,
   "require_manual_approval_for_submit": true,
-  "kaggle_daily_submission_limit": 3,
-  "max_per_day": 1,
-  "queue_enabled": true,
-  "will_upload": false,
-  "mode": "DRY-RUN",
-  "candidates": [
+  "upload_performed": false,
+  "max_queue_size": 1,
+  "active_control": "v2_deck_energy_trim_light_479_1",
+  "queue": [
     {
-      "branch_id": "cand_a",
-      "rank": null,
-      "score": 0.9,
-      "label": "promotable",
-      "seam_id": null,
-      "kind": "policy",
-      "hypothesis": "",
-      "run_dir": ".",
-      "tarball": "data/submissions/candidates/cand_a.tar.gz",
-      "package_error": null,
-      "focused_metrics": {
-        "games_completed": null,
-        "win_rate": 0.6,
-        "adjusted_win_rate": null,
-        "wilson80": [
-          null,
-          null
-        ],
-        "wilson95": null,
-        "seat_balance_delta": null,
-        "candidate_p0_win_rate": null,
-        "candidate_p1_win_rate": null
-      },
-      "interpretation": null,
-      "risk_notes": [
-        "Sample is small (0 games); local estimate is noisy.",
-        "Local cabt is a proxy for the hidden Kaggle ladder; treat as a directional signal, not a guaranteed score gain."
+      "candidate_id": "combo_effect_resolution_v3__secret_box_safety",
+      "run_id": "run_pass7b_focused_20260618_040109_fd8762",
+      "branch_path": "experiments/runs_pass6/20260618_023610_05_combo_effect_resolution_v3__secret_box_safety",
+      "promotion_label": "scout_promising",
+      "adjusted_win_rate": 0.6,
+      "games_completed": 10,
+      "wilson_95": [
+        0.3127,
+        0.8318
       ],
-      "suggested_message": "cand_a: ",
-      "message": "cand_a: ",
-      "kaggle_command": "python .pythonlibs/bin/kaggle competitions submit -c pokemon-tcg-ai-battle -f data/submissions/candidates/cand_a.tar.gz -m 'cand_a: '",
-      "uploaded": false
+      "crashes": 0,
+      "timeouts": 0,
+      "stale": 0,
+      "tarball": "data/submissions/candidates/combo_effect_resolution_v3__secret_box_safety.tar.gz",
+      "tarball_members": [
+        "deck.csv",
+        "main.py"
+      ],
+      "tarball_size_bytes": 7077,
+      "status": "queued_dry_run"
     }
-  ]
+  ],
+  "queued_candidate_count": 1,
+  "selection_reason": "selected top eligible candidate"
 }

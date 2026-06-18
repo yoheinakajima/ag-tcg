@@ -1563,8 +1563,13 @@ def test_select_top3_excludes_controls_and_rejected():
     assert [e["branch_id"] for e in top] == ["c1", "c2", "c3"]
 
 
-def test_build_dry_run_queue_forces_max1_and_never_uploads(tmp_path):
+def test_build_dry_run_queue_forces_max1_and_never_uploads(tmp_path, monkeypatch):
     from ptcg_activegraph.experiments import pass6_pipeline as p6
+    from ptcg_activegraph.experiments import queue as queue_mod
+    # Keep the queue output + tarballs hermetic so the real
+    # data/submission_queue.json artifact is never clobbered by the suite.
+    monkeypatch.setattr(queue_mod, "QUEUE_JSON", tmp_path / "queue.json")
+    monkeypatch.setattr(queue_mod, "CANDIDATES_DIR", tmp_path / "candidates")
     cfg = config_mod.load_config()
     # Safety preconditions hold by default.
     assert not cfg.settings.get("auto_submit_enabled", False)

@@ -1,0 +1,38 @@
+{
+  "replays_dir": "data/meta_replays",
+  "n_replays": 0,
+  "n_archetypes_extracted": 0,
+  "strategy_tracks": [
+    {
+      "id": "psychic_setup_control",
+      "name": "Alakazam/Dunsparce Psychic setup-control",
+      "policy_seam": "missing-piece planner",
+      "signals": "low energy, high tutor density, Abra/Kadabra/Alakazam line, Dunsparce draw engine"
+    },
+    {
+      "id": "lightning_ramp",
+      "name": "Bellibolt/Kilowattrel Lightning ramp",
+      "policy_seam": "ramp plan and exact tutor target selection",
+      "signals": "electric ramp engine, Tadbulb/Bellibolt, Wattrel/Kilowattrel acceleration"
+    },
+    {
+      "id": "generic_engine",
+      "name": "Generic engine-deck pattern",
+      "policy_seam": "plan-state tracker + discard-protection for plan pieces",
+      "signals": "lower energy, high search/redundancy, plan-state tracking, bench-width setup"
+    },
+    {
+      "id": "chaos_engine_disruption",
+      "name": "Chaos as engine-supported disruption",
+      "policy_seam": "payoff condition tied to an observable opponent signal",
+      "signals": "Froslass handCount / Durant deckCount / bench-bloat / status \u2014 visible signals only"
+    }
+  ],
+  "classified": [],
+  "coverage": "empty",
+  "uncertainty_notes": [
+    "No replays present \u2014 archetypes not yet extracted (scaffolding only).",
+    "Card ids are never invented; unknown ids stay unknown.",
+    "Four strategy tracks are preserved as the labelling vocabulary."
+  ]
+}

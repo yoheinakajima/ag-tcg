@@ -132,6 +132,10 @@ class ActiveGraphLedger:
     def inspect_run(self, run_id: str) -> dict:
         return self._backend.inspect_run(run_id)
 
+    def events_for(self, run_id: str) -> list[dict]:
+        """Raw, append-ordered event stream for a run (used by ranking)."""
+        return self._backend.events_for(run_id)
+
     def export_trace(self, run_id: str, output_path: str | os.PathLike) -> Path:
         return self._backend.export_trace(run_id, output_path)
 

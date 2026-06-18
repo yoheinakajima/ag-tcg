@@ -1,0 +1,543 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+This is Pass 7B: Durable Fast Evaluation + Meta Engine Strategy Prep.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not run the old shell-log Pass 6 pipeline.
+- Do not rely on detached stdout logs as source of truth.
+- Use the new ActiveGraph durable ledger from Pass 7A.
+- Do not create a second logging framework.
+- If real activegraph package/activegraph-labs is not installed, keep using the clearly labeled fallback JSONL adapter created in Pass 7A.
+- Keep v2 deck_energy_trim_light as active control.
+- Preserve v1 and v2 baseline archives.
+- Run only bounded local evaluations that write per-game state to the durable ledger.
+- No broad unbounded batches.
+
+Current state:
+- v1 baseline Kaggle score: 356.9.
+- v2 deck_energy_trim_light Kaggle score: 479.1.
+- v2 is the live control baseline.
+- Pass 7A added:
+  - ActiveGraph audit
+  - fallback ActiveGraph ledger adapter
+  - durable run/game state
+  - per-game subprocess runner
+  - heartbeat/stale/resume semantics
+  - artifact capture
+  - report-site ledger projection
+  - fast cabt import benchmark
+- Fast import benchmark:
+  - normal import timing: ~7.36s
+  - fast-stub timing: ~1.63s
+  - fast-stub smoke validated: yes
+  - fast-stub currently opt-in, not default
+- Pass 6 candidate generation exists but scout/focused ranking did not complete.
+- Existing Pass 6 candidates include:
+  - replay-informed policy candidates
+  - Secret Box / effect-resolution candidates
+  - deck simplification candidates
+  - chaos_froslass_handcount
+  - chaos_durant_mill
+- The root submission remains valid and must remain untouched.
+
+Strategic backlog to preserve:
+- v2 improved because deck_energy_trim_light reduced energy saturation and added Kyogre/Ultra Ball consistency.
+- Replay 80374966 showed v2 mirror deck-out and setup-piece churn.
+- Secret Box failure is probably a pre-play safety issue when safe discards are too few, not just a discard-selection issue.
+- Top leaderboard snippets suggest strong agents use low-energy, high-search evolution engines:
+  - Alakazam/Dunsparce-style Psychic setup-control
+  - Bellibolt/Kilowattrel-style Lightning ramp
+  - exact missing-piece search/tutor selection
+  - bench-width development
+  - engine-aware plan-state tracking
+- Chaos remains a scout strategy, not an upload candidate unless it proves itself locally.
+
+Pass 7B goals:
+1. Wire validated fast-import stub into the durable subprocess runner as an explicit opt-in mode.
+2. Run a bounded, resumable local scout evaluation using the durable ledger.
+3. Rank candidates from durable ledger state.
+4. Build a dry-run queue only.
+5. Add meta replay / engine strategy scaffolding for future top-deck analysis.
+6. Rebuild report site from ledger and strategy docs.
+7. No Kaggle upload.
+
+Part A — Safety snapshot
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+
+Verify root unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged"
+
+Verify v2 baseline:
+
+ls -la data/baselines/v2_kaggle_479_1_deck_energy_trim_light
+tar -tzf data/baselines/v2_kaggle_479_1_deck_energy_trim_light/submission.tar.gz || true
+
+Fetch Kaggle status read-only if CLI/auth is available:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass7b.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass7b.csv || true
+
+Do not submit.
+
+Part B — Wire fast import stub into durable subprocess runner
+
+The Pass 7A benchmark validated src/ptcg_activegraph/sim/kaggle_import_optimization.py.
+
+Now wire it into the actual per-game child execution path.
+
+Requirements:
+- Add a CLI/config flag:
+  - --fast-import-stub
+- Add environment variable support:
+  - PTCG_FAST_CABT_IMPORT_STUB=1
+- Child process should enable the stub before importing kaggle_environments.
+- It must record in every game result:
+  - fast_import_stub_enabled: true/false
+  - import_optimization_mode: normal / fast_stub
+  - import_optimization_validated: true/false if known
+- The default should remain safe:
+  - not enabled unless flag/env is present.
+- It must not modify root main.py.
+- It must not patch site-packages.
+- It must not affect Kaggle submission runtime.
+- If fast stub fails in child, child should either:
+  - fall back to normal import and record fallback, or
+  - return a clear crashed result.
+- It must be compatible with the durable ledger.
+
+Add tests:
+- child command receives fast import flag/env
+- result records fast_import_stub_enabled
+- normal mode still works
+- fallback on stub failure is recorded
+- root main.py/deck.csv not touched
+
+Run the benchmark again:
+
+python scripts/benchmark_cabt_import.py
+
+Save artifact:
+
+data/experiments/cabt_import_benchmark_pass7b.json
+
+Part C — Durable evaluation CLI improvements
+
+Update scripts/run_durable_eval.py to support a practical bounded evaluation workflow.
+
+Needed flags:
+- --fast-import-stub
+- --limit-candidates N
+- --candidate-id ID, repeatable
+- --stage pass7b_scout / pass7b_focused
+- --games-per-seat N
+- --seats 0,1 or --seat-swap
+- --max-games N
+- --resume
+- --skip-existing
+- --status
+- --export-trace
+- --rank
+- --queue-dry-run
+
+The durable runner should:
+- plan games into ledger before execution
+- execute games one by one
+- update run and game state after each game
+- write artifacts after each game
+- allow resume if interrupted
+- never depend on stdout for state
+- classify completed / timeout / crashed / stale / partial
+- create metrics from completed games only
+- preserve crash/timeout counts
+
+Do not launch old run_experiment_batch.py from this flow unless it writes into the durable ledger.
+
+Part D — Define a small Pass 7B candidate set
+
+Do not evaluate all 14 candidates first.
+
+Create a curated set of at most 8 non-control candidates plus 1 control anchor.
+
+Use v2 as control.
+
+Candidate set:
+1. policy_effect_resolution_v3
+2. policy_secret_box_safety_v1
+3. combo_effect_resolution__secret_box_safety
+4. combo_effect_resolution__deckout_guard
+5. deck_v2_no_secret_box_plus_powerglass
+6. deck_v2_no_secret_box_plus_mega_signal
+7. chaos_hand_avalanche_froslass_light or chaos_froslass_handcount
+8. chaos_durant_basic_mill or chaos_durant_mill
+9. v2 control anchor, not queueable
+
+If candidate IDs differ, map to the actual generated branch IDs in experiments/runs_pass6/.
+
+If any candidate is missing, do not regenerate everything blindly. Report missing candidate IDs and generate only missing candidates.
+
+Part E — Fixture gate before games
+
+Use the existing replay fixtures.
+
+Run fixture gate for the curated policy candidates:
+- policy_effect_resolution_v3
+- policy_secret_box_safety_v1
+- combo_effect_resolution__secret_box_safety
+- combo_effect_resolution__deckout_guard
+
+Do not hard-reject deck-only or chaos candidates solely on v2 replay fixtures unless they use the same policy logic.
+
+Write:
+
+data/experiments/pass7b_fixture_gate.json
+data/experiments/pass7b_fixture_gate.md
+
+Important:
+- Secret Box step 11 nuance must remain:
+  - if minCount == option count, the discard itself was forced
+  - the actual seam is whether to play Secret Box with too few safe discards
+- Candidate fixture results are advisory unless the candidate directly targets that seam.
+- Record pass/fail/advisory status.
+
+Part F — Durable scout evaluation
+
+Use the durable runner only.
+
+Do not use detached shell logs.
+Do not use old batch pipeline.
+
+Plan:
+- stage: pass7b_scout
+- active control: data/baselines/v2_kaggle_479_1_deck_energy_trim_light
+- candidates: curated set above
+- seats: both seats
+- games per seat: 3
+- total games per candidate: 6
+- runner mode: subprocess_per_game
+- fast import stub: enabled
+- timeout: 120 seconds per game
+- max games per invocation: bounded if needed, but complete the full scout via resume
+
+Suggested workflow, adapting to actual CLI:
+
+python scripts/run_durable_eval.py --plan-only --stage pass7b_scout --runs-root experiments/runs_pass6 --control data/baselines/v2_kaggle_479_1_deck_energy_trim_light --candidate-id policy_effect_resolution_v3 --candidate-id policy_secret_box_safety_v1 --candidate-id combo_effect_resolution__secret_box_safety --candidate-id combo_effect_resolution__deckout_guard --candidate-id deck_v2_no_secret_box_plus_powerglass --candidate-id deck_v2_no_secret_box_plus_mega_signal --candidate-id chaos_froslass_handcount --candidate-id chaos_durant_mill --games-per-seat 3 --seat-swap
+
+Then execute/resume using the created run_id:
+
+python scripts/run_durable_eval.py --run-id <run_id> --execute --subprocess --fast-import-stub --game-timeout-seconds 120 --max-games 12
+python scripts/run_durable_eval.py --run-id <run_id> --resume --subprocess --fast-import-stub --game-timeout-seconds 120 --max-games 12
+python scripts/run_durable_eval.py --run-id <run_id> --status
+python scripts/ag_ledger.py inspect --run-id <run_id>
+python scripts/ag_ledger.py export --run-id <run_id> --out data/activegraph/artifacts/<run_id>/trace.jsonl
+
+Repeat resume until:
+- all planned games completed, or
+- a clear crash/timeout/stale condition prevents completion.
+
+If time becomes an issue:
+- stop after at least 2 games per candidate,
+- mark run partial,
+- do not fabricate ranking.
+
+Part G — Ranking from durable ledger
+
+Implement or update ranking so it reads durable ledger state, not old metrics.json files.
+
+Output:
+- data/experiments/pass7b_scout_ranking.json
+- data/experiments/pass7b_scout_ranking.md
+
+Ranking fields:
+- candidate_id
+- role: candidate / active_control / anchor
+- games_planned
+- games_completed
+- wins
+- losses
+- draws
+- adjusted_win_rate
+- Wilson 80% CI
+- Wilson 95% CI
+- seat p0 win rate
+- seat p1 win rate
+- crashes
+- timeouts
+- stale games
+- fixture gate status
+- package/smoke status if available
+- runner mode
+- fast_import_stub_used
+- promotion label:
+  - promotable
+  - scout_promising
+  - inconclusive
+  - rejected
+  - blocked
+  - anchor_control
+
+Rules:
+- controls/anchors never appear in top candidate list
+- controls/anchors never queue
+- any timeout/crash/stale means not promotable
+- small samples should usually be scout_promising or inconclusive, not promotable
+- do not promote based on fewer than 20 completed games unless explicitly labeled diversity candidate
+
+Part H — Focused micro-confirmation only if scout produces a clear leader
+
+If one candidate is clearly above others and has no crashes/timeouts:
+- run focused micro-confirmation:
+  - stage pass7b_focused
+  - top 1 or top 2 candidates only
+  - games per seat: 5
+  - fast import stub enabled
+  - durable ledger only
+
+If no clear leader:
+- skip focused evaluation
+- report "no focused run; scout inconclusive"
+
+Do not upload.
+
+Part I — Dry-run submission queue
+
+If a candidate is scout_promising or better:
+- build candidate tarball under data/submissions/candidates/
+- inspect tarball
+- add to data/submission_queue.json
+
+Rules:
+- queue max 1 candidate
+- auto_submit_enabled=false
+- require_manual_approval_for_submit=true
+- upload_performed=false
+- no candidate with crash/timeout/stale can be queued
+- no control/anchor can be queued
+
+If no candidate qualifies:
+- queue is empty
+- explain why
+
+Part J — Meta replay / engine strategy prep
+
+Do not run meta engine candidate evaluation yet.
+
+Create or update:
+
+data/meta_replays/README.md
+docs/META_ENGINE_STRATEGIES.md
+scripts/analyze_meta_replay.py
+scripts/compare_meta_decks.py
+scripts/extract_meta_archetypes.py
+
+These should support future full top-replay uploads.
+
+The docs should preserve these inferred strategy tracks:
+
+1. Alakazam/Dunsparce Psychic setup-control
+- low energy count
+- high search/tutor density
+- Abra/Kadabra/Alakazam evolution line
+- Dunsparce/Dudunsparce draw engine
+- Rare Candy / Dawn / Hilda / Buddy-Buddy Poffin style setup
+- disruption after setup: Boss's Orders, Enhanced Hammer, stadium pressure
+- policy seam: missing-piece planner
+
+2. Bellibolt/Kilowattrel Lightning ramp
+- electric evolution/ramp engine
+- Tadbulb/Bellibolt ex attacker
+- Wattrel/Kilowattrel acceleration
+- Canari / Levincia / Ultra Ball / Lillie's Determination search engine
+- recovery resources
+- policy seam: ramp plan and exact tutor target selection
+
+3. Generic engine-deck pattern
+- lower energy
+- high search
+- high redundancy
+- plan-state tracking
+- search target logic
+- discard protection for plan pieces
+- bench-width setup
+- first meaningful attack turn
+- disruption layered after setup
+
+4. Chaos as engine-supported disruption
+- Froslass hand-size payoff uses visible opponent handCount
+- Durant/mill uses visible opponent deckCount
+- Bench-bloat uses visible opponent bench count
+- Status chaos uses visible status flags
+- Chaos should not be random; it must have a payoff engine
+
+Script behavior:
+- If full replay JSONs exist in data/meta_replays/, parse them.
+- If only partial logs are present, produce partial analysis and label uncertainty.
+- Extract deck skeleton:
+  - card counts
+  - energy count
+  - Pokémon count
+  - trainer count
+  - evolution lines
+  - search/draw/disruption/recovery cards
+- Extract early-game policy patterns:
+  - first active
+  - bench setup
+  - first supporter
+  - first attack turn if visible
+  - tutor target choices
+- Write:
+  - data/meta/meta_archetypes.json
+  - data/meta/top_policy_patterns.md
+  - data/meta/top_deck_skeletons.md
+
+Do not invent card IDs from partial text. If metadata is missing, mark as unknown.
+
+Part K — Report site update
+
+Rebuild:
+
+python scripts/build_report_site.py
+
+Report site should show:
+- active control v2 479.1
+- v1 356.9
+- Pass 7A durable ledger run
+- Pass 7B scout run
+- fixture gate results
+- fast import benchmark
+- candidate rankings
+- queue dry-run
+- meta engine strategy backlog
+- chaos scout status
+- no-upload statement
+- ActiveGraph event timeline and artifact citations
+
+The Strategy report markdown should include:
+- why v2 was promoted
+- why Pass 6 was infrastructure-incomplete
+- why Pass 7A fixed replayability
+- what Pass 7B tested
+- what top replay snippets suggest
+- what remains uncertain
+
+Part L — Validation
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+
+Do not upload.
+
+Verify root unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged"
+
+Part M — Final report format
+
+Report exactly:
+
+ActiveGraph Pass 7B Durable Fast Scout Report
+
+1. Baseline safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- active control baseline:
+- package verify:
+- pytest:
+- Kaggle upload performed: no
+
+2. Fast subprocess integration
+- fast import stub wired into child runner:
+- flag/env used:
+- benchmark normal import:
+- benchmark fast import:
+- speedup:
+- smoke validation:
+- enabled by default:
+
+3. Durable evaluation
+- run_id:
+- ledger path:
+- trace path:
+- candidates planned:
+- games planned:
+- games completed:
+- games crashed:
+- games timed out:
+- games stale:
+- resume used:
+- runner mode:
+- fast import stub used:
+
+4. Fixture gate
+- fixture path:
+- candidates fixture-tested:
+- candidates passing:
+- candidates failing:
+- Secret Box nuance preserved:
+- advisory findings:
+
+5. Scout ranking
+- ranking json:
+- ranking md:
+- top non-control candidates:
+  1.
+  2.
+  3.
+  4.
+  5.
+- best policy candidate:
+- best deck candidate:
+- best chaos candidate:
+- controls/anchors excluded from queue:
+
+6. Focused micro-confirmation
+- run performed:
+- reason:
+- candidates:
+- games completed:
+- result:
+
+7. Dry-run queue
+- queue path:
+- queued candidate count:
+- queued candidate:
+- candidate tarball:
+- auto-submit enabled:
+- upload performed:
+
+8. Meta engine strategy prep
+- docs created:
+- scripts created:
+- meta replay files found:
+- archetypes extracted:
+- strategy seams added:
+- uncertainty notes:
+
+9. Report site
+- site path:
+- markdown report path:
+- most important new lesson:
+
+10. Git/manual notes
+- files I should review:
+- files not to commit:
+- generated artifacts:
+- tracked generated artifacts still needing manual cleanup:
+
+11. Next recommendation
+- one sentence only.
+
+Final reminder:
+This pass should produce either a small durable scout ranking or a clearly partial durable run. It should not submit to Kaggle.

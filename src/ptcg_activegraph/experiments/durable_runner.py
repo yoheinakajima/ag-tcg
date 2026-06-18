@@ -63,9 +63,14 @@ class DurableRunner:
         self,
         ledger: ActiveGraphLedger | None = None,
         artifacts_root: str | Path | None = None,
+        fast_import_stub: bool = False,
     ) -> None:
         self.ledger = ledger or ActiveGraphLedger(warn=False)
         self.artifacts_root = artifacts_root
+        # Opt-in cabt cold-start optimization for the per-game child. Off by
+        # default; when on, the child enables the litellm stub before importing
+        # kaggle_environments and records the import path used in every result.
+        self.fast_import_stub = bool(fast_import_stub)
 
     # -- planning ---------------------------------------------------------
     def plan(
@@ -76,6 +81,7 @@ class DurableRunner:
         games_per_seat: int = 1,
         seats: tuple[int, ...] = (0, 1),
         limit_candidates: int | None = None,
+        candidate_ids: list[str] | None = None,
         runner_mode: str = "subprocess_per_game",
         cabt_timeout_seconds: int = 90,
         run_id: str | None = None,
@@ -92,18 +98,39 @@ class DurableRunner:
                 "control_dir": str(control_dir),
                 "games_per_seat": games_per_seat,
                 "runner_mode": runner_mode,
+                "fast_import_stub": self.fast_import_stub,
             },
         )
 
         candidate_dirs = list_runs(runs_root)
+        # Explicit curated selection by branch_id (or dir name) takes precedence
+        # over a blind prefix limit, so Part D's curated set maps to exactly the
+        # real branch dirs in any order.
+        if candidate_ids:
+            wanted = list(candidate_ids)
+            by_key: dict[str, Path] = {}
+            for cdir in candidate_dirs:
+                branch = load_branch_yaml(cdir)
+                if branch is not None:
+                    by_key.setdefault(branch.branch_id, cdir)
+                by_key.setdefault(cdir.name, cdir)
+            selected: list[Path] = []
+            self._missing_candidate_ids = []
+            for cid in wanted:
+                cdir = by_key.get(cid)
+                if cdir is None:
+                    self._missing_candidate_ids.append(cid)
+                elif cdir not in selected:
+                    selected.append(cdir)
+            candidate_dirs = selected
         if limit_candidates is not None:
             candidate_dirs = candidate_dirs[: max(0, int(limit_candidates))]
 
-        candidate_ids: list[str] = []
+        planned_candidate_ids: list[str] = []
         for cdir in candidate_dirs:
             branch = load_branch_yaml(cdir)
             candidate_id = branch.branch_id if branch is not None else cdir.name
-            candidate_ids.append(candidate_id)
+            planned_candidate_ids.append(candidate_id)
             n_planned = len(seats) * int(games_per_seat)
             cs = CandidateState(
                 candidate_id=candidate_id,
@@ -155,7 +182,7 @@ class DurableRunner:
             cabt_timeout_seconds=int(cabt_timeout_seconds),
             games_per_seat=int(games_per_seat),
             seats=list(seats),
-            candidate_ids=candidate_ids,
+            candidate_ids=planned_candidate_ids,
         )
         rs.save_run_state(run, self.artifacts_root)
         return run_id
@@ -322,10 +349,17 @@ class DurableRunner:
         game.stderr_path = str(stderr_path)
 
         cmd = [sys.executable, _CHILD_SCRIPT, str(spec_path), str(out_path)]
+        child_env = dict(os.environ)
+        if self.fast_import_stub:
+            child_env["PTCG_FAST_CABT_IMPORT_STUB"] = "1"
+        else:
+            child_env.pop("PTCG_FAST_CABT_IMPORT_STUB", None)
         result = {"completed": False, "candidate_won": None, "timeout": False, "error": None}
         with open(stdout_path, "wb") as so, open(stderr_path, "wb") as se:
             try:
-                proc = subprocess.Popen(cmd, stdout=so, stderr=se, start_new_session=True)
+                proc = subprocess.Popen(
+                    cmd, stdout=so, stderr=se, start_new_session=True, env=child_env
+                )
             except Exception as exc:  # noqa: BLE001
                 result["error"] = f"subprocess spawn failed: {exc!r}"
                 return result
