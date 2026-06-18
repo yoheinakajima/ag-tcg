@@ -1,0 +1,158 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Submit exactly one candidate only.
+- Submit only combo_full_safety_v3.
+- Do not modify root main.py or root deck.csv.
+- Do not print or commit Kaggle credentials.
+- Do not upload anything else.
+- If any validation fails, stop and do not upload.
+
+Current status:
+- v1 live score: 356.9.
+- v2 active control score: 479.1.
+- Pass 9 recommended candidate: combo_full_safety_v3.
+- Candidate tarball: data/submissions/candidates/combo_full_safety_v3.tar.gz.
+- Evidence:
+  - 80-game confirmation vs v2: 50–30–0.
+  - adjusted win rate: 0.62.
+  - Wilson80: [0.55, 0.69].
+  - Wilson95: [0.52, 0.72].
+  - fixture gate: PASS.
+  - package/smoke: PASS.
+  - crashes/timeouts/invalid returns: 0 / 0 / 0.
+- Goal: validate and submit combo_full_safety_v3 exactly once, then fetch status.
+
+Step 1 — Verify root baseline unchanged
+
+Run:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+If either differs, stop. Do not upload.
+
+Step 2 — Verify candidate tarball
+
+Run:
+
+ls -lh data/submissions/candidates/combo_full_safety_v3.tar.gz
+tar -tzf data/submissions/candidates/combo_full_safety_v3.tar.gz
+
+Tarball must contain exactly:
+
+main.py
+deck.csv
+
+If not, stop.
+
+Step 3 — Isolated candidate validation
+
+Run:
+
+mkdir -p /tmp/ptcg_combo_full_safety_v3
+rm -rf /tmp/ptcg_combo_full_safety_v3/*
+tar -xzf data/submissions/candidates/combo_full_safety_v3.tar.gz -C /tmp/ptcg_combo_full_safety_v3
+
+python - <<'PY'
+from pathlib import Path
+p = Path("/tmp/ptcg_combo_full_safety_v3/deck.csv")
+rows = [x.strip() for x in p.read_text().splitlines() if x.strip()]
+assert len(rows) == 60, len(rows)
+assert all(x.isdigit() for x in rows)
+print("candidate deck valid:", len(rows), "cards", len(set(rows)), "unique")
+main = Path("/tmp/ptcg_combo_full_safety_v3/main.py").read_text()
+assert "src.ptcg_activegraph" not in main
+assert "import requests" not in main
+assert "openai" not in main.lower()
+print("candidate main.py basic static checks passed")
+PY
+
+Step 4 — Candidate smoke test
+
+If scripts/kaggle_smoke_test.py supports custom candidate paths, run it against:
+
+/tmp/ptcg_combo_full_safety_v3/main.py
+/tmp/ptcg_combo_full_safety_v3/deck.csv
+
+If it does not support custom paths, use the stored Pass 9 package/smoke evidence and report that limitation. Do not overwrite root files permanently.
+
+Step 5 — Kaggle auth/status precheck
+
+Run:
+
+mkdir -p data/kaggle_uploads
+
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/pre_submit_status_combo_full_safety_v3.log
+
+If auth/access fails, stop and report. Do not upload.
+
+Step 6 — Submit exactly once
+
+Run exactly one submit command:
+
+kaggle competitions submit pokemon-tcg-ai-battle -f data/submissions/candidates/combo_full_safety_v3.tar.gz -m "combo_full_safety_v3: effect-resolution safety combo; 80-game local vs v2 0.62 WR, Wilson95 [0.52,0.72]" 2>&1 | tee data/kaggle_uploads/submit_combo_full_safety_v3.log
+
+Do not run any second submit command.
+
+Step 7 — Fetch status
+
+Run:
+
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_after_combo_full_safety_v3.log
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_after_combo_full_safety_v3.csv
+
+Step 8 — ActiveGraph event
+
+Append a SubmissionUploaded event to data/activegraph/lab_events.jsonl using the existing event helper if available.
+
+Payload:
+- candidate_id: combo_full_safety_v3
+- tarball: data/submissions/candidates/combo_full_safety_v3.tar.gz
+- message: combo_full_safety_v3 effect-resolution safety combo
+- local_confirmation_games: 80
+- local_record: 50-30-0
+- local_adjusted_win_rate: 0.62
+- wilson80: [0.55, 0.69]
+- wilson95: [0.52, 0.72]
+- baseline: v2_kaggle_479_1_deck_energy_trim_light
+- upload_mode: human_approved_single_probe
+
+Step 9 — Final report format
+
+Report exactly:
+
+Combo Full Safety v3 Kaggle Probe Report
+
+1. Baseline safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+
+2. Candidate validation
+- candidate tarball path:
+- tarball contents:
+- deck line count:
+- unique card IDs:
+- static main.py checks:
+- candidate smoke result:
+
+3. Kaggle upload
+- auth/status precheck:
+- upload attempted:
+- submit log path:
+- raw submit summary:
+
+4. Submission status
+- latest status:
+- score/rating if available:
+- status log paths:
+
+5. ActiveGraph
+- SubmissionUploaded event emitted:
+- event store path:
+
+6. Next action
+- If pending: say "Wait for validation/rating, then fetch status before submitting anything else."
+- If scored above 479.1: say "Promote combo_full_safety_v3 to v3 active control."
+- If scored at or below 479.1: say "Keep v2 as active control and analyze replay/results before another upload."
