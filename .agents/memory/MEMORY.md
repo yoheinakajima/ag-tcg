@@ -1,1 +1,3 @@
 - [Long-running jobs](long-running-jobs.md) — bash/background procs get orphan-killed across tool calls; use a temp console workflow + sentinel file for >120s runs.
+- [Unknown-EX decomposition](unknown-ex-decomposition.md) — card DB (EN_Card_Data.csv) is authoritative for id->name (archetypes.yaml had 678/756 swapped); unknown_ex_tempo splits into 4 provisional subfamilies.
+- [Live score registry build](live-score-registry-build.md) — build_live_score_registry.py defaults to stale status_before_pass10b.csv; always pass --csv with the last-known-good snapshot when kaggle CLI is unavailable.

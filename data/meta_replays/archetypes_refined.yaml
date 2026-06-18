@@ -1,0 +1,121 @@
+schema: activegraph.meta.archetypes_refined/v1
+pass: 13
+generated_by: scripts/decompose_unknown_ex_tempo.py
+note: unknown_ex_tempo decomposed into evidence-grounded subfamilies. Confirmed archetypes
+  carried over unchanged. No invented card IDs.
+decomposition_supported: true
+confirmed_and_other_archetypes:
+- archetype_id: metal_ex_zacian_ramp
+  confidence: confirmed
+  is_ours: false
+  evidence_card_ids:
+  - 8
+  - 336
+  - 547
+  - 695
+  - 988
+  evidence_card_names:
+  - Basic {M} Energy
+  - Genesect ex
+  - Mega Mawile ex
+  - Registeel ex
+  - Zacian ex
+  replay_episode_ids:
+  - 80503804
+- archetype_id: water_kyogre_abomasnow_maxbelt
+  confidence: confirmed
+  is_ours: false
+  evidence_card_ids:
+  - 721
+  - 722
+  - 723
+  - 1205
+  - 1235
+  evidence_card_names:
+  - Cyrano
+  - Kyogre
+  - Mega Abomasnow ex
+  - Snover
+  - Waitress
+  replay_episode_ids:
+  - 80504288
+- archetype_id: water_kyogre_abomasnow_passive_mirror
+  confidence: confirmed
+  is_ours: true
+  evidence_card_ids:
+  - 721
+  - 722
+  - 723
+  evidence_card_names:
+  - Kyogre
+  - Mega Abomasnow ex
+  - Snover
+  replay_episode_ids:
+  - 80374966
+  - 80503687
+  - 80503804
+  - 80504288
+  - 80504942
+  - 80505567
+  - 80506042
+  - 80515553
+  - 80516161
+unknown_ex_tempo_subfamilies:
+- archetype_id: dragapult_ex
+  parent: unknown_ex_tempo
+  confidence: provisional
+  status: provisional
+  is_ours: false
+  n_episodes: 1
+  replay_episode_ids:
+  - 80515553
+  signature_card_ids:
+  - 121
+  signature_card_names:
+  - Dragapult ex
+- archetype_id: generic_unknown_ex_tempo
+  parent: unknown_ex_tempo
+  confidence: n/a (no unlabelled decks this pass)
+  status: provisional
+  is_ours: false
+  n_episodes: 0
+  replay_episode_ids: []
+  signature_card_ids: []
+  signature_card_names: []
+- archetype_id: lightning_bellibolt
+  parent: unknown_ex_tempo
+  confidence: provisional
+  status: provisional
+  is_ours: false
+  n_episodes: 1
+  replay_episode_ids:
+  - 80516161
+  signature_card_ids:
+  - 269
+  signature_card_names:
+  - Iono’s Bellibolt ex
+- archetype_id: mega_kangaskhan_energy_stack
+  parent: unknown_ex_tempo
+  confidence: provisional
+  status: provisional
+  is_ours: false
+  n_episodes: 1
+  replay_episode_ids:
+  - 80505567
+  signature_card_ids:
+  - 756
+  signature_card_names:
+  - Mega Kangaskhan ex
+- archetype_id: mega_lucario_ex_tempo
+  parent: unknown_ex_tempo
+  confidence: moderate
+  status: provisional
+  is_ours: false
+  n_episodes: 2
+  replay_episode_ids:
+  - 80504942
+  - 80506042
+  signature_card_ids:
+  - 678
+  signature_card_names:
+  - Mega Lucario ex

@@ -87,3 +87,48 @@ As of Pass 10B cabt evaluation is available again, but the disruption telemetry
 above is **not yet instrumented**, so the gate remains **closed**. Chaos work
 stays in this research lane until the telemetry exists and a payoff trigger is
 defined and measurable.
+
+## Chaos after meta decomposition (Pass 13)
+
+The Pass 13 decomposition split the previously-dominant `unknown_ex_tempo` bucket
+into four **replay-grounded opponent subfamilies**
+(`mega_lucario_ex_tempo`, `mega_kangaskhan_energy_stack`, `dragapult_ex`,
+`lightning_bellibolt`; see
+`data/meta_replays/unknown_ex_tempo_decomposition.json`). This changes the chaos
+picture in one important way: **chaos is more plausible once opponent subfamilies
+are known**, because a disruption line can now be aimed at a *specific* opponent
+weakness instead of a vague "ex tempo" blob.
+
+It does **not** open the gate. The hard rules above still hold, and chaos must be
+built as **separate playbook families** — not as a few disruption cards sprinkled
+into the Water deck. Mixing chaos cards into an existing archetype dilutes both
+plans and was a past failure mode.
+
+**Every chaos candidate still requires all five of:**
+
+1. a **disruption card** (confirmed card id),
+2. a **payoff card** / win condition (confirmed card id),
+3. a **measurable trigger** readable from replay/cabt telemetry,
+4. a **safety guard** (fire only when measurably advantageous; never help the
+   opponent set up), and
+5. a **replay/meta target** (which subfamily it is meant to beat).
+
+**Potential target mappings (hypotheses only — not built):**
+
+| Chaos lever | Target signal | Candidate opponent subfamily |
+| --- | --- | --- |
+| hand-size punishment | draw-heavy hand refills | draw-heavy ex tempo decks |
+| bench-bloat punishment | overbenching / wide setups | `mega_kangaskhan_energy_stack`, `mega_lucario_ex_tempo` |
+| mill / resource pressure | deck-thinning / heavy search | decks leaning on `Buddy-Buddy Poffin` / `Ultra Ball` engines |
+| status / forced-switch | single-attacker ex reliance | `dragapult_ex`, `lightning_bellibolt` (ex tempo) |
+| discard / recovery traps | discard-pile recursion dependence | any subfamily shown to recur from discard |
+
+These mappings are **directional hypotheses derived from surrogate decks**, not
+confirmed opponent behavior. A surrogate deck approximates the *cards*, not the
+*policy*, so each mapping must be validated against real replay telemetry before a
+candidate is built.
+
+**Do not build chaos candidates yet.** The next prerequisite is to instrument the
+disruption telemetry (§ Required telemetry) against the refined subfamilies and
+confirm a payoff card + measurable trigger for at least one mapping. Until then
+the gate stays **closed**.

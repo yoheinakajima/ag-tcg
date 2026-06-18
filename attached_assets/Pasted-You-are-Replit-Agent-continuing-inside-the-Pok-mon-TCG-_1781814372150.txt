@@ -1,0 +1,428 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not generate new gameplay candidates in this pass.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Keep raw replay files gitignored.
+- This is a documentation + meta-analysis pass only.
+
+Current status:
+- Pass 12 completed.
+- No candidate cleared the promotion gate.
+- Dry-run queue is empty.
+- Active control remains combo_full_safety_v3_fixed, last-known live score 376.6.
+- Local cabt works.
+- Replay-derived meta evaluation works.
+- Surrogate evaluation is directional only.
+- The biggest blocker is the provisional unknown_ex_tempo archetype:
+  - it carries 60% of Pass 12 evaluation weight after capping,
+  - it represents 5 real-opponent episodes,
+  - it is too broad to guide candidate design.
+- Chaos remains blocked because no measurable disruption+payoff candidate is wired.
+- We need a durable operating manual so future sessions do not repeat solved mistakes.
+
+Goal:
+Run Pass 13: Operating Manual + Unknown-EX Tempo Decomposition.
+
+Objectives:
+1. Write a canonical ActiveGraph lab operating manual.
+2. Split the provisional unknown_ex_tempo bucket into replay-grounded subfamilies if the evidence supports it.
+3. Update meta pool weights and docs without fabricating anything.
+4. Recompute reports and diagnostics.
+5. Optionally run a small analysis-only eval against refined subfamilies using existing active control and existing candidates, but do not generate new candidates.
+6. No upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Create canonical operating manual
+
+Create:
+
+docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md
+
+This should be the document future Replit/Codex/Claude sessions read before doing anything.
+
+Include these sections:
+
+1. Project purpose
+- Kaggle Pokémon TCG AI Battle Challenge.
+- Goal is deck + policy co-design under cabt.
+- ActiveGraph lab records ideas, hypotheses, events, evals, reports.
+
+2. Golden invariants
+- The submitted tarball is the unit of truth.
+- Root main.py and root deck.csv are historical/immutable unless explicitly promoted.
+- Every candidate tarball must contain exactly top-level main.py + deck.csv.
+- Every candidate tarball must pass scripts/validate_candidate_tarball.py.
+- validate_candidate_tarball.py must test key-absent, select-null, empty-dict, and Struct-like deck-selection observations.
+- Every candidate must return exactly 60 card IDs for deck-selection observations.
+- No candidate with failed validator enters queue/eval/upload.
+- Raw replays and official card data must not be committed.
+- Live Kaggle scores drift; active control must be recomputed from live_score_registry.
+- Local cabt surrogate eval is directional, not equal to Kaggle.
+- Replay-derived opponent deck != real opponent policy.
+- No upload unless explicitly human-approved.
+
+3. Known environment pitfalls
+- Kaggle CLI may not be on PATH; sometimes invoke through Python package.
+- Live-score fetch may fail; record fallback to last-known-good.
+- cabt is runnable through kaggle_environments.make("cabt") even if importing cabt directly fails.
+- Do not infer cabt absence from module import alone.
+- Detached background shell jobs die between tool calls.
+- Use Replit workflows for long evals.
+- Stale output files are dangerous; always check run_id, timestamps, game counts, and config.
+- Local cabt may provide friendlier observation shapes than Kaggle production.
+- Local smoke can mask key-absent deck-selection bugs.
+
+4. Standard pipeline
+- Fetch/refresh live score registry.
+- Ingest replay inbox.
+- Extract replay decks.
+- Classify archetypes.
+- Update meta pool.
+- Generate candidates only from confirmed IDs.
+- Validate candidate tarballs.
+- Evaluate locally against replay-derived surrogate decks.
+- Rank directionally.
+- Report.
+- Only then consider manual upload.
+
+5. Current best-known state
+Use current artifacts, not hardcoded stale assumptions:
+- active control from latest live_score_registry.
+- current replay count.
+- current archetypes.
+- current best known submission.
+- current blockers.
+
+6. How to run common commands
+Include exact commands for:
+- root package verify
+- candidate tarball validation
+- replay inbox ingestion
+- archetype extraction
+- live score registry build
+- pass12 eval
+- report build
+- tests in small groups
+- workflow-based long eval execution
+
+7. Git hygiene
+- What is safe to commit.
+- What must not be committed.
+- Generated artifacts that are useful but maybe optional.
+- Raw replay policy.
+- Official card CSV/PDF policy.
+- Replit secrets policy.
+
+8. Upload checklist
+A strict checklist that must be completed before any Kaggle upload:
+- active control refreshed or explicitly marked stale
+- candidate tarball path
+- candidate validator pass
+- tarball contents check
+- candidate main.py stdlib/no forbidden imports
+- candidate strategy evidence
+- no root mutation
+- no raw data committed
+- exact Kaggle message
+- one upload only
+
+9. Lessons learned so far
+Include concise bullets:
+- deck-loader bug
+- key-absent deck-selection bug
+- local smoke masking bug
+- score drift
+- v2 local improvement not stable live
+- combo safety underperformed then drifted
+- mirror overfit
+- unknown_ex_tempo dominance
+- workflow requirement for long evals
+
+Also create a short version:
+
+docs/NEXT_AGENT_README.md
+
+This should be 1–2 pages and say:
+- read ACTIVEGRAPH_LAB_OPERATING_MANUAL.md first
+- do not upload by default
+- do not mutate root files
+- validate tarballs
+- active control is dynamic
+- no raw replay commits
+- what the next research task is
+
+Part C — Refresh or record live score state
+
+Try read-only status fetch:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass13.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass13.csv || true
+
+Then run:
+
+python scripts/build_live_score_registry.py
+
+If Kaggle CLI is unavailable or fetch fails:
+- use the last-known-good registry,
+- record that scores were not refreshed,
+- do not silently pretend they are current.
+
+Update:
+data/kaggle_uploads/live_score_registry.json
+data/kaggle_uploads/live_score_registry.md
+
+Part D — Verify replay inbox and meta artifacts
+
+Run:
+
+python scripts/ingest_replay_inbox.py
+python scripts/extract_meta_archetypes.py
+python scripts/analyze_kaggle_replays.py
+python scripts/update_meta_pool_from_replays.py || true
+
+Verify:
+- data/meta_replays/replay_registry.json
+- data/meta_replays/archetypes.yaml
+- data/meta_replays/replay_analysis.json
+- experiments/meta_pool.yaml
+- data/meta_replays/decks/*.csv
+
+Part E — Decompose unknown_ex_tempo
+
+Create:
+
+scripts/decompose_unknown_ex_tempo.py
+
+Inputs:
+- data/meta_replays/replay_registry.json
+- data/meta_replays/archetypes.yaml
+- data/meta_replays/decks/*.csv
+- local card metadata if available
+
+Output:
+- data/meta_replays/unknown_ex_tempo_decomposition.json
+- data/meta_replays/unknown_ex_tempo_decomposition.md
+- optionally data/meta_replays/archetypes_refined.yaml
+
+For each episode/deck currently labelled unknown_ex_tempo:
+- episode_id
+- opponent name
+- player index
+- reward/result from our perspective if known
+- card count fingerprint
+- top distinctive card IDs
+- card names if available from local metadata
+- energy type distribution
+- Pokémon / Trainer / Energy approximate counts if metadata available
+- ex / Mega / Stage hints from names if metadata available
+- closest known subfamily
+- confidence
+- evidence
+
+Try to split unknown_ex_tempo into replay-grounded subfamilies only if evidence supports it.
+
+Candidate subfamily labels may include, but must be evidence-based:
+- mega_lucario_ex_tempo
+- mega_kangaskhan_energy_stack
+- fighting_toolbox
+- dragapult_ex
+- lightning_bellibolt
+- generic_unknown_ex_tempo
+
+Rules:
+- Do not invent labels if card names are unavailable.
+- If a deck cannot be confidently labelled, keep it under generic_unknown_ex_tempo.
+- Unknown is acceptable; fabrication is not.
+
+Part F — Update refined meta pool
+
+If decomposition produces subfamilies, create:
+
+experiments/pass13_refined_meta_pool.yaml
+
+It should:
+- preserve original Pass 12 weights for traceability
+- split the 0.60 unknown_ex_tempo weight across subfamilies by replay frequency or a clearly documented rule
+- keep confirmed metal_ex_zacian_ramp at 0.20 unless recomputed
+- keep confirmed water_kyogre_abomasnow_maxbelt at 0.20 unless recomputed
+- keep self-mirror as diagnostic only
+- mark confidence per archetype
+- mark which archetypes are confirmed vs provisional
+
+If decomposition is not strong enough, do not force refined weights. Write a blocked note.
+
+Part G — Optional analysis-only eval against refined subfamilies
+
+Only if refined archetypes have usable replay-derived deck paths and cabt is available.
+
+Do not generate new candidates.
+
+Evaluate only existing artifacts:
+- active_control
+- deck12_less_draw_more_attack
+- pb12_kyogre_tempo
+- transfer12_water_maxbelt
+- maybe deck12_powerglass_heavy
+
+Use small budget:
+- 5 games per seat per refined subfamily
+- seat-swapped
+- no upload
+- no queue promotion from this pass
+
+Output:
+- data/experiments/pass13_refined_eval.json
+- data/experiments/pass13_refined_eval.md
+
+This is diagnostic only. Label all results as directional.
+
+If runtime is high, skip eval and just build decomposition/report.
+
+Part H — Chaos readiness update
+
+Update:
+
+docs/CHAOS_PLAYBOOK_LANE.md
+
+Add a section:
+
+"Chaos after meta decomposition"
+
+Explain:
+- chaos is more plausible once opponent subfamilies are known
+- chaos must be separate playbook families, not random cards in Water deck
+- each chaos candidate requires:
+  - disruption card
+  - payoff card
+  - measurable trigger
+  - safety guard
+  - replay/meta target
+- potential target mappings:
+  - hand-size punishment vs draw-heavy decks
+  - bench-bloat punishment vs overbenching decks
+  - mill/resource pressure vs deck-thinning decks
+  - status/forced-switch vs ex tempo decks
+  - discard/recovery traps if replay shows recursion dependence
+
+Do not build chaos candidates yet.
+
+Part I — Report site
+
+Update:
+- data/site/index.html
+- data/reports/activegraph_strategy_report.md
+- data/reports/pass13_operating_manual_and_meta_decomposition.md
+
+Include:
+- operating manual created
+- current active control
+- replay inbox status
+- unknown_ex_tempo decomposition
+- refined meta pool if created
+- optional refined eval if run
+- chaos readiness update
+- no upload note
+
+Part J — Tests
+
+Add tests for:
+- operating manual exists and contains required invariants
+- NEXT_AGENT_README exists and says no upload by default
+- unknown_ex_tempo decomposition preserves all source episode IDs
+- decomposition never invents card IDs
+- refined weights sum to 1 if refined pool exists
+- generic_unknown remains if confidence is low
+- raw replays remain gitignored
+- root files unchanged
+- upload flag remains false
+- tarball validator remains referenced in manual
+
+Run targeted tests in small groups.
+
+Part K — Final report
+
+Report exactly:
+
+ActiveGraph Pass 13 Operating Manual + Meta Decomposition Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Operating manual
+- manual path:
+- next-agent readme path:
+- key invariants documented:
+- upload checklist documented:
+- workflow pitfalls documented:
+
+3. Live score state
+- registry path:
+- scores refreshed: yes/no
+- active control:
+- active control score:
+- stale-score caveat:
+
+4. Replay/meta state
+- replay registry:
+- raw replays:
+- real-opponent replays:
+- current archetypes:
+- current unknown_ex_tempo weight:
+
+5. Unknown-ex decomposition
+- decomposition path:
+- unknown episodes analyzed:
+- subfamilies found:
+- confidence:
+- unresolved unknowns:
+- no invented ids:
+
+6. Refined meta pool
+- refined pool path:
+- weights:
+- confirmed/provisional split:
+- self-mirror treatment:
+- created: yes/no
+
+7. Optional refined eval
+- eval run: yes/no
+- candidates evaluated:
+- games per subfamily:
+- key result:
+- upload relevance: diagnostic only
+
+8. Chaos lane
+- chaos doc updated:
+- chaos candidates generated: no
+- next chaos prerequisite:
+
+9. Tests / report
+- tests:
+- report site:
+- markdown report:
+- files to review:
+- files not to commit:
+
+10. Next recommendation
+- one sentence only

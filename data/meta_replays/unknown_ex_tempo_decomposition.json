@@ -1,0 +1,406 @@
+{
+  "schema": "activegraph.meta.unknown_decomposition/v1",
+  "pass": 13,
+  "generated_by": "scripts/decompose_unknown_ex_tempo.py",
+  "source_archetype": "unknown_ex_tempo",
+  "card_metadata_available": true,
+  "no_invented_card_ids": true,
+  "signature_map": {
+    "678": "mega_lucario_ex_tempo",
+    "756": "mega_kangaskhan_energy_stack",
+    "121": "dragapult_ex",
+    "269": "lightning_bellibolt"
+  },
+  "source_episode_ids": [
+    80504942,
+    80505567,
+    80506042,
+    80515553,
+    80516161
+  ],
+  "n_source_episodes": 5,
+  "decomposition_supported": true,
+  "n_subfamilies_found": 4,
+  "unresolved_generic_episodes": [],
+  "subfamilies": [
+    {
+      "subfamily_id": "dragapult_ex",
+      "n_episodes": 1,
+      "episode_ids": [
+        80515553
+      ],
+      "signature_card_ids": [
+        121
+      ],
+      "signature_card_names": [
+        "Dragapult ex"
+      ],
+      "confidence": "provisional",
+      "status": "provisional"
+    },
+    {
+      "subfamily_id": "generic_unknown_ex_tempo",
+      "n_episodes": 0,
+      "episode_ids": [],
+      "signature_card_ids": [],
+      "signature_card_names": [],
+      "confidence": "n/a (no unlabelled decks this pass)",
+      "status": "provisional"
+    },
+    {
+      "subfamily_id": "lightning_bellibolt",
+      "n_episodes": 1,
+      "episode_ids": [
+        80516161
+      ],
+      "signature_card_ids": [
+        269
+      ],
+      "signature_card_names": [
+        "Iono’s Bellibolt ex"
+      ],
+      "confidence": "provisional",
+      "status": "provisional"
+    },
+    {
+      "subfamily_id": "mega_kangaskhan_energy_stack",
+      "n_episodes": 1,
+      "episode_ids": [
+        80505567
+      ],
+      "signature_card_ids": [
+        756
+      ],
+      "signature_card_names": [
+        "Mega Kangaskhan ex"
+      ],
+      "confidence": "provisional",
+      "status": "provisional"
+    },
+    {
+      "subfamily_id": "mega_lucario_ex_tempo",
+      "n_episodes": 2,
+      "episode_ids": [
+        80504942,
+        80506042
+      ],
+      "signature_card_ids": [
+        678
+      ],
+      "signature_card_names": [
+        "Mega Lucario ex"
+      ],
+      "confidence": "moderate",
+      "status": "provisional"
+    }
+  ],
+  "episodes": [
+    {
+      "episode_id": 80504942,
+      "opponent_name": null,
+      "player_index": "p0",
+      "result_from_our_perspective": "our_win",
+      "deck_source": "data/meta_replays/decks/80504942_p0_deck.csv",
+      "card_count": 60,
+      "unique_cards": 16,
+      "deck_fingerprint": "ac4f3ff6f387fbf54648e93e56fe80c322e13926728b110b26c54a88038472ec",
+      "closest_subfamily": "mega_lucario_ex_tempo",
+      "confidence": "moderate",
+      "evidence": [
+        "signature card id 678 present x4"
+      ],
+      "top_distinctive_cards": [
+        {
+          "card_id": 6,
+          "copies": 19,
+          "card_name": "Basic {F} Energy"
+        },
+        {
+          "card_id": 678,
+          "copies": 4,
+          "card_name": "Mega Lucario ex"
+        },
+        {
+          "card_id": 677,
+          "copies": 4,
+          "card_name": "Riolu"
+        },
+        {
+          "card_id": 1145,
+          "copies": 4,
+          "card_name": "Mega Signal"
+        },
+        {
+          "card_id": 1227,
+          "copies": 4,
+          "card_name": "Lillie's Determination"
+        },
+        {
+          "card_id": 1086,
+          "copies": 4,
+          "card_name": "Buddy-Buddy Poffin"
+        },
+        {
+          "card_id": 1121,
+          "copies": 4,
+          "card_name": "Ultra Ball"
+        },
+        {
+          "card_id": 676,
+          "copies": 3,
+          "card_name": "Solrock"
+        }
+      ],
+      "energy_type_distribution": {},
+      "category_counts": {
+        "n/a": 60
+      },
+      "ex_mega_stage_hints": [
+        "Mega Lucario ex [Mega] x4",
+        "Mega Signal [Mega] x4"
+      ]
+    },
+    {
+      "episode_id": 80505567,
+      "opponent_name": null,
+      "player_index": "p0",
+      "result_from_our_perspective": "our_loss",
+      "deck_source": "data/meta_replays/decks/80505567_p0_deck.csv",
+      "card_count": 60,
+      "unique_cards": 3,
+      "deck_fingerprint": "25675a165bef046c27c330ea3ec9f72d7d8cff3e9b4ccbfcb209627de8338c08",
+      "closest_subfamily": "mega_kangaskhan_energy_stack",
+      "confidence": "moderate",
+      "evidence": [
+        "signature card id 756 present x4"
+      ],
+      "top_distinctive_cards": [
+        {
+          "card_id": 1,
+          "copies": 55,
+          "card_name": "Basic {G} Energy"
+        },
+        {
+          "card_id": 756,
+          "copies": 4,
+          "card_name": "Mega Kangaskhan ex"
+        },
+        {
+          "card_id": 12,
+          "copies": 1,
+          "card_name": "Legacy Energy"
+        }
+      ],
+      "energy_type_distribution": {},
+      "category_counts": {
+        "n/a": 60
+      },
+      "ex_mega_stage_hints": [
+        "Mega Kangaskhan ex [Mega] x4"
+      ]
+    },
+    {
+      "episode_id": 80506042,
+      "opponent_name": null,
+      "player_index": "p0",
+      "result_from_our_perspective": "our_loss",
+      "deck_source": "data/meta_replays/decks/80506042_p0_deck.csv",
+      "card_count": 60,
+      "unique_cards": 17,
+      "deck_fingerprint": "e1fbde2075cce5d417687345f8af9875f03ab2cfc755b68bd3faf3f96f4a7f22",
+      "closest_subfamily": "mega_lucario_ex_tempo",
+      "confidence": "moderate",
+      "evidence": [
+        "signature card id 678 present x3"
+      ],
+      "top_distinctive_cards": [
+        {
+          "card_id": 6,
+          "copies": 13,
+          "card_name": "Basic {F} Energy"
+        },
+        {
+          "card_id": 1,
+          "copies": 8,
+          "card_name": "Basic {G} Energy"
+        },
+        {
+          "card_id": 1086,
+          "copies": 4,
+          "card_name": "Buddy-Buddy Poffin"
+        },
+        {
+          "card_id": 1224,
+          "copies": 4,
+          "card_name": "Cheren"
+        },
+        {
+          "card_id": 344,
+          "copies": 3,
+          "card_name": "Dwebble"
+        },
+        {
+          "card_id": 345,
+          "copies": 3,
+          "card_name": "Crustle"
+        },
+        {
+          "card_id": 673,
+          "copies": 3,
+          "card_name": "Makuhita"
+        },
+        {
+          "card_id": 674,
+          "copies": 3,
+          "card_name": "Hariyama"
+        }
+      ],
+      "energy_type_distribution": {},
+      "category_counts": {
+        "n/a": 60
+      },
+      "ex_mega_stage_hints": [
+        "Crustle x3",
+        "Hariyama x3",
+        "Mega Lucario ex [Mega] x3"
+      ]
+    },
+    {
+      "episode_id": 80515553,
+      "opponent_name": null,
+      "player_index": "p0",
+      "result_from_our_perspective": "our_win",
+      "deck_source": "data/meta_replays/decks/80515553_p0_deck.csv",
+      "card_count": 60,
+      "unique_cards": 28,
+      "deck_fingerprint": "070131755d73b17ceef6ba6bb9f58b3f9245534ce7751c7463c75a70d8546973",
+      "closest_subfamily": "dragapult_ex",
+      "confidence": "moderate",
+      "evidence": [
+        "signature card id 121 present x3"
+      ],
+      "top_distinctive_cards": [
+        {
+          "card_id": 120,
+          "copies": 4,
+          "card_name": "Drakloak"
+        },
+        {
+          "card_id": 119,
+          "copies": 4,
+          "card_name": "Dreepy"
+        },
+        {
+          "card_id": 1086,
+          "copies": 4,
+          "card_name": "Buddy-Buddy Poffin"
+        },
+        {
+          "card_id": 1121,
+          "copies": 4,
+          "card_name": "Ultra Ball"
+        },
+        {
+          "card_id": 1152,
+          "copies": 4,
+          "card_name": "Poké Pad"
+        },
+        {
+          "card_id": 1227,
+          "copies": 4,
+          "card_name": "Lillie's Determination"
+        },
+        {
+          "card_id": 121,
+          "copies": 3,
+          "card_name": "Dragapult ex"
+        },
+        {
+          "card_id": 2,
+          "copies": 3,
+          "card_name": "Basic {R} Energy"
+        }
+      ],
+      "energy_type_distribution": {},
+      "category_counts": {
+        "n/a": 57,
+        "Tera(Dragon)": 3
+      },
+      "ex_mega_stage_hints": [
+        "Dragapult ex [ex] x3",
+        "Drakloak x4",
+        "Dusclops x1",
+        "Dusknoir x1",
+        "Fezandipiti ex [ex] x1",
+        "Meowth ex [ex] x2",
+        "Noctowl x1"
+      ]
+    },
+    {
+      "episode_id": 80516161,
+      "opponent_name": null,
+      "player_index": "p0",
+      "result_from_our_perspective": "our_win",
+      "deck_source": "data/meta_replays/decks/80516161_p0_deck.csv",
+      "card_count": 60,
+      "unique_cards": 15,
+      "deck_fingerprint": "7dc29ba6002f31aefaaacab06721d54e39b31e866b54c34e9b973d5133795f8c",
+      "closest_subfamily": "lightning_bellibolt",
+      "confidence": "moderate",
+      "evidence": [
+        "signature card id 269 present x3"
+      ],
+      "top_distinctive_cards": [
+        {
+          "card_id": 4,
+          "copies": 22,
+          "card_name": "Basic {L} Energy"
+        },
+        {
+          "card_id": 1227,
+          "copies": 4,
+          "card_name": "Lillie's Determination"
+        },
+        {
+          "card_id": 1233,
+          "copies": 4,
+          "card_name": "Canari"
+        },
+        {
+          "card_id": 265,
+          "copies": 3,
+          "card_name": "Iono’s Voltorb"
+        },
+        {
+          "card_id": 268,
+          "copies": 3,
+          "card_name": "Iono’s Tadbulb"
+        },
+        {
+          "card_id": 269,
+          "copies": 3,
+          "card_name": "Iono’s Bellibolt ex"
+        },
+        {
+          "card_id": 270,
+          "copies": 3,
+          "card_name": "Iono’s Wattrel"
+        },
+        {
+          "card_id": 271,
+          "copies": 3,
+          "card_name": "Iono’s Kilowattrel"
+        }
+      ],
+      "energy_type_distribution": {},
+      "category_counts": {
+        "n/a": 45,
+        "Trainer's Pokémon（Iono）": 15
+      },
+      "ex_mega_stage_hints": [
+        "Iono’s Bellibolt ex [ex] x3",
+        "Iono’s Kilowattrel x3"
+      ]
+    }
+  ]
+}

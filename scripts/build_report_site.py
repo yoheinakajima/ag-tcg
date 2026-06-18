@@ -22,6 +22,7 @@ from ptcg_activegraph.experiments.report import (
     write_markdown,
     write_pass11b_report,
     write_pass12_report,
+    write_pass13_report,
     write_site,
 )
 from ptcg_activegraph.graph.event_store import EventStore
@@ -39,12 +40,14 @@ def main() -> int:
     md_file = write_markdown(data)
     pass11b_md = write_pass11b_report(data)
     pass12_md = write_pass12_report(data)
+    pass13_md = write_pass13_report(data)
 
     store = EventStore(LAB_EVENTS_PATH)
     store.append(new_event(
         EventType.ReportSiteGenerated,
         payload={"site_files": [str(p) for p in site_files], "markdown": str(md_file),
                  "pass11b_report": str(pass11b_md), "pass12_report": str(pass12_md),
+                 "pass13_report": str(pass13_md),
                  "candidates": len(data["runs"]), "events": len(data["events"])},
         tags=["report"],
     ))
@@ -55,6 +58,7 @@ def main() -> int:
     print(f"  {md_file}")
     print(f"  {pass11b_md}")
     print(f"  {pass12_md}")
+    print(f"  {pass13_md}")
     print(f"\nOpen data/site/index.html  ({len(data['runs'])} candidates, "
           f"{len(data['events'])} events).")
     return 0

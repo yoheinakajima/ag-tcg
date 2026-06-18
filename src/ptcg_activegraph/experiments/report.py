@@ -77,6 +77,14 @@ PASS12_CANDIDATE_METRICS_JSON = Path("data/experiments/pass12_candidate_metrics.
 PASS12_RANKING_JSON = Path("data/experiments/pass12_ranking.json")
 PASS12_DRY_RUN_QUEUE_JSON = Path("data/experiments/pass12_dry_run_queue.json")
 PASS12_REPORT_MD = Path("data/reports/pass12_meta_candidate_eval_report.md")
+# Pass 13 — operating manual + unknown_ex_tempo decomposition (docs + meta-analysis).
+PASS13_MANUAL_MD = Path("docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md")
+PASS13_NEXT_AGENT_MD = Path("docs/NEXT_AGENT_README.md")
+PASS13_DECOMP_JSON = Path("data/meta_replays/unknown_ex_tempo_decomposition.json")
+PASS13_REFINED_POOL_YAML = Path("experiments/pass13_refined_meta_pool.yaml")
+PASS13_REFINED_EVAL_JSON = Path("data/experiments/pass13_refined_eval.json")
+PASS13_LIVE_REGISTRY_JSON = Path("data/kaggle_uploads/live_score_registry.json")
+PASS13_REPORT_MD = Path("data/reports/pass13_operating_manual_and_meta_decomposition.md")
 
 # Corrected live baseline scores (see v2 baseline README correction note: the
 # v1 archive dir keeps its historical `349_8` name but live v1 is 356.9).
@@ -227,6 +235,12 @@ def gather(runs_root=RUNS_ROOT) -> dict:
         "pass12_metrics": _load_json(PASS12_CANDIDATE_METRICS_JSON) or {},
         "pass12_ranking": _load_json(PASS12_RANKING_JSON) or {},
         "pass12_dry_run_queue": _load_json(PASS12_DRY_RUN_QUEUE_JSON) or {},
+        "pass13_manual_exists": PASS13_MANUAL_MD.exists(),
+        "pass13_next_agent_exists": PASS13_NEXT_AGENT_MD.exists(),
+        "pass13_decomp": _load_json(PASS13_DECOMP_JSON) or {},
+        "pass13_refined_pool": _load_yaml(PASS13_REFINED_POOL_YAML) or {},
+        "pass13_refined_eval": _load_json(PASS13_REFINED_EVAL_JSON) or {},
+        "pass13_live_registry": _load_json(PASS13_LIVE_REGISTRY_JSON) or {},
         "runs": runs,
         "baseline_readme": (BASELINE_DIR / "README.md"),
         "v2_baseline_readme": (V2_BASELINE_DIR / "README.md"),
@@ -345,6 +359,7 @@ def _overview_html(data: dict) -> str:
 
     body = (
         f"<section><h2>Snapshot</h2><div class=cards>{cards}</div></section>"
+        f"{_pass13_html(data)}"
         f"{_pass12_html(data)}"
         f"{_pass11b_html(data)}"
         f"{_pass10b_html(data)}"
@@ -1408,6 +1423,160 @@ def write_pass12_report(data: dict, path: Path = PASS12_REPORT_MD) -> Path:
     return path
 
 
+# ---------------------------------------------------------------------------
+# Pass 13 — operating manual + unknown_ex_tempo decomposition.
+# ---------------------------------------------------------------------------
+def _pass13_stats(data: dict) -> dict:
+    decomp = data.get("pass13_decomp") or {}
+    pool = data.get("pass13_refined_pool") or {}
+    ev = data.get("pass13_refined_eval") or {}
+    reg = data.get("pass13_live_registry") or {}
+    ac = reg.get("active_control") or {}
+    subs = decomp.get("subfamilies") or []
+    named = [s for s in subs if s.get("n_episodes", 0) > 0]
+    return {
+        "manual": data.get("pass13_manual_exists", False),
+        "next_agent": data.get("pass13_next_agent_exists", False),
+        "decomp": decomp,
+        "pool": pool,
+        "eval": ev,
+        "active_control": ac.get("filename") or "uncertain",
+        "active_control_score": ac.get("public_score"),
+        "n_source_eps": decomp.get("n_source_episodes"),
+        "n_subfamilies": decomp.get("n_subfamilies_found"),
+        "supported": decomp.get("decomposition_supported"),
+        "unresolved": decomp.get("unresolved_generic_episodes") or [],
+        "named": named,
+        "weights": pool.get("evaluation_weights") or {},
+        "confirmed": (pool.get("confirmed_vs_provisional") or {}).get("confirmed") or [],
+        "provisional": (pool.get("confirmed_vs_provisional") or {}).get("provisional") or [],
+    }
+
+
+def _pass13_present(s: dict) -> bool:
+    return bool(s["manual"] or s["decomp"] or s["pool"])
+
+
+def _pass13_md(data: dict) -> list[str]:
+    s = _pass13_stats(data)
+    if not _pass13_present(s):
+        return []
+    L = ["## Pass 13 — Operating manual + unknown_ex_tempo decomposition", ""]
+    L.append("_DOCUMENTATION + META-ANALYSIS only — no Kaggle upload, no GitHub "
+             "push, no new candidates, no invented card IDs; root main.py/deck.csv "
+             "immutable. Live scores were NOT refreshed this pass (kaggle CLI "
+             "unavailable); last-known-good reused._")
+    L += ["", "### Operating manual",
+          f"- Canonical manual created: **{s['manual']}** "
+          f"(`docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md`)",
+          f"- Next-agent README created: **{s['next_agent']}** "
+          f"(`docs/NEXT_AGENT_README.md`)",
+          f"- Active control (dynamic): `{s['active_control']}` @ "
+          f"{_num(s['active_control_score'])}"]
+    L += ["", "### Unknown-EX tempo decomposition",
+          f"- Source episodes analysed: **{s['n_source_eps']}**",
+          f"- Named subfamilies found: **{s['n_subfamilies']}**",
+          f"- Decomposition supported by evidence: **{s['supported']}**",
+          f"- Unresolved (generic) episodes: **{len(s['unresolved'])}**",
+          "",
+          "| subfamily | episodes | n | confidence | status |",
+          "|---|---|---|---|---|"]
+    for sf in s["named"]:
+        eps = ", ".join(str(e) for e in sf.get("episode_ids") or [])
+        L.append(f"| `{sf.get('subfamily_id')}` | {eps} | {sf.get('n_episodes')} | "
+                 f"{sf.get('confidence')} | {sf.get('status')} |")
+    if not s["named"]:
+        L.append("| _none_ |  |  |  |  |")
+    if s["weights"]:
+        w = ", ".join(f"{k}={v}" for k, v in s["weights"].items())
+        wsum = round(sum(float(v) for v in s["weights"].values()), 4)
+        L += ["", "### Refined meta pool",
+              f"- Refined pool: `experiments/pass13_refined_meta_pool.yaml`",
+              f"- Weights: {w}",
+              f"- Weights sum: **{wsum}**",
+              f"- Confirmed: {', '.join(f'`{c}`' for c in s['confirmed']) or '_none_'}",
+              f"- Provisional: {', '.join(f'`{c}`' for c in s['provisional']) or '_none_'}"]
+    if s["eval"]:
+        ev = s["eval"]
+        L += ["", "### Optional refined eval (directional only)",
+              f"- Eval run: **True**; games/seat: {ev.get('games_per_seat')}; "
+              f"candidates: {len(ev.get('candidates') or [])}"]
+    else:
+        L += ["", "### Optional refined eval (directional only)",
+              "- Eval run: **False** (decomposition + docs only this pass)."]
+    L += ["", "### Chaos lane",
+          "- Chaos readiness updated in `docs/CHAOS_PLAYBOOK_LANE.md` (section "
+          "\"Chaos after meta decomposition\"). No chaos candidate generated; the "
+          "gate stays closed until a payoff card + measurable trigger is confirmed."]
+    L += ["", "### Bottom line",
+          "- **The unknown_ex_tempo bucket is decomposed into evidence-grounded "
+          "subfamilies and a canonical operating manual is in place. No candidate "
+          "generated, no upload, no GitHub push, root unchanged. The dynamic active "
+          "control remains the best known submission.**"]
+    return L
+
+
+def _pass13_html(data: dict) -> str:
+    s = _pass13_stats(data)
+    if not _pass13_present(s):
+        return ""
+    cards = "".join(
+        f"<div class=card><div class=k>{_esc(k)}</div><div class=v>{_esc(v)}</div></div>"
+        for k, v in [
+            ("Operating manual", s["manual"]),
+            ("Next-agent README", s["next_agent"]),
+            ("Unknown source eps", s["n_source_eps"]),
+            ("Subfamilies found", s["n_subfamilies"]),
+            ("Decomp supported", s["supported"]),
+            ("Active control", s["active_control"]),
+            ("AC score", _num(s["active_control_score"])),
+        ]
+    )
+    sub_rows = "".join(
+        f"<tr><td><code>{_esc(sf.get('subfamily_id'))}</code></td>"
+        f"<td>{_esc(', '.join(str(e) for e in sf.get('episode_ids') or []))}</td>"
+        f"<td>{_esc(sf.get('n_episodes'))}</td>"
+        f"<td>{_esc(sf.get('confidence'))}</td>"
+        f"<td>{_esc(sf.get('status'))}</td></tr>"
+        for sf in s["named"]
+    ) or "<tr><td class=muted colspan=5>no subfamilies</td></tr>"
+    w = ", ".join(f"{k}={v}" for k, v in s["weights"].items()) or "—"
+    return (
+        "<section><h2>Pass 13 — Operating manual + unknown_ex_tempo decomposition</h2>"
+        "<p class=muted>Documentation + meta-analysis only — no upload, no push, no "
+        "new candidates, no invented ids; root immutable. Live scores NOT refreshed "
+        "(kaggle CLI unavailable); last-known-good reused. "
+        f"Refined weights: {_esc(w)}.</p>"
+        f"<div class=cards>{cards}</div>"
+        "<h3>Unknown-EX tempo subfamilies (replay-grounded)</h3>"
+        "<table><tr><th>Subfamily</th><th>Episodes</th><th>n</th><th>Confidence</th>"
+        f"<th>Status</th></tr>{sub_rows}</table>"
+        "<p class=muted>No candidate generated; nothing uploaded; the dynamic active "
+        "control remains the best known submission.</p></section>"
+    )
+
+
+def write_pass13_report(data: dict, path: Path = PASS13_REPORT_MD) -> Path:
+    """Write the standalone Pass 13 operating-manual + decomposition report."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = _pass13_md(data)
+    if not body:
+        lines = ["# ActiveGraph Pass 13 — Operating manual + meta decomposition", "",
+                 "_No Pass 13 artifacts found yet._", ""]
+    else:
+        lines = ["# ActiveGraph Pass 13 — Operating manual + meta decomposition", "",
+                 "Generated from lab artifacts only; no values fabricated.", ""]
+        lines += body
+        lines += ["", "## Next recommendation",
+                  "- Run an analysis-only eval of the existing active control + "
+                  "existing candidates against the four refined subfamily surrogate "
+                  "decks (5 games/seat, seat-swapped) before considering any "
+                  "targeted, confirmed-id-only candidate. No upload.", ""]
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
+
+
 def _pass10_control_scores(pool: dict) -> dict:
     """Resolve v1 / v2 / rejected live scores by *identity* (candidate_id).
 
@@ -2025,6 +2194,8 @@ def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
         "",
     ]
 
+    lines += _pass13_md(data)
+    lines += [""]
     lines += _pass12_md(data)
     lines += [""]
     lines += _pass11b_md(data)

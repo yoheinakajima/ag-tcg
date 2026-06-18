@@ -1,0 +1,145 @@
+# Refined meta pool — Pass 13 (unknown_ex_tempo decomposed)
+#
+# This is an ANALYSIS artifact. It does NOT replace experiments/meta_pool.yaml as
+# the auto-generated pipeline output; it records the refined weighting that the
+# Pass 13 decomposition supports. No upload, no new candidates, no invented ids.
+#
+# Source of truth for the split:
+#   data/meta_replays/unknown_ex_tempo_decomposition.json
+# Card id -> name resolved via data/cards/EN_Card_Data.csv (authoritative); the
+# evidence_card_names in archetypes.yaml had ids 678/756 swapped.
+
+schema: activegraph.meta.pool.refined/v1
+pass: 13
+generated_by: hand-authored from scripts/decompose_unknown_ex_tempo.py outputs
+sources:
+  decomposition: data/meta_replays/unknown_ex_tempo_decomposition.json
+  archetypes_refined: data/meta_replays/archetypes_refined.yaml
+  live_scores: data/kaggle_uploads/live_score_registry.json
+  base_pool: experiments/meta_pool.yaml
+
+controls:
+  active_control:
+    candidate_id: combo_full_safety_v3_fixed
+    submission_file: combo_full_safety_v3_fixed.tar.gz
+    live_public_score: 376.6
+    status: complete
+    scores_refreshed_this_pass: false
+    note: >-
+      Dynamic active control from the live score registry. Scores were NOT
+      refreshed in Pass 13 (kaggle CLI unavailable); reused last-known-good
+      snapshot status_before_pass11b.csv.
+
+# Original Pass 12 capped evaluation weights, preserved for traceability.
+pass12_original_weights:
+  metal_ex_zacian_ramp: 0.20
+  water_kyogre_abomasnow_maxbelt: 0.20
+  unknown_ex_tempo: 0.60
+
+# Rule used to split the 0.60 unknown_ex_tempo weight:
+#   weight = 0.60 * (episodes_in_subfamily / 5 total unknown episodes)
+unknown_split_rule: >-
+  0.60 distributed across replay-grounded subfamilies in proportion to their
+  real-opponent episode frequency (5 source episodes total). Confirmed
+  archetypes (metal, maxbelt) kept at 0.20 each.
+
+archetypes:
+- key: metal_ex_zacian_ramp
+  weight: 0.20
+  confidence: confirmed
+  status: confirmed
+  is_ours: false
+  surrogate_deck: data/meta_replays/decks/80503804_p1_deck.csv
+  replay_episodes: [80503804]
+  evidence_card_ids: [8, 336, 547, 695, 988]
+
+- key: water_kyogre_abomasnow_maxbelt
+  weight: 0.20
+  confidence: confirmed
+  status: confirmed
+  is_ours: false
+  surrogate_deck: data/meta_replays/decks/80504288_p0_deck.csv
+  replay_episodes: [80504288]
+  evidence_card_ids: [721, 722, 723, 1205, 1235]
+
+- key: mega_lucario_ex_tempo
+  parent: unknown_ex_tempo
+  weight: 0.24
+  confidence: moderate
+  status: provisional
+  is_ours: false
+  surrogate_deck: data/meta_replays/decks/80504942_p0_deck.csv
+  replay_episodes: [80504942, 80506042]
+  signature_card_ids: [678]   # Mega Lucario ex (per card DB)
+
+- key: mega_kangaskhan_energy_stack
+  parent: unknown_ex_tempo
+  weight: 0.12
+  confidence: provisional
+  status: provisional
+  is_ours: false
+  surrogate_deck: data/meta_replays/decks/80505567_p0_deck.csv
+  replay_episodes: [80505567]
+  signature_card_ids: [756]   # Mega Kangaskhan ex (per card DB)
+
+- key: dragapult_ex
+  parent: unknown_ex_tempo
+  weight: 0.12
+  confidence: provisional
+  status: provisional
+  is_ours: false
+  surrogate_deck: data/meta_replays/decks/80515553_p0_deck.csv
+  replay_episodes: [80515553]
+  signature_card_ids: [121]   # Dragapult ex
+
+- key: lightning_bellibolt
+  parent: unknown_ex_tempo
+  weight: 0.12
+  confidence: provisional
+  status: provisional
+  is_ours: false
+  surrogate_deck: data/meta_replays/decks/80516161_p0_deck.csv
+  replay_episodes: [80516161]
+  signature_card_ids: [269]   # Iono's Bellibolt ex
+
+# Retained as a low-confidence fallback category. Empty this pass: every source
+# episode resolved to a named subfamily.
+- key: generic_unknown_ex_tempo
+  parent: unknown_ex_tempo
+  weight: 0.0
+  confidence: low
+  status: provisional
+  is_ours: false
+  replay_episodes: []
+
+evaluation_weights:
+  metal_ex_zacian_ramp: 0.20
+  water_kyogre_abomasnow_maxbelt: 0.20
+  mega_lucario_ex_tempo: 0.24
+  mega_kangaskhan_energy_stack: 0.12
+  dragapult_ex: 0.12
+  lightning_bellibolt: 0.12
+
+weights_sum: 1.00
+
+diagnostic_only:
+  water_kyogre_abomasnow_passive_mirror:
+    is_ours: true
+    treatment: self-mirror; diagnostic only, excluded from opponent weighting
+    surrogate_deck: data/meta_replays/decks/80374966_p0_deck.csv
+
+confirmed_vs_provisional:
+  confirmed:
+  - metal_ex_zacian_ramp
+  - water_kyogre_abomasnow_maxbelt
+  provisional:
+  - mega_lucario_ex_tempo
+  - mega_kangaskhan_energy_stack
+  - dragapult_ex
+  - lightning_bellibolt
+  - generic_unknown_ex_tempo
+
+notes:
+- Scores not refreshed this pass (kaggle CLI unavailable); active control reused.
+- Subfamilies are provisional (single-pass, small sample); none promoted to confirmed.
+- No new candidates generated; no upload performed; no card ids invented.
