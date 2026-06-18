@@ -1,0 +1,238 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle in this pass.
+- Do not modify root main.py or root deck.csv.
+- Do not rerun large evaluations unless required to complete missing final reporting.
+- Preserve v1 and v2 baselines.
+- Do not print or commit Kaggle credentials.
+- Keep candidate tarballs top-level main.py + deck.csv only.
+
+Current context:
+- Pass 9 built the deck-specific playbook subsystem.
+- Playbook compiler maps declarative playbooks to submission-safe main.py variants.
+- v2 active control baseline is deck_energy_trim_light, Kaggle score 479.1.
+- v1 live score is 356.9; the v1 archive directory name retains historical 349_8 naming.
+- combo_full_safety_v3 has an 80-game confirmation result: 50–30, adjusted win rate ~0.62, 95% Wilson lower bound ~0.52, no crashes/timeouts, promotable.
+- Stage 2 scout showed playbook_v2_effect_safety_max at ~0.70 and combo_full_safety_v3 at ~0.50, but the final Stage 3 focused ranking is not clearly summarized yet.
+- Architect review found three issues and they were fixed:
+  1. discard_safety card IDs now validated
+  2. candidates page gate labels now use real fixture gate status
+  3. v1 live score corrected to 356.9
+- Root main.py/deck.csv remained unchanged.
+- No Kaggle upload has happened.
+
+Goal:
+Produce a final Pass 9 upload-readiness report from existing artifacts. Do not upload. Do not run more large evaluations unless a final Stage 3 ranking artifact is missing or incomplete.
+
+Step 1 — Verify baseline safety
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Step 2 — Inspect Pass 9 artifacts
+
+Find and inspect relevant Pass 9 files:
+
+find data/experiments experiments/runs data/submissions/candidates data/site data/reports -maxdepth 4 -type f | grep -Ei 'pass9|playbook|full_safety|effect_safety|max|ranking|queue|fixture|focused|confirm|tar.gz' | sort
+
+Read, if present:
+
+data/experiments/pass9_*ranking*.json
+data/experiments/pass9_*ranking*.md
+data/experiments/pass9_fixture_gate.json
+data/experiments/pass9_fixture_gate.md
+data/experiments/pass9_final_report.md
+data/submission_queue.json
+
+Also inspect candidate tarballs:
+
+find data/submissions/candidates -maxdepth 1 -name '*.tar.gz' | sort
+for f in data/submissions/candidates/*.tar.gz; do echo "=== $f"; tar -tzf "$f"; done
+
+Step 3 — Determine the final best candidate
+
+Classify candidates into:
+
+- confirmed_promotable
+- scout_promising
+- inconclusive
+- blocked_by_fixture_gate
+- rejected_package_or_smoke
+- control_anchor
+
+The final best candidate must satisfy:
+
+- not a control anchor
+- hard fixture gate passed
+- package verify passed
+- smoke passed
+- no crashes
+- no timeouts
+- no invalid returns
+- focused or confirmation evaluation completed
+- beats v2 control with Wilson support
+- candidate tarball exists and contains exactly main.py + deck.csv
+
+If multiple candidates qualify, prefer in this order:
+
+1. playbook-compiled candidate over legacy hardcoded candidate, if performance is equivalent or better
+2. higher focused adjusted win rate
+3. stronger Wilson lower bound
+4. better seat balance
+5. simpler/more reportable rule set
+
+Do not fabricate missing metrics. If final focused Stage 3 never completed, say so.
+
+Step 4 — Build or verify exactly one recommended candidate tarball
+
+If there is one clear recommended candidate, verify or build its tarball under:
+
+data/submissions/candidates/<candidate_id>.tar.gz
+
+The tarball must contain exactly:
+
+main.py
+deck.csv
+
+Do not upload.
+
+Run isolated verification on the chosen candidate tarball:
+
+mkdir -p /tmp/ptcg_pass9_candidate
+rm -rf /tmp/ptcg_pass9_candidate/*
+tar -xzf data/submissions/candidates/<candidate_id>.tar.gz -C /tmp/ptcg_pass9_candidate
+ls -la /tmp/ptcg_pass9_candidate
+python - <<'PY'
+from pathlib import Path
+p = Path("/tmp/ptcg_pass9_candidate/deck.csv")
+rows = [x.strip() for x in p.read_text().splitlines() if x.strip()]
+assert len(rows) == 60, len(rows)
+assert all(x.isdigit() for x in rows)
+print("candidate deck valid:", len(rows), "cards", len(set(rows)), "unique")
+PY
+
+If candidate smoke test supports custom candidate path, run it. If not, rely on stored smoke/package metrics and report that limitation.
+
+Step 5 — Update dry-run queue only
+
+Update data/submission_queue.json with at most one candidate.
+
+Queue entry should include:
+
+- candidate_id
+- tarball path
+- reason
+- local adjusted win rate
+- Wilson 80/95 CI if available
+- fixture gate status
+- package/smoke status
+- recommended Kaggle message
+- upload_performed: false
+- auto_submit_enabled: false
+- require_manual_approval_for_submit: true
+
+Do not upload.
+
+Step 6 — Rebuild report site
+
+Run:
+
+python scripts/build_report_site.py
+
+Ensure report/site shows:
+
+- v1 live score 356.9
+- v2 live score 479.1
+- Pass 9 playbook architecture
+- playbook validation / compiler
+- fixture-gate ablations
+- high-power confirmation result
+- final recommended candidate or reason none
+- no-upload note
+- architect review fixes
+
+Step 7 — Final report format
+
+Report exactly:
+
+Pass 9 Final Candidate Readiness Report
+
+1. Baseline safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- v1 live score:
+- v2 live score:
+- pytest:
+- package verify:
+- root smoke:
+- upload performed:
+
+2. Playbook architecture
+- playbook subsystem created:
+- v2 playbook path:
+- compiler path:
+- validator path:
+- generated candidates:
+- ablations tested:
+- architecture verdict:
+
+3. Fixture gate
+- fixture gate path:
+- candidates passing hard gate:
+- candidates blocked:
+- ablation behavior:
+- validator fixes confirmed:
+
+4. Evaluation summary
+- combo_full_safety_v3 confirmation:
+- Stage 2 scout summary:
+- Stage 3 focused summary:
+- crashes/timeouts/invalid returns:
+- strongest statistically confirmed candidate:
+- strongest playbook-compiled candidate:
+
+5. Recommended candidate
+- submit candidate now: yes/no
+- candidate_id:
+- reason:
+- adjusted win rate:
+- Wilson 80% CI:
+- Wilson 95% CI:
+- seat split:
+- fixture gate:
+- package/smoke:
+- candidate tarball:
+- tarball contents:
+- suggested Kaggle message:
+
+6. Dry-run queue
+- queue path:
+- queued candidates:
+- auto-submit enabled:
+- manual approval required:
+- upload performed:
+
+7. Report site
+- site path:
+- markdown report path:
+- architect review status:
+- most important lesson:
+
+8. Manual git notes
+- files I should review:
+- files not to commit:
+- generated/ignored files:
+- data/submission_queue.json recommendation: commit real queue or gitignore:
+
+9. Next action
+- One sentence only.

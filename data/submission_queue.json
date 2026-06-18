@@ -1,6 +1,6 @@
 {
   "schema": "ptcg_dry_run_submission_queue_v1",
-  "generated_at": 1781793439.6746676,
+  "generated_at": 1781795297.6919367,
   "run_id": "run_pass9_focused_20260618_142752_17fc89",
   "stage": "pass9_focused",
   "auto_submit_enabled": false,
@@ -9,7 +9,38 @@
   "no_more_submissions_today": true,
   "max_queue_size": 1,
   "active_control": "v2_deck_energy_trim_light_479_1",
-  "queue": [],
-  "queued_candidate_count": 0,
-  "selection_reason": "no_more_submissions_today=true in experiment_plan.yaml \u2014 queue held empty (dry-run never uploads regardless)"
+  "queue": [
+    {
+      "candidate_id": "combo_full_safety_v3",
+      "tarball_path": "data/submissions/candidates/combo_full_safety_v3.tar.gz",
+      "tarball_contents": [
+        "main.py",
+        "deck.csv"
+      ],
+      "reason": "Only candidate with a high-power (80-game seat-swapped) confirmation: adjusted win 0.62, Wilson95 lower bound 0.52 > 0.50 vs v2 control, 0 crashes/timeouts/invalid returns, hard fixture gate PASS. Focused 40-game corroborates (adj 0.68). Strongest playbook-compiled candidate (kyogre_abomasnow_v1, focused 0.65) lacks a confirmation run and sits at Wilson95 lower 0.50, so combo is selected on confirmed strength.",
+      "local_adjusted_win_rate": 0.62,
+      "local_adjusted_win_rate_focused": 0.68,
+      "wilson_80_ci": [
+        0.55,
+        0.69
+      ],
+      "wilson_95_ci": [
+        0.52,
+        0.72
+      ],
+      "seat_split": {
+        "p0": 0.55,
+        "p1": 0.7
+      },
+      "fixture_gate_status": "PASS",
+      "package_status": "PASS",
+      "smoke_status": "PASS",
+      "recommended_kaggle_message": "combo_full_safety_v3: effect-resolution safety combo (discard-protect setup, orphan-evolution/mega-signal guards, deckout decline @8). Local 80-game seat-swap vs v2 control: adj 0.62, Wilson95 [0.52,0.72], 0 crash/timeout.",
+      "upload_performed": false,
+      "auto_submit_enabled": false,
+      "require_manual_approval_for_submit": true
+    }
+  ],
+  "queued_candidate_count": 1,
+  "selection_reason": "Pass 9 readiness: one dry-run recommendation queued (combo_full_safety_v3). no_more_submissions_today=true and require_manual_approval_for_submit=true \u2014 this is a held dry-run entry; no upload is performed."
 }

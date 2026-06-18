@@ -1241,7 +1241,7 @@ def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
         "# ActiveGraph Strategy Lab — Report",
         "",
         "Transparent experiment factory around the immutable v1 control "
-        "(Kaggle public score 349.8). Two-stage evaluation: a broad scout pass "
+        f"(live score {V1_LIVE_SCORE}). Two-stage evaluation: a broad scout pass "
         "then a focused seat-swap confirmation pass with Wilson confidence "
         "intervals and conservative promotion labels.",
         "",
