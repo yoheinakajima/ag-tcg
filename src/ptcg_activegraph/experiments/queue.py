@@ -20,16 +20,23 @@ from pathlib import Path
 
 from ..graph.event_store import EventStore
 from ..graph.events import EventType, new_event
+from .ranker import is_control_entry
 
 QUEUE_JSON = Path("data/submission_queue.json")
 CANDIDATES_DIR = Path("data/submissions/candidates")
 
 
 def is_promotable(entry: dict) -> bool:
-    """A ranked entry is promotable only if it cleared every hard gate."""
+    """A ranked entry is promotable only if it cleared every hard gate.
+
+    Controls and anchors (v2 active control, v1 legacy baseline, integrity
+    anchors) are never promotable — they are baselines, not submission targets.
+    """
     if entry.get("rejected"):
         return False
     if entry.get("score") is None:
+        return False
+    if is_control_entry(entry):
         return False
     return True
 

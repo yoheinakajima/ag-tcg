@@ -1,0 +1,66 @@
+branch_id: combo_effect_resolution_v3__deckout_guard_v2
+seam_id: combo.effect_resolution_deckout
+family: combo
+kind: combo
+archetype: consistency_engine
+hypothesis: Combine effect resolution v3 (protect setup, fetch the missing line, decline
+  dead Mega fetches) with deckout guard v2 (decline optional searches when the deck
+  runs low) to test whether the two replay-derived decline fixes compound.
+parent: v1_kaggle_349_8
+created_at: '2026-06-18T01:31:20'
+run_dir: experiments/runs/20260618_013120_02_combo_effect_resolution_v3__deckout_guard_v2
+policy_overrides: &id001
+  p5_rules:
+    discard_avoid_ids:
+    - 722
+    - 723
+    - 721
+    discard_avoid_weight: -300
+    discard_prefer_ids:
+    - 3
+    discard_prefer_weight: 150
+    search_prefer_ids:
+    - 722
+    - 723
+    - 721
+    - 1121
+    - 1145
+    - 1092
+    search_prefer_weight: 90
+    search_snover_before_mega: true
+    snover_first_bonus: 70
+    mega_without_snover_penalty: -70
+    deckout_threshold: 8
+    deckout_search_penalty: -180
+  p6_rules:
+    decline_mega_signal_no_snover: true
+    deckout_decline_threshold: 8
+policy_diff: *id001
+deck_diff:
+  '3':
+    name: Basic {W} Energy
+    from: 33
+    to: 29
+    delta: -4
+  '721':
+    name: Kyogre
+    from: 2
+    to: 4
+    delta: 2
+  '1121':
+    name: Ultra Ball
+    from: 2
+    to: 4
+    delta: 2
+deck_summary:
+  size: 60
+  unique: 11
+  warnings:
+  - card 3 appears 29 times (> 4)
+  policy_refs: []
+  deck_ref: deck_energy_trim_light
+  board_aware: true
+notes:
+- board-aware p5 policy over deck_energy_trim_light
+testable: true
+blocked_reason: ''

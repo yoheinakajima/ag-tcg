@@ -1,0 +1,48 @@
+branch_id: policy_deckout_guard_v2
+seam_id: policy.deckout_awareness
+family: combo
+kind: combo
+archetype: tempo_control
+hypothesis: 'Deckout guard v2: when the player''s own deckCount is at or below the
+  threshold, decline optional search-to-hand prompts entirely (not merely penalize
+  them) so the deck is not burned into a self-inflicted deck-out loss (the step-112
+  replay loss). Reads deckCount from the live observation; only declines when minCount
+  == 0.'
+parent: v1_kaggle_349_8
+created_at: '2026-06-18T01:31:20'
+run_dir: experiments/runs/20260618_013120_04_policy_deckout_guard_v2
+policy_overrides: &id001
+  p5_rules:
+    deckout_threshold: 8
+    deckout_search_penalty: -180
+  p6_rules:
+    deckout_decline_threshold: 8
+policy_diff: *id001
+deck_diff:
+  '3':
+    name: Basic {W} Energy
+    from: 33
+    to: 29
+    delta: -4
+  '721':
+    name: Kyogre
+    from: 2
+    to: 4
+    delta: 2
+  '1121':
+    name: Ultra Ball
+    from: 2
+    to: 4
+    delta: 2
+deck_summary:
+  size: 60
+  unique: 11
+  warnings:
+  - card 3 appears 29 times (> 4)
+  policy_refs: []
+  deck_ref: deck_energy_trim_light
+  board_aware: true
+notes:
+- board-aware p5 policy over deck_energy_trim_light
+testable: true
+blocked_reason: ''

@@ -1,0 +1,63 @@
+branch_id: combo_effect_resolution_v3__secret_box_safety
+seam_id: combo.effect_resolution_secret_box
+family: combo
+kind: combo
+archetype: consistency_engine
+hypothesis: Combine effect resolution v3 with the stronger Secret Box discard-safety
+  weight to test whether harder protection of the setup line on discard prompts compounds
+  with the decline-dead-Mega-fetch fix.
+parent: v1_kaggle_349_8
+created_at: '2026-06-18T01:31:20'
+run_dir: experiments/runs/20260618_013120_05_combo_effect_resolution_v3__secret_box_safety
+policy_overrides: &id001
+  p5_rules:
+    discard_avoid_ids:
+    - 722
+    - 723
+    - 721
+    discard_avoid_weight: -400
+    discard_prefer_ids:
+    - 3
+    discard_prefer_weight: 150
+    search_prefer_ids:
+    - 722
+    - 723
+    - 721
+    - 1121
+    - 1145
+    - 1092
+    search_prefer_weight: 90
+    search_snover_before_mega: true
+    snover_first_bonus: 70
+    mega_without_snover_penalty: -70
+  p6_rules:
+    decline_mega_signal_no_snover: true
+policy_diff: *id001
+deck_diff:
+  '3':
+    name: Basic {W} Energy
+    from: 33
+    to: 29
+    delta: -4
+  '721':
+    name: Kyogre
+    from: 2
+    to: 4
+    delta: 2
+  '1121':
+    name: Ultra Ball
+    from: 2
+    to: 4
+    delta: 2
+deck_summary:
+  size: 60
+  unique: 11
+  warnings:
+  - card 3 appears 29 times (> 4)
+  policy_refs: []
+  deck_ref: deck_energy_trim_light
+  board_aware: true
+notes:
+- board-aware p5 policy over deck_energy_trim_light
+testable: true
+blocked_reason: ''

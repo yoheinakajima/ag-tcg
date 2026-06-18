@@ -26,6 +26,7 @@ from ptcg_activegraph.cards import load_card_db
 from ptcg_activegraph.experiments import branch as branch_mod
 from ptcg_activegraph.experiments.config import LAB_EVENTS_PATH, RUNS_ROOT, load_config
 from ptcg_activegraph.experiments.generator import (
+    generate_chaos_candidate,
     generate_combo_candidate,
     generate_deck_candidate,
     generate_policy_candidate,
@@ -33,6 +34,9 @@ from ptcg_activegraph.experiments.generator import (
     plan_generation2,
     plan_pass4,
     plan_pass5,
+    plan_pass6,
+    plan_pass6_chaos,
+    plan_pass6_decks,
 )
 from ptcg_activegraph.graph.event_store import EventStore
 from ptcg_activegraph.graph.events import EventType, new_event
@@ -46,11 +50,13 @@ def main() -> int:
     parser.add_argument("--generation", type=int, choices=[1, 2], default=1,
                         help="1 = priority single-seam plan; 2 = control + "
                              "single-seam confirmations + combination candidates")
-    parser.add_argument("--group", choices=["pass4", "pass5_replay_policy"], default=None,
+    parser.add_argument("--group",
+                        choices=["pass4", "pass5_replay_policy", "pass6"], default=None,
                         help="pass4 = replay-derived effect-resolution + chaos "
                              "scout batch; pass5_replay_policy = replay-informed "
-                             "board-aware candidates over the v2 deck "
-                             "(both override --generation)")
+                             "board-aware candidates over the v2 deck; pass6 = "
+                             "policy v3 combos + deck variants + buildable chaos "
+                             "(all override --generation)")
     parser.add_argument("--no-optional-combos", action="store_true",
                         help="generation 2: skip the optional (non-required) combos")
     parser.add_argument("--baseline-main", default="main.py")
@@ -66,6 +72,12 @@ def main() -> int:
         full_plan = plan_pass4(config)
     elif args.group == "pass5_replay_policy":
         full_plan = plan_pass5(config)
+    elif args.group == "pass6":
+        # Pass 6 = policy v3 combos + deck variants + buildable chaos. Blocked
+        # chaos (bench-bloat) is surfaced honestly via plan_pass6_chaos.
+        full_plan = (plan_pass6(config)
+                     + plan_pass6_decks(config)
+                     + plan_pass6_chaos(config))
     elif args.generation == 2:
         full_plan = plan_generation2(config, include_optional=not args.no_optional_combos)
         full_plan = full_plan[: args.limit] if args.limit and args.limit > 0 else full_plan
@@ -88,7 +100,9 @@ def main() -> int:
              "core_card_ids": p["spec"].get("core_card_ids", [])}
             for p in blocked
         ]
-        out = Path("data/experiments/pass4_blocked_candidates.json")
+        blocked_name = (f"{args.group}_blocked_candidates.json"
+                        if args.group else "pass4_blocked_candidates.json")
+        out = Path("data/experiments") / blocked_name
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(blocked_records, indent=2), encoding="utf-8")
         for rec in blocked_records:
@@ -120,6 +134,14 @@ def main() -> int:
                     runs_root=args.runs_root, card_db=card_db, ts=run_ts,
                 )
                 ev_type = EventType.PolicyVariantCreated
+            elif track == "chaos":
+                # Chaos decks are FULL replacements (explicit deck_counts); the
+                # runtime policy is the unchanged baseline main.py.
+                b = generate_chaos_candidate(
+                    spec, args.baseline_main,
+                    runs_root=args.runs_root, card_db=card_db, ts=run_ts,
+                )
+                ev_type = EventType.DeckVariantCreated
             else:
                 b = generate_deck_candidate(
                     spec, args.baseline_main, args.baseline_deck,

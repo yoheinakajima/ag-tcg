@@ -1,0 +1,577 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle in this pass.
+- Do not modify root main.py or root deck.csv.
+- Do not print or commit Kaggle credentials.
+- Do not commit official Kaggle CSV/PDF data.
+- Do not invent card IDs.
+- Keep v2 deck_energy_trim_light as the active control baseline.
+- Preserve all v1/v2 baseline archives.
+- This pass is local research, lab hardening, and candidate generation only.
+
+Current status:
+- v1 baseline scored 356.9 on Kaggle.
+- v2 deck_energy_trim_light scored 479.1 on Kaggle and is now the live control.
+- Pass 5 replay analysis found a real v2 mirror replay:
+  - episode 80374966
+  - rewards [-1, 1]
+  - statuses [DONE, DONE]
+  - 136 steps
+  - loser ended with deckCount 0 and likely lost to deck-out
+  - strongest failure tag: searched_setup_piece_then_discarded
+  - concrete failures: Secret Box discarded Snover, Mega Signal fetched Mega Abomasnow without a Snover line, Ultra Ball discarded Mega Abomasnow, late-game search/draw happened near deck-out.
+- Pass 5 generated replay-informed candidates, but none beat v2.
+- Pass 5 blocked all chaos seams as opponent-hidden. That was too conservative: opponent hand contents/deck contents are hidden, but opponent handCount, deckCount, active/bench, and status flags appear visible in the replay observation schema. Fix the telemetry contract accordingly.
+
+Goal:
+Build Pass 6:
+1. Correct the telemetry contract for opponent observable state.
+2. Fix local evaluation hangs by running each cabt game in a subprocess with a killable timeout.
+3. Add replay-derived fixture tests so policy candidates must fix known bad prompts before local evaluation.
+4. De-duplicate/control-rank candidates cleanly.
+5. Generate a stronger set of policy, deck, and chaos scout candidates.
+6. Run a local two-stage evaluation against v2.
+7. Rebuild the ActiveGraph report site.
+8. Build a dry-run queue only. No Kaggle upload.
+
+Part A — Safety and status snapshot
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+tar -tzf data/submissions/submission.tar.gz
+
+Verify root files are unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1 archive"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1 archive"
+
+Verify v2 baseline exists:
+
+ls -la data/baselines/v2_kaggle_479_1_deck_energy_trim_light
+tar -tzf data/baselines/v2_kaggle_479_1_deck_energy_trim_light/submission.tar.gz || true
+
+Fetch Kaggle status but do not submit:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass6.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass6.csv || true
+
+Record any score changes into ActiveGraph if possible.
+
+Part B — Correct telemetry contract
+
+Update:
+
+data/experiments/chaos_telemetry_contract.json
+data/experiments/chaos_candidate_requirements.md
+docs/STRATEGY_SEAMS.md
+data/reports/activegraph_strategy_report.md if generated from templates
+
+Correct principle:
+
+Opponent hidden:
+- hand contents
+- deck contents
+- face-down prize contents
+- face-down cards / unknown identities
+
+Opponent observable:
+- handCount
+- deckCount
+- active Pokémon if revealed / non-null
+- bench Pokémon if revealed / non-null
+- discard pile
+- status flags: asleep, burned, confused, paralyzed, poisoned
+- prize counts / facedown counts
+- visible logs involving opponent actions/cards when simulator exposes them
+
+Implement telemetry helpers that read from an observation:
+
+your_index = current["yourIndex"]
+opp_index = 1 - your_index
+own = current["players"][your_index]
+opp = current["players"][opp_index]
+
+Expose:
+- own_deck_count
+- own_hand_count
+- own_active_ids
+- own_bench_ids
+- own_status_flags
+- opp_deck_count
+- opp_hand_count
+- opp_active_ids
+- opp_bench_ids
+- opp_bench_count
+- opp_status_flags
+- opp_discard_ids
+- observable_state_uncertainty flags for null/face-down cards
+
+Add tests using snippets from data/replays/80374966_analysis.json or extracted fixtures:
+- opponent handCount is visible
+- opponent deckCount is visible
+- opponent bench count is visible after setup
+- opponent hand contents may be null and must not be treated as visible
+- null active/bench cards are handled as unknown, not crash
+
+This unblocks the following chaos metrics:
+- Froslass hand-size payoff: opponent handCount before attack
+- bench-bloat payoff: opponent bench count
+- mill pressure: opponent deckCount delta
+- status lock: visible opponent active status flags
+- resource pressure: opponent discard and visible energy/tool/action logs where available
+
+Part C — Fix C-level cabt hangs with subprocess game runner
+
+Pass 5 found secret_box_v2 can trigger a non-terminating cabt game that in-process SIGALRM cannot interrupt because the loop can block in C.
+
+Implement a killable subprocess-per-game runner.
+
+Requirements:
+- Each cabt game runs in a separate Python process.
+- Parent process enforces wall-clock timeout.
+- If timeout occurs, kill the child process and mark the game as timeout.
+- Timeout must not abort the whole batch.
+- Capture stdout/stderr to a per-game log.
+- Return structured result JSON:
+  - completed
+  - rewards/statuses if available
+  - timeout
+  - crash
+  - invalid_return
+  - steps if available
+  - duration_seconds
+  - candidate_id
+  - control_id
+  - seat
+  - log_path
+- Runner must work for candidate main.py/deck.csv paths and control baseline paths.
+- Existing in-process runner can remain for fast smoke, but batch evaluation should default to subprocess mode.
+- Add CLI flags:
+  - --subprocess
+  - --game-timeout-seconds
+  - --resume
+  - --only-branch
+  - --skip-existing
+- Default game timeout should be conservative, for example 90 seconds per game locally.
+- Hard reject any candidate with timeout > 0 for promotion, but keep metrics.
+
+Add tests for the timeout aggregator and result parser. Do not require actually hanging cabt in tests; use a dummy child script that sleeps.
+
+Part D — Clean control/ranking semantics
+
+Pass 5 ranking was confusing because controls appeared as candidates:
+- pass5_control_v2_anchor
+- pass4_control_v2_anchor
+- policy_conservative_baseline
+
+Fix ranking/report semantics:
+- v2 is the active control, not a candidate.
+- v1 can be shown as a legacy benchmark, not a candidate.
+- A conservative baseline copy can be used as an integrity anchor, but should be labeled "anchor" and excluded from top candidate lists.
+- Candidate rankings should list only actual candidate branches.
+- Report controls separately:
+  - active_control: v2_kaggle_479_1_deck_energy_trim_light
+  - legacy_baseline: v1
+  - integrity_anchors: any exact copies
+- Top 5 candidate list should exclude controls/anchors unless explicitly requested.
+
+Add tests:
+- ranker excludes controls from candidate top-N by default
+- anchors are never queued for submission
+- focused ranking uses v2 as control
+- queue contains only non-control candidates
+
+Part E — Replay-derived decision fixtures
+
+Create:
+
+data/replay_fixtures/
+scripts/extract_replay_fixtures.py
+scripts/test_candidate_on_fixtures.py
+
+Extract fixtures from replay 80374966 for known decision points.
+
+Required fixtures:
+
+1. step_11_secret_box_discard
+- context: discard
+- effect: Secret Box 1092
+- legal cards: Basic Water Energy, Basic Water Energy, Snover
+- expected behavior: choose energies before Snover; must not discard Snover if energy alternatives exist
+- minCount/maxCount from replay: max/min 3 if relevant; since all 3 had to be discarded in replay, mark this fixture carefully:
+  - If minCount == number of options, no alternative exists; tag as "not actually avoidable at this prompt".
+  - The real higher-level failure may be "do not play Secret Box with too few safe discards".
+  - This nuance must be captured.
+
+2. step_17_mega_signal_no_snover_line
+- context: ToHand
+- effect: Mega Signal 1145
+- only Mega Abomasnow options available
+- no Snover on board/hand
+- minCount 0 maxCount 1
+- expected behavior: choose [] if optional, or mark "fetch is low-value if no Snover line"
+- candidate should avoid fetching Mega when no Snover line exists if minCount is 0
+
+3. step_28_ultra_ball_discard
+- context: discard
+- effect: Ultra Ball 1121
+- legal includes Mega Abomasnow, energies, Petrel, Surfing Beach
+- expected behavior: discard excess Basic Water Energy before Mega Abomasnow
+
+4. step_112_low_deck_search
+- context: search/to-hand
+- deckCount <= 8
+- expected behavior: avoid optional search/draw when minCount is 0 unless it directly wins/prevents loss
+
+5. setup_active_choice
+- from early setup if both Kyogre and Snover available
+- create two labeled variants:
+  - kyogre_race_opening
+  - snover_setup_opening
+- Do not assert one is globally right; use as policy branch validation.
+
+These fixtures should test candidate decision functions without running full cabt.
+
+Important nuance:
+- If a fixture’s minCount equals option count, no policy can avoid choosing all options. The analyzer should not call that a direct action failure. It should convert it into a higher-level seam: "avoid playing the effect when safe-discard count is too low."
+- Update replay analysis if needed to reflect this nuance. Step 11 may be a Secret Box pre-play safety failure, not an effect-resolution failure, because minCount=3 and exactly 3 options forced all discards.
+
+Add tests:
+- fixture extraction works
+- minCount/maxCount nuance handled
+- candidate fixture runner can load a run-dir main.py
+- v2 baseline results are recorded
+- fixture failures do not crash
+
+Part F — Implement candidate policy variants, grounded in fixtures
+
+Generate policy candidates that are actually tested against fixtures before cabt.
+
+Policy candidates:
+
+1. policy_effect_resolution_v3
+Board-aware effect selection:
+- discard Basic Water Energy first in discard contexts
+- preserve Snover if no Snover in play/bench/hand
+- preserve Mega Abomasnow if any Snover exists or line likely
+- avoid searching Mega Abomasnow with Mega Signal if no Snover line exists and minCount is 0
+- prefer Snower/Snover only if needed for evolution line
+- prefer Kyogre when no attacker exists
+- preserve/reduce setup-piece churn
+
+2. policy_secret_box_safety_v1
+Main-menu pre-play safety:
+- Do not play Secret Box if hand has too few safe discards.
+- Safe discards: excess Basic Water Energy, duplicate noncritical cards.
+- Unsafe discards: only Snover, only Mega Abomasnow, only attacker, last setup piece.
+- If Secret Box would force discarding setup pieces, prefer another productive action or End if nothing else.
+
+3. policy_deckout_guard_v2
+Deck-count safety:
+- If own deckCount <= 8, avoid optional search/draw effects when minCount is 0.
+- If own deckCount <= 5, heavily penalize draw/search/play-from-hand that causes draw/search unless attack/win is available.
+- Preserve attack and mandatory actions.
+
+4. policy_attachment_targeting_v1
+Use visible board:
+- attach Basic Water Energy to active attacker if active is Kyogre or powered attacker and not enough energy
+- otherwise attach to next likely attacker
+- avoid attaching to low-value or already-sufficient target if better target exists
+- keep it conservative
+
+5. combo_effect_resolution__secret_box_safety
+Combine candidates 1 + 2.
+
+6. combo_effect_resolution__deckout_guard
+Combine candidates 1 + 3.
+
+7. combo_secret_box_safety__deckout_guard
+Combine candidates 2 + 3.
+
+All generated candidate main.py files must:
+- be stdlib-only
+- never import lab modules
+- preserve select=None deck return
+- validate indices
+- allow [] when minCount == 0
+- never crash outward
+- pass fixtures before cabt scout
+
+Part G — Deck variants around v2
+
+Generate a small deck-neighborhood around v2, using only confirmed card IDs and legal limits.
+
+Candidate deck variants:
+
+1. deck_v2_no_secret_box_plus_powerglass
+- Replace Secret Box 1092 with +1 Powerglass 1163 if legal.
+- Hypothesis: Secret Box creates high-risk discard/search chains; Powerglass is simpler and bot-friendly.
+
+2. deck_v2_no_secret_box_plus_mega_signal
+- Replace Secret Box 1092 with +1 Mega Signal 1145 if legal.
+- Hypothesis: simpler evolution search may outperform Secret Box if setup line is preserved.
+
+3. deck_v2_no_secret_box_plus_surfing_beach
+- Replace Secret Box 1092 with +1 Surfing Beach 1262 if legal.
+- Hypothesis: reduce unsafe ACE SPEC complexity while keeping consistency.
+
+4. deck_v2_less_petrel_plus_powerglass
+- If metadata confirms Team Rocket's Petrel is causing draw/search churn, try -1 or -2 Petrel + Powerglass/other simple cards.
+- If metadata is unclear, create a blocked candidate plan instead.
+
+5. deck_v2_energy_trim_light_confirm
+- Exact v2 deck as integrity candidate, anchor only, not queueable.
+
+Rules:
+- Do not exceed 4 copies for non-energy cards.
+- Energy may exceed 4 only if validator confirms Basic Energy.
+- Package verify + smoke every deck candidate.
+- Do not invent card IDs.
+
+Part H — Chaos candidates, now unblocked by corrected observability
+
+Add executable chaos scout candidates where card metadata confirms IDs.
+
+Prioritize only 3 chaos candidates this pass to avoid massive runtime:
+
+1. chaos_hand_avalanche_froslass_light
+Hypothesis:
+Opponent handCount is visible. Mega Froslass ex can turn large opponent hand count into direct damage.
+Use confirmed IDs only:
+- Mega Froslass ex 861
+- Snorunt 103 and/or 860 if metadata confirms evolution line
+- Harlequin 1223
+- Lucian 1237
+- Judge 1213
+- Meddling Memo 1103
+- enough Basic Water Energy
+- simple consistency/search cards if legal and confirmed
+Policy:
+- prefer Mega Froslass attack when opponent handCount >= 4
+- avoid reducing opponent hand before Froslass attack
+- use hand-reset/inflate cards only when Froslass payoff exists or setup needs it
+
+2. chaos_bench_bloat_punisher_light
+Hypothesis:
+Opponent bench is visible. Accompanying Flute can increase opponent bench size, and bench-scaling attackers can punish it.
+Use confirmed IDs only:
+- Accompanying Flute 1091
+- one payoff line among Zoroark 615, Team Rocket's Hypno 430, or another confirmed bench-scaling attacker
+- Morty's Conviction 1187 if legal/confirmed
+- Lisia's Appeal 1204 if legal/confirmed
+Policy:
+- play Accompanying Flute only if a bench-size payoff is available or likely
+- prioritize bench-scaling attacks when opponent bench count is high
+
+3. chaos_durant_basic_mill_light
+Hypothesis:
+Opponent deckCount is visible. Durant ex and simple mill/disruption can pressure brittle bots and punish overdraw.
+Use confirmed IDs only:
+- Durant ex 198
+- Crushing Hammer 1120 if legal/confirmed
+- Energy Swatter 1149 if legal/confirmed
+- Hand Trimmer 1087 if legal/confirmed
+- enough Basic Energy of correct type, based on metadata
+Policy:
+- value mill/discard effects when opponent deckCount is low
+- avoid self-deckout
+- keep turns simple
+
+If a chaos deck cannot be built legally or cannot smoke-test, mark it blocked with exact reason. Do not fabricate.
+
+Part I — Evaluation plan
+
+Use v2 as active control.
+
+Stage 0 — fixture gate:
+- run every policy candidate on replay fixtures
+- hard-reject candidates that fail obvious safety fixtures
+- deck-only candidates may skip fixture gate unless they include policy changes
+
+Stage 1 — smoke gate:
+- package verify each candidate
+- candidate smoke each candidate
+- hard-reject failures
+
+Stage 2 — scout:
+- 5 games per seat, seat-swapped, subprocess mode
+- game timeout 90 seconds
+- candidates:
+  - policy candidates
+  - deck variants
+  - up to 3 chaos candidates
+- hard reject crashes/timeouts/invalid returns for promotion, but preserve reports
+
+Stage 3 — focused:
+- top 3 non-control candidates only
+- 20 games per seat if runtime permits
+- if runtime too high, 10 games per seat and report reduced fidelity
+
+Commands may be adapted to actual script interfaces, but behavior should match:
+
+python scripts/extract_replay_fixtures.py --replay data/replays/80374966.json --out data/replay_fixtures/
+python scripts/generate_candidates.py --group pass6 --control data/baselines/v2_kaggle_479_1_deck_energy_trim_light
+python scripts/test_candidate_on_fixtures.py --group pass6
+python scripts/run_experiment_batch.py --stage pass6_scout --control data/baselines/v2_kaggle_479_1_deck_energy_trim_light --games-per-seat 5 --seat-swap --subprocess --game-timeout-seconds 90 --skip-existing
+python scripts/rank_candidates.py --stage pass6_scout
+python scripts/run_experiment_batch.py --stage pass6_focused --top 3 --control data/baselines/v2_kaggle_479_1_deck_energy_trim_light --games-per-seat 20 --seat-swap --subprocess --game-timeout-seconds 90 --skip-existing
+python scripts/rank_candidates.py --stage pass6_focused
+python scripts/build_report_site.py
+python scripts/queue_submissions.py --stage pass6_focused --dry-run
+
+No upload.
+
+Part J — Ranking and queue
+
+Ranking labels:
+- promotable
+- scout_promising
+- focused_promising
+- inconclusive
+- rejected
+- blocked
+- anchor_control
+
+Promotion gate:
+- not a control/anchor
+- package verify passed
+- smoke passed
+- fixture gate passed if applicable
+- 0 crashes
+- 0 timeouts
+- 0 invalid returns
+- completed focused games >= minimum
+- adjusted win rate beats v2 control
+- Wilson 80% lower bound > 0.50 OR clear diversity candidate label
+- hypothesis and report entry exists
+
+Queue:
+- dry-run only
+- max 1 candidate queued by default because we do not want to submit multiple at once
+- auto_submit_enabled=false
+- require_manual_approval_for_submit=true
+- upload performed=false
+
+Part K — Report site
+
+Rebuild:
+
+data/site/index.html
+data/site/candidates.html
+data/site/events.html
+data/reports/activegraph_strategy_report.md
+
+Add Pass 6 sections:
+- corrected telemetry contract
+- replay fixture findings
+- Secret Box nuance: step 11 may be a pre-play safety failure, not a discard-choice failure if minCount forced all cards
+- v2 remains live control
+- chaos candidates unblocked where observable metrics exist
+- subprocess watchdog improvement
+- top candidate interpretation
+- queue/no-upload statement
+
+Part L — Validation
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+
+Verify root unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged"
+
+Final report format:
+
+ActiveGraph Pass 6 Telemetry + Chaos + Fixture Report
+
+1. Baseline safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- active control baseline:
+- latest Kaggle status/score snapshot:
+- package verify:
+- root smoke:
+
+2. Telemetry correction
+- opponent handCount visible:
+- opponent deckCount visible:
+- opponent active/bench visible:
+- opponent status flags visible:
+- hidden fields still hidden:
+- telemetry contract files updated:
+- tests added:
+
+3. Replay fixture gate
+- fixtures extracted:
+- fixture path:
+- Secret Box step-11 nuance handled:
+- candidate fixture runner implemented:
+- fixture failures by candidate:
+
+4. Subprocess runner
+- subprocess-per-game implemented:
+- timeout kill implemented:
+- default timeout:
+- stale in-process SIGALRM issue addressed:
+- tests added:
+
+5. Candidate generation
+- policy candidates generated:
+- deck variants generated:
+- chaos candidates generated:
+- blocked candidates and exact reasons:
+- card ID corrections from metadata:
+
+6. Evaluation
+- scout candidates evaluated:
+- scout games per candidate:
+- focused candidates evaluated:
+- focused games per candidate:
+- crashes:
+- timeouts:
+- invalid returns:
+- result files:
+
+7. Ranking
+- top 5 non-control candidates:
+  1.
+  2.
+  3.
+  4.
+  5.
+- best policy candidate:
+- best deck candidate:
+- best chaos candidate:
+- promotable candidates:
+- rejected/blocked candidates:
+
+8. Submission queue
+- dry-run queue path:
+- queued candidate count:
+- queued candidate if any:
+- candidate tarball path:
+- auto-submit enabled:
+- upload performed:
+
+9. Report site
+- site path:
+- markdown report path:
+- most important new lesson:
+
+10. Manual git notes
+- files I should review:
+- files not to commit:
+- generated/ignored files:
+
+11. Next recommendation
+- one sentence only

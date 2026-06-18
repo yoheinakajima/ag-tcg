@@ -1,0 +1,32 @@
+branch_id: chaos_v6_durant_mill
+seam_id: chaos.mill_resource_destruction
+family: archetype
+kind: chaos
+archetype: chaos
+hypothesis: Durant ex is a Basic {G} attacker/mill engine; pair its Vengeful Crush
+  with energy/hand denial so brittle bots lose key pieces or deck out. Energy-coherent
+  {G} build, all confirmed ids.
+parent: v1_kaggle_349_8
+created_at: '2026-06-18T02:36:10'
+run_dir: experiments/runs_pass6/20260618_023610_13_chaos_v6_durant_mill
+policy_overrides: {}
+policy_diff: {}
+deck_diff: {}
+deck_summary:
+  size: 60
+  unique: 9
+  counts:
+    '198': 4
+    '1121': 4
+    '1120': 4
+    '1149': 4
+    '1087': 4
+    '1103': 4
+    '1213': 4
+    '1197': 4
+    '1': 28
+  warnings:
+  - card 1 appears 28 times (> 4)
+notes: []
+testable: true
+blocked_reason: ''

@@ -1,0 +1,48 @@
+branch_id: policy_attachment_targeting_v1
+seam_id: policy.energy_attachment_targeting
+family: combo
+kind: combo
+archetype: tempo_control
+hypothesis: 'Attachment targeting: bias energy-attachment prompts toward attaching
+  to an active/attacker rather than passing, and prefer Basic {W} Energy (3) onto
+  the board. Keyword/option-type re-weighting only -- precise ''attach to next-turn
+  attacker'' needs board state the option dict does not carry, so this is an approximation.'
+parent: v1_kaggle_349_8
+created_at: '2026-06-18T01:31:20'
+run_dir: experiments/runs/20260618_013120_07_policy_attachment_targeting_v1
+policy_overrides: &id001
+  option_type_scores:
+    8: 40
+  positive:
+    attach: 90
+    energy: 70
+    active: 35
+policy_diff: *id001
+deck_diff:
+  '3':
+    name: Basic {W} Energy
+    from: 33
+    to: 29
+    delta: -4
+  '721':
+    name: Kyogre
+    from: 2
+    to: 4
+    delta: 2
+  '1121':
+    name: Ultra Ball
+    from: 2
+    to: 4
+    delta: 2
+deck_summary:
+  size: 60
+  unique: 11
+  warnings:
+  - card 3 appears 29 times (> 4)
+  policy_refs: []
+  deck_ref: deck_energy_trim_light
+  board_aware: false
+notes:
+- combo of  x deck_energy_trim_light
+testable: true
+blocked_reason: ''

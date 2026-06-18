@@ -1,0 +1,65 @@
+branch_id: policy_effect_resolution_v3
+seam_id: policy.effect_resolution_targeting
+family: combo
+kind: combo
+archetype: consistency_engine
+hypothesis: 'Effect resolution v3 = Pass-5 board-aware re-weighting (protect Snover
+  722 / Mega Abomasnow ex 723 / Kyogre 721 on discard, discard spare Basic {W} Energy
+  3, fetch the missing line, Snover before Mega) PLUS a decline layer: when a Mega
+  Signal search offers only Mega Abomasnow ex (723) and no Snover (722) is on board,
+  decline rather than strand the evolution line (the step-17 replay failure).'
+parent: v1_kaggle_349_8
+created_at: '2026-06-18T02:36:10'
+run_dir: experiments/runs_pass6/20260618_023610_01_policy_effect_resolution_v3
+policy_overrides: &id001
+  p5_rules:
+    discard_avoid_ids:
+    - 722
+    - 723
+    - 721
+    discard_avoid_weight: -300
+    discard_prefer_ids:
+    - 3
+    discard_prefer_weight: 150
+    search_prefer_ids:
+    - 722
+    - 723
+    - 721
+    - 1121
+    - 1145
+    - 1092
+    search_prefer_weight: 90
+    search_snover_before_mega: true
+    snover_first_bonus: 70
+    mega_without_snover_penalty: -70
+  p6_rules:
+    decline_mega_signal_no_snover: true
+policy_diff: *id001
+deck_diff:
+  '3':
+    name: Basic {W} Energy
+    from: 33
+    to: 29
+    delta: -4
+  '721':
+    name: Kyogre
+    from: 2
+    to: 4
+    delta: 2
+  '1121':
+    name: Ultra Ball
+    from: 2
+    to: 4
+    delta: 2
+deck_summary:
+  size: 60
+  unique: 11
+  warnings:
+  - card 3 appears 29 times (> 4)
+  policy_refs: []
+  deck_ref: deck_energy_trim_light
+  board_aware: true
+notes:
+- board-aware p5 policy over deck_energy_trim_light
+testable: true
+blocked_reason: ''

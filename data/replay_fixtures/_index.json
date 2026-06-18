@@ -1,0 +1,73 @@
+[
+  {
+    "id": "step11_secret_box_discard",
+    "context_name": "discard",
+    "effect_card_id": 1092,
+    "min_count": 3,
+    "max_count": 3,
+    "n_options": 3,
+    "option_cards": [
+      3,
+      3,
+      722
+    ],
+    "preference_kind": "forced_all"
+  },
+  {
+    "id": "step17_mega_signal_search",
+    "context_name": "search_to_hand",
+    "effect_card_id": 1145,
+    "min_count": 0,
+    "max_count": 1,
+    "n_options": 3,
+    "option_cards": [
+      723,
+      723,
+      723
+    ],
+    "preference_kind": "decline"
+  },
+  {
+    "id": "step28_ultra_ball_discard",
+    "context_name": "discard",
+    "effect_card_id": 1121,
+    "min_count": 2,
+    "max_count": 2,
+    "n_options": 6,
+    "option_cards": [
+      723,
+      3,
+      1219,
+      3,
+      1262,
+      3
+    ],
+    "preference_kind": "avoid_cards"
+  },
+  {
+    "id": "step112_low_deck_search",
+    "context_name": "search_to_hand",
+    "effect_card_id": 1219,
+    "min_count": 0,
+    "max_count": 1,
+    "n_options": 1,
+    "option_cards": [
+      1227
+    ],
+    "preference_kind": "decline"
+  },
+  {
+    "id": "setup_active_choice",
+    "context_name": "choose_active",
+    "effect_card_id": null,
+    "min_count": 1,
+    "max_count": 1,
+    "n_options": 3,
+    "option_cards": [
+      722,
+      722,
+      721
+    ],
+    "preference_kind": "prefer_cards"
+  }
+]

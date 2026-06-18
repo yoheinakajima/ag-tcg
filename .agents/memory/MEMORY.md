@@ -1,2 +1,5 @@
-- [cabt eval harness quirks](cabt-eval-harness.md) — cabt games can hang in C-level env.run; SIGALRM watchdog can't kill them; background procs die on tool return.
-- [report honesty contract](report-honesty-contract.md) — report.py sections must degrade to "uncertain" on missing artifacts, never assert fabricated conclusions.
+- [Replay fixture gate](replay-fixture-gate.md) — Pass6 Stage0 grades candidates on hard legality + advisory preference; v2 fails 3 prefs by design (the v3 targets).
+- [Policy override layers](policy-override-layers.md) — p5 block only re-weights scores (can't skip); p6 block wraps _embedded_agent to decline ([]) when minCount==0; fixtures hit embedded path because root agent.py reads only "options" plural.
+- [Card DB energy detection](card-db-energy-detection.md) — card_db.basic_features reports is_energy=False for ALL basic energy ids; copy-limit checks must detect basic energy by NAME, not is_energy; cabt enforces 4-per-NAME.
+- [Subprocess stdlib shadowing](subprocess-stdlib-shadowing.md) — a package child run as a script puts its dir on sys.path[0], shadowing stdlib (queue.py); strip script dir or every game "crashes".
+- [In-process eval C-crash](in-process-eval-c-crash.md) — cabt batch MUST use per-game subprocess; in-process dies silently (no traceback) when one game aborts at C level; accept ~15s/game cold start.

@@ -22,6 +22,7 @@ from ptcg_activegraph.experiments import (
     queue as queue_mod,
     ranker,
     report,
+    telemetry,
 )
 
 REPO = Path(__file__).resolve().parent.parent
@@ -801,3 +802,789 @@ def test_pass4_candidate_tarball_is_main_and_deck_only(tmp_path):
     )
     members = sorted(inspect_tarball(out)["members"])
     assert members == ["deck.csv", "main.py"]
+
+
+# --------------------------------------------------------------------------
+# Pass 6 (B): corrected opponent-observability telemetry contract
+# --------------------------------------------------------------------------
+
+def _synthetic_obs(your_index=0):
+    """Mirror the verified cabt schema: own hand populated, opponent hand null,
+    but opponent counts/board/discard/status observable (see replay 80374966)."""
+    me = {
+        "active": [{"id": 721, "playerIndex": your_index, "serial": 1}],
+        "bench": [{"id": 721, "playerIndex": your_index, "serial": 2},
+                  {"id": 722, "playerIndex": your_index, "serial": 3}],
+        "benchMax": 5,
+        "deckCount": 36,
+        "discard": [{"id": 3, "playerIndex": your_index, "serial": 9}],
+        "hand": [{"id": 1219, "playerIndex": your_index, "serial": 55},
+                 {"id": 3, "playerIndex": your_index, "serial": 7}],
+        "handCount": 6,
+        "prize": [None, None, None, None, None],
+        "asleep": False, "burned": False, "confused": False,
+        "paralyzed": False, "poisoned": False,
+    }
+    opp = {
+        "active": [{"id": 722, "playerIndex": 1 - your_index, "serial": 40}],
+        "bench": [{"id": 721, "playerIndex": 1 - your_index, "serial": 41},
+                  {"id": 722, "playerIndex": 1 - your_index, "serial": 42}],
+        "benchMax": 5,
+        "deckCount": 31,
+        "discard": [{"id": 1121, "playerIndex": 1 - your_index, "serial": 5}],
+        "hand": None,            # opponent hand CONTENTS hidden
+        "handCount": 15,         # but the COUNT is observable
+        "prize": [None, None, None, None, None],
+        "asleep": False, "burned": True, "confused": False,
+        "paralyzed": False, "poisoned": False,
+    }
+    players = [me, opp] if your_index == 0 else [opp, me]
+    return {"current": {"yourIndex": your_index, "players": players}}
+
+
+def test_telemetry_reads_own_contents_and_opponent_counts():
+    v = telemetry.read_observation(_synthetic_obs(your_index=0))
+    assert v.valid
+    # Own contents fully observable.
+    assert v.own_hand_count == 6
+    assert v.own_deck_count == 36
+    assert v.own_active_ids == [721]
+    assert sorted(v.own_bench_ids) == [721, 722]
+    # Opponent COUNTS + revealed BOARD + DISCARD + STATUS observable.
+    assert v.opp_hand_count == 15
+    assert v.opp_deck_count == 31
+    assert v.opp_active_ids == [722]
+    assert v.opp_bench_count == 2
+    assert v.opp_discard_ids == [1121]
+    assert v.opp_prize_count == 5
+    assert v.opp_status_flags["burned"] is True
+
+
+def test_telemetry_marks_opponent_contents_hidden():
+    v = telemetry.read_observation(_synthetic_obs(your_index=0))
+    # The opponent hand/deck/prize CONTENTS must be flagged hidden, never invented.
+    assert v.uncertainty["opp_hand_contents_hidden"] is True
+    assert v.uncertainty["opp_deck_contents_hidden"] is True
+    assert v.uncertainty["opp_prize_contents_hidden"] is True
+
+
+def test_telemetry_convenience_accessors_match_view():
+    obs = _synthetic_obs(your_index=1)
+    assert telemetry.opp_hand_count(obs) == 15
+    assert telemetry.opp_bench_count(obs) == 2
+    assert telemetry.opp_deck_count(obs) == 31
+    assert telemetry.opp_status_flags(obs)["burned"] is True
+
+
+def test_telemetry_robust_to_malformed_input():
+    for bad in (None, {}, {"current": None}, {"current": {"players": None}},
+                {"current": {"yourIndex": 5, "players": [{}, {}]}}, 42, "x"):
+        v = telemetry.read_observation(bad)
+        assert v.valid is False
+
+
+def test_telemetry_facedown_board_entries_counted_not_invented():
+    obs = _synthetic_obs(your_index=0)
+    # Inject a face-down (null-id) bench entry on the opponent.
+    obs["current"]["players"][1]["bench"].append(None)
+    obs["current"]["players"][1]["bench"].append({"playerIndex": 1})  # no id
+    v = telemetry.read_observation(obs)
+    # Revealed ids stay 2; the 2 unrevealed entries are counted, not invented.
+    assert v.opp_bench_ids == [721, 722]
+    assert v.opp_bench_count == 4
+    assert v.uncertainty["opp_bench_facedown"] == 2
+
+
+def test_telemetry_contract_json_marks_triggers_observable():
+    contract = json.loads(
+        (REPO / "data" / "experiments" / "chaos_telemetry_contract.json").read_text()
+    )
+    assert contract["pass"] == 6
+    by_id = {s["seam_id"]: s for s in contract["seams"]}
+    # Seams whose trigger is a pure opponent count/board/status are observable now.
+    for sid in ("chaos.hand_avalanche_froslass",
+                "chaos.bench_bloat_punisher",
+                "chaos.mill_resource_destruction"):
+        assert by_id[sid]["policy_trigger_observable"] is True
+        assert by_id[sid]["telemetry_availability"] == "available"
+    # All seams remain enabled=False until a legal decklist passes the build gate.
+    assert all(s["enabled"] is False for s in contract["seams"])
+
+
+# --------------------------------------------------------------------------
+# Pass 6 (C): killable subprocess-per-game runner (dummy child, no real cabt)
+# --------------------------------------------------------------------------
+
+from ptcg_activegraph.experiments import runner as runner_mod  # noqa: E402
+
+
+def _write_child(tmp_path, body):
+    p = tmp_path / "dummy_child.py"
+    p.write_text("import json, sys\n" + body, encoding="utf-8")
+    return str(p)
+
+
+def test_subprocess_runner_parses_child_result(tmp_path):
+    # Child echoes a completed-win result derived from the spec.
+    child = _write_child(tmp_path, (
+        "spec = json.loads(open(sys.argv[1]).read())\n"
+        "res = {'candidate_seat': spec['candidate_seat'], 'completed': True,\n"
+        "       'candidate_won': True, 'draw': False, 'steps': 42, 'error': None,\n"
+        "       'timeout': False, 'decisions': 7}\n"
+        "open(sys.argv[2], 'w').write(json.dumps(res))\n"
+    ))
+    r = runner_mod.run_one_game_subprocess(
+        "ctrl.py", [1, 2], "cand.py", [3, 4],
+        candidate_seat=1, timeout_seconds=20, child_script=child,
+    )
+    assert r["completed"] is True
+    assert r["candidate_won"] is True
+    assert r["steps"] == 42
+    assert r["candidate_seat"] == 1
+    assert r["decisions"] == 7
+    assert r.get("timeout") in (False, None)
+
+
+def test_subprocess_runner_kills_hung_child(tmp_path, monkeypatch):
+    # Child IGNORES SIGTERM and sleeps far past the timeout, simulating a game
+    # wedged in cabt's C-level env.run. The parent must escalate to SIGKILL.
+    monkeypatch.setattr(runner_mod, "_KILL_GRACE_SECONDS", 1)
+    child = _write_child(tmp_path, (
+        "import signal, time\n"
+        "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+        "time.sleep(60)\n"
+    ))
+    import time as _t
+    t0 = _t.time()
+    r = runner_mod.run_one_game_subprocess(
+        "ctrl.py", [1], "cand.py", [2],
+        candidate_seat=0, timeout_seconds=2, child_script=child,
+    )
+    elapsed = _t.time() - t0
+    assert r["timeout"] is True
+    assert r["completed"] is False
+    assert "timeout" in (r["error"] or "").lower()
+    # 2s budget + 1s SIGTERM grace + SIGKILL: must be reaped quickly, not 60s.
+    assert elapsed < 15
+
+
+def test_subprocess_runner_records_nonzero_exit(tmp_path):
+    child = _write_child(tmp_path, "sys.exit(3)\n")
+    r = runner_mod.run_one_game_subprocess(
+        "ctrl.py", [1], "cand.py", [2],
+        candidate_seat=0, timeout_seconds=20, child_script=child,
+    )
+    assert r["completed"] is False
+    assert r["timeout"] is False
+    assert "code 3" in (r["error"] or "")
+
+
+def test_subprocess_runner_handles_missing_output(tmp_path):
+    # Child exits 0 but writes no result file: recorded as an error, not a crash.
+    child = _write_child(tmp_path, "pass\n")
+    r = runner_mod.run_one_game_subprocess(
+        "ctrl.py", [1], "cand.py", [2],
+        candidate_seat=0, timeout_seconds=20, child_script=child,
+    )
+    assert r["completed"] is False
+    assert "no parseable result" in (r["error"] or "")
+
+
+# --------------------------------------------------------------------------
+# Pass 6 (D): clean control / ranking semantics (roles + exclusions)
+# --------------------------------------------------------------------------
+
+def _d_metric(branch_id, kind, wins, games, **extra):
+    losses = games - wins
+    m = {
+        "branch_id": branch_id, "kind": kind, "seam_id": extra.get("seam_id", "x.y"),
+        "package_ok": True, "smoke_ok": True, "crashes": 0, "timeouts": 0,
+        "fallbacks": 0, "games_completed": games, "wins": wins, "losses": losses,
+        "draws": 0, "win_rate": wins / games if games else None,
+        "adjusted_win_rate": wins / games if games else None,
+        "attack_rate": 0.5, "pass_rate": 0.1, "avg_steps": 80.0,
+        "stage": extra.get("stage", "pass6_focused"),
+    }
+    m.update({k: v for k, v in extra.items() if k not in ("seam_id", "stage")})
+    return m
+
+
+def test_control_role_classification():
+    assert ranker.control_role("pass6_control_v2_anchor") == ranker.ROLE_ACTIVE_CONTROL
+    assert ranker.control_role("pass5_control_v2_anchor") == ranker.ROLE_ACTIVE_CONTROL
+    assert ranker.control_role("policy_conservative_baseline") == ranker.ROLE_LEGACY_BASELINE
+    assert ranker.control_role("x", kind="control") == ranker.ROLE_LEGACY_BASELINE
+    assert ranker.control_role("deck_baseline_consistency") == ranker.ROLE_INTEGRITY_ANCHOR
+    # A real candidate whose name merely contains 'control' is NOT a control.
+    assert ranker.control_role("policy_tempo_control_v3") is None
+    assert ranker.control_role("policy_effect_resolution_v3") is None
+
+
+def test_controls_excluded_from_candidate_topn_and_get_anchor_label(tmp_path):
+    store = ranker.EventStore(tmp_path / "ev.jsonl")
+    metrics = [
+        _d_metric("pass6_control_v2_anchor", "combo", 12, 24),   # active control
+        _d_metric("policy_conservative_baseline", "control", 9, 24),  # legacy
+        _d_metric("deck_baseline_consistency", "deck", 12, 24),  # integrity anchor
+        _d_metric("policy_effect_resolution_v3", "policy", 21, 24, seam_id="effect.res"),
+        _d_metric("deck_no_secret_box_powerglass", "deck", 18, 24, seam_id="deck.box"),
+    ]
+    ranked = ranker.rank(metrics, event_store=store, min_games=20)
+    by_id = {e["branch_id"]: e for e in ranked}
+    # Controls/anchors carry the anchor label and have no candidate_rank.
+    for cid in ("pass6_control_v2_anchor", "policy_conservative_baseline",
+                "deck_baseline_consistency"):
+        assert by_id[cid]["label"] == ranker.LABEL_ANCHOR
+        assert by_id[cid]["is_control"] is True
+        assert by_id[cid]["candidate_rank"] is None
+        assert by_id[cid]["promotable"] is False
+    # Real candidates ARE numbered as candidates.
+    assert by_id["policy_effect_resolution_v3"]["candidate_rank"] == 1
+    assert by_id["deck_no_secret_box_powerglass"]["is_control"] is False
+
+
+def test_focused_gate_uses_v2_active_control_not_v1():
+    # v2 active control wins 75%, v1 legacy wins 30%. A candidate at 60% beats v1
+    # but NOT the v2 active control, so it must not be promotable.
+    metrics = [
+        _d_metric("pass6_control_v2_anchor", "combo", 18, 24),       # adj 0.75
+        _d_metric("policy_conservative_baseline", "control", 7, 24),  # adj ~0.29
+        _d_metric("policy_weak_edge_v3", "policy", 15, 24, seam_id="a.b"),  # adj 0.625
+    ]
+    adj = ranker._control_adjusted_win_rate(metrics)
+    assert adj == pytest.approx(0.75, abs=1e-6)  # prefers the v2 active control
+    ranked = ranker.rank(metrics, event_store=ranker.EventStore(), min_games=20)
+    cand = next(e for e in ranked if e["branch_id"] == "policy_weak_edge_v3")
+    assert cand["promotable"] is False  # 0.625 does not beat 0.75
+
+
+def test_queue_never_selects_controls_or_anchors():
+    ranked = [
+        {"branch_id": "pass6_control_v2_anchor", "kind": "combo",
+         "label": ranker.LABEL_ANCHOR, "rejected": False, "score": 999.0,
+         "is_control": True, "role": ranker.ROLE_ACTIVE_CONTROL},
+        {"branch_id": "policy_conservative_baseline", "kind": "control",
+         "label": ranker.LABEL_ANCHOR, "rejected": False, "score": 900.0,
+         "is_control": True, "role": ranker.ROLE_LEGACY_BASELINE},
+        {"branch_id": "policy_effect_resolution_v3", "kind": "policy",
+         "label": "promotable", "rejected": False, "score": 800.0,
+         "is_control": False, "role": None},
+    ]
+    selected = queue_mod.select_for_queue(ranked, max_per_day=5)
+    ids = [e["branch_id"] for e in selected]
+    assert ids == ["policy_effect_resolution_v3"]
+    assert not queue_mod.is_promotable(ranked[0])
+    assert not queue_mod.is_promotable(ranked[1])
+    assert queue_mod.is_promotable(ranked[2])
+
+
+# --------------------------------------------------------------------------
+# Part E: replay-derived decision fixtures (extract + candidate gate)
+# --------------------------------------------------------------------------
+
+import importlib.util as _ilu  # noqa: E402
+
+_SCRIPTS = REPO / "scripts"
+
+
+def _load_script(name: str):
+    """Import a scripts/<name>.py module in isolation (adds scripts/ to path)."""
+    import sys
+    if str(_SCRIPTS) not in sys.path:
+        sys.path.insert(0, str(_SCRIPTS))
+    path = _SCRIPTS / f"{name}.py"
+    spec = _ilu.spec_from_file_location(f"_script_{name}", path)
+    mod = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _extract_to(tmp_path):
+    extract = _load_script("extract_replay_fixtures")
+    out = tmp_path / "fixtures"
+    written = extract.extract_fixtures(extract.DEFAULT_REPLAY, str(out))
+    return extract, out, written
+
+
+def test_extract_produces_five_named_fixtures(tmp_path):
+    _extract, out, written = _extract_to(tmp_path)
+    ids = {f["id"] for f in written}
+    assert ids == {
+        "step11_secret_box_discard",
+        "step17_mega_signal_search",
+        "step28_ultra_ball_discard",
+        "step112_low_deck_search",
+        "setup_active_choice",
+    }
+    # Every fixture carries a real observation prompt and an index file exists.
+    for f in written:
+        assert isinstance(f["observation"], dict)
+        assert (out / f"{f['id']}.json").exists()
+    assert (out / "_index.json").exists()
+
+
+def test_fixture_card_ids_match_confirmed_schema(tmp_path):
+    _extract, _out, written = _extract_to(tmp_path)
+    by_id = {f["id"]: f for f in written}
+    # Resolved option cards verified against replay 80374966 (no invented ids).
+    assert by_id["step11_secret_box_discard"]["option_cards"] == [3, 3, 722]
+    assert by_id["step17_mega_signal_search"]["option_cards"] == [723, 723, 723]
+    assert by_id["step28_ultra_ball_discard"]["option_cards"] == [723, 3, 1219, 3, 1262, 3]
+    assert by_id["step112_low_deck_search"]["option_cards"] == [1227]
+    assert by_id["setup_active_choice"]["option_cards"] == [722, 722, 721]
+    # Effect cards are read from select.effect.id where present.
+    assert by_id["step11_secret_box_discard"]["effect_card_id"] == 1092
+    assert by_id["step28_ultra_ball_discard"]["effect_card_id"] == 1121
+
+
+def test_min_count_equals_options_nuance_is_captured(tmp_path):
+    """step11 secret box: minCount == maxCount == n_options -> forced discard."""
+    _extract, _out, written = _extract_to(tmp_path)
+    fx = next(f for f in written if f["id"] == "step11_secret_box_discard")
+    assert fx["min_count"] == fx["n_options"] == 3
+    assert fx["max_count"] == 3
+    assert fx["check"]["preference"]["kind"] == "forced_all"
+    # The forced set includes a setup piece (Snover 722) that cannot be spared.
+    assert 722 in fx["option_cards"]
+
+
+def test_legality_grader_respects_counts():
+    runner = _load_script("test_candidate_on_fixtures")
+    # min==max==n: only selecting all 3 is legal.
+    assert runner.check_legality([0, 1, 2], 3, 3, 3)[0] is True
+    assert runner.check_legality([2], 3, 3, 3)[0] is False           # too few
+    assert runner.check_legality([0, 1, 2, 2], 3, 3, 3)[0] is False  # duplicate
+    assert runner.check_legality([3], 3, 3, 3)[0] is False           # out of range
+    assert runner.check_legality([True], 3, 1, 1)[0] is False        # bool not int
+    # decline is legal when minCount 0.
+    assert runner.check_legality([], 3, 0, 1)[0] is True
+
+
+def test_preference_graders():
+    runner = _load_script("test_candidate_on_fixtures")
+    # decline: empty passes, a pick fails (minCount 0).
+    fx_decline = {"min_count": 0, "option_cards": [723, 723, 723],
+                  "check": {"preference": {"kind": "decline"}}}
+    assert runner.evaluate_preference([], fx_decline)["result"] == "pass"
+    assert runner.evaluate_preference([0], fx_decline)["result"] == "fail"
+    # avoid_cards: selecting a flagged setup piece fails.
+    fx_avoid = {"min_count": 2, "option_cards": [723, 3, 1219, 3, 1262, 3],
+                "check": {"preference": {"kind": "avoid_cards", "cards": [721, 722, 723]}}}
+    assert runner.evaluate_preference([1, 3], fx_avoid)["result"] == "pass"
+    assert runner.evaluate_preference([0, 1], fx_avoid)["result"] == "fail"
+    # prefer_cards: at least one preferred card passes.
+    fx_prefer = {"min_count": 1, "option_cards": [722, 722, 721],
+                 "check": {"preference": {"kind": "prefer_cards", "cards": [721, 722, 723]}}}
+    assert runner.evaluate_preference([0], fx_prefer)["result"] == "pass"
+    # forced_all is always na.
+    fx_forced = {"min_count": 3, "option_cards": [3, 3, 722],
+                 "check": {"preference": {"kind": "forced_all"}}}
+    assert runner.evaluate_preference([0, 1, 2], fx_forced)["result"] == "na"
+
+
+def test_candidate_runner_loads_run_dir_main_and_records_v2(tmp_path):
+    """The runner loads a real run-dir main.py and records its behaviour."""
+    _extract, out, _written = _extract_to(tmp_path)
+    runner = _load_script("test_candidate_on_fixtures")
+    v2_dir = REPO / "data" / "baselines" / "v2_kaggle_479_1_deck_energy_trim_light"
+    result = runner.evaluate_candidate_on_fixtures(v2_dir, out)
+    assert result["loaded"] is True
+    assert result["load_error"] is None
+    assert result["n_fixtures"] == 5
+    # v2 produces a legal action on every fixture (hard gate passes).
+    assert result["legality_gate"] is True
+    for fx in result["fixtures"]:
+        assert fx["legal"] is True
+    # v2 is the *baseline*: it is expected to miss some advisory preferences
+    # (e.g. it fetches Mega with no Snover line / discards a setup piece).
+    by_id = {fx["id"]: fx for fx in result["fixtures"]}
+    assert by_id["step17_mega_signal_search"]["preference"]["result"] == "fail"
+    assert by_id["setup_active_choice"]["preference"]["result"] == "pass"
+    assert by_id["step11_secret_box_discard"]["preference"]["result"] == "na"
+
+
+def test_candidate_runner_handles_missing_and_crashing_agent(tmp_path):
+    _extract, out, _written = _extract_to(tmp_path)
+    runner = _load_script("test_candidate_on_fixtures")
+    # Missing main.py: reported, not raised.
+    empty = tmp_path / "empty_candidate"
+    empty.mkdir()
+    res_missing = runner.evaluate_candidate_on_fixtures(empty, out)
+    assert res_missing["loaded"] is False
+    assert "no main.py" in res_missing["load_error"]
+    assert res_missing["legality_gate"] is False
+
+    # A main.py whose agent always raises: every fixture recorded as a failure,
+    # the run does not crash.
+    crashing = tmp_path / "crashing_candidate"
+    crashing.mkdir()
+    (crashing / "main.py").write_text(
+        "def agent(obs):\n    raise RuntimeError('boom')\n", encoding="utf-8"
+    )
+    res_crash = runner.evaluate_candidate_on_fixtures(crashing, out)
+    assert res_crash["loaded"] is True
+    assert res_crash["legality_gate"] is False
+    assert all(fx["error"] for fx in res_crash["fixtures"])
+    assert all(fx["legal"] is False for fx in res_crash["fixtures"])
+
+
+# --------------------------------------------------------------------------
+# Pass 6 — policy v3 (board-aware scoring + decline layer) + fixture gate
+# --------------------------------------------------------------------------
+
+_PASS6_IDS = {
+    "pass6_control_v2_anchor",
+    "policy_effect_resolution_v3",
+    "policy_secret_box_safety_v1",
+    "policy_deckout_guard_v2",
+    "policy_attachment_targeting_v1",
+    "combo_effect_resolution_v3__deckout_guard_v2",
+    "combo_effect_resolution_v3__secret_box_safety",
+    "combo_full_v3",
+}
+
+
+def test_plan_pass6_anchor_first_all_specs_generation_six():
+    cfg = config_mod.load_config()
+    plan = generator.plan_pass6(cfg)
+    assert {p["branch_id"] for p in plan} == _PASS6_IDS
+    # The v2 control anchor is always first; everything is generation 6, testable.
+    assert plan[0]["branch_id"] == "pass6_control_v2_anchor"
+    assert all(p["generation"] == 6 for p in plan)
+    assert all(p["testable"] for p in plan)
+
+
+def test_pass6_specs_are_v2_deck_combos_with_valid_rule_shapes():
+    for spec in generator.PASS6_COMBO_SPECS:
+        assert spec["deck_ref"] == generator._V2_DECK_REF
+        assert spec.get("policy_refs") == []
+        assert spec["hypothesis"]
+        # decline rules, when present, only use the two confirmed knobs.
+        for k in spec.get("p6_rules", {}):
+            assert k in {"deckout_decline_threshold", "decline_mega_signal_no_snover"}
+
+
+def test_pass6_anchor_is_pure_v2_control(tmp_path):
+    spec = next(s for s in generator.PASS6_COMBO_SPECS
+                if s["branch_id"] == "pass6_control_v2_anchor")
+    b = generator.generate_combo_candidate(
+        spec, BASELINE_MAIN, BASELINE_DECK, runs_root=tmp_path, ts="p6anchor"
+    )
+    cand_src = _read(Path(b.run_dir) / "main.py")
+    # No scoring mutation, no p5/p6 blocks: behaviour is the pure v2 mirror.
+    assert ".update(" not in cand_src
+    assert "PASS5 BOARD-AWARE OVERRIDE" not in cand_src
+    assert "PASS6 DECLINE OVERRIDE" not in cand_src
+    from ptcg_activegraph.decks.deck_io import load_deck
+    counts = Counter(load_deck(Path(b.run_dir) / "deck.csv"))
+    assert counts[721] == 4 and counts[1121] == 4
+
+
+def test_pass6_decline_candidate_injects_p6_block_and_records_rules(tmp_path):
+    before_main, before_deck = _read(BASELINE_MAIN), _read(BASELINE_DECK)
+    spec = next(s for s in generator.PASS6_COMBO_SPECS
+                if s["branch_id"] == "policy_effect_resolution_v3")
+    b = generator.generate_combo_candidate(
+        spec, BASELINE_MAIN, BASELINE_DECK, runs_root=tmp_path, ts="p6er3"
+    )
+    # Root files untouched.
+    assert _read(BASELINE_MAIN) == before_main
+    assert _read(BASELINE_DECK) == before_deck
+    cand_src = _read(Path(b.run_dir) / "main.py")
+    assert "PASS6 DECLINE OVERRIDE" in cand_src
+    assert "_embedded_agent = _p6_embedded" in cand_src
+    # The recorded policy carries both the p5 scoring rules and the p6 decline rules.
+    assert b.policy_overrides["p6_rules"]["decline_mega_signal_no_snover"] is True
+    assert b.policy_overrides["p5_rules"]["discard_avoid_ids"] == [722, 723, 721]
+
+
+def test_pass6_attachment_targeting_applies_inline_overrides(tmp_path):
+    spec = next(s for s in generator.PASS6_COMBO_SPECS
+                if s["branch_id"] == "policy_attachment_targeting_v1")
+    b = generator.generate_combo_candidate(
+        spec, BASELINE_MAIN, BASELINE_DECK, runs_root=tmp_path, ts="p6att"
+    )
+    cand_src = _read(Path(b.run_dir) / "main.py")
+    # Inline keyword/option-type overrides (no policy_refs) must still render.
+    assert "_OPTION_TYPE_SCORES.update(" in cand_src
+    assert "_POSITIVE.update(" in cand_src
+    # It carries no decline layer (different seam).
+    assert "PASS6 DECLINE OVERRIDE" not in cand_src
+
+
+def test_pass6_candidates_pass_fixture_legality_gate(tmp_path):
+    runner = _load_script("test_candidate_on_fixtures")
+    _extract, out, _written = _extract_to(tmp_path)
+    cfg = config_mod.load_config()
+    runs = tmp_path / "runs"
+    for item in generator.plan_pass6(cfg):
+        spec = item["spec"]
+        b = generator.generate_combo_candidate(
+            spec, BASELINE_MAIN, BASELINE_DECK, runs_root=runs, ts="gate"
+        )
+        res = runner.evaluate_candidate_on_fixtures(b.run_dir, out)
+        assert res["loaded"] is True, spec["branch_id"]
+        # HARD gate: every Pass-6 candidate must be legal on every fixture.
+        assert res["legality_gate"] is True, spec["branch_id"]
+        for fx in res["fixtures"]:
+            assert fx["legal"] is True, (spec["branch_id"], fx["id"])
+
+
+def test_pass6_decline_layer_flips_replay_preferences(tmp_path):
+    """The decline layer fixes the step-17 / step-112 failures the v2 anchor misses."""
+    runner = _load_script("test_candidate_on_fixtures")
+    _extract, out, _written = _extract_to(tmp_path)
+    runs = tmp_path / "runs"
+
+    def _grade(branch_id):
+        spec = next(s for s in generator.PASS6_COMBO_SPECS
+                    if s["branch_id"] == branch_id)
+        b = generator.generate_combo_candidate(
+            spec, BASELINE_MAIN, BASELINE_DECK, runs_root=runs, ts=branch_id[:6]
+        )
+        res = runner.evaluate_candidate_on_fixtures(b.run_dir, out)
+        return {fx["id"]: fx["preference"]["result"] for fx in res["fixtures"]}
+
+    # The v2 anchor reproduces the baseline failures.
+    anchor = _grade("pass6_control_v2_anchor")
+    assert anchor["step17_mega_signal_search"] == "fail"
+    assert anchor["step112_low_deck_search"] == "fail"
+
+    # effect_resolution_v3 declines the dead Mega fetch (step 17).
+    er3 = _grade("policy_effect_resolution_v3")
+    assert er3["step17_mega_signal_search"] == "pass"
+    assert er3["step28_ultra_ball_discard"] == "pass"
+
+    # deckout_guard_v2 declines the search-into-deckout (step 112).
+    dg2 = _grade("policy_deckout_guard_v2")
+    assert dg2["step112_low_deck_search"] == "pass"
+
+    # The full combo flips every gradable preference (forced step 11 stays na).
+    full = _grade("combo_full_v3")
+    assert full["step17_mega_signal_search"] == "pass"
+    assert full["step112_low_deck_search"] == "pass"
+    assert full["step28_ultra_ball_discard"] == "pass"
+    assert full["setup_active_choice"] == "pass"
+    assert full["step11_secret_box_discard"] == "na"
+
+
+# --------------------------------------------------------------------------
+# Pass 6 — deck variants around v2 (single confirmed-id swaps)
+# --------------------------------------------------------------------------
+
+_PASS6_DECK_IDS = {
+    "deck_v2_no_secret_box__powerglass",
+    "deck_v2_no_secret_box__mega_signal",
+    "deck_v2_no_secret_box__surfing_beach",
+    "deck_v2_less_petrel__powerglass",
+}
+
+
+def test_plan_pass6_decks_lists_all_variants_generation_six():
+    cfg = config_mod.load_config()
+    plan = generator.plan_pass6_decks(cfg)
+    assert {p["branch_id"] for p in plan} == _PASS6_DECK_IDS
+    assert all(p["track"] == "deck" and p["generation"] == 6 for p in plan)
+    # The v2 exact deck is an anchor and must NOT appear in the deck-variant plan.
+    assert "deck_energy_trim_light" not in {p["branch_id"] for p in plan}
+
+
+def test_pass6_deck_variants_are_legal_sixty_card_decks(tmp_path):
+    from ptcg_activegraph.cards import load_card_db
+    from ptcg_activegraph.decks.deck_io import load_deck
+    cdb = load_card_db()
+    before_main, before_deck = _read(BASELINE_MAIN), _read(BASELINE_DECK)
+    for spec in generator.PASS6_DECK_SPECS:
+        # Deltas are zero-sum (60-card preserving) and only touch confirmed ids.
+        assert sum(spec["deltas"].values()) == 0, spec["branch_id"]
+        b = generator.generate_deck_candidate(
+            spec, BASELINE_MAIN, BASELINE_DECK, runs_root=tmp_path,
+            card_db=cdb, ts="dv",
+        )
+        ids = load_deck(Path(b.run_dir) / "deck.csv")
+        assert len(ids) == 60, spec["branch_id"]
+        counts = Counter(ids)
+        # No non-energy card exceeds 4 copies.
+        over = {c: n for c, n in counts.items() if c != generator.ENERGY_ID and n > 4}
+        assert not over, (spec["branch_id"], over)
+        # Deck candidates reuse the exact baseline runtime policy (main unchanged).
+        assert _read(Path(b.run_dir) / "main.py") == before_main
+    # Root files never mutated.
+    assert _read(BASELINE_MAIN) == before_main
+    assert _read(BASELINE_DECK) == before_deck
+
+
+def test_pass6_secret_box_swaps_remove_secret_box_and_add_target(tmp_path):
+    from ptcg_activegraph.cards import load_card_db
+    from ptcg_activegraph.decks.deck_io import load_deck
+    cdb = load_card_db()
+    expected_add = {
+        "deck_v2_no_secret_box__powerglass": 1163,
+        "deck_v2_no_secret_box__mega_signal": 1145,
+        "deck_v2_no_secret_box__surfing_beach": 1262,
+    }
+    for bid, add_id in expected_add.items():
+        spec = next(s for s in generator.PASS6_DECK_SPECS if s["branch_id"] == bid)
+        b = generator.generate_deck_candidate(
+            spec, BASELINE_MAIN, BASELINE_DECK, runs_root=tmp_path,
+            card_db=cdb, ts="sb",
+        )
+        counts = Counter(load_deck(Path(b.run_dir) / "deck.csv"))
+        assert counts.get(1092, 0) == 0, bid          # Secret Box cut entirely
+        assert counts[add_id] == 3, (bid, add_id)      # swap target now at 3
+
+
+# --------------------------------------------------------------------------
+# Pass 6 (Part H) — buildable chaos candidates + honest blocked entry
+# --------------------------------------------------------------------------
+
+def test_plan_pass6_chaos_lists_buildable_then_blocked():
+    cfg = config_mod.load_config()
+    plan = generator.plan_pass6_chaos(cfg)
+    by_id = {p["branch_id"]: p for p in plan}
+    assert {"chaos_v6_froslass_handcount", "chaos_v6_durant_mill"} <= set(by_id)
+    # Buildable specs are testable; bench-bloat stays blocked with a real reason.
+    assert by_id["chaos_v6_froslass_handcount"]["testable"] is True
+    assert by_id["chaos_v6_durant_mill"]["testable"] is True
+    blocked = by_id["chaos_v6_bench_bloat_punisher"]
+    assert blocked["testable"] is False
+    assert blocked["reason"] and "unconfirmed" in blocked["reason"]
+    # Blocked entries always sort after the testable ones.
+    assert all(p["generation"] == 6 for p in plan)
+    testable_idx = [i for i, p in enumerate(plan) if p["testable"]]
+    blocked_idx = [i for i, p in enumerate(plan) if not p["testable"]]
+    assert max(testable_idx) < min(blocked_idx)
+
+
+def test_pass6_chaos_specs_use_only_confirmed_ids_and_matching_energy():
+    from ptcg_activegraph.cards import load_card_db
+    cdb = load_card_db()
+    for spec in generator.PASS6_CHAOS_SPECS:
+        counts = spec["deck_counts"]
+        assert sum(counts.values()) == 60, spec["branch_id"]
+        for cid in counts:
+            feats = cdb.basic_features(cid)
+            # Every id must resolve in the confirmed card metadata (no invented ids).
+            assert feats.get("found", False), (spec["branch_id"], cid)
+        # At least one Basic Pokémon must be present (legal opening).
+        assert any(
+            cdb.basic_features(cid).get("is_basic", False) for cid in counts
+        ), spec["branch_id"]
+
+
+def test_generate_chaos_candidate_is_legal_and_leaves_root_untouched(tmp_path):
+    from ptcg_activegraph.cards import load_card_db
+    from ptcg_activegraph.decks.deck_io import load_deck
+    cdb = load_card_db()
+    before_main, before_deck = _read(BASELINE_MAIN), _read(BASELINE_DECK)
+    for spec in generator.PASS6_CHAOS_SPECS:
+        b = generator.generate_chaos_candidate(
+            spec, BASELINE_MAIN, runs_root=tmp_path, card_db=cdb, ts="ch",
+        )
+        ids = load_deck(Path(b.run_dir) / "deck.csv")
+        assert len(ids) == 60, spec["branch_id"]
+        # No NON-basic-energy card exceeds 4 copies (basic energy is unlimited).
+        over = generator._illegal_copy_counts(ids, cdb)
+        assert not over, (spec["branch_id"], over)
+        # Chaos candidates carry the exact baseline runtime policy.
+        assert _read(Path(b.run_dir) / "main.py") == before_main
+    assert _read(BASELINE_MAIN) == before_main
+    assert _read(BASELINE_DECK) == before_deck
+
+
+def test_basic_energy_copy_limit_recognizes_non_default_energy(tmp_path):
+    from ptcg_activegraph.cards import load_card_db
+    cdb = load_card_db()
+    # Basic {G} Energy (id 1) is NOT the deck's default {W} energy (id 3); a stack
+    # of 28 must still be allowed (regression: previously only id 3 was exempt).
+    deck = [198] * 4 + [1] * 56
+    assert generator._is_basic_energy(1, cdb) is True
+    assert generator._illegal_copy_counts(deck, cdb) == {}
+
+
+# --------------------------------------------------------------------------
+# Part I/J: Pass 6 two-stage pipeline (pure pieces, no cabt)
+# --------------------------------------------------------------------------
+def test_pass6_plan_combines_tracks_and_excludes_blocked():
+    from ptcg_activegraph.experiments import pass6_pipeline as p6
+    testable = p6.pass6_testable_branch_ids()
+    blocked = p6.pass6_blocked_branch_ids()
+    # Each declared spec family is represented and the blocked chaos is NOT.
+    assert "combo_full_v3" in testable
+    assert "deck_v2_no_secret_box__powerglass" in testable
+    assert "chaos_v6_froslass_handcount" in testable
+    assert "chaos_v6_durant_mill" in testable
+    assert "chaos_v6_bench_bloat_punisher" in blocked
+    assert "chaos_v6_bench_bloat_punisher" not in testable
+    assert set(testable).isdisjoint(set(blocked))
+
+
+def test_stage0_gate_keys_by_branch_id_and_filters_survivors(tmp_path):
+    from ptcg_activegraph.experiments import pass6_pipeline as p6
+    # Two fake run dirs, each with a branch.yaml carrying the real branch_id.
+    def _mk(name, bid):
+        rd = tmp_path / name
+        rd.mkdir()
+        (rd / "branch.yaml").write_text(
+            f"branch_id: {bid}\nname: {bid}\nparent: root\n"
+            f"seam_id: seam_x\nfamily: fam_x\n", encoding="utf-8")
+        return rd
+    good = _mk("20260101_00_good", "cand_good")
+    bad = _mk("20260101_01_bad", "cand_bad")
+
+    def fake_eval(run_dir, fixtures_dir):
+        passed = run_dir.name.endswith("good")
+        return {"run_dir": str(run_dir), "legality_gate": passed,
+                "preference_pass": 2, "preference_fail": 0, "preference_na": 3}
+
+    gate = p6.stage0_fixture_gate([good, bad], tmp_path, evaluator=fake_eval)
+    # Keyed by real branch_id (NOT the timestamped dir name).
+    assert set(gate.keys()) == {"cand_good", "cand_bad"}
+    assert p6.stage0_survivors(gate) == ["cand_good"]
+
+
+def test_select_top3_excludes_controls_and_rejected():
+    from ptcg_activegraph.experiments import pass6_pipeline as p6
+    ranked = [
+        {"branch_id": "v2_anchor", "is_control": True, "candidate_rank": None,
+         "rejected": False},
+        {"branch_id": "c1", "is_control": False, "candidate_rank": 1,
+         "rejected": False},
+        {"branch_id": "c2", "is_control": False, "candidate_rank": 2,
+         "rejected": False},
+        {"branch_id": "c3", "is_control": False, "candidate_rank": 3,
+         "rejected": False},
+        {"branch_id": "c4", "is_control": False, "candidate_rank": 4,
+         "rejected": False},
+        {"branch_id": "bad", "is_control": False, "candidate_rank": None,
+         "rejected": True},
+    ]
+    top = p6.select_top3(ranked, n=3)
+    assert [e["branch_id"] for e in top] == ["c1", "c2", "c3"]
+
+
+def test_build_dry_run_queue_forces_max1_and_never_uploads(tmp_path):
+    from ptcg_activegraph.experiments import pass6_pipeline as p6
+    cfg = config_mod.load_config()
+    # Safety preconditions hold by default.
+    assert not cfg.settings.get("auto_submit_enabled", False)
+    ranked = [
+        {"branch_id": "cand_a", "kind": "policy", "label": "promotable",
+         "score": 0.9, "is_control": False, "rejected": False,
+         "candidate_rank": 1, "games": 40, "win_rate": 0.6},
+        {"branch_id": "cand_b", "kind": "policy", "label": "promotable",
+         "score": 0.8, "is_control": False, "rejected": False,
+         "candidate_rank": 2, "games": 40, "win_rate": 0.58},
+    ]
+    plan = p6.build_dry_run_queue(ranked, cfg, {}, max_per_day=1)
+    assert plan["will_upload"] is False
+    assert plan["mode"].upper().startswith("DRY")
+    assert len(plan["candidates"]) <= 1
+
+
+def test_build_dry_run_queue_refuses_when_auto_submit_enabled():
+    from ptcg_activegraph.experiments import pass6_pipeline as p6
+    cfg = config_mod.load_config()
+    cfg.settings = {**dict(cfg.settings), "auto_submit_enabled": True}
+    with pytest.raises(RuntimeError):
+        p6.build_dry_run_queue([], cfg, {}, max_per_day=1)

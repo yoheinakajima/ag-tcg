@@ -1,0 +1,33 @@
+branch_id: chaos_v6_froslass_handcount
+seam_id: chaos.hand_avalanche_froslass
+family: archetype
+kind: chaos
+archetype: chaos
+hypothesis: Mega Froslass ex's Resentful Refrain scales 50x with the opponent's hand
+  size (now an OBSERVABLE handCount); keep their hand large and convert it to damage.
+  Energy-coherent {W} line.
+parent: v1_kaggle_349_8
+created_at: '2026-06-18T02:36:10'
+run_dir: experiments/runs_pass6/20260618_023610_12_chaos_v6_froslass_handcount
+policy_overrides: {}
+policy_diff: {}
+deck_diff: {}
+deck_summary:
+  size: 60
+  unique: 10
+  counts:
+    '103': 4
+    '861': 4
+    '1121': 4
+    '1223': 4
+    '1237': 4
+    '1197': 4
+    '1103': 4
+    '1163': 4
+    '1262': 4
+    '3': 24
+  warnings:
+  - card 3 appears 24 times (> 4)
+notes: []
+testable: true
+blocked_reason: ''

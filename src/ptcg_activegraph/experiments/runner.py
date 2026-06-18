@@ -23,8 +23,11 @@ from __future__ import annotations
 import importlib.util
 import json
 import logging
+import os
 import signal
+import subprocess
 import sys
+import tempfile
 import traceback
 import uuid
 from pathlib import Path
@@ -349,6 +352,125 @@ def run_one_game(
     return result
 
 
+# Default hard wall-clock budget for a SUBPROCESS game. More generous than the
+# in-process SIGALRM budget because the child pays cold cabt/OpenSpiel
+# registration on every spawn; a child exceeding this is killed by the parent.
+SUBPROCESS_GAME_TIMEOUT_SECONDS = 90
+# Grace period between SIGTERM and the un-ignorable SIGKILL when killing a hung
+# child's process group. Small constant so a wedged C-level game is reaped fast.
+_KILL_GRACE_SECONDS = 5
+
+_CHILD_SCRIPT = str(Path(__file__).with_name("_game_subprocess.py"))
+
+
+def _kill_process_group(proc: subprocess.Popen) -> None:
+    """SIGTERM the child's process group, then SIGKILL if it ignores it.
+
+    Uses the process *group* (the child is started in a new session) so any cabt
+    worker threads/children die with it. A game wedged inside cabt's C code that
+    swallows SIGTERM is still reaped by the un-ignorable SIGKILL.
+    """
+    def _signal_group(sig):
+        try:
+            os.killpg(os.getpgid(proc.pid), sig)
+        except Exception:  # noqa: BLE001 - process may already be gone
+            try:
+                proc.send_signal(sig)
+            except Exception:  # noqa: BLE001
+                pass
+
+    _signal_group(signal.SIGTERM)
+    try:
+        proc.wait(timeout=_KILL_GRACE_SECONDS)
+        return
+    except Exception:  # noqa: BLE001 - still alive: escalate
+        pass
+    _signal_group(signal.SIGKILL)
+    try:
+        proc.wait(timeout=_KILL_GRACE_SECONDS)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def run_one_game_subprocess(
+    control_main: str | Path,
+    control_deck: list[int],
+    cand_main: str | Path,
+    cand_deck: list[int],
+    candidate_seat: int = 0,
+    timeout_seconds: int | None = None,
+    child_script: str | None = None,
+) -> dict:
+    """Play one game in a killable child process. Never raises.
+
+    The child plays exactly one game and writes the structured result (including
+    the candidate's decision telemetry) to a temp file. If the child exceeds
+    ``timeout_seconds`` it is killed (SIGTERM -> SIGKILL on its process group)
+    and the game is recorded as a ``timeout`` (a hard-reject downstream) — the
+    batch is never hung by a single degenerate game.
+    """
+    timeout_seconds = timeout_seconds or SUBPROCESS_GAME_TIMEOUT_SECONDS
+    result = {
+        "candidate_seat": candidate_seat,
+        "completed": False,
+        "candidate_won": None,
+        "draw": False,
+        "steps": 0,
+        "error": None,
+        "timeout": False,
+        "subprocess": True,
+    }
+    child = child_script or _CHILD_SCRIPT
+    spec = {
+        "control_main": str(control_main),
+        "control_deck": list(control_deck),
+        "cand_main": str(cand_main),
+        "cand_deck": list(cand_deck),
+        "candidate_seat": candidate_seat,
+    }
+    with tempfile.TemporaryDirectory(prefix="cabt_game_") as td:
+        spec_path = Path(td) / "spec.json"
+        out_path = Path(td) / "out.json"
+        spec_path.write_text(json.dumps(spec, default=str), encoding="utf-8")
+        cmd = [sys.executable, child, str(spec_path), str(out_path)]
+        try:
+            proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+        except Exception as exc:  # noqa: BLE001
+            result["error"] = f"subprocess spawn failed: {exc!r}"
+            return result
+
+        try:
+            proc.wait(timeout=timeout_seconds)
+        except subprocess.TimeoutExpired:
+            _kill_process_group(proc)
+            result["timeout"] = True
+            result["error"] = (
+                f"subprocess game timeout (>{timeout_seconds}s; child killed)"
+            )
+            return result
+
+        if proc.returncode != 0:
+            result["error"] = (
+                f"subprocess game exited with code {proc.returncode}"
+            )
+            return result
+
+        try:
+            parsed = json.loads(out_path.read_text(encoding="utf-8"))
+            if isinstance(parsed, dict):
+                parsed.setdefault("subprocess", True)
+                return parsed
+            result["error"] = "subprocess result was not a JSON object"
+        except Exception as exc:  # noqa: BLE001
+            result["error"] = f"subprocess produced no parseable result: {exc!r}"
+    return result
+
+
 def _run_candidate_gates(run_dir: Path, card_db) -> dict:
     """Run package verify + one-game smoke for a candidate. Returns gate dict."""
     from ..packaging.make_submission import SubmissionError, verify_submission_inputs
@@ -455,8 +577,15 @@ def evaluate_candidate(
     games_per_seat: int | None = None,
     seat_swap: bool = False,
     stage: str | None = None,
+    use_subprocess: bool = False,
+    game_timeout_seconds: int | None = None,
 ) -> dict:
-    """Gate, then evaluate one candidate branch vs the control. Returns metrics."""
+    """Gate, then evaluate one candidate branch vs the control. Returns metrics.
+
+    With ``use_subprocess=True`` each game runs in a killable child process so a
+    game that hangs inside cabt's C-level ``env.run`` is reaped by a parent
+    wall-clock timeout (``game_timeout_seconds``) instead of wedging the batch.
+    """
     from .metrics import compute_metrics
 
     logging.disable(logging.WARNING)  # quiet OpenSpiel/cabt import chatter
@@ -487,10 +616,17 @@ def evaluate_candidate(
             tags=["experiment"],
         ))
         for seat in seats:
-            r = run_one_game(
-                control_main, control_deck_ids,
-                run_dir / "main.py", cand_deck_ids, candidate_seat=seat,
-            )
+            if use_subprocess:
+                r = run_one_game_subprocess(
+                    control_main, control_deck_ids,
+                    run_dir / "main.py", cand_deck_ids, candidate_seat=seat,
+                    timeout_seconds=game_timeout_seconds,
+                )
+            else:
+                r = run_one_game(
+                    control_main, control_deck_ids,
+                    run_dir / "main.py", cand_deck_ids, candidate_seat=seat,
+                )
             results.append(r)
         store.append(new_event(
             EventType.MatchBatchFinished,

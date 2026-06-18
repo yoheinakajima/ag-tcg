@@ -210,6 +210,57 @@ DECK_BLOCKED: list[dict] = [
 
 
 # ---------------------------------------------------------------------------
+# Pass 6 deck variants AROUND the v2 control (deck_energy_trim_light).
+# Each delta is relative to the ROOT baseline deck and equals the v2 deltas
+# ({3:-4, 721:+2, 1121:+2}) PLUS one small single-card swap, so the only change
+# vs the v2 control is that swap. The v2 *exact* deck itself is an integrity
+# anchor (deck_energy_trim_light), never re-emitted here. All ids are confirmed
+# in data/cards/EN_Card_Data.csv: Secret Box 1092 (baseline x1), Powerglass 1163
+# (x2), Mega Signal 1145 (x2), Surfing Beach 1262 (x2), Team Rocket's Petrel 1219
+# (x4). Every resulting deck is 60 cards and stays at/below 4 copies per card.
+# ---------------------------------------------------------------------------
+
+PASS6_DECK_SPECS: list[dict] = [
+    {
+        "branch_id": "deck_v2_no_secret_box__powerglass",
+        "seam_id": "deck.secret_box_swap",
+        "archetype": "consistency_engine",
+        "hypothesis": "Cut the lone Secret Box (1092) for a 3rd Powerglass (1163) "
+        "to test whether a steadier energy-acceleration item beats the one-shot "
+        "Secret Box toolbox over the v2 control.",
+        "deltas": {ENERGY_ID: -4, 721: +2, 1121: +2, 1092: -1, 1163: +1},
+    },
+    {
+        "branch_id": "deck_v2_no_secret_box__mega_signal",
+        "seam_id": "deck.secret_box_swap",
+        "archetype": "consistency_engine",
+        "hypothesis": "Cut the lone Secret Box (1092) for a 3rd Mega Signal (1145) "
+        "to bias toward fetching the Snover -> Mega Abomasnow ex line more often "
+        "than the Secret Box toolbox does.",
+        "deltas": {ENERGY_ID: -4, 721: +2, 1121: +2, 1092: -1, 1145: +1},
+    },
+    {
+        "branch_id": "deck_v2_no_secret_box__surfing_beach",
+        "seam_id": "deck.secret_box_swap",
+        "archetype": "tempo_control",
+        "hypothesis": "Cut the lone Secret Box (1092) for a 3rd Surfing Beach "
+        "(1262) to test whether extra stadium/recovery value beats the Secret Box "
+        "toolbox over the v2 control.",
+        "deltas": {ENERGY_ID: -4, 721: +2, 1121: +2, 1092: -1, 1262: +1},
+    },
+    {
+        "branch_id": "deck_v2_less_petrel__powerglass",
+        "seam_id": "deck.petrel_swap",
+        "archetype": "consistency_engine",
+        "hypothesis": "Trim one Team Rocket's Petrel (1219, baseline x4) for a 3rd "
+        "Powerglass (1163) to test whether more energy acceleration outweighs the "
+        "fourth disruption supporter over the v2 control.",
+        "deltas": {ENERGY_ID: -4, 721: +2, 1121: +2, 1219: -1, 1163: +1},
+    },
+]
+
+
+# ---------------------------------------------------------------------------
 # Generation-2 combination candidate specs
 # ---------------------------------------------------------------------------
 # A combo applies a policy override block AND a deck delta together, so we can
@@ -476,6 +527,89 @@ CHAOS_BLOCKED: list[dict] = [
 
 
 # ---------------------------------------------------------------------------
+# Pass 6 (Part H): BUILDABLE chaos candidates.
+#
+# Honesty note: a chaos archetype is buildable here only when (a) its attacker's
+# full evolution line is confirmed in EN_Card_Data, and (b) a legal 60-card shell
+# (<=4 copies per card NAME, >=1 Basic, matching basic energy) can be filled with
+# confirmed ids alone. Each ``deck_counts`` below is an explicit {card_id: count}
+# multiset; every id is confirmed and the energy id matches the attacker's type.
+# Telemetry note: Pass-6 corrected the contract (T002) -- opponent handCount /
+# benchCount / deckCount ARE observable -- so these chaos win-conditions are now
+# measurable from the live observation (only opponent CONTENTS stay hidden).
+PASS6_CHAOS_SPECS: list[dict] = [
+    {
+        "branch_id": "chaos_v6_froslass_handcount",
+        "seam_id": "chaos.hand_avalanche_froslass",
+        "archetype": "chaos",
+        "hypothesis": "Mega Froslass ex's Resentful Refrain scales 50x with the "
+        "opponent's hand size (now an OBSERVABLE handCount); keep their hand large "
+        "and convert it to damage. Energy-coherent {W} line.",
+        # Snorunt(103,Basic{W}) -> Mega Froslass ex(861,Stage1{W}); generic {W}
+        # support all confirmed. 36 non-energy + 24 Basic {W} Energy = 60.
+        "deck_counts": {
+            103: 4,    # Snorunt (basic; evolves to Mega Froslass ex)
+            861: 4,    # Mega Froslass ex (hand-size scaler)
+            1121: 4,   # Ultra Ball
+            1223: 4,   # Harlequin (supporter)
+            1237: 4,   # Lucian (supporter)
+            1197: 4,   # Xerosic's Machinations (supporter)
+            1103: 4,   # Meddling Memo (item)
+            1163: 4,   # Powerglass (item)
+            1262: 4,   # Surfing Beach (stadium)
+            ENERGY_ID: 24,  # Basic {W} Energy
+        },
+    },
+    {
+        "branch_id": "chaos_v6_durant_mill",
+        "seam_id": "chaos.mill_resource_destruction",
+        "archetype": "chaos",
+        "hypothesis": "Durant ex is a Basic {G} attacker/mill engine; pair its "
+        "Vengeful Crush with energy/hand denial so brittle bots lose key pieces or "
+        "deck out. Energy-coherent {G} build, all confirmed ids.",
+        # Durant ex(198,Basic{G}); disruption items + supporters confirmed.
+        # 32 non-energy + 28 Basic {G} Energy (id 1) = 60.
+        "deck_counts": {
+            198: 4,    # Durant ex (basic attacker + Sudden Shearing mill ability)
+            1121: 4,   # Ultra Ball
+            1120: 4,   # Crushing Hammer (energy denial)
+            1149: 4,   # Energy Swatter (energy denial)
+            1087: 4,   # Hand Trimmer (hand denial)
+            1103: 4,   # Meddling Memo (item)
+            1213: 4,   # Judge (hand disruption)
+            1197: 4,   # Xerosic's Machinations (supporter)
+            1: 28,     # Basic {G} Energy
+        },
+    },
+]
+
+# Still BLOCKED in Pass 6: bench-bloat punisher. Accompanying Flute (1091) is
+# confirmed, but the bench-COUNT-scaling attackers in this archetype --
+# Zoroark(615<-Zorua), Gengar(1059<-Haunter<-Gastly), Incineroar ex(79<-Torracat
+# <-Litten) -- all need evolution-basic ids that are NOT confirmed, and the only
+# confirmed Basic alternatives (Teal Mask Ogerpon 95 {G}, Zeraora 956 {L}) have
+# no confirmed bench-count-scaling attack. Building it would require either
+# inventing evolution-basic ids or fabricating a bench-scaling mechanic.
+PASS6_CHAOS_BLOCKED: list[dict] = [
+    {
+        "branch_id": "chaos_v6_bench_bloat_punisher",
+        "seam_id": "chaos.bench_bloat_punisher",
+        "archetype": "chaos",
+        "hypothesis": "Crowd the opponent bench with Accompanying Flute (benchCount "
+        "is now observable), then punish bench size with bench-scaling attackers.",
+        "core_card_ids": [1091, 615, 1059, 79, 95, 956],
+        "blocked_reason": "Accompanying Flute (1091) and the win-condition metric "
+        "(opp benchCount) are confirmed/observable, but every bench-COUNT-scaling "
+        "attacker in this archetype is an evolution whose basic is unconfirmed "
+        "(Zoroark<-Zorua, Gengar<-Haunter<-Gastly, Incineroar ex<-Torracat<-Litten);"
+        " the only confirmed Basics (Ogerpon 95, Zeraora 956) have no confirmed "
+        "bench-scaling attack. Cannot build without inventing ids or fabricating "
+        "the scaling mechanic.",
+    },
+]
+
+
+# ---------------------------------------------------------------------------
 # Pass 5: replay-informed, BOARD-AWARE candidates.
 #
 # Honesty note (important): the Pass-4 override hook only mutates keyword/option
@@ -686,6 +820,204 @@ PASS5_COMBO_SPECS: list[dict] = [
 
 
 # ---------------------------------------------------------------------------
+# Pass 6 policy candidates (v3): Pass-5 board-aware scoring PLUS a decline
+# layer (render_p6_block) that can return [] on dead/unsafe prompts when an
+# empty selection is legal (minCount == 0). The decline layer is the only thing
+# that lets the agent fix the "fetch a Mega with no Snover line" (step 17) and
+# "search the deck down into a deck-out" (step 112) replay failures, which pure
+# re-weighting (Pass 5) cannot express. All ids are confirmed in data/cards
+# (Snover 722, Mega Abomasnow ex 723, Kyogre 721, Basic {W} Energy 3); none are
+# invented. Every candidate is a combo over the v2 control deck so the only
+# variable vs the anchor is the injected policy. Whether these help is left to
+# local evaluation -- they are candidates, not assumptions.
+# ---------------------------------------------------------------------------
+
+PASS6_COMBO_SPECS: list[dict] = [
+    {
+        "branch_id": "pass6_control_v2_anchor",
+        "seam_id": "archetype.baseline_exploit",
+        "archetype": "baseline_exploit",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Exact v2 control (v2 deck, no policy override) anchors the "
+        "Pass 6 batch and confirms the harness reproduces the v2 baseline as a "
+        "~50% mirror.",
+        "required": True,
+    },
+    {
+        "branch_id": "policy_effect_resolution_v3",
+        "seam_id": "policy.effect_resolution_targeting",
+        "archetype": "consistency_engine",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Effect resolution v3 = Pass-5 board-aware re-weighting "
+        "(protect Snover 722 / Mega Abomasnow ex 723 / Kyogre 721 on discard, "
+        "discard spare Basic {W} Energy 3, fetch the missing line, Snover before "
+        "Mega) PLUS a decline layer: when a Mega Signal search offers only Mega "
+        "Abomasnow ex (723) and no Snover (722) is on board, decline rather than "
+        "strand the evolution line (the step-17 replay failure).",
+        "p5_rules": {
+            "discard_avoid_ids": [722, 723, 721],
+            "discard_avoid_weight": -300,
+            "discard_prefer_ids": [3],
+            "discard_prefer_weight": 150,
+            "search_prefer_ids": [722, 723, 721, 1121, 1145, 1092],
+            "search_prefer_weight": 90,
+            "search_snover_before_mega": True,
+            "snover_first_bonus": 70,
+            "mega_without_snover_penalty": -70,
+        },
+        "p6_rules": {
+            "decline_mega_signal_no_snover": True,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "policy_secret_box_safety_v1",
+        "seam_id": "policy.secret_box_mode_selection",
+        "archetype": "consistency_engine",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Secret Box (1092) safety: on optional discard-to-pay "
+        "prompts, never discard the Snover/Mega/Kyogre line when it is not yet on "
+        "board (the step-11 replay bug), steering the discard to spare Basic {W} "
+        "Energy (3) instead. Note: when the prompt is forced (minCount equals the "
+        "option count) no choice exists, so this only changes optional discards.",
+        "p5_rules": {
+            "discard_avoid_ids": [722, 723, 721],
+            "discard_avoid_weight": -400,
+            "discard_prefer_ids": [3],
+            "discard_prefer_weight": 150,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "policy_deckout_guard_v2",
+        "seam_id": "policy.deckout_awareness",
+        "archetype": "tempo_control",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Deckout guard v2: when the player's own deckCount is at or "
+        "below the threshold, decline optional search-to-hand prompts entirely "
+        "(not merely penalize them) so the deck is not burned into a self-inflicted "
+        "deck-out loss (the step-112 replay loss). Reads deckCount from the live "
+        "observation; only declines when minCount == 0.",
+        "p5_rules": {
+            "deckout_threshold": 8,
+            "deckout_search_penalty": -180,
+        },
+        "p6_rules": {
+            "deckout_decline_threshold": 8,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "policy_attachment_targeting_v1",
+        "seam_id": "policy.energy_attachment_targeting",
+        "archetype": "tempo_control",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Attachment targeting: bias energy-attachment prompts toward "
+        "attaching to an active/attacker rather than passing, and prefer Basic {W} "
+        "Energy (3) onto the board. Keyword/option-type re-weighting only -- precise "
+        "'attach to next-turn attacker' needs board state the option dict does not "
+        "carry, so this is an approximation.",
+        "overrides": {
+            "option_type_scores": {8: 40},
+            "positive": {"attach": 90, "energy": 70, "active": 35},
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "combo_effect_resolution_v3__deckout_guard_v2",
+        "seam_id": "combo.effect_resolution_deckout",
+        "archetype": "consistency_engine",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Combine effect resolution v3 (protect setup, fetch the "
+        "missing line, decline dead Mega fetches) with deckout guard v2 (decline "
+        "optional searches when the deck runs low) to test whether the two "
+        "replay-derived decline fixes compound.",
+        "p5_rules": {
+            "discard_avoid_ids": [722, 723, 721],
+            "discard_avoid_weight": -300,
+            "discard_prefer_ids": [3],
+            "discard_prefer_weight": 150,
+            "search_prefer_ids": [722, 723, 721, 1121, 1145, 1092],
+            "search_prefer_weight": 90,
+            "search_snover_before_mega": True,
+            "snover_first_bonus": 70,
+            "mega_without_snover_penalty": -70,
+            "deckout_threshold": 8,
+            "deckout_search_penalty": -180,
+        },
+        "p6_rules": {
+            "decline_mega_signal_no_snover": True,
+            "deckout_decline_threshold": 8,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "combo_effect_resolution_v3__secret_box_safety",
+        "seam_id": "combo.effect_resolution_secret_box",
+        "archetype": "consistency_engine",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Combine effect resolution v3 with the stronger Secret Box "
+        "discard-safety weight to test whether harder protection of the setup line "
+        "on discard prompts compounds with the decline-dead-Mega-fetch fix.",
+        "p5_rules": {
+            "discard_avoid_ids": [722, 723, 721],
+            "discard_avoid_weight": -400,
+            "discard_prefer_ids": [3],
+            "discard_prefer_weight": 150,
+            "search_prefer_ids": [722, 723, 721, 1121, 1145, 1092],
+            "search_prefer_weight": 90,
+            "search_snover_before_mega": True,
+            "snover_first_bonus": 70,
+            "mega_without_snover_penalty": -70,
+        },
+        "p6_rules": {
+            "decline_mega_signal_no_snover": True,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "combo_full_v3",
+        "seam_id": "combo.full_v3",
+        "archetype": "consistency_engine",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Full v3 stack: board-aware effect resolution + Secret Box "
+        "discard safety + deckout decline + attachment-targeting re-weighting, to "
+        "test the maximal replay-derived policy bundle against the v2 anchor.",
+        "overrides": {
+            "option_type_scores": {8: 40},
+            "positive": {"attach": 90, "energy": 70, "active": 35},
+        },
+        "p5_rules": {
+            "discard_avoid_ids": [722, 723, 721],
+            "discard_avoid_weight": -400,
+            "discard_prefer_ids": [3],
+            "discard_prefer_weight": 150,
+            "search_prefer_ids": [722, 723, 721, 1121, 1145, 1092],
+            "search_prefer_weight": 90,
+            "search_snover_before_mega": True,
+            "snover_first_bonus": 70,
+            "mega_without_snover_penalty": -70,
+            "deckout_threshold": 8,
+            "deckout_search_penalty": -180,
+        },
+        "p6_rules": {
+            "decline_mega_signal_no_snover": True,
+            "deckout_decline_threshold": 8,
+        },
+        "required": True,
+    },
+]
+
+
+# ---------------------------------------------------------------------------
 # Override rendering / injection
 # ---------------------------------------------------------------------------
 
@@ -841,6 +1173,138 @@ _score_option = _p5_score
 '''
 
 
+def render_p6_block(branch_id: str, seam_id: str, rules: dict) -> str:
+    """Render the Pass-6 board-aware *decline* override block.
+
+    The Pass-5 layer can only re-weight options; it cannot make the agent skip a
+    prompt. Several replay failures (fetching a Mega with no Snover line on
+    board; over-searching when the deck is nearly empty) are only fixable by
+    *declining* — returning an empty selection when ``minCount == 0`` makes that
+    legal. This block wraps the host ``_embedded_agent`` so that, when a decline
+    rule fires on an own-observation-only condition, it returns ``[]`` instead of
+    picking a dead option; otherwise it defers to the original embedded policy
+    (which still carries any Pass-5 scoring). It never raises (falls back to the
+    original embedded policy) and never touches the deck-return path. All card
+    ids are confirmed in data/cards (Snover 722, Mega Abomasnow ex 723).
+    """
+    rules_lit = repr(dict(rules))
+    return f'''
+# === PASS6 DECLINE OVERRIDE: {branch_id} (seam={seam_id}) ===
+# Wraps _embedded_agent: declines (returns []) on own-observation decline rules
+# when minCount == 0; otherwise defers to the original embedded policy. Reads
+# only the candidate's own board/deckCount + the option card ids it is offered.
+_P6_RULES = {rules_lit}
+_P6_ORIG_EMBEDDED = _embedded_agent
+
+
+def _p6_me(obs):
+    try:
+        cur = obs.get("current")
+        me = cur.get("yourIndex")
+        players = cur.get("players")
+        if isinstance(players, list) and isinstance(me, int) and 0 <= me < len(players):
+            return players[me]
+    except Exception:
+        return None
+    return None
+
+
+def _p6_resolve_card_id(option, obs):
+    try:
+        if not isinstance(option, dict):
+            return None
+        area = option.get("area")
+        index = option.get("index")
+        if not isinstance(index, int) or isinstance(index, bool):
+            return None
+        sel = obs.get("select") if isinstance(obs, dict) else None
+        if area == 1 and isinstance(sel, dict):
+            deck = sel.get("deck")
+            if isinstance(deck, list) and 0 <= index < len(deck):
+                c = deck[index]
+                return c.get("id") if isinstance(c, dict) else None
+        if area == 2:
+            p = _p6_me(obs)
+            hand = p.get("hand") if isinstance(p, dict) else None
+            if isinstance(hand, list) and 0 <= index < len(hand):
+                c = hand[index]
+                return c.get("id") if isinstance(c, dict) else None
+    except Exception:
+        return None
+    return None
+
+
+def _p6_board_ids(obs):
+    ids = []
+    try:
+        p = _p6_me(obs) or {{}}
+        for slot in ("active", "bench"):
+            for e in p.get(slot) or []:
+                if isinstance(e, dict) and isinstance(e.get("id"), int):
+                    ids.append(e["id"])
+    except Exception:
+        return ids
+    return ids
+
+
+def _p6_deck_count(obs):
+    try:
+        p = _p6_me(obs)
+        dc = p.get("deckCount") if isinstance(p, dict) else None
+        return dc if isinstance(dc, int) and not isinstance(dc, bool) else None
+    except Exception:
+        return None
+
+
+def _p6_should_decline(obs):
+    try:
+        R = _P6_RULES
+        sel = _get_select(obs)
+        if not isinstance(sel, dict):
+            return False
+        options = _get_options(sel)
+        if not options:
+            return False
+        mn, mx = _get_min_max_count(sel, len(options))
+        # Only ever decline when an empty selection is legal.
+        if mn != 0 or mx <= 0:
+            return False
+        ctx = sel.get("context")
+        # Deckout guard: stop searching/drawing when the deck is at/below the
+        # threshold so the agent does not burn itself into a deck-out.
+        thr = R.get("deckout_decline_threshold")
+        if ctx == 7 and isinstance(thr, int):
+            dc = _p6_deck_count(obs)
+            if isinstance(dc, int) and dc <= thr:
+                return True
+        # Mega Signal line coherence: if every offered target is Mega Abomasnow
+        # ex (723) and no Snover (722) is on board to evolve from, the fetch is
+        # dead -- decline rather than strand the evolution line.
+        if ctx == 7 and R.get("decline_mega_signal_no_snover"):
+            board = _p6_board_ids(obs)
+            cids = [_p6_resolve_card_id(o, obs) for o in options]
+            cids = [c for c in cids if c is not None]
+            if cids and all(c == 723 for c in cids) and 722 not in board:
+                return True
+    except Exception:
+        return False
+    return False
+
+
+def _p6_embedded(obs):
+    try:
+        if _p6_should_decline(obs):
+            return []
+    except Exception:
+        pass
+    return _P6_ORIG_EMBEDDED(obs)
+
+
+_embedded_agent = _p6_embedded
+# === END PASS6 OVERRIDE ===
+'''
+
+
 def inject_override(baseline_src: str, block: str) -> str:
     """Insert ``block`` just before the ``if __name__`` guard (or at EOF)."""
     idx = baseline_src.find(_INJECT_ANCHOR)
@@ -873,15 +1337,28 @@ def _illegal_copy_counts(card_ids: list[int], card_db=None, max_copies: int = 4)
     for cid, n in Counter(card_ids).items():
         if n <= max_copies:
             continue
-        is_energy = cid == ENERGY_ID
-        if not is_energy and card_db is not None:
-            try:
-                is_energy = bool(card_db.basic_features(cid).get("is_energy", False))
-            except Exception:
-                is_energy = False
-        if not is_energy:
-            over[cid] = n
+        if _is_basic_energy(cid, card_db):
+            continue
+        over[cid] = n
     return over
+
+
+def _is_basic_energy(cid: int, card_db=None) -> bool:
+    """True for any "Basic {X} Energy" card (unlimited copies allowed).
+
+    The shared card_db reports ``is_energy=False`` for basic energy, so detect it
+    by name instead. ``ENERGY_ID`` (the deck's {W} energy) is always recognised.
+    """
+    if cid == ENERGY_ID:
+        return True
+    if card_db is not None:
+        try:
+            name = str(card_db.basic_features(cid).get("name", "")).lower()
+            if name.startswith("basic ") and name.endswith(" energy"):
+                return True
+        except Exception:
+            pass
+    return False
 
 
 def deck_diff(baseline_ids: list[int], new_ids: list[int]) -> dict:
@@ -997,6 +1474,67 @@ def generate_deck_candidate(
     return branch
 
 
+def generate_chaos_candidate(
+    spec: dict,
+    baseline_main: str | Path,
+    runs_root: str | Path,
+    card_db=None,
+    ts: str | None = None,
+) -> Branch:
+    """Write a buildable chaos candidate (baseline main + explicit deck) to a run dir.
+
+    Unlike deck candidates, a chaos deck is a FULL replacement expressed as an
+    explicit ``spec['deck_counts']`` {card_id: count} multiset (not a delta from
+    the root deck). The runtime policy is the unchanged baseline main.py; the
+    archetype lives entirely in the deck. The deck is validated and hard-fails on
+    any illegal copy count so an illegal chaos list can never be packaged.
+    """
+    from ..decks.validator import validate_deck
+
+    counts = spec["deck_counts"]
+    new_ids: list[int] = []
+    for cid in sorted(counts):
+        new_ids.extend([cid] * counts[cid])
+
+    result = validate_deck(new_ids, card_db=card_db)
+    if not result.valid:
+        raise ValueError(
+            f"generated chaos deck for {spec['branch_id']} is invalid: "
+            + "; ".join(result.errors)
+        )
+    over = _illegal_copy_counts(new_ids, card_db)
+    if over:
+        raise ValueError(
+            f"generated chaos deck for {spec['branch_id']} exceeds 4 copies of "
+            "non-energy card(s): "
+            + ", ".join(f"{cid}x{n}" for cid, n in over.items())
+        )
+
+    run_dir = make_run_dir(spec["branch_id"], root=runs_root, ts=ts)
+    Path(run_dir / "main.py").write_text(
+        Path(baseline_main).read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    save_deck(run_dir / "deck.csv", new_ids)
+
+    branch = Branch(
+        branch_id=spec["branch_id"],
+        seam_id=spec["seam_id"],
+        family="archetype",
+        kind="chaos",
+        archetype=spec.get("archetype", "chaos"),
+        hypothesis=spec["hypothesis"],
+        run_dir=str(run_dir),
+        deck_summary={
+            "size": len(new_ids),
+            "unique": len(set(new_ids)),
+            "counts": {str(c): n for c, n in counts.items()},
+            "warnings": result.warnings,
+        },
+    )
+    write_branch_yaml(branch, run_dir)
+    return branch
+
+
 def _policy_by_id(branch_id: str) -> dict:
     for s in POLICY_SPECS + PASS4_POLICY_SPECS:
         if s["branch_id"] == branch_id:
@@ -1044,7 +1582,12 @@ def generate_combo_candidate(
 
     policy_specs = [_policy_by_id(pid) for pid in spec.get("policy_refs", [])]
     deck_spec = _deck_by_id(spec["deck_ref"])
-    overrides = merge_overrides(policy_specs)
+    # A combo spec may also carry its own inline keyword/option-type overrides
+    # (used by Pass-6 attachment-targeting candidates that have no policy_refs).
+    merge_specs = list(policy_specs)
+    if spec.get("overrides"):
+        merge_specs.append(spec)
+    overrides = merge_overrides(merge_specs)
     deltas = deck_spec["deltas"]
 
     baseline_ids = load_deck(baseline_deck)
@@ -1072,6 +1615,14 @@ def generate_combo_candidate(
         p5_block = render_p5_block(spec["branch_id"], spec["seam_id"], p5_rules)
         candidate_src = inject_override(candidate_src, p5_block)
 
+    # Pass-6 candidates may additionally inject a *decline* layer that wraps the
+    # embedded agent so it can skip a dead/unsafe prompt (return []) when an
+    # empty selection is legal (minCount == 0).
+    p6_rules = spec.get("p6_rules")
+    if p6_rules:
+        p6_block = render_p6_block(spec["branch_id"], spec["seam_id"], p6_rules)
+        candidate_src = inject_override(candidate_src, p6_block)
+
     run_dir = make_run_dir(spec["branch_id"], root=runs_root, ts=ts)
     (run_dir / "main.py").write_text(candidate_src, encoding="utf-8")
     save_deck(run_dir / "deck.csv", new_ids)
@@ -1079,6 +1630,8 @@ def generate_combo_candidate(
     policy_record = dict(overrides)
     if p5_rules:
         policy_record["p5_rules"] = dict(p5_rules)
+    if p6_rules:
+        policy_record["p6_rules"] = dict(p6_rules)
     diff = deck_diff(baseline_ids, new_ids)
     branch = Branch(
         branch_id=spec["branch_id"],
@@ -1286,3 +1839,103 @@ def plan_pass5(config: ExperimentConfig) -> list[dict]:
     rest.sort(key=lambda x: (-x["priority"], x["branch_id"]))
     plan.extend(rest)
     return plan
+
+
+def plan_pass6(config: ExperimentConfig) -> list[dict]:
+    """Plan the Pass 6 policy-v3 candidate batch.
+
+    Returns ordered ``{spec, track, ...}`` items, ``generation=6``:
+      1. the v2 control anchor (v2 deck, no policy override),
+      2. the v3 policy candidates -- Pass-5 board-aware scoring PLUS the decline
+         layer (effect resolution v3, secret box safety, deckout guard v2,
+         attachment targeting, and the three v3 combos), highest priority first.
+
+    All candidates are combos over the v2 deck so the only variable vs the
+    anchor is the injected policy. The decline layer (render_p6_block) is what
+    lets the v3 candidates fix the step-17 (Mega-with-no-Snover) and step-112
+    (search-into-deckout) replay failures that pure re-weighting cannot.
+    """
+    def _meta(spec: dict, track: str) -> dict:
+        return {
+            "spec": spec,
+            "track": track,
+            "seam_id": spec["seam_id"],
+            "branch_id": spec["branch_id"],
+            "priority": config.priority_for(spec["seam_id"]),
+            "testable": True,
+            "reason": "",
+            "generation": 6,
+        }
+
+    plan: list[dict] = []
+    anchor = next(
+        c for c in PASS6_COMBO_SPECS if c["branch_id"] == "pass6_control_v2_anchor"
+    )
+    plan.append(_meta(anchor, "combo"))
+    rest = [
+        _meta(c, "combo")
+        for c in PASS6_COMBO_SPECS
+        if c["branch_id"] != "pass6_control_v2_anchor"
+    ]
+    rest.sort(key=lambda x: (-x["priority"], x["branch_id"]))
+    plan.extend(rest)
+    return plan
+
+
+def plan_pass6_decks(config: ExperimentConfig) -> list[dict]:
+    """Plan the Pass 6 deck-variant batch (single-card swaps around v2).
+
+    Returns ordered ``{spec, track="deck", ...}`` items, ``generation=6``. The v2
+    *exact* deck is NOT emitted here -- it is an integrity anchor. Each variant is
+    one confirmed-id single-card swap over the v2 control deck.
+    """
+    items = [
+        {
+            "spec": spec,
+            "track": "deck",
+            "seam_id": spec["seam_id"],
+            "branch_id": spec["branch_id"],
+            "priority": config.priority_for(spec["seam_id"]),
+            "testable": True,
+            "reason": "",
+            "generation": 6,
+        }
+        for spec in PASS6_DECK_SPECS
+    ]
+    items.sort(key=lambda x: (-x["priority"], x["branch_id"]))
+    return items
+
+
+def plan_pass6_chaos(config: ExperimentConfig) -> list[dict]:
+    """Plan the Pass 6 chaos batch.
+
+    Returns ordered ``{spec, track="chaos", ...}`` items, ``generation=6``.
+    Buildable specs (``PASS6_CHAOS_SPECS``) carry ``testable=True``; the still
+    blocked bench-bloat punisher (``PASS6_CHAOS_BLOCKED``) is surfaced with
+    ``testable=False`` and its exact ``reason`` so nothing is silently dropped.
+    """
+    items: list[dict] = []
+    for spec in PASS6_CHAOS_SPECS:
+        items.append({
+            "spec": spec,
+            "track": "chaos",
+            "seam_id": spec["seam_id"],
+            "branch_id": spec["branch_id"],
+            "priority": config.priority_for(spec["seam_id"]),
+            "testable": True,
+            "reason": "",
+            "generation": 6,
+        })
+    for spec in PASS6_CHAOS_BLOCKED:
+        items.append({
+            "spec": spec,
+            "track": "chaos",
+            "seam_id": spec["seam_id"],
+            "branch_id": spec["branch_id"],
+            "priority": config.priority_for(spec["seam_id"]),
+            "testable": False,
+            "reason": spec["blocked_reason"],
+            "generation": 6,
+        })
+    items.sort(key=lambda x: (not x["testable"], -x["priority"], x["branch_id"]))
+    return items

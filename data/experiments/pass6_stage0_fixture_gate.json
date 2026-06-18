@@ -1,0 +1,1603 @@
+{
+  "survivors": [
+    "pass6_control_v2_anchor",
+    "policy_effect_resolution_v3",
+    "policy_secret_box_safety_v1",
+    "policy_deckout_guard_v2",
+    "policy_attachment_targeting_v1",
+    "combo_effect_resolution_v3__deckout_guard_v2",
+    "combo_effect_resolution_v3__secret_box_safety",
+    "combo_full_v3",
+    "deck_v2_no_secret_box__powerglass",
+    "deck_v2_no_secret_box__mega_signal",
+    "deck_v2_no_secret_box__surfing_beach",
+    "deck_v2_less_petrel__powerglass",
+    "chaos_v6_froslass_handcount",
+    "chaos_v6_durant_mill"
+  ],
+  "rejected": [],
+  "reports": {
+    "pass6_control_v2_anchor": {
+      "run_dir": "experiments/runs_pass6/20260618_023610_00_pass6_control_v2_anchor",
+      "fixtures_dir": "data/replay_fixtures",
+      "n_fixtures": 5,
+      "loaded": true,
+      "load_error": null,
+      "fixtures": [
+        {
+          "id": "setup_active_choice",
+          "context_name": "choose_active",
+          "effect_card_id": null,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "prefer_cards",
+            "detail": "picked a preferred card",
+            "chosen_cards": [
+              722
+            ]
+          }
+        },
+        {
+          "id": "step112_low_deck_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1219,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [1227] instead of declining",
+            "chosen_cards": [
+              1227
+            ]
+          }
+        },
+        {
+          "id": "step11_secret_box_discard",
+          "context_name": "discard",
+          "effect_card_id": 1092,
+          "error": null,
+          "action": [
+            0,
+            1,
+            2
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "na",
+            "kind": "forced_all",
+            "detail": "forced selection; no preference to satisfy",
+            "chosen_cards": [
+              3,
+              3,
+              722
+            ]
+          }
+        },
+        {
+          "id": "step17_mega_signal_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1145,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [723] instead of declining",
+            "chosen_cards": [
+              723
+            ]
+          }
+        },
+        {
+          "id": "step28_ultra_ball_discard",
+          "context_name": "discard",
+          "effect_card_id": 1121,
+          "error": null,
+          "action": [
+            0,
+            1
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "avoid_cards",
+            "detail": "selected flagged card(s) [723]",
+            "chosen_cards": [
+              723,
+              3
+            ]
+          }
+        }
+      ],
+      "legality_gate": true,
+      "preference_pass": 1,
+      "preference_fail": 3,
+      "preference_na": 1,
+      "branch_id": "pass6_control_v2_anchor"
+    },
+    "policy_effect_resolution_v3": {
+      "run_dir": "experiments/runs_pass6/20260618_023610_01_policy_effect_resolution_v3",
+      "fixtures_dir": "data/replay_fixtures",
+      "n_fixtures": 5,
+      "loaded": true,
+      "load_error": null,
+      "fixtures": [
+        {
+          "id": "setup_active_choice",
+          "context_name": "choose_active",
+          "effect_card_id": null,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "prefer_cards",
+            "detail": "picked a preferred card",
+            "chosen_cards": [
+              722
+            ]
+          }
+        },
+        {
+          "id": "step112_low_deck_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1219,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [1227] instead of declining",
+            "chosen_cards": [
+              1227
+            ]
+          }
+        },
+        {
+          "id": "step11_secret_box_discard",
+          "context_name": "discard",
+          "effect_card_id": 1092,
+          "error": null,
+          "action": [
+            0,
+            1,
+            2
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "na",
+            "kind": "forced_all",
+            "detail": "forced selection; no preference to satisfy",
+            "chosen_cards": [
+              3,
+              3,
+              722
+            ]
+          }
+        },
+        {
+          "id": "step17_mega_signal_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1145,
+          "error": null,
+          "action": [],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "decline",
+            "detail": "declined",
+            "chosen_cards": []
+          }
+        },
+        {
+          "id": "step28_ultra_ball_discard",
+          "context_name": "discard",
+          "effect_card_id": 1121,
+          "error": null,
+          "action": [
+            1,
+            3
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "avoid_cards",
+            "detail": "avoided all flagged cards",
+            "chosen_cards": [
+              3,
+              3
+            ]
+          }
+        }
+      ],
+      "legality_gate": true,
+      "preference_pass": 3,
+      "preference_fail": 1,
+      "preference_na": 1,
+      "branch_id": "policy_effect_resolution_v3"
+    },
+    "policy_secret_box_safety_v1": {
+      "run_dir": "experiments/runs_pass6/20260618_023610_03_policy_secret_box_safety_v1",
+      "fixtures_dir": "data/replay_fixtures",
+      "n_fixtures": 5,
+      "loaded": true,
+      "load_error": null,
+      "fixtures": [
+        {
+          "id": "setup_active_choice",
+          "context_name": "choose_active",
+          "effect_card_id": null,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "prefer_cards",
+            "detail": "picked a preferred card",
+            "chosen_cards": [
+              722
+            ]
+          }
+        },
+        {
+          "id": "step112_low_deck_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1219,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [1227] instead of declining",
+            "chosen_cards": [
+              1227
+            ]
+          }
+        },
+        {
+          "id": "step11_secret_box_discard",
+          "context_name": "discard",
+          "effect_card_id": 1092,
+          "error": null,
+          "action": [
+            0,
+            1,
+            2
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "na",
+            "kind": "forced_all",
+            "detail": "forced selection; no preference to satisfy",
+            "chosen_cards": [
+              3,
+              3,
+              722
+            ]
+          }
+        },
+        {
+          "id": "step17_mega_signal_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1145,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [723] instead of declining",
+            "chosen_cards": [
+              723
+            ]
+          }
+        },
+        {
+          "id": "step28_ultra_ball_discard",
+          "context_name": "discard",
+          "effect_card_id": 1121,
+          "error": null,
+          "action": [
+            1,
+            3
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "avoid_cards",
+            "detail": "avoided all flagged cards",
+            "chosen_cards": [
+              3,
+              3
+            ]
+          }
+        }
+      ],
+      "legality_gate": true,
+      "preference_pass": 2,
+      "preference_fail": 2,
+      "preference_na": 1,
+      "branch_id": "policy_secret_box_safety_v1"
+    },
+    "policy_deckout_guard_v2": {
+      "run_dir": "experiments/runs_pass6/20260618_023610_04_policy_deckout_guard_v2",
+      "fixtures_dir": "data/replay_fixtures",
+      "n_fixtures": 5,
+      "loaded": true,
+      "load_error": null,
+      "fixtures": [
+        {
+          "id": "setup_active_choice",
+          "context_name": "choose_active",
+          "effect_card_id": null,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "prefer_cards",
+            "detail": "picked a preferred card",
+            "chosen_cards": [
+              722
+            ]
+          }
+        },
+        {
+          "id": "step112_low_deck_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1219,
+          "error": null,
+          "action": [],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "decline",
+            "detail": "declined",
+            "chosen_cards": []
+          }
+        },
+        {
+          "id": "step11_secret_box_discard",
+          "context_name": "discard",
+          "effect_card_id": 1092,
+          "error": null,
+          "action": [
+            0,
+            1,
+            2
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "na",
+            "kind": "forced_all",
+            "detail": "forced selection; no preference to satisfy",
+            "chosen_cards": [
+              3,
+              3,
+              722
+            ]
+          }
+        },
+        {
+          "id": "step17_mega_signal_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1145,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [723] instead of declining",
+            "chosen_cards": [
+              723
+            ]
+          }
+        },
+        {
+          "id": "step28_ultra_ball_discard",
+          "context_name": "discard",
+          "effect_card_id": 1121,
+          "error": null,
+          "action": [
+            0,
+            1
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "avoid_cards",
+            "detail": "selected flagged card(s) [723]",
+            "chosen_cards": [
+              723,
+              3
+            ]
+          }
+        }
+      ],
+      "legality_gate": true,
+      "preference_pass": 2,
+      "preference_fail": 2,
+      "preference_na": 1,
+      "branch_id": "policy_deckout_guard_v2"
+    },
+    "policy_attachment_targeting_v1": {
+      "run_dir": "experiments/runs_pass6/20260618_023610_07_policy_attachment_targeting_v1",
+      "fixtures_dir": "data/replay_fixtures",
+      "n_fixtures": 5,
+      "loaded": true,
+      "load_error": null,
+      "fixtures": [
+        {
+          "id": "setup_active_choice",
+          "context_name": "choose_active",
+          "effect_card_id": null,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "prefer_cards",
+            "detail": "picked a preferred card",
+            "chosen_cards": [
+              722
+            ]
+          }
+        },
+        {
+          "id": "step112_low_deck_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1219,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [1227] instead of declining",
+            "chosen_cards": [
+              1227
+            ]
+          }
+        },
+        {
+          "id": "step11_secret_box_discard",
+          "context_name": "discard",
+          "effect_card_id": 1092,
+          "error": null,
+          "action": [
+            0,
+            1,
+            2
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "na",
+            "kind": "forced_all",
+            "detail": "forced selection; no preference to satisfy",
+            "chosen_cards": [
+              3,
+              3,
+              722
+            ]
+          }
+        },
+        {
+          "id": "step17_mega_signal_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1145,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [723] instead of declining",
+            "chosen_cards": [
+              723
+            ]
+          }
+        },
+        {
+          "id": "step28_ultra_ball_discard",
+          "context_name": "discard",
+          "effect_card_id": 1121,
+          "error": null,
+          "action": [
+            0,
+            1
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "avoid_cards",
+            "detail": "selected flagged card(s) [723]",
+            "chosen_cards": [
+              723,
+              3
+            ]
+          }
+        }
+      ],
+      "legality_gate": true,
+      "preference_pass": 1,
+      "preference_fail": 3,
+      "preference_na": 1,
+      "branch_id": "policy_attachment_targeting_v1"
+    },
+    "combo_effect_resolution_v3__deckout_guard_v2": {
+      "run_dir": "experiments/runs_pass6/20260618_023610_02_combo_effect_resolution_v3__deckout_guard_v2",
+      "fixtures_dir": "data/replay_fixtures",
+      "n_fixtures": 5,
+      "loaded": true,
+      "load_error": null,
+      "fixtures": [
+        {
+          "id": "setup_active_choice",
+          "context_name": "choose_active",
+          "effect_card_id": null,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "prefer_cards",
+            "detail": "picked a preferred card",
+            "chosen_cards": [
+              722
+            ]
+          }
+        },
+        {
+          "id": "step112_low_deck_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1219,
+          "error": null,
+          "action": [],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "decline",
+            "detail": "declined",
+            "chosen_cards": []
+          }
+        },
+        {
+          "id": "step11_secret_box_discard",
+          "context_name": "discard",
+          "effect_card_id": 1092,
+          "error": null,
+          "action": [
+            0,
+            1,
+            2
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "na",
+            "kind": "forced_all",
+            "detail": "forced selection; no preference to satisfy",
+            "chosen_cards": [
+              3,
+              3,
+              722
+            ]
+          }
+        },
+        {
+          "id": "step17_mega_signal_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1145,
+          "error": null,
+          "action": [],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "decline",
+            "detail": "declined",
+            "chosen_cards": []
+          }
+        },
+        {
+          "id": "step28_ultra_ball_discard",
+          "context_name": "discard",
+          "effect_card_id": 1121,
+          "error": null,
+          "action": [
+            1,
+            3
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "avoid_cards",
+            "detail": "avoided all flagged cards",
+            "chosen_cards": [
+              3,
+              3
+            ]
+          }
+        }
+      ],
+      "legality_gate": true,
+      "preference_pass": 4,
+      "preference_fail": 0,
+      "preference_na": 1,
+      "branch_id": "combo_effect_resolution_v3__deckout_guard_v2"
+    },
+    "combo_effect_resolution_v3__secret_box_safety": {
+      "run_dir": "experiments/runs_pass6/20260618_023610_05_combo_effect_resolution_v3__secret_box_safety",
+      "fixtures_dir": "data/replay_fixtures",
+      "n_fixtures": 5,
+      "loaded": true,
+      "load_error": null,
+      "fixtures": [
+        {
+          "id": "setup_active_choice",
+          "context_name": "choose_active",
+          "effect_card_id": null,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "prefer_cards",
+            "detail": "picked a preferred card",
+            "chosen_cards": [
+              722
+            ]
+          }
+        },
+        {
+          "id": "step112_low_deck_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1219,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [1227] instead of declining",
+            "chosen_cards": [
+              1227
+            ]
+          }
+        },
+        {
+          "id": "step11_secret_box_discard",
+          "context_name": "discard",
+          "effect_card_id": 1092,
+          "error": null,
+          "action": [
+            0,
+            1,
+            2
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "na",
+            "kind": "forced_all",
+            "detail": "forced selection; no preference to satisfy",
+            "chosen_cards": [
+              3,
+              3,
+              722
+            ]
+          }
+        },
+        {
+          "id": "step17_mega_signal_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1145,
+          "error": null,
+          "action": [],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "decline",
+            "detail": "declined",
+            "chosen_cards": []
+          }
+        },
+        {
+          "id": "step28_ultra_ball_discard",
+          "context_name": "discard",
+          "effect_card_id": 1121,
+          "error": null,
+          "action": [
+            1,
+            3
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "avoid_cards",
+            "detail": "avoided all flagged cards",
+            "chosen_cards": [
+              3,
+              3
+            ]
+          }
+        }
+      ],
+      "legality_gate": true,
+      "preference_pass": 3,
+      "preference_fail": 1,
+      "preference_na": 1,
+      "branch_id": "combo_effect_resolution_v3__secret_box_safety"
+    },
+    "combo_full_v3": {
+      "run_dir": "experiments/runs_pass6/20260618_023610_06_combo_full_v3",
+      "fixtures_dir": "data/replay_fixtures",
+      "n_fixtures": 5,
+      "loaded": true,
+      "load_error": null,
+      "fixtures": [
+        {
+          "id": "setup_active_choice",
+          "context_name": "choose_active",
+          "effect_card_id": null,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "prefer_cards",
+            "detail": "picked a preferred card",
+            "chosen_cards": [
+              722
+            ]
+          }
+        },
+        {
+          "id": "step112_low_deck_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1219,
+          "error": null,
+          "action": [],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "decline",
+            "detail": "declined",
+            "chosen_cards": []
+          }
+        },
+        {
+          "id": "step11_secret_box_discard",
+          "context_name": "discard",
+          "effect_card_id": 1092,
+          "error": null,
+          "action": [
+            0,
+            1,
+            2
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "na",
+            "kind": "forced_all",
+            "detail": "forced selection; no preference to satisfy",
+            "chosen_cards": [
+              3,
+              3,
+              722
+            ]
+          }
+        },
+        {
+          "id": "step17_mega_signal_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1145,
+          "error": null,
+          "action": [],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "decline",
+            "detail": "declined",
+            "chosen_cards": []
+          }
+        },
+        {
+          "id": "step28_ultra_ball_discard",
+          "context_name": "discard",
+          "effect_card_id": 1121,
+          "error": null,
+          "action": [
+            1,
+            3
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "avoid_cards",
+            "detail": "avoided all flagged cards",
+            "chosen_cards": [
+              3,
+              3
+            ]
+          }
+        }
+      ],
+      "legality_gate": true,
+      "preference_pass": 4,
+      "preference_fail": 0,
+      "preference_na": 1,
+      "branch_id": "combo_full_v3"
+    },
+    "deck_v2_no_secret_box__powerglass": {
+      "run_dir": "experiments/runs_pass6/20260618_023610_10_deck_v2_no_secret_box__powerglass",
+      "fixtures_dir": "data/replay_fixtures",
+      "n_fixtures": 5,
+      "loaded": true,
+      "load_error": null,
+      "fixtures": [
+        {
+          "id": "setup_active_choice",
+          "context_name": "choose_active",
+          "effect_card_id": null,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "prefer_cards",
+            "detail": "picked a preferred card",
+            "chosen_cards": [
+              722
+            ]
+          }
+        },
+        {
+          "id": "step112_low_deck_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1219,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [1227] instead of declining",
+            "chosen_cards": [
+              1227
+            ]
+          }
+        },
+        {
+          "id": "step11_secret_box_discard",
+          "context_name": "discard",
+          "effect_card_id": 1092,
+          "error": null,
+          "action": [
+            0,
+            1,
+            2
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "na",
+            "kind": "forced_all",
+            "detail": "forced selection; no preference to satisfy",
+            "chosen_cards": [
+              3,
+              3,
+              722
+            ]
+          }
+        },
+        {
+          "id": "step17_mega_signal_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1145,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [723] instead of declining",
+            "chosen_cards": [
+              723
+            ]
+          }
+        },
+        {
+          "id": "step28_ultra_ball_discard",
+          "context_name": "discard",
+          "effect_card_id": 1121,
+          "error": null,
+          "action": [
+            0,
+            1
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "avoid_cards",
+            "detail": "selected flagged card(s) [723]",
+            "chosen_cards": [
+              723,
+              3
+            ]
+          }
+        }
+      ],
+      "legality_gate": true,
+      "preference_pass": 1,
+      "preference_fail": 3,
+      "preference_na": 1,
+      "branch_id": "deck_v2_no_secret_box__powerglass"
+    },
+    "deck_v2_no_secret_box__mega_signal": {
+      "run_dir": "experiments/runs_pass6/20260618_023610_09_deck_v2_no_secret_box__mega_signal",
+      "fixtures_dir": "data/replay_fixtures",
+      "n_fixtures": 5,
+      "loaded": true,
+      "load_error": null,
+      "fixtures": [
+        {
+          "id": "setup_active_choice",
+          "context_name": "choose_active",
+          "effect_card_id": null,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "prefer_cards",
+            "detail": "picked a preferred card",
+            "chosen_cards": [
+              722
+            ]
+          }
+        },
+        {
+          "id": "step112_low_deck_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1219,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [1227] instead of declining",
+            "chosen_cards": [
+              1227
+            ]
+          }
+        },
+        {
+          "id": "step11_secret_box_discard",
+          "context_name": "discard",
+          "effect_card_id": 1092,
+          "error": null,
+          "action": [
+            0,
+            1,
+            2
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "na",
+            "kind": "forced_all",
+            "detail": "forced selection; no preference to satisfy",
+            "chosen_cards": [
+              3,
+              3,
+              722
+            ]
+          }
+        },
+        {
+          "id": "step17_mega_signal_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1145,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [723] instead of declining",
+            "chosen_cards": [
+              723
+            ]
+          }
+        },
+        {
+          "id": "step28_ultra_ball_discard",
+          "context_name": "discard",
+          "effect_card_id": 1121,
+          "error": null,
+          "action": [
+            0,
+            1
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "avoid_cards",
+            "detail": "selected flagged card(s) [723]",
+            "chosen_cards": [
+              723,
+              3
+            ]
+          }
+        }
+      ],
+      "legality_gate": true,
+      "preference_pass": 1,
+      "preference_fail": 3,
+      "preference_na": 1,
+      "branch_id": "deck_v2_no_secret_box__mega_signal"
+    },
+    "deck_v2_no_secret_box__surfing_beach": {
+      "run_dir": "experiments/runs_pass6/20260618_023610_11_deck_v2_no_secret_box__surfing_beach",
+      "fixtures_dir": "data/replay_fixtures",
+      "n_fixtures": 5,
+      "loaded": true,
+      "load_error": null,
+      "fixtures": [
+        {
+          "id": "setup_active_choice",
+          "context_name": "choose_active",
+          "effect_card_id": null,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "prefer_cards",
+            "detail": "picked a preferred card",
+            "chosen_cards": [
+              722
+            ]
+          }
+        },
+        {
+          "id": "step112_low_deck_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1219,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [1227] instead of declining",
+            "chosen_cards": [
+              1227
+            ]
+          }
+        },
+        {
+          "id": "step11_secret_box_discard",
+          "context_name": "discard",
+          "effect_card_id": 1092,
+          "error": null,
+          "action": [
+            0,
+            1,
+            2
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "na",
+            "kind": "forced_all",
+            "detail": "forced selection; no preference to satisfy",
+            "chosen_cards": [
+              3,
+              3,
+              722
+            ]
+          }
+        },
+        {
+          "id": "step17_mega_signal_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1145,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [723] instead of declining",
+            "chosen_cards": [
+              723
+            ]
+          }
+        },
+        {
+          "id": "step28_ultra_ball_discard",
+          "context_name": "discard",
+          "effect_card_id": 1121,
+          "error": null,
+          "action": [
+            0,
+            1
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "avoid_cards",
+            "detail": "selected flagged card(s) [723]",
+            "chosen_cards": [
+              723,
+              3
+            ]
+          }
+        }
+      ],
+      "legality_gate": true,
+      "preference_pass": 1,
+      "preference_fail": 3,
+      "preference_na": 1,
+      "branch_id": "deck_v2_no_secret_box__surfing_beach"
+    },
+    "deck_v2_less_petrel__powerglass": {
+      "run_dir": "experiments/runs_pass6/20260618_023610_08_deck_v2_less_petrel__powerglass",
+      "fixtures_dir": "data/replay_fixtures",
+      "n_fixtures": 5,
+      "loaded": true,
+      "load_error": null,
+      "fixtures": [
+        {
+          "id": "setup_active_choice",
+          "context_name": "choose_active",
+          "effect_card_id": null,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "prefer_cards",
+            "detail": "picked a preferred card",
+            "chosen_cards": [
+              722
+            ]
+          }
+        },
+        {
+          "id": "step112_low_deck_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1219,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [1227] instead of declining",
+            "chosen_cards": [
+              1227
+            ]
+          }
+        },
+        {
+          "id": "step11_secret_box_discard",
+          "context_name": "discard",
+          "effect_card_id": 1092,
+          "error": null,
+          "action": [
+            0,
+            1,
+            2
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "na",
+            "kind": "forced_all",
+            "detail": "forced selection; no preference to satisfy",
+            "chosen_cards": [
+              3,
+              3,
+              722
+            ]
+          }
+        },
+        {
+          "id": "step17_mega_signal_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1145,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [723] instead of declining",
+            "chosen_cards": [
+              723
+            ]
+          }
+        },
+        {
+          "id": "step28_ultra_ball_discard",
+          "context_name": "discard",
+          "effect_card_id": 1121,
+          "error": null,
+          "action": [
+            0,
+            1
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "avoid_cards",
+            "detail": "selected flagged card(s) [723]",
+            "chosen_cards": [
+              723,
+              3
+            ]
+          }
+        }
+      ],
+      "legality_gate": true,
+      "preference_pass": 1,
+      "preference_fail": 3,
+      "preference_na": 1,
+      "branch_id": "deck_v2_less_petrel__powerglass"
+    },
+    "chaos_v6_froslass_handcount": {
+      "run_dir": "experiments/runs_pass6/20260618_023610_12_chaos_v6_froslass_handcount",
+      "fixtures_dir": "data/replay_fixtures",
+      "n_fixtures": 5,
+      "loaded": true,
+      "load_error": null,
+      "fixtures": [
+        {
+          "id": "setup_active_choice",
+          "context_name": "choose_active",
+          "effect_card_id": null,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "prefer_cards",
+            "detail": "picked a preferred card",
+            "chosen_cards": [
+              722
+            ]
+          }
+        },
+        {
+          "id": "step112_low_deck_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1219,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [1227] instead of declining",
+            "chosen_cards": [
+              1227
+            ]
+          }
+        },
+        {
+          "id": "step11_secret_box_discard",
+          "context_name": "discard",
+          "effect_card_id": 1092,
+          "error": null,
+          "action": [
+            0,
+            1,
+            2
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "na",
+            "kind": "forced_all",
+            "detail": "forced selection; no preference to satisfy",
+            "chosen_cards": [
+              3,
+              3,
+              722
+            ]
+          }
+        },
+        {
+          "id": "step17_mega_signal_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1145,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [723] instead of declining",
+            "chosen_cards": [
+              723
+            ]
+          }
+        },
+        {
+          "id": "step28_ultra_ball_discard",
+          "context_name": "discard",
+          "effect_card_id": 1121,
+          "error": null,
+          "action": [
+            0,
+            1
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "avoid_cards",
+            "detail": "selected flagged card(s) [723]",
+            "chosen_cards": [
+              723,
+              3
+            ]
+          }
+        }
+      ],
+      "legality_gate": true,
+      "preference_pass": 1,
+      "preference_fail": 3,
+      "preference_na": 1,
+      "branch_id": "chaos_v6_froslass_handcount"
+    },
+    "chaos_v6_durant_mill": {
+      "run_dir": "experiments/runs_pass6/20260618_023610_13_chaos_v6_durant_mill",
+      "fixtures_dir": "data/replay_fixtures",
+      "n_fixtures": 5,
+      "loaded": true,
+      "load_error": null,
+      "fixtures": [
+        {
+          "id": "setup_active_choice",
+          "context_name": "choose_active",
+          "effect_card_id": null,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "pass",
+            "kind": "prefer_cards",
+            "detail": "picked a preferred card",
+            "chosen_cards": [
+              722
+            ]
+          }
+        },
+        {
+          "id": "step112_low_deck_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1219,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [1227] instead of declining",
+            "chosen_cards": [
+              1227
+            ]
+          }
+        },
+        {
+          "id": "step11_secret_box_discard",
+          "context_name": "discard",
+          "effect_card_id": 1092,
+          "error": null,
+          "action": [
+            0,
+            1,
+            2
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "na",
+            "kind": "forced_all",
+            "detail": "forced selection; no preference to satisfy",
+            "chosen_cards": [
+              3,
+              3,
+              722
+            ]
+          }
+        },
+        {
+          "id": "step17_mega_signal_search",
+          "context_name": "search_to_hand",
+          "effect_card_id": 1145,
+          "error": null,
+          "action": [
+            0
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "decline",
+            "detail": "selected [723] instead of declining",
+            "chosen_cards": [
+              723
+            ]
+          }
+        },
+        {
+          "id": "step28_ultra_ball_discard",
+          "context_name": "discard",
+          "effect_card_id": 1121,
+          "error": null,
+          "action": [
+            0,
+            1
+          ],
+          "legal": true,
+          "legal_reason": "ok",
+          "preference": {
+            "result": "fail",
+            "kind": "avoid_cards",
+            "detail": "selected flagged card(s) [723]",
+            "chosen_cards": [
+              723,
+              3
+            ]
+          }
+        }
+      ],
+      "legality_gate": true,
+      "preference_pass": 1,
+      "preference_fail": 3,
+      "preference_na": 1,
+      "branch_id": "chaos_v6_durant_mill"
+    }
+  }
+}

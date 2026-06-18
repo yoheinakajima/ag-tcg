@@ -196,15 +196,36 @@ What is now captured (per game, candidate seat only):
   the board-pressure signals chaos archetypes care about.
 - **`context_counts`** — raw histogram of every `select.context` value seen.
 
-**Limitations (honest scope).** All telemetry is derived **strictly from the
-candidate's own observation** (`current.players[yourIndex]` + `select.context`).
-It does **not** observe the opponent's hidden hand or deck contents, so chaos
-seams that depend on the *opponent's* hand size, deck composition, or status
-(e.g. hand-avalanche, mill, status-lock) still cannot be directly measured from
-our seat — those remain `uncertain` and blocked. The hooks the override layer
-can act on are also still option-type / keyword weights, not a board-state
-targeting engine; the telemetry measures outcomes, it does not add a new control
-hook.
+### 4b. Pass 6 correction — opponent counts/board/status ARE observable
+
+Pass 5's "all opponent state is hidden" assumption was **too conservative**.
+Verified against replay `80374966` (`observation.current.players[i]`), our seat
+observes, for **both** seats: `handCount`, `deckCount`, `active`/`bench` revealed
+card ids, `benchMax`, `discard`, `prize` count, and the status flags
+(`asleep`/`burned`/`confused`/`paralyzed`/`poisoned`). What stays genuinely
+hidden for the opponent is only the **contents** of face-down zones: `hand`
+(null while `handCount` is a real integer), `deck` (absent from the observation —
+only `deckCount`), and `prize` identities (null placeholders; count observable).
+
+`src/ptcg_activegraph/experiments/telemetry.py` `read_observation()` returns this
+corrected view with explicit `uncertainty` flags for every null / face-down
+entry. Consequently each chaos seam's **policy trigger** (opponent hand size,
+bench size, deck count, status flags) is observable and can drive a candidate.
+Two caveats remain, recorded honestly per seam in
+`data/experiments/chaos_telemetry_contract.json`:
+
+1. **Payoff proof is a proxy.** The harness records win/loss + decision
+   telemetry, not per-attack damage dealt, so "big hand → big damage" causation
+   stays a win-rate proxy, not a proven mechanism.
+2. **Build gate.** A legal 60-card decklist must still be confirmed from MATCHed
+   card ids (never invented) and pass smoke before a seam is evaluated; where
+   that is not met the seam stays blocked with the exact reason.
+
+**Limitations (honest scope).** Telemetry is still derived from the cabt
+observation only; opponent hand/deck/prize *contents* and any face-down identity
+remain `uncertain`. The override layer's hooks are option-type / keyword /
+board-state weights, not a full targeting engine; the telemetry measures
+outcomes and observable triggers, it does not simulate hidden information.
 
 ## 5. Reporting seams
 

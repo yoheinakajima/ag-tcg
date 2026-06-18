@@ -29,11 +29,14 @@ def main() -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--stage",
                         choices=["broad", "focused", "pass4_scout",
-                                 "pass5_scout", "pass5_focused"], default="broad",
+                                 "pass5_scout", "pass5_focused",
+                                 "pass6_scout", "pass6_focused"], default="broad",
                         help="broad -> latest_ranking.*; focused -> focused_ranking.*; "
                              "pass4_scout -> pass4_scout_ranking.*; "
                              "pass5_scout -> pass5_scout_ranking.*; "
-                             "pass5_focused -> pass5_focused_ranking.* "
+                             "pass5_focused -> pass5_focused_ranking.*; "
+                             "pass6_scout -> pass6_scout_ranking.*; "
+                             "pass6_focused -> pass6_focused_ranking.* "
                              "(only ranks candidates evaluated at that stage)")
     parser.add_argument("--min-games", type=int, default=None,
                         help="minimum completed games before a candidate is promotable")
@@ -52,7 +55,8 @@ def main() -> int:
         # The focused / pass4_scout rankings only consider candidates actually
         # evaluated at that stage, so stale broad metrics from un-promoted
         # candidates never dilute a stage-specific board.
-        if (args.stage in ("focused", "pass4_scout", "pass5_scout", "pass5_focused")
+        if (args.stage in ("focused", "pass4_scout", "pass5_scout",
+                            "pass5_focused", "pass6_scout", "pass6_focused")
                 and m.get("stage") != args.stage):
             continue
         metrics_list.append(m)
@@ -70,7 +74,8 @@ def main() -> int:
     min_games = args.min_games
     if min_games is None:
         min_games = {"focused": 30, "pass4_scout": 20,
-                     "pass5_scout": 20, "pass5_focused": 30}.get(args.stage, 8)
+                     "pass5_scout": 20, "pass5_focused": 30,
+                     "pass6_scout": 20, "pass6_focused": 30}.get(args.stage, 8)
 
     store = EventStore(LAB_EVENTS_PATH)
     ranked = rank(metrics_list, event_store=store, min_games=min_games)

@@ -1,0 +1,17 @@
+[
+  {
+    "branch_id": "chaos_v6_bench_bloat_punisher",
+    "seam_id": "chaos.bench_bloat_punisher",
+    "track": "chaos",
+    "reason": "Accompanying Flute (1091) and the win-condition metric (opp benchCount) are confirmed/observable, but every bench-COUNT-scaling attacker in this archetype is an evolution whose basic is unconfirmed (Zoroark<-Zorua, Gengar<-Haunter<-Gastly, Incineroar ex<-Torracat<-Litten); the only confirmed Basics (Ogerpon 95, Zeraora 956) have no confirmed bench-scaling attack. Cannot build without inventing ids or fabricating the scaling mechanic.",
+    "hypothesis": "Crowd the opponent bench with Accompanying Flute (benchCount is now observable), then punish bench size with bench-scaling attackers.",
+    "core_card_ids": [
+      1091,
+      615,
+      1059,
+      79,
+      95,
+      956
+    ]
+  }
+]

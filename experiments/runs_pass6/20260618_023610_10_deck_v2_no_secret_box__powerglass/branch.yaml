@@ -1,0 +1,47 @@
+branch_id: deck_v2_no_secret_box__powerglass
+seam_id: deck.secret_box_swap
+family: deck_construction
+kind: deck
+archetype: consistency_engine
+hypothesis: Cut the lone Secret Box (1092) for a 3rd Powerglass (1163) to test whether
+  a steadier energy-acceleration item beats the one-shot Secret Box toolbox over the
+  v2 control.
+parent: v1_kaggle_349_8
+created_at: '2026-06-18T02:36:10'
+run_dir: experiments/runs_pass6/20260618_023610_10_deck_v2_no_secret_box__powerglass
+policy_overrides: {}
+policy_diff: {}
+deck_diff:
+  '3':
+    name: Basic {W} Energy
+    from: 33
+    to: 29
+    delta: -4
+  '721':
+    name: Kyogre
+    from: 2
+    to: 4
+    delta: 2
+  '1092':
+    name: Secret Box
+    from: 1
+    to: 0
+    delta: -1
+  '1121':
+    name: Ultra Ball
+    from: 2
+    to: 4
+    delta: 2
+  '1163':
+    name: Powerglass
+    from: 2
+    to: 3
+    delta: 1
+deck_summary:
+  size: 60
+  unique: 10
+  warnings:
+  - card 3 appears 29 times (> 4)
+notes: []
+testable: true
+blocked_reason: ''

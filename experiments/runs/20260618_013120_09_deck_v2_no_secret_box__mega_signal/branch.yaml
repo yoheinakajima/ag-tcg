@@ -1,0 +1,47 @@
+branch_id: deck_v2_no_secret_box__mega_signal
+seam_id: deck.secret_box_swap
+family: deck_construction
+kind: deck
+archetype: consistency_engine
+hypothesis: Cut the lone Secret Box (1092) for a 3rd Mega Signal (1145) to bias toward
+  fetching the Snover -> Mega Abomasnow ex line more often than the Secret Box toolbox
+  does.
+parent: v1_kaggle_349_8
+created_at: '2026-06-18T01:31:20'
+run_dir: experiments/runs/20260618_013120_09_deck_v2_no_secret_box__mega_signal
+policy_overrides: {}
+policy_diff: {}
+deck_diff:
+  '3':
+    name: Basic {W} Energy
+    from: 33
+    to: 29
+    delta: -4
+  '721':
+    name: Kyogre
+    from: 2
+    to: 4
+    delta: 2
+  '1092':
+    name: Secret Box
+    from: 1
+    to: 0
+    delta: -1
+  '1121':
+    name: Ultra Ball
+    from: 2
+    to: 4
+    delta: 2
+  '1145':
+    name: Mega Signal
+    from: 2
+    to: 3
+    delta: 1
+deck_summary:
+  size: 60
+  unique: 10
+  warnings:
+  - card 3 appears 29 times (> 4)
+notes: []
+testable: true
+blocked_reason: ''
