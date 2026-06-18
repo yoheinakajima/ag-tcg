@@ -54,6 +54,10 @@ PASS10_META_SUMMARY_JSON = Path("data/meta_replays/meta_replay_summary.json")
 PASS10_META_POOL_YAML = Path("experiments/meta_pool.yaml")
 PASS10_CANDIDATES_MANIFEST_JSON = Path("data/submissions/pass10_candidates_manifest.json")
 PASS10_EVAL_STATUS_JSON = Path("data/meta_replays/pass10_eval_status.json")
+# Pass 10B — evaluation recovery + replay acquisition artifacts.
+PASS10B_LIVE_REGISTRY_JSON = Path("data/kaggle_uploads/live_score_registry.json")
+PASS10B_CABT_DIAG_JSON = Path("data/experiments/cabt_diagnostic.json")
+PASS10B_EVAL_SMOKE_JSON = Path("data/experiments/pass10b_eval_smoke.json")
 
 # Corrected live baseline scores (see v2 baseline README correction note: the
 # v1 archive dir keeps its historical `349_8` name but live v1 is 356.9).
@@ -186,6 +190,9 @@ def gather(runs_root=RUNS_ROOT) -> dict:
         "pass10_meta_pool": _load_yaml(PASS10_META_POOL_YAML) or {},
         "pass10_candidates": _load_json(PASS10_CANDIDATES_MANIFEST_JSON) or {},
         "pass10_eval": _load_json(PASS10_EVAL_STATUS_JSON) or {},
+        "pass10b_live_registry": _load_json(PASS10B_LIVE_REGISTRY_JSON) or {},
+        "pass10b_cabt_diag": _load_json(PASS10B_CABT_DIAG_JSON) or {},
+        "pass10b_eval_smoke": _load_json(PASS10B_EVAL_SMOKE_JSON) or {},
         "runs": runs,
         "baseline_readme": (BASELINE_DIR / "README.md"),
         "v2_baseline_readme": (V2_BASELINE_DIR / "README.md"),
@@ -304,6 +311,7 @@ def _overview_html(data: dict) -> str:
 
     body = (
         f"<section><h2>Snapshot</h2><div class=cards>{cards}</div></section>"
+        f"{_pass10b_html(data)}"
         f"{_pass10_html(data)}"
         f"{_run_ledger_html(data)}"
         f"{_pass8_html(data)}"
@@ -820,6 +828,133 @@ def _events_html(data: dict) -> str:
     return _page("Event stream", body)
 
 
+def _pass10b_html(data: dict) -> str:
+    reg = data.get("pass10b_live_registry") or {}
+    diag = data.get("pass10b_cabt_diag") or {}
+    smoke = data.get("pass10b_eval_smoke") or {}
+    if not (reg or diag or smoke):
+        return ("<section><h2>Pass 10B — Evaluation recovery</h2>"
+                "<div class=empty>No Pass 10B artifacts yet.</div></section>")
+
+    ac = reg.get("active_control") or {}
+    counts = reg.get("counts") or {}
+    sub_rows = "".join(
+        f"<tr><td><code>{_esc(s.get('filename'))}</code></td>"
+        f"<td>{_esc(s.get('date'))}</td><td>{_esc(s.get('status'))}</td>"
+        f"<td>{_esc(s.get('public_score') if s.get('public_score') is not None else '—')}</td>"
+        f"<td class={'ok' if s.get('classification') == 'active_control_candidate' else ('rej' if s.get('classification') in ('error', 'live_rejected') else '')}>"
+        f"{_esc(s.get('classification'))}</td></tr>"
+        for s in (reg.get("submissions") or [])
+    ) or "<tr><td class=muted colspan=5>no submissions</td></tr>"
+
+    cabt_ok = bool(diag.get("cabt_available"))
+    smoke_status = smoke.get("status")
+    return (
+        "<section><h2>Pass 10B — Evaluation recovery + replay acquisition</h2>"
+        "<p class=muted><b>Infrastructure pass — no Kaggle upload, no GitHub push, "
+        "no new candidates</b>; root <code>main.py</code>/<code>deck.csv</code> immutable.</p>"
+        "<div class=cards>"
+        f"<div class=card><div class=k>active control (dynamic)</div>"
+        f"<div class=v>{_esc(ac.get('filename'))} @ {_esc(ac.get('public_score'))}</div></div>"
+        f"<div class=card><div class=k>submissions</div><div class=v>"
+        f"{_esc(counts.get('complete'))} complete / {_esc(counts.get('error'))} error / "
+        f"{_esc(counts.get('pending'))} pending</div></div>"
+        f"<div class=card><div class=k>cabt available</div>"
+        f"<div class='v {'ok' if cabt_ok else 'rej'}'>{cabt_ok}</div></div>"
+        f"<div class=card><div class=k>eval smoke</div><div class=v>{_esc(smoke_status)}</div></div>"
+        "</div>"
+        "<h3>Live score registry (dynamic active control = highest complete non-error)</h3>"
+        "<table><tr><th>fileName</th><th>date</th><th>status</th><th>publicScore</th>"
+        f"<th>classification</th></tr>{sub_rows}</table>"
+        "<h3>cabt diagnostic</h3>"
+        f"<p class=muted>kaggle_environments import: <b>{_esc((diag.get('checks') or {}).get('kaggle_environments_import', {}).get('ok'))}</b>; "
+        f"make('cabt'): <b>{_esc((diag.get('checks') or {}).get('make_cabt', {}).get('ok'))}</b>; "
+        f"real self-play game: <b>{_esc((diag.get('checks') or {}).get('self_play_smoke', {}).get('ok'))}</b>. "
+        "<b>Correction:</b> the prior \"cabt absent / games not runnable\" conclusion was "
+        "wrong — kaggle-environments 1.30.1 ships a working cabt engine; full games run "
+        "locally again.</p>"
+        "<h3>Replay acquisition &amp; meta coverage</h3>"
+        "<p class=muted>Kaggle CLI has <b>no replay/episode download</b> command "
+        "(verified); missing opponent replays must be fetched manually — see "
+        "<code>data/meta_replays/REPLAY_ACQUISITION.md</code>. Externals "
+        "<code>metal_ex_zacian_ramp</code> and <code>water_kyogre_abomasnow_maxbelt</code> "
+        "stay <b>blocked</b> (no replay, ids unconfirmed); only the self-mirror surrogate "
+        "is real.</p>"
+        "<div class=empty><b>Eval engine restored; meta coverage still incomplete. "
+        "Nothing promotable. Queue empty. Next upload: none.</b></div>"
+        "</section>"
+    )
+
+
+def _pass10b_md(data: dict) -> list[str]:
+    reg = data.get("pass10b_live_registry") or {}
+    diag = data.get("pass10b_cabt_diag") or {}
+    smoke = data.get("pass10b_eval_smoke") or {}
+    if not (reg or diag or smoke):
+        return []
+    ac = reg.get("active_control") or {}
+    counts = reg.get("counts") or {}
+    checks = diag.get("checks") or {}
+    lines = ["## Pass 10B — Evaluation recovery + replay acquisition", ""]
+    lines.append("_Infrastructure pass — no Kaggle upload, no GitHub push, no new "
+                 "candidates; root main.py/deck.csv immutable._")
+    lines += ["", "### Live score registry (dynamic active control)",
+              f"- Submissions: {counts.get('complete')} complete / "
+              f"{counts.get('error')} error / {counts.get('pending')} pending",
+              f"- **Active control (dynamic):** `{ac.get('filename')}` @ "
+              f"**{ac.get('public_score')}** — highest publicScore among complete "
+              "non-error (no hardcoded v1/v2 label)"]
+    for r in reg.get("rejected_candidates") or []:
+        lines.append(f"- live-rejected: `{r.get('filename')}` @ {r.get('public_score')} "
+                     f"({r.get('reason')})")
+    lines += ["", "### cabt diagnostic",
+              f"- kaggle_environments import: **{checks.get('kaggle_environments_import', {}).get('ok')}**",
+              f"- make('cabt'): **{checks.get('make_cabt', {}).get('ok')}**",
+              f"- real self-play game: **{checks.get('self_play_smoke', {}).get('ok')}**",
+              f"- cabt available: **{diag.get('cabt_available')}**",
+              "- **Correction:** the prior \"cabt absent / games not runnable\" "
+              "conclusion was wrong — kaggle-environments 1.30.1 ships a working cabt "
+              "engine; full games run locally again."]
+    lines += ["", "### Replay acquisition & meta coverage",
+              "- Kaggle CLI has **no replay/episode download** command (verified); "
+              "missing replays must be fetched manually "
+              "(`data/meta_replays/REPLAY_ACQUISITION.md`).",
+              "- Externals `metal_ex_zacian_ramp` and "
+              "`water_kyogre_abomasnow_maxbelt` remain **blocked** (no replay, ids "
+              "unconfirmed); only the self-mirror surrogate is real."]
+    lines += ["", "### Evaluation smoke",
+              f"- Status: **{smoke.get('status')}** (cabt available: "
+              f"{smoke.get('cabt_available')}); can run future meta eval: "
+              f"**{smoke.get('can_run_future_meta_eval')}**",
+              "- **Eval engine restored; meta coverage still incomplete. Nothing "
+              "promotable. Queue empty. Next upload: none.**"]
+    return lines
+
+
+def _pass10_control_scores(pool: dict) -> dict:
+    """Resolve v1 / v2 / rejected live scores by *identity* (candidate_id).
+
+    The Pass 10 section must stay correct even after ``meta_pool.yaml`` is updated
+    to a later pass's schema (Pass 10B makes the dynamic active control v1, and
+    renames the v2 entry), so we never key off the role ("active_control") — only
+    off the candidate identity.
+    """
+    controls = pool.get("controls") or {}
+    scores = {"v1": None, "v2": None, "rejected": None}
+    for entry in controls.values():
+        if not isinstance(entry, dict):
+            continue
+        cid = (entry.get("candidate_id") or "").lower()
+        score = entry.get("live_public_score")
+        if cid == "v1":
+            scores["v1"] = score
+        elif "deck_energy_trim_light" in cid:
+            scores["v2"] = score
+        elif "combo" in cid or entry.get("decision") == "live_rejected":
+            scores["rejected"] = score
+    return scores
+
+
 def _pass10_html(data: dict) -> str:
     summary = data.get("pass10_meta_summary") or {}
     pool = data.get("pass10_meta_pool") or {}
@@ -829,16 +964,13 @@ def _pass10_html(data: dict) -> str:
         return ("<section><h2>Pass 10 — Meta-calibrated evaluation + tempo</h2>"
                 "<div class=empty>No Pass 10 artifacts yet.</div></section>")
 
-    controls = (pool.get("controls") or {})
-    ac = controls.get("active_control") or {}
-    v1ref = controls.get("reference_v1") or {}
-    rej = controls.get("rejected") or {}
+    sc = _pass10_control_scores(pool)
     score_cards = "".join(
         f"<div class=card><div class=k>{_esc(k)}</div><div class=v>{_esc(v)}</div></div>"
         for k, v in [
-            ("v2 control (live)", ac.get("live_public_score")),
-            ("v1 reference (live)", v1ref.get("live_public_score")),
-            ("combo_fixed (rejected)", rej.get("live_public_score")),
+            ("v2 control (live)", sc["v2"]),
+            ("v1 reference (live)", sc["v1"]),
+            ("combo_fixed (rejected)", sc["rejected"]),
             ("weighted meta score", ev.get("weighted_meta_score")),
             ("Kaggle upload", "none"),
         ]
@@ -884,8 +1016,8 @@ def _pass10_html(data: dict) -> str:
         "root <code>main.py</code>/<code>deck.csv</code> immutable.</p>"
         "<p class=muted><b>Local-vs-Kaggle mismatch lesson:</b> the v2 control's "
         "live score has drifted from its historical 479.1 to ~"
-        f"{_esc(ac.get('live_public_score'))}; the v1 reference now sits at "
-        f"{_esc(v1ref.get('live_public_score'))} (above v2). Local proxies and "
+        f"{_esc(sc['v2'])}; the v1 reference now sits at "
+        f"{_esc(sc['v1'])} (above v2). Local proxies and "
         "early public scores are unreliable predictors of the settled ladder.</p>"
         "<h3>Opponent archetypes (mirror real; externals blocked)</h3>"
         "<table><tr><th>Archetype</th><th>Status</th><th>Weight</th>"
@@ -897,10 +1029,12 @@ def _pass10_html(data: dict) -> str:
         f"<th>Note</th></tr>{cand_rows}</table>"
         "<h3>Evaluation & queue</h3>"
         f"<p class=muted>Games runnable locally: <b>{_esc(ev.get('games_runnable_locally'))}</b> "
-        f"(cabt engine absent). Coverage <b>{_esc(ev.get('coverage'))}</b>, "
+        "(Pass 10-era status: cabt engine assumed absent — <b>superseded by Pass 10B</b>, "
+        "which confirmed cabt runs full games locally; see the Pass 10B section above). "
+        f"Coverage <b>{_esc(ev.get('coverage'))}</b>, "
         f"complete={_esc(ev.get('eval_complete'))}. "
         "Evaluation is <b>INCOMPLETE (scout only)</b>: most of the meta is blocked "
-        "and no games could be run.</p>"
+        "and no games could be run at Pass 10.</p>"
         "<div class=empty><b>Nothing promotable. Queue stays empty. "
         "Next upload: none.</b></div>"
         "</section>"
@@ -914,23 +1048,20 @@ def _pass10_md(data: dict) -> list[str]:
     ev = data.get("pass10_eval") or {}
     if not (summary or pool or cands or ev):
         return []
-    controls = (pool.get("controls") or {})
-    ac = controls.get("active_control") or {}
-    v1ref = controls.get("reference_v1") or {}
-    rej = controls.get("rejected") or {}
+    sc = _pass10_control_scores(pool)
     lines = ["## Pass 10 — Meta-calibrated evaluation + tempo playbook", ""]
     lines.append("_Local research only — no Kaggle upload, no GitHub push; root "
                  "main.py/deck.csv immutable._")
     lines += ["", "### Live Kaggle scores (Part A)",
-              f"- v2 control `deck_energy_trim_light`: **{ac.get('live_public_score')}** "
+              f"- v2 control `deck_energy_trim_light`: **{sc['v2']}** "
               "(historical/early 479.1)",
-              f"- v1 reference: **{v1ref.get('live_public_score')}** (currently above v2)",
-              f"- `combo_full_safety_v3_fixed`: **{rej.get('live_public_score')}** "
+              f"- v1 reference: **{sc['v1']}** (currently above v2)",
+              f"- `combo_full_safety_v3_fixed`: **{sc['rejected']}** "
               "(complete, **live-rejected**)",
               "",
               "**Local-vs-Kaggle mismatch lesson:** the v2 control drifted from its "
-              f"historical 479.1 to ~{ac.get('live_public_score')} and v1 "
-              f"({v1ref.get('live_public_score')}) now outscores it; local proxies / "
+              f"historical 479.1 to ~{sc['v2']} and v1 "
+              f"({sc['v1']}) now outscores it; local proxies / "
               "early public scores do not reliably predict the settled ladder."]
     # Archetypes (honest meta pool: weights + coverage status).
     lines += ["", "### Opponent archetypes (meta pool coverage)"]
@@ -953,7 +1084,8 @@ def _pass10_md(data: dict) -> list[str]:
     # Eval + queue.
     lines += ["", "### Evaluation & queue",
               f"- Games runnable locally: **{ev.get('games_runnable_locally')}** "
-              "(cabt engine absent)",
+              "(Pass 10-era status: cabt assumed absent — **superseded by Pass 10B**, "
+              "which confirmed cabt runs full games locally)",
               f"- weighted_meta_score: **{ev.get('weighted_meta_score')}** "
               f"(coverage {ev.get('coverage')}, complete={ev.get('eval_complete')})",
               "- **INCOMPLETE (scout only). Nothing promotable. Queue empty. "
@@ -1416,6 +1548,8 @@ def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
         "",
     ]
 
+    lines += _pass10b_md(data)
+    lines += [""]
     lines += _pass10_md(data)
     lines += [""]
     lines += _run_ledger_md(data)

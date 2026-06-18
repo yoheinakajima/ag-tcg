@@ -49,3 +49,14 @@ per-game watchdog was added; without it the background driver appeared to "die".
 the game is recorded as `timeout=True` (a hard-reject), not a crash. SIGALRM only
 arms on the main thread (the batch is single-threaded) — fine here. Keep the
 budget far above warm-game time (<1s) but below a stalled game.
+
+**Rule 5 — "cabt is absent locally" is FALSE for kaggle-environments 1.30.1.**
+A prior pass concluded the cabt engine was missing and marked eval blocked /
+`games_runnable_locally: false`. That was wrong: `make("cabt")` + `env.run([a,a])`
+plays a full game (rewards `[1,-1]`, DONE) here. cabt is NOT in `ke.envs` keys
+and `import cabt` fails (no standalone module) — but the engine ships *inside*
+kaggle-environments, so those two signals are NOT proof of absence. Verify
+availability by running a real game, never by a bare `reset()` or env-list check.
+**Why:** the false-absence conclusion blocked the whole meta-eval lane for a pass.
+**How to apply:** `scripts/diagnose_cabt.py` treats cabt as available only when a
+real `env.run` finishes with DONE statuses + finite rewards.

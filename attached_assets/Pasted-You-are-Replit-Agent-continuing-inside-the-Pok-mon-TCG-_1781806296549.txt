@@ -1,0 +1,356 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not generate new gameplay candidates until evaluation is unblocked.
+- Do not modify root main.py or root deck.csv.
+- Do not print or commit Kaggle credentials.
+- Do not commit official card CSV/PDF data or raw private replay payloads unless explicitly approved.
+- This is an infrastructure/replay-acquisition pass only.
+
+Current situation:
+- Pass 10 completed but evaluation is INCOMPLETE.
+- cabt game engine is absent locally; kaggle_environments alone is insufficient.
+- Only one raw replay is present: 80374966 self-mirror.
+- Missing key opponent replays:
+  - metal_ex_zacian_ramp, expected episode 80503804 if available.
+  - water_kyogre_abomasnow_maxbelt / TYMU water-maxbelt if available.
+- Live scores have drifted:
+  - v1 deck-loader fix: about 363.0
+  - v2 deck_energy_trim_light: about 355.2
+  - combo_full_safety_v3_fixed: about 294.0
+- Therefore active control should become dynamic: latest highest-scoring complete non-error Kaggle submission, not a hardcoded v1/v2 label.
+- No upload should happen.
+
+Goal:
+Run Pass 10B: Evaluation Recovery + Replay Acquisition.
+
+Objectives:
+1. Diagnose and, if possible, restore local cabt.
+2. Build a dynamic live-score/control registry.
+3. Create a replay acquisition workflow for missing opponent replays.
+4. Re-ingest any available raw replays.
+5. If and only if cabt is restored, run a tiny meta-evaluation smoke.
+6. No candidate upload and no new strategy submission.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Fetch latest Kaggle status
+
+Run read-only:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass10b.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass10b.csv || true
+
+Parse latest complete/error/pending submissions.
+
+Create:
+
+data/kaggle_uploads/live_score_registry.json
+data/kaggle_uploads/live_score_registry.md
+
+For each submission:
+- filename
+- description
+- status
+- publicScore if available
+- date
+- episodes if available
+- classification:
+  - complete
+  - error
+  - pending
+  - live_rejected
+  - active_control_candidate
+
+Set:
+
+active_control = highest publicScore among complete non-error submissions
+
+If scores are missing or ambiguous, say so. Do not guess.
+
+Emit ActiveGraph events:
+- KaggleScoreUpdated
+- ActiveControlSelected
+- CandidateRejected for combo_full_safety_v3_fixed if still below active control
+
+Part C — Diagnose cabt availability
+
+Create or update:
+
+scripts/diagnose_cabt.py
+
+It should test and report:
+
+- Python version
+- installed kaggle_environments version
+- whether `from kaggle_environments import make` works
+- whether `make("cabt")` works
+- whether cabt module import works, if applicable
+- whether environment list includes cabt, if available
+- whether sample self-play can start with known-good deck
+- installed packages matching kaggle/cabt/open_spiel
+- exact exception traces, saved to log
+
+Run:
+
+python scripts/diagnose_cabt.py 2>&1 | tee data/experiments/cabt_diagnostic.log
+
+Create:
+
+data/experiments/cabt_diagnostic.json
+data/experiments/cabt_diagnostic.md
+
+Part D — Try safe cabt restoration only if low-risk
+
+Do not destructively change the environment unless necessary.
+
+First inspect:
+
+python -m pip show kaggle-environments || true
+python -m pip show kaggle || true
+python -m pip list | grep -Ei 'kaggle|open|spiel|cabt' || true
+
+If cabt is missing, try one safe reinstall path:
+
+python -m pip install -U kaggle-environments
+
+Then rerun:
+
+python scripts/diagnose_cabt.py 2>&1 | tee data/experiments/cabt_diagnostic_after_reinstall.log
+
+If this still fails, do not keep thrashing packages. Report exact blocker and produce instructions.
+
+If cabt is restored, run a minimal self-play smoke with the active control deck only.
+
+Part E — Replay acquisition workflow
+
+Inspect available Kaggle CLI help for simulation replay/log commands. Do not guess command names.
+
+Run:
+
+kaggle competitions --help 2>&1 | tee data/kaggle_uploads/kaggle_competitions_help_pass10b.log || true
+kaggle competitions submissions --help 2>&1 | tee data/kaggle_uploads/kaggle_submissions_help_pass10b.log || true
+kaggle --help 2>&1 | tee data/kaggle_uploads/kaggle_help_pass10b.log || true
+
+Search local docs if present:
+
+grep -Rni "episode\\|replay\\|simulation\\|download" . | head -200 || true
+
+Create:
+
+data/meta_replays/REPLAY_ACQUISITION.md
+
+It should include:
+- what raw replays we need
+- where to put them
+- how to download manually from Kaggle if CLI cannot
+- any CLI commands that are actually verified by help/docs
+- exact filenames to use:
+  - data/meta_replays/raw/80503804_tellurium_metal_ex.json
+  - data/meta_replays/raw/tymu_water_maxbelt.json
+  - data/meta_replays/raw/other_loss_*.json
+  - data/meta_replays/raw/other_win_*.json
+
+If CLI replay download is available and safe, download available replays. If not, just document.
+
+Part F — Re-ingest available replays
+
+Run existing replay tools on all available raw replays:
+
+python scripts/extract_replay_decks.py || true
+python scripts/analyze_kaggle_replays.py || true
+
+Update:
+
+data/meta_replays/meta_replay_summary.json
+data/meta_replays/meta_replay_summary.md
+experiments/meta_pool.yaml
+
+Important:
+- Do not fabricate metal or maxbelt decks from summaries.
+- If raw replay missing, keep archetype blocked.
+- Confirm all card IDs from replay or card metadata.
+
+Part G — If cabt is restored, run tiny evaluation smoke
+
+Only if diagnose_cabt says cabt is genuinely available:
+
+Use the dynamic active control from live_score_registry.
+
+Run a tiny smoke:
+- active control vs itself, 1 game per seat if supported
+- one Pass 10 candidate vs active control, 1 game per seat if already built and validator-passing
+
+Do not use results for promotion. This is only to prove evaluation infrastructure is back.
+
+Write:
+
+data/experiments/pass10b_eval_smoke.json
+data/experiments/pass10b_eval_smoke.md
+
+If cabt is not restored, write:
+
+data/experiments/pass10b_eval_smoke.json
+
+with:
+- status: blocked
+- reason: cabt_unavailable
+
+Part H — Chaos lane preparation, no candidates yet
+
+Create or update:
+
+docs/CHAOS_PLAYBOOK_LANE.md
+
+Purpose:
+Keep chaos alive as a future research lane, but do not generate/upload chaos candidates yet.
+
+Include:
+- why chaos may exploit simple agents:
+  - forced switching
+  - discard pressure
+  - hand disruption
+  - deckout/mill
+  - status conditions
+  - bench bloat
+  - trash/recovery manipulation
+- why chaos is dangerous:
+  - can help opponent setup
+  - needs payoff card
+  - needs strict playbook triggers
+  - needs metrics
+- required telemetry:
+  - opponent handCount
+  - opponent deckCount
+  - bench count
+  - status flags
+  - discard contents
+  - forced switch logs
+  - missed attack / pass after disruption
+- candidate families to revisit:
+  - hand_avalanche_froslass
+  - bench_bloat_punisher
+  - mill_resource_destruction
+  - status_confusion_lock
+  - discard_recovery_trap
+- hard rule:
+  - no chaos candidate can be queued unless its payoff trigger is measurable and cabt/replay eval exists
+
+Part I — Report site
+
+Update:
+
+data/site/index.html
+data/reports/activegraph_strategy_report.md
+data/reports/pass10b_evaluation_recovery_report.md
+
+Include:
+- latest live score table
+- dynamic active control
+- combo_fixed live rejection
+- cabt diagnostic
+- replay acquisition status
+- meta pool coverage
+- chaos lane status
+- no-upload note
+
+Part J — Tests
+
+Add tests for:
+- live_score_registry selects highest complete non-error score
+- active control selection ignores error/pending submissions
+- cabt diagnostic writes blocked status when cabt unavailable
+- replay acquisition manifest lists required files
+- missing replay keeps archetype blocked
+- chaos lane docs exist and contain no queue/upload instruction
+- root files unchanged
+- tarball validator remains mandatory for any queued candidate
+
+Run targeted tests in small groups to avoid sandbox kills.
+
+Part K — Final report
+
+Report exactly:
+
+ActiveGraph Pass 10B Evaluation Recovery Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Live score registry
+- registry path:
+- submissions parsed:
+- complete submissions:
+- error submissions:
+- pending submissions:
+- active control:
+- active control score:
+- rejected candidates:
+
+3. cabt diagnostic
+- kaggle_environments import:
+- make("cabt"):
+- cabt module import:
+- open_spiel status:
+- diagnostic path:
+- restoration attempted:
+- restored: yes/no
+- blocker if any:
+
+4. Replay acquisition
+- acquisition doc path:
+- raw replays present:
+- raw replays missing:
+- CLI replay download available:
+- manual action needed:
+
+5. Replay/meta pool
+- replay summaries updated:
+- decks extracted:
+- confirmed archetypes:
+- blocked archetypes:
+- meta coverage:
+- meta_pool path:
+
+6. Evaluation smoke
+- cabt available:
+- smoke attempted:
+- smoke result:
+- pass10b eval path:
+- can run future meta eval: yes/no:
+
+7. Chaos lane
+- chaos doc path:
+- chaos candidates generated: no
+- chaos readiness:
+- key blockers:
+
+8. Report site
+- site path:
+- markdown report path:
+- most important correction:
+
+9. Manual git notes
+- files I should review:
+- files not to commit:
+- generated/ignored files:
+
+10. Next recommendation
+- one sentence only

@@ -6,29 +6,39 @@
 # external archetypes are BLOCKED (their replays are missing and their card ids
 # are unconfirmed) so they contribute no surrogate and no fabricated weight.
 #
-# IMPORTANT LIMITATION: with two of three archetypes blocked AND local self-play
-# unrunnable (cabt/kaggle_environments cannot be imported in this environment),
-# any weighted_meta_score computed here has coverage < 1.0. No candidate may be
-# treated as fully meta-tested or promoted on this pool alone.
+# IMPORTANT LIMITATION: two of three archetypes are still blocked (their replays
+# are missing and their card ids are unconfirmed), so any weighted_meta_score
+# computed here has coverage < 1.0. No candidate may be treated as fully
+# meta-tested or promoted on this pool alone.
+#
+# PASS 10B UPDATE: local cabt self-play IS runnable again (kaggle-environments
+# 1.30.1 ships a working cabt engine; see data/experiments/cabt_diagnostic.json).
+# The earlier "games_runnable_locally: false" conclusion was incorrect. The
+# active control is now selected DYNAMICALLY (highest publicScore among complete
+# non-error live submissions) rather than a hardcoded v1/v2 label.
 
 schema: activegraph.meta.pool/v1
-pass: 10
+pass: 10b
 
 # Live Kaggle scores observed this pass (Part A). Trust these over older notes.
 controls:
+  # DYNAMIC active control (Pass 10B): highest publicScore among complete,
+  # non-error live submissions. Source: data/kaggle_uploads/live_score_registry.json.
   active_control:
+    candidate_id: v1
+    submission_file: submission.tar.gz
+    baseline_dir: data/baselines/v1_kaggle_349_8
+    live_public_score: 363.0
+    status: complete
+    selection_rule: highest publicScore among complete non-error submissions
+    note: >
+      v1 deck-loader fix is the current live leader (363.0 > v2 355.2). The
+      active control is no longer a hardcoded label; re-derive it from the live
+      score registry each pass.
+  reference_v2:
     candidate_id: deck_energy_trim_light
     baseline_dir: data/baselines/v2_kaggle_479_1_deck_energy_trim_light
     live_public_score: 355.2          # current live (historical/early was 479.1)
-    status: complete
-    note: >
-      Designated control per Pass 10 instruction. NOTE the v1 line currently
-      scores 363.0 (> 355.2); the v1/v2 live gap has compressed and should be
-      revisited next pass.
-  reference_v1:
-    candidate_id: v1
-    baseline_dir: data/baselines/v1_kaggle_349_8
-    live_public_score: 363.0
     status: complete
   rejected:
     candidate_id: combo_full_safety_v3_fixed
@@ -75,7 +85,9 @@ coverage:
   weight_covered: 0.34              # only the mirror surrogate exists
   weight_missing: 0.66
   eval_complete: false
-  games_runnable_locally: false    # cabt/kaggle_environments import unavailable
+  games_runnable_locally: true     # Pass 10B: cabt self-play confirmed runnable
   conclusion: >
-    Evaluation is INCOMPLETE. With 66% of meta weight on blocked archetypes and
-    no local game runner, no candidate is promotable from this pool. Scout only.
+    Local game evaluation is UNBLOCKED (cabt runs), but meta COVERAGE is still
+    INCOMPLETE: 66% of meta weight sits on blocked archetypes whose replays are
+    missing. No candidate is promotable from this pool until those replays are
+    acquired. Scout only; self-mirror surrogate is the sole real opponent deck.
