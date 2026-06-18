@@ -1,0 +1,650 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+This is Pass 7A: ActiveGraph Durable Run Ledger + Correct ActiveGraph Integration.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not run large cabt experiment batches in this pass.
+- Do not run Pass 6 scout/focused evaluation in this pass.
+- Do not treat stdout/stderr logs as the source of truth.
+- Do not rebuild ActiveGraph functionality if the real ActiveGraph package / activegraph-labs integration exists.
+- Inspect and use the actual ActiveGraph APIs and activegraph-labs patterns first.
+- If real ActiveGraph APIs are unavailable, build a thin compatibility adapter, but label it clearly as a fallback.
+- Preserve v1 and v2 baselines.
+- Keep v2 deck_energy_trim_light as active control.
+- Keep all generated candidates and Pass 6 code unless they are clearly temporary artifacts.
+- The goal is durable orchestration, resumability, and report-grade provenance.
+
+Current project state:
+- v1 baseline scored 356.9 on Kaggle.
+- v2 deck_energy_trim_light scored 479.1 on Kaggle and is the active control.
+- Pass 6 generated 14 candidates in experiments/runs_pass6/.
+- Pass 6 implemented telemetry correction, replay fixtures, policy candidates, deck variants, and chaos candidates.
+- Pass 6 did not complete scout/focused evaluation.
+- Process/log orchestration failed repeatedly:
+  - in-process cabt is fast but unsafe because native cabt/OpenSpiel can silently kill the Python process.
+  - subprocess-per-game is safe but slow because kaggle_environments/OpenSpiel cold-start happens every child.
+  - detached background processes/logs are unreliable in this Replit environment.
+  - ActiveGraph events are currently effectively stage-end / generation-level, not a durable per-game execution ledger.
+- The next pass must fix orchestration before strategy experiments continue.
+
+Strategic backlog to preserve for later:
+- Meta replay insight: top decks appear to use low-energy, high-search evolution engines.
+- Candidate future archetypes:
+  - Alakazam/Dunsparce-style Psychic setup-control
+  - Bellibolt/Kilowattrel-style Lightning ramp
+  - v2 Abomasnow/Kyogre refinement
+  - chaos_hand_avalanche_froslass
+  - chaos_durant_mill
+- Policy seams to preserve:
+  - plan-state tracking / missing-piece tracking
+  - effect-resolution targeting
+  - Secret Box pre-play safety
+  - deckout avoidance
+  - engine-aware search/discard/bench/evolve decisions
+
+Pass 7A goal:
+Build a durable ActiveGraph-backed run ledger and resumable evaluator so every candidate, game, artifact, crash, timeout, heartbeat, metric, and promotion decision is persisted incrementally and can be inspected/replayed/forked/diffed. Do this before running more candidate batches.
+
+Part A — Stop and snapshot current state
+
+Run lightweight checks only:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+
+Do not run kaggle_smoke_test.py unless needed for a quick existing test.
+Do not run experiment batches.
+
+Verify root baseline unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1 archive"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1 archive"
+
+Verify v2 baseline exists:
+
+ls -la data/baselines/v2_kaggle_479_1_deck_energy_trim_light || true
+tar -tzf data/baselines/v2_kaggle_479_1_deck_energy_trim_light/submission.tar.gz || true
+
+Inspect current Pass 6 artifacts:
+
+find experiments/runs_pass6 -maxdepth 2 -type f | sort | head -200 || true
+ls -la data/experiments || true
+ls -la data/activegraph || true
+
+Do not delete anything yet.
+
+Part B — Inspect real ActiveGraph and activegraph-labs before coding
+
+First, discover what is available locally:
+
+python - <<'PY'
+import importlib.util
+for name in ["activegraph", "activegraph_labs"]:
+    spec = importlib.util.find_spec(name)
+    print(name, "FOUND" if spec else "missing", spec.origin if spec else "")
+PY
+
+python -m pip show activegraph || true
+python -m pip show activegraph-labs || true
+activegraph --help || true
+activegraph inspect --help || true
+activegraph export-trace --help || true
+activegraph fork --help || true
+
+Search local repo and parent dirs for activegraph-labs:
+
+find . .. -maxdepth 4 \( -iname '*activegraph*' -o -iname '*activegraph-labs*' \) 2>/dev/null | sort | head -200
+
+If activegraph-labs exists locally, inspect:
+- README
+- docs
+- examples
+- database/storage integration
+- event append APIs
+- run IDs
+- replay/fork/export trace examples
+- site/report examples
+
+Suggested commands:
+
+find ../activegraph-labs -maxdepth 3 -type f | sort | head -200 || true
+sed -n '1,220p' ../activegraph-labs/README.md 2>/dev/null || true
+find ../activegraph-labs -maxdepth 4 -type f \( -iname '*.py' -o -iname '*.md' \) | sort | head -200 || true
+
+Also inspect docs.activegraph.ai only if you have browser/doc access. If not, rely on installed CLI/help and local activegraph-labs.
+
+Write findings to:
+
+docs/ACTIVEGRAPH_INTEGRATION_AUDIT.md
+
+The audit must answer:
+- Is the real activegraph package installed?
+- Is activegraph-labs present?
+- What store URLs are supported? Examples: sqlite/file/jsonl/etc.
+- What CLI commands are available?
+- What programmatic APIs are available for event append, run creation, inspect, replay/fork/export?
+- What is the recommended database-backed storage pattern?
+- What should we reuse instead of rebuilding?
+- What compatibility wrapper is needed, if any?
+
+Do not implement a new database until this audit is written.
+
+Part C — Define the PTCG run ledger ontology using ActiveGraph concepts
+
+Create or update:
+
+docs/PTCG_ACTIVEGRAPH_RUN_LEDGER.md
+
+Define a domain ontology for the PTCG lab.
+
+Objects:
+- Baseline
+- Candidate
+- DeckVersion
+- PolicyVersion
+- ExperimentRun
+- Game
+- Fixture
+- Replay
+- MetricSet
+- Artifact
+- Submission
+- StrategySeam
+- FailureTag
+- ReportPage
+
+Relations:
+- candidate_uses_deck
+- candidate_uses_policy
+- run_evaluates_candidate
+- game_belongs_to_run
+- game_compares_candidate_to_control
+- game_emits_metrics
+- replay_supports_failure_tag
+- fixture_tests_policy
+- candidate_passes_fixture
+- candidate_fails_fixture
+- candidate_promoted_from_run
+- candidate_rejected_from_run
+- submission_packages_candidate
+- report_cites_artifact
+
+Events:
+- ExperimentRunCreated
+- ExperimentRunStarted
+- ExperimentRunHeartbeat
+- ExperimentRunFinished
+- ExperimentRunFailed
+- CandidateRegistered
+- CandidatePackageVerified
+- CandidateSmokeVerified
+- FixtureGateStarted
+- FixtureGateFinished
+- GamePlanned
+- GameStarted
+- GameHeartbeat
+- GameFinished
+- GameTimeout
+- GameCrashed
+- GameResultRecorded
+- MetricsComputed
+- CandidateRanked
+- CandidatePromoted
+- CandidateRejected
+- ArtifactRecorded
+- ReplayImported
+- ReportSiteGenerated
+- SubmissionQueued
+- SubmissionUploaded
+- KaggleScoreUpdated
+
+Each event should include:
+- event_id
+- run_id
+- timestamp
+- event_type
+- object ids where applicable
+- payload
+- artifact paths where applicable
+- parent_event_ids if applicable
+- tags
+
+Important principle:
+The ActiveGraph event log / DB is the source of truth. Shell stdout is only a debug artifact.
+
+Part D — Implement an ActiveGraph adapter, not a parallel framework
+
+Create:
+
+src/ptcg_activegraph/ag/
+  __init__.py
+  adapter.py
+  ledger.py
+  schema.py
+  artifacts.py
+  inspect.py
+
+Requirements:
+- Prefer real activegraph APIs/CLI if available.
+- If real ActiveGraph package is installed, use it through a narrow adapter.
+- If only CLI is available, use CLI safely.
+- If neither is usable, fall back to existing JSONL with a clear warning:
+  "Using fallback JSONL ledger, not real ActiveGraph."
+- Do not duplicate large parts of ActiveGraph.
+- The adapter should expose a tiny stable interface for our lab:
+
+class ActiveGraphLedger:
+    create_run(run_id, metadata) -> None
+    append_event(run_id, event_type, payload, tags=None, artifact_paths=None) -> str
+    heartbeat(run_id, object_id=None, payload=None) -> None
+    inspect_run(run_id) -> dict
+    export_trace(run_id, output_path) -> Path
+    list_runs() -> list[dict]
+    mark_artifact(run_id, artifact_type, path, metadata=None) -> str
+
+Storage:
+- If real ActiveGraph supports SQLite/file store, use:
+  data/activegraph/ptcg_activegraph.sqlite
+  or the documented store URL format.
+- If fallback:
+  data/activegraph/ptcg_ledger_events.jsonl
+  data/activegraph/ptcg_ledger_runs.json
+
+Do not use /tmp as the source of truth.
+All artifacts should be under data/activegraph/artifacts/ or experiments/runs*/.
+
+Add script:
+
+scripts/ag_ledger.py
+
+CLI:
+python scripts/ag_ledger.py create-run --run-id test --metadata '{"purpose":"smoke"}'
+python scripts/ag_ledger.py append --run-id test --type TestEvent --payload '{"ok":true}'
+python scripts/ag_ledger.py inspect --run-id test
+python scripts/ag_ledger.py export --run-id test --out data/activegraph/test_trace.jsonl
+python scripts/ag_ledger.py list-runs
+
+Add tests:
+- create run
+- append event
+- heartbeat
+- inspect
+- export trace
+- artifact path recorded
+- fallback mode works when activegraph import is unavailable
+- if real activegraph is available, adapter does not bypass it unnecessarily
+
+Part E — Build durable game ledger layer
+
+Create or update:
+
+src/ptcg_activegraph/experiments/durable_runner.py
+src/ptcg_activegraph/experiments/run_state.py
+
+This should not yet run a giant batch. It should define durable per-run/per-game state.
+
+Game state model:
+- game_id
+- run_id
+- candidate_id
+- control_id
+- candidate_path
+- control_path
+- seat
+- status: planned/running/completed/timeout/crashed/stale/skipped
+- started_at
+- updated_at
+- completed_at
+- pid
+- process_group
+- duration_seconds
+- stdout_path
+- stderr_path
+- result_json_path
+- metrics_json_path
+- error_summary
+- attempt
+- runner_mode: subprocess_per_game / in_process_fast_unsafe / worker_pool_future
+- cabt_timeout_seconds
+- activegraph_event_ids
+
+Candidate state model:
+- candidate_id
+- run_id
+- branch_path
+- package_status
+- smoke_status
+- fixture_status
+- games_planned
+- games_completed
+- games_timeout
+- games_crashed
+- games_stale
+- metrics_status
+- rank_status
+
+Durability requirements:
+- Before a game starts, create a GamePlanned event and write planned state.
+- Immediately before launching child, create GameStarted and write pid/process info.
+- When child finishes, write GameFinished/GameTimeout/GameCrashed.
+- Use atomic writes:
+  - write .tmp
+  - fsync if easy
+  - rename to final path
+- Never rely on buffered stdout for state.
+- If the orchestrator dies, a later --resume can inspect planned/running/stale games.
+- Stale threshold should be configurable, e.g. 2x timeout + 30 seconds.
+
+Output paths:
+data/activegraph/artifacts/runs/<run_id>/
+  run_state.json
+  games/<game_id>.json
+  games/<game_id>.stdout.log
+  games/<game_id>.stderr.log
+  games/<game_id>.result.json
+  candidates/<candidate_id>.json
+
+Add script:
+
+scripts/run_durable_eval.py
+
+Initial CLI:
+python scripts/run_durable_eval.py --plan-only --runs-root experiments/runs_pass6 --control data/baselines/v2_kaggle_479_1_deck_energy_trim_light --stage pass6_scout --games-per-seat 1
+python scripts/run_durable_eval.py --run-id <run_id> --execute --max-games 2 --subprocess --game-timeout-seconds 90
+python scripts/run_durable_eval.py --run-id <run_id> --resume --max-games 2
+python scripts/run_durable_eval.py --run-id <run_id> --status
+python scripts/run_durable_eval.py --run-id <run_id> --mark-stale
+
+Important:
+- In this pass, only test with max-games 1 or 2.
+- Do not run full scout/focused evaluation.
+- The goal is durability, not results.
+
+Add tests:
+- plan creates game rows/events
+- executing a dummy game records completed
+- timeout dummy marks timeout
+- crash dummy marks crashed
+- stale running game becomes stale
+- resume skips completed games
+- resume retries or skips stale based on flag
+- ActiveGraph events are emitted for planned/running/completed/crashed/timeout
+
+Part F — Optimize subprocess cold-start safely, but as an optional mode
+
+Replit reported a probe showing that stubbing OpenSpiel/heavy env modules before importing kaggle_environments reduced cold-start from ~11–15s to under 1s while cabt still produced valid games.
+
+This is promising but must be handled carefully.
+
+Create:
+
+src/ptcg_activegraph/sim/kaggle_import_optimization.py
+
+Requirements:
+- Implement a clearly named optional optimization:
+  enable_fast_cabt_import_stub()
+- It must be opt-in, not default, until validated.
+- It must not patch site-packages.
+- It must not affect root main.py.
+- It must be used only in child subprocess/evaluation environment.
+- It must record in result metadata:
+  fast_import_stub_enabled: true/false
+- It must run a validation check:
+  - can import kaggle_environments
+  - can make("cabt")
+  - can run one smoke game using v2 baseline
+  - compare result shape to normal import mode
+- If validation fails, disable the optimization and fall back to normal import.
+
+Add script:
+
+scripts/benchmark_cabt_import.py
+
+It should run:
+- normal import timing
+- fast-stub import timing
+- normal one-game smoke timing
+- fast-stub one-game smoke timing
+- result-shape comparison
+- write results to data/experiments/cabt_import_benchmark.json
+
+Do not enable fast import by default in bulk runner until benchmark validates.
+
+Add tests with mocked modules:
+- optimization is opt-in
+- does not mutate global state unless called
+- records metadata
+- graceful fallback
+
+Part G — Worker-pool design document, not full implementation
+
+Create:
+
+docs/EVALUATION_WORKER_POOL_PLAN.md
+
+Explain current modes:
+1. in_process_fast_unsafe
+   - fast
+   - can silently die
+   - only for tiny exploratory smoke, not broad eval
+2. subprocess_per_game_safe_slow
+   - safe
+   - slow due to repeated cabt/OpenSpiel cold-start
+   - current safe baseline
+3. subprocess_per_game_fast_stub_candidate
+   - safe if validated
+   - faster if import stub is safe
+4. persistent_worker_pool_future
+   - worker imports cabt once
+   - parent sends games
+   - parent tracks heartbeat
+   - if worker hangs/crashes, kill/restart worker
+   - best long-term architecture
+
+Do not implement worker pool fully in this pass unless everything else is done and tested. The immediate target is durable ledger and optional import-stub benchmark.
+
+Part H — Git hygiene and artifact cleanup plan
+
+Do not push.
+Do not run destructive git commands unless dry-run first.
+
+Inspect:
+
+git status --short
+git ls-files experiments/runs_pass6 | head -50 || true
+git ls-files | grep -E 'smoke_result.html|__pycache__|runs_pass6|data/site|data/reports|data/activegraph|data/experiments' | head -100 || true
+
+Update .gitignore to ignore:
+- experiments/runs*/
+- data/activegraph/artifacts/
+- data/experiments/*.json
+- data/experiments/*.md
+- data/site/
+- data/reports/
+- data/matches/
+- data/submission_queue.json
+- data/submissions/*.tar.gz
+- data/submissions/candidates/*.tar.gz
+- **/__pycache__/
+- *.pyc
+- *.html if generated replay/smoke html
+- data/cards/*.csv
+- data/cards/*.pdf
+- EN_Card_Data.csv
+- JP_Card_Data.csv
+
+But do not remove tracked files yet unless asked.
+
+Create:
+
+docs/GIT_HYGIENE_PASS7.md
+
+Include:
+- files currently tracked that should probably be untracked
+- exact suggested manual commands for me, e.g. git rm --cached ...
+- warnings about official card data and credentials
+- which generated artifacts are safe to delete/regenerate
+- which artifacts are worth preserving for the Strategy report
+
+Part I — Report-site data source change
+
+Update report generation design so the site reads from ActiveGraph ledger/exported trace, not transient run logs.
+
+Do not rebuild the whole site now unless easy.
+
+Modify or document:
+
+src/ptcg_activegraph/experiments/report.py
+scripts/build_report_site.py
+docs/REPORT_SITE_ACTIVEGRAPH_SOURCE.md
+
+Requirements:
+- Report should show runs from ActiveGraph ledger.
+- It should distinguish:
+  - completed runs
+  - partial runs
+  - stale runs
+  - failed runs
+  - generated-only candidate sets
+- It should show event timeline.
+- It should cite artifact paths.
+- It should mark Pass 6 as infrastructure-incomplete/no ranking rather than failed strategy.
+- It should preserve Strategy Category narrative:
+  - baseline v1 356.9
+  - v2 479.1
+  - replay lessons
+  - fixture gates
+  - chaos observability correction
+  - experiment runner hardening
+  - next planned engine-deck meta replay work
+
+Part J — Minimal live test of durable ledger only
+
+Run a tiny end-to-end durability test, not a strategy evaluation.
+
+Example target:
+- plan 1 candidate
+- 1 game total
+- subprocess mode
+- timeout high enough to finish
+- write ledger state
+- inspect ledger
+- export trace
+
+Commands may be adapted to your implemented CLI, but behavior should match:
+
+python scripts/run_durable_eval.py --plan-only --runs-root experiments/runs_pass6 --control data/baselines/v2_kaggle_479_1_deck_energy_trim_light --stage pass7_ledger_smoke --games-per-seat 1 --limit-candidates 1
+python scripts/run_durable_eval.py --run-id <created_run_id> --execute --max-games 1 --subprocess --game-timeout-seconds 90
+python scripts/run_durable_eval.py --run-id <created_run_id> --status
+python scripts/ag_ledger.py inspect --run-id <created_run_id>
+python scripts/ag_ledger.py export --run-id <created_run_id> --out data/activegraph/artifacts/<created_run_id>/trace.jsonl
+
+If the game is too slow, run dummy mode first and one real cabt game only if time permits.
+Do not run 14-candidate scout.
+
+Part K — Validation
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+
+Do not run broad cabt eval.
+Do not upload.
+
+Verify root unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged"
+
+Part L — Final report format
+
+Report exactly:
+
+ActiveGraph Pass 7A Durable Ledger Report
+
+1. Baseline safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- active control baseline:
+- package verify:
+- pytest:
+- Kaggle upload performed: no
+
+2. ActiveGraph audit
+- real activegraph package available:
+- activegraph CLI available:
+- activegraph-labs found:
+- storage/store pattern discovered:
+- APIs reused:
+- fallback adapter needed:
+- audit doc path:
+
+3. Ledger implementation
+- adapter path:
+- using real ActiveGraph or fallback:
+- ledger store path / URL:
+- event types implemented:
+- artifact storage path:
+- scripts added:
+- tests added:
+
+4. Durable runner
+- durable run state implemented:
+- per-game state implemented:
+- heartbeat/stale detection:
+- atomic writes:
+- resume support:
+- subprocess status capture:
+- stdout/stderr artifact capture:
+- tests added:
+
+5. Cabt import optimization
+- benchmark script added:
+- normal import timing:
+- fast-stub timing:
+- fast-stub smoke validated: yes/no/not run
+- fast-stub enabled by default: yes/no
+- benchmark artifact path:
+
+6. Worker-pool plan
+- plan doc path:
+- recommended future mode:
+- current safe mode:
+- current fast unsafe mode:
+
+7. Git hygiene
+- .gitignore updated:
+- tracked generated artifacts found:
+- manual cleanup commands documented:
+- git hygiene doc path:
+
+8. Report site integration
+- report now reads ledger: yes/no/partial
+- report design doc path:
+- Pass 6 represented as partial/infrastructure-incomplete:
+- strategy narrative preserved:
+
+9. Minimal durability smoke
+- run_id:
+- games planned:
+- games executed:
+- status:
+- trace exported:
+- inspect output summary:
+- artifacts written:
+
+10. Files I should review
+- code files:
+- docs:
+- generated artifacts:
+- files not to commit:
+
+11. Next recommendation
+- one sentence only.
+
+Final reminder:
+This pass is successful if we can inspect and resume a durable ActiveGraph-ledger-backed run. It does not need to produce a stronger Pokémon agent.

@@ -3,3 +3,4 @@
 - [Card DB energy detection](card-db-energy-detection.md) — card_db.basic_features reports is_energy=False for ALL basic energy ids; copy-limit checks must detect basic energy by NAME, not is_energy; cabt enforces 4-per-NAME.
 - [Subprocess stdlib shadowing](subprocess-stdlib-shadowing.md) — a package child run as a script puts its dir on sys.path[0], shadowing stdlib (queue.py); strip script dir or every game "crashes".
 - [In-process eval C-crash](in-process-eval-c-crash.md) — cabt batch MUST use per-game subprocess; in-process dies silently (no traceback) when one game aborts at C level; accept ~15s/game cold start.
+- [Ledger status projection](ledger-status-projection.md) — event-sourced run/game status is derived; completion must come from remaining work and every state needs a schema-map entry or inspect silently misreports.

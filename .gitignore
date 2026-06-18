@@ -34,6 +34,26 @@ attached_assets/*Card_Data.csv
 # Known-good archive: keep .py/.csv/.md preservation copies, ignore tarballs
 data/submissions/archive/*.tar.gz
 
+# Pass 7A — regenerated lab artifacts (durable ledger is the local source of
+# truth and must never be uploaded; everything here is reproducible). Rules only
+# affect FUTURE commits; already-tracked files are untracked separately and
+# deliberately — see docs/GIT_HYGIENE_PASS7.md.
+experiments/runs*/
+data/activegraph/artifacts/
+data/activegraph/ptcg_ledger_events.jsonl
+data/activegraph/ptcg_ledger_runs.json
+data/experiments/*.json
+data/experiments/*.md
+data/site/
+data/reports/
+data/submission_queue.json
+data/submissions/*.tar.gz
+data/submissions/candidates/*.tar.gz
+**/__pycache__/
+*.pyc
+# Generated replay/smoke render dumps (each up to ~17MB)
+experiments/runs*/**/*.html
+
 # OS
 .DS_Store
 

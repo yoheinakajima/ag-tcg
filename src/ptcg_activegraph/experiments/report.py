@@ -105,6 +105,29 @@ def _load_events(path: Path = LAB_EVENTS_PATH) -> list[dict]:
     return events
 
 
+def _load_run_ledger() -> list[dict]:
+    """Summaries of every durable ActiveGraph run ledger (Pass 7A, Part E).
+
+    The ledger — not the HTML — is the source of truth for run/candidate/game
+    state. This reads it through the same adapter the runner writes with, so the
+    report can never drift from the recorded events. Degrades to ``[]`` when no
+    runs exist (or the ledger is unavailable).
+    """
+    try:
+        from ..ag import ActiveGraphLedger
+
+        ledger = ActiveGraphLedger(warn=False)
+        out = []
+        for run in ledger.list_runs():
+            run_id = run.get("run_id")
+            if not run_id:
+                continue
+            out.append(ledger.inspect_run(run_id))
+        return out
+    except Exception:
+        return []
+
+
 def gather(runs_root=RUNS_ROOT) -> dict:
     """Collect everything the report needs into one dict (all optional)."""
     runs = []
@@ -114,6 +137,7 @@ def gather(runs_root=RUNS_ROOT) -> dict:
         if b:
             runs.append({"branch": b, "metrics": m, "run_dir": str(run_dir)})
     return {
+        "run_ledger": _load_run_ledger(),
         "events": _load_events(),
         "ranking": _load_json(RANKING_JSON) or [],
         "focused_ranking": _load_json(FOCUSED_RANKING_JSON) or [],
@@ -169,6 +193,52 @@ def _rank_table_html(ranking: list[dict]) -> str:
             f"<th>Label</th></tr>{rows}</table>")
 
 
+def _run_ledger_html(data: dict) -> str:
+    """Render durable run-ledger summaries (Pass 7A source of truth)."""
+    ledger = data.get("run_ledger") or []
+    if not ledger:
+        return ("<section><h2>Durable run ledger</h2><div class=empty>No durable "
+                "runs recorded yet — created by <code>scripts/run_durable_eval.py"
+                "</code>.</div></section>")
+    rows = ""
+    details = ""
+    for s in ledger:
+        gs = s.get("game_status_counts") or s.get("games_by_status") or {}
+        gs_str = ", ".join(f"{k}:{v}" for k, v in sorted(gs.items())) or "-"
+        artifacts = s.get("artifact_paths") or []
+        rows += (
+            f"<tr><td><code>{_esc(s.get('run_id'))}</code></td>"
+            f"<td>{_esc(s.get('status') or '-')}</td>"
+            f"<td>{_esc(s.get('candidate_count', '-'))}</td>"
+            f"<td>{_esc(s.get('game_count', '-'))}</td>"
+            f"<td>{_esc(gs_str)}</td>"
+            f"<td>{_esc(s.get('event_count', 0))}</td>"
+            f"<td>{_esc(len(artifacts))}</td>"
+            f"</tr>"
+        )
+        # Event-type timeline + cited artifact paths for this run.
+        ebt = s.get("events_by_type") or {}
+        tl = ", ".join(f"{k}×{v}" for k, v in sorted(ebt.items())) or "no events"
+        art_html = "".join(
+            f"<li><code>{_esc(p)}</code></li>" for p in artifacts[:20]
+        ) or "<li class=muted>none cited</li>"
+        details += (
+            f"<details><summary><code>{_esc(s.get('run_id'))}</code> — "
+            f"{_esc(s.get('status') or '-')}</summary>"
+            f"<p class=muted>Timeline: {_esc(tl)}</p>"
+            f"<p class=muted>Artifacts cited (first 20):</p>"
+            f"<ul>{art_html}</ul></details>"
+        )
+    return ("<section><h2>Durable run ledger</h2>"
+            "<p class=muted>Source of truth: <code>data/activegraph/"
+            "ptcg_ledger_events.jsonl</code>. The HTML is a projection of these "
+            "events, never the other way round. Status values: "
+            "completed / partial / stale / failed / created.</p>"
+            "<table><tr><th>Run</th><th>Status</th><th>Candidates</th>"
+            "<th>Games</th><th>Game status</th><th>Events</th><th>Artifacts</th></tr>"
+            f"{rows}</table>{details}</section>")
+
+
 def _overview_html(data: dict) -> str:
     events = data["events"]
     ranking = data["ranking"]
@@ -197,6 +267,7 @@ def _overview_html(data: dict) -> str:
 
     body = (
         f"<section><h2>Snapshot</h2><div class=cards>{cards}</div></section>"
+        f"{_run_ledger_html(data)}"
         f"{_pass4_html(data)}"
         f"{_pass5_html(data)}"
         f"<section><h2>Stage 1 — Broad scout ranking</h2>"
@@ -466,6 +537,48 @@ def _num(x, fmt="{:.3f}") -> str:
     return "-" if x is None else fmt.format(x) if isinstance(x, (int, float)) else str(x)
 
 
+def _run_ledger_md(data: dict) -> list[str]:
+    """Render durable run-ledger summaries as Markdown (Pass 7A source of truth)."""
+    ledger = data.get("run_ledger") or []
+    lines = ["## Durable run ledger",
+             "_Source of truth: `data/activegraph/ptcg_ledger_events.jsonl`. "
+             "This table is a projection of those events._"]
+    if not ledger:
+        lines.append("")
+        lines.append("_No durable runs recorded yet._")
+        return lines
+    lines.append("")
+    lines.append("Status values: completed / partial / stale / failed / created.")
+    lines.append("")
+    lines.append("| Run | Status | Candidates | Games | Game status | Events | Artifacts |")
+    lines.append("|-----|--------|-----------:|------:|-------------|-------:|----------:|")
+    for s in ledger:
+        gs = s.get("game_status_counts") or s.get("games_by_status") or {}
+        gs_str = ", ".join(f"{k}:{v}" for k, v in sorted(gs.items())) or "-"
+        ev = s.get("event_count", 0)
+        n_art = len(s.get("artifact_paths") or [])
+        lines.append(
+            f"| `{s.get('run_id')}` | {s.get('status') or '-'} | "
+            f"{s.get('candidate_count', '-')} | "
+            f"{s.get('game_count', '-')} | {gs_str} | {ev} | {n_art} |"
+        )
+    # Per-run event-type timeline + cited artifact paths.
+    for s in ledger:
+        ebt = s.get("events_by_type") or {}
+        tl = ", ".join(f"{k}×{v}" for k, v in sorted(ebt.items())) or "no events"
+        lines.append("")
+        lines.append(f"### `{s.get('run_id')}` — {s.get('status') or '-'}")
+        lines.append(f"- Timeline: {tl}")
+        artifacts = s.get("artifact_paths") or []
+        if artifacts:
+            lines.append("- Artifacts cited:")
+            for p in artifacts[:20]:
+                lines.append(f"  - `{p}`")
+        else:
+            lines.append("- Artifacts cited: _none_")
+    return lines
+
+
 def _ranking_md(ranking: list[dict], title: str) -> list[str]:
     """Render a ranking table with adjusted win rate, CIs, seat split, label."""
     lines = [f"## {title}"]
@@ -642,6 +755,8 @@ def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
         "",
     ]
 
+    lines += _run_ledger_md(data)
+    lines += [""]
     lines += _pass4_md(data)
     lines += [""]
     lines += _pass5_md(data)
