@@ -258,6 +258,24 @@ def test_generated_agent_returns_deck_on_select_none(compiled_candidate):
         assert sorted(out) == sorted(deck_rows)
 
 
+def test_generated_agent_returns_deck_on_struct_like_obs(compiled_candidate):
+    """Kaggle's production deck-selection obs can arrive as an attribute-style
+    object (not a dict). The candidate must still return its 60-card deck."""
+    mod = _load_agent(compiled_candidate / "main.py")
+    deck_rows = _load_deck_ids(compiled_candidate / "deck.csv")
+
+    class _StructLike:
+        def __init__(self):
+            self.current = None
+            self.select = None
+            self.logs = []
+            self.step = 0
+
+    out = mod.agent(_StructLike())
+    assert isinstance(out, list) and len(out) == 60
+    assert sorted(out) == sorted(deck_rows)
+
+
 def test_embedded_deck_used_when_deckcsv_missing(tmp_path):
     """With no deck.csv reachable, the agent still returns 60 via the embedded
     fallback (proves the return never depends on file I/O)."""

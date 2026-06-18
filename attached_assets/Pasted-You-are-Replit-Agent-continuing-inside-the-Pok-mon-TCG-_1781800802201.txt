@@ -1,0 +1,235 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not run more strategy experiments.
+- Do not modify root main.py or root deck.csv.
+- Do not upload unless every check below passes.
+- Submit exactly one candidate only if approved by the checks.
+- Candidate: combo_full_safety_v3_fixed
+- Candidate tarball: data/submissions/candidates/combo_full_safety_v3_fixed.tar.gz
+
+Context:
+- Previous combo_full_safety_v3 failed Kaggle validation before gameplay.
+- Failure: action [] at deck-selection step; "Player 1's deck does not have 60 cards."
+- Root cause: old candidate required literal "select" membership in obs; Kaggle production had key-absent/Struct-like deck-selection shape.
+- Fixed candidate embeds deck and robustly returns 60 for key-absent deck-selection observation.
+- Static validator now catches failed tarball and passes fixed tarball.
+- Local cabt smoke is not authoritative for this specific bug because local cabt includes literal select/current keys.
+
+Goal:
+Run final pre-upload checks for combo_full_safety_v3_fixed. If and only if all checks pass, upload it exactly once to Kaggle.
+
+Step 1 — Root immutability
+
+Run:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+If either differs, stop. Do not upload.
+
+Step 2 — Validate fixed and failed tarballs
+
+Run:
+
+python scripts/validate_candidate_tarball.py data/submissions/candidates/combo_full_safety_v3_fixed.tar.gz
+
+This must PASS.
+
+Also run:
+
+python scripts/validate_candidate_tarball.py data/submissions/candidates/archive/combo_full_safety_v3_failed_deck_return.tar.gz
+
+This must FAIL specifically on the key-absent deck-selection shape. If it unexpectedly passes, stop.
+
+Step 3 — Inspect fixed tarball contents
+
+Run:
+
+tar -tzf data/submissions/candidates/combo_full_safety_v3_fixed.tar.gz
+ls -lh data/submissions/candidates/combo_full_safety_v3_fixed.tar.gz
+
+Tarball must contain exactly:
+
+main.py
+deck.csv
+
+Step 4 — Inspect fixed main.py wrapper ordering
+
+Extract the fixed tarball:
+
+mkdir -p /tmp/ptcg_fixed_inspect
+rm -rf /tmp/ptcg_fixed_inspect/*
+tar -xzf data/submissions/candidates/combo_full_safety_v3_fixed.tar.gz -C /tmp/ptcg_fixed_inspect
+
+Then inspect the final 160 lines:
+
+tail -160 /tmp/ptcg_fixed_inspect/main.py
+
+Verify and report:
+- _EMBEDDED_DECK exists and has 60 ids.
+- _load_submission_deck loads deck.csv relative to __file__ before falling back to embedded deck.
+- the final agent wrapper captures the previous strategy agent.
+- the final agent wrapper intercepts only deck-request observations.
+- normal gameplay observations delegate to the previous strategy agent.
+- no src imports.
+- no requests/openai/network imports.
+
+If any of these are false, stop. Do not upload.
+
+Step 5 — Direct candidate behavior checks
+
+Run:
+
+python - <<'PY'
+import importlib.util, os, sys
+from pathlib import Path
+
+d = Path("/tmp/ptcg_fixed_inspect")
+main_path = d / "main.py"
+deck_path = d / "deck.csv"
+rows = [int(x.strip()) for x in deck_path.read_text().splitlines() if x.strip()]
+
+os.chdir(d)
+spec = importlib.util.spec_from_file_location("fixed_candidate_main", main_path)
+mod = importlib.util.module_from_spec(spec)
+sys.modules["fixed_candidate_main"] = mod
+spec.loader.exec_module(mod)
+
+obs_cases = {
+    "canonical_null": {"current": None, "select": None, "logs": [], "step": 0},
+    "key_absent": {"logs": [], "step": 0},
+    "empty_dict": {},
+}
+
+class StructLike:
+    def __init__(self):
+        self.current = None
+        self.select = None
+        self.logs = []
+        self.step = 0
+
+obs_cases["struct_like"] = StructLike()
+
+for name, obs in obs_cases.items():
+    result = mod.agent(obs)
+    print(name, type(result).__name__, len(result) if isinstance(result, list) else None, result[:5] if isinstance(result, list) else result)
+    assert isinstance(result, list)
+    assert len(result) == 60
+    assert sorted(result) == sorted(rows)
+
+game_obs = {
+    "current": {"players": [], "yourIndex": 0},
+    "select": {"option": [{"type": "End"}], "maxCount": 1, "minCount": 1},
+    "logs": [],
+    "step": 1,
+}
+result = mod.agent(game_obs)
+print("game_obs", result)
+assert isinstance(result, list)
+assert result == [0]
+print("direct behavior checks PASS")
+PY
+
+If this fails, stop. Do not upload.
+
+Step 6 — Optional local candidate smoke
+
+Try:
+
+python scripts/kaggle_candidate_smoke_test.py data/submissions/candidates/combo_full_safety_v3_fixed.tar.gz
+
+If it completes and passes, great.
+
+If it times out because OpenSpiel/cabt import exceeds the sandbox wall, do not treat that as a blocker if Steps 1–5 pass. Report it as environment limitation.
+
+Step 7 — Kaggle auth/status precheck
+
+Run:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/pre_submit_status_combo_full_safety_v3_fixed.log
+
+If auth/access fails, stop. Do not upload.
+
+Step 8 — Submit exactly once
+
+Only if Steps 1–5 pass and Step 7 passes, submit exactly once:
+
+kaggle competitions submit pokemon-tcg-ai-battle -f data/submissions/candidates/combo_full_safety_v3_fixed.tar.gz -m "combo_full_safety_v3_fixed: fixes deck-selection return for key-absent Kaggle obs; same effect-safety candidate; validator PASS" 2>&1 | tee data/kaggle_uploads/submit_combo_full_safety_v3_fixed.log
+
+Do not run a second submit command.
+
+Step 9 — Fetch status
+
+Run:
+
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_after_combo_full_safety_v3_fixed.log
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_after_combo_full_safety_v3_fixed.csv
+
+Step 10 — ActiveGraph event
+
+Append a SubmissionUploaded event if upload occurred.
+
+Payload:
+- candidate_id: combo_full_safety_v3_fixed
+- tarball: data/submissions/candidates/combo_full_safety_v3_fixed.tar.gz
+- fix: robust_deck_selection_for_key_absent_obs
+- prior_failed_candidate: combo_full_safety_v3
+- validator: validate_candidate_tarball.py PASS
+- upload_mode: human_approved_fixed_reprobe
+
+Final report format:
+
+Combo Full Safety v3 Fixed Upload Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+
+2. Tarball validation
+- fixed validator result:
+- failed tarball negative-control result:
+- tarball contents:
+- file size:
+
+3. Wrapper inspection
+- embedded deck present:
+- file-relative deck loading:
+- previous strategy agent captured:
+- gameplay delegates to strategy:
+- no forbidden imports:
+
+4. Direct behavior
+- canonical_null return length:
+- key_absent return length:
+- empty_dict return length:
+- struct_like return length:
+- game_obs action:
+- deck matches deck.csv:
+
+5. Optional smoke
+- candidate smoke attempted:
+- candidate smoke result:
+- environment limitation if any:
+
+6. Upload
+- auth/status precheck:
+- upload attempted:
+- submit log path:
+- raw submit summary:
+
+7. Submission status
+- latest status:
+- score/rating if available:
+- status logs:
+
+8. ActiveGraph
+- SubmissionUploaded event emitted:
+- event store path:
+
+9. Next action
+- If pending: say "Wait for validation/rating before any further upload."
+- If validation passes: say "Compare fixed candidate score against live v2 control."
+- If validation fails: classify the new failure and do not run more strategy experiments until the gate is updated.

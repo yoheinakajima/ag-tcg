@@ -1,3 +1,1 @@
-# Memory index
-
-- [Kaggle cabt env quirks](kaggle-cabt-env-quirks.md) — local cabt obs includes literal `select` key (masks deck-return bug); Kaggle omits it; kaggle_environments import (~115s) too slow for one sandbox tool call.
+- [Kaggle deck-selection obs](kaggle-deck-selection-obs.md) — cabt deck step = select & current both None; obs may be key-absent dict or attribute object, not just dict; local self-play can't reproduce. Validate all 3 shapes.

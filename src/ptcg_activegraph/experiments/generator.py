@@ -1839,12 +1839,34 @@ def _load_submission_deck():
     return list(_EMBEDDED_DECK)
 
 
-def _is_deck_request(obs):
-    """True for the cabt deck-selection step (current and select both None)."""
+def _ds_get(obs, name):
+    """Read ``name`` from obs whether it is a dict, a dict-like Struct exposing
+    ``.get``, or a plain attribute-style object. Kaggle's production deck-
+    selection observation can arrive as any of these, so never assume dict."""
     try:
-        return (isinstance(obs, dict)
-                and obs.get("select") is None
-                and obs.get("current") is None)
+        if isinstance(obs, dict):
+            return obs.get(name)
+        getter = getattr(obs, "get", None)
+        if callable(getter):
+            try:
+                return getter(name)
+            except Exception:
+                pass
+        return getattr(obs, name, None)
+    except Exception:
+        return None
+
+
+def _is_deck_request(obs):
+    """True for the cabt deck-selection step: ``select`` and ``current`` both
+    resolve to None. Handles dicts (key present-None OR key absent), dict-like
+    Structs, and attribute-style objects; gameplay observations always carry a
+    non-None ``select``/``current`` so they delegate to the strategy agent."""
+    try:
+        if obs is None:
+            return False
+        return (_ds_get(obs, "select") is None
+                and _ds_get(obs, "current") is None)
     except Exception:
         return False
 
