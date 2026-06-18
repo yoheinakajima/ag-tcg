@@ -1,0 +1,33 @@
+{
+  "id": "11_deckout_guard_low_deck",
+  "kind": "main_action",
+  "hard": true,
+  "source": "synthetic",
+  "description": "With a thin deck, avoid an optional draw/search and take the board-advancing action instead.",
+  "competency": "avoid deckout",
+  "board": {
+    "active": {
+      "card_id": 721,
+      "hp": 130,
+      "energy": 0
+    },
+    "bench": [],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 4,
+    "discard": [],
+    "prize_count": 3
+  },
+  "options": [
+    {
+      "is_draw_search": true
+    },
+    {
+      "is_attach": true
+    }
+  ],
+  "expect": {
+    "action_kind_not": "draw_search"
+  },
+  "notes": "Deckout guard penalizes optional draw at <=4."
+}

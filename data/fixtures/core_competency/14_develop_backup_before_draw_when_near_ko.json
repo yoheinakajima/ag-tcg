@@ -1,0 +1,37 @@
+{
+  "id": "14_develop_backup_before_draw_when_near_ko",
+  "kind": "main_action",
+  "hard": true,
+  "source": "synthetic",
+  "description": "With the active near KO and a bench play available, develop a backup before an optional draw.",
+  "competency": "prepare backup attacker",
+  "board": {
+    "active": {
+      "card_id": 721,
+      "hp": 30,
+      "max_hp": 130,
+      "energy": 1,
+      "active_near_ko": true
+    },
+    "active_near_ko": true,
+    "bench": [],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 25,
+    "discard": [],
+    "prize_count": 3
+  },
+  "options": [
+    {
+      "is_bench_play": true,
+      "card_id": 721
+    },
+    {
+      "is_draw_search": true
+    }
+  ],
+  "expect": {
+    "action_kind": "bench_play"
+  },
+  "notes": "Backup development beats a passive draw when near KO."
+}

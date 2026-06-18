@@ -1,0 +1,34 @@
+{
+  "id": "12_attack_over_passive_draw",
+  "kind": "main_action",
+  "hard": true,
+  "source": "synthetic",
+  "description": "With a ready attacker, attack instead of looping a passive draw/search.",
+  "competency": "stop passive loops / prefer attack",
+  "board": {
+    "active": {
+      "card_id": 721,
+      "hp": 130,
+      "energy": 2
+    },
+    "bench": [],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 30,
+    "discard": [],
+    "prize_count": 4
+  },
+  "options": [
+    {
+      "is_draw_search": true
+    },
+    {
+      "is_attack": true,
+      "damage": 120
+    }
+  ],
+  "expect": {
+    "action_kind": "attack"
+  },
+  "notes": "Attacking beats a passive draw when ready."
+}

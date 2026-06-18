@@ -1,0 +1,40 @@
+{
+  "id": "04_attach_energy_to_active_attacker",
+  "kind": "attach_energy",
+  "hard": true,
+  "source": "synthetic",
+  "description": "Attach energy to the active attacker (Kyogre), not to a bench setup basic.",
+  "competency": "attach energy",
+  "board": {
+    "active": {
+      "card_id": 721,
+      "hp": 130,
+      "energy": 0
+    },
+    "bench": [
+      {
+        "card_id": 722,
+        "hp": 80
+      }
+    ],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 40,
+    "discard": [],
+    "prize_count": 6
+  },
+  "options": [
+    {
+      "card_id": 721,
+      "is_active": true
+    },
+    {
+      "card_id": 722,
+      "is_active": false
+    }
+  ],
+  "expect": {
+    "chosen_card_id": 721
+  },
+  "notes": "Active attacker is the energy target."
+}

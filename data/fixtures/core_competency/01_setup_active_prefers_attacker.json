@@ -1,0 +1,33 @@
+{
+  "id": "01_setup_active_prefers_attacker",
+  "kind": "setup_active",
+  "hard": true,
+  "source": "synthetic",
+  "description": "Choose the high-HP basic attacker (Kyogre) over the fragile setup basic (Snover) as the opening active.",
+  "competency": "choose active",
+  "board": {
+    "active": null,
+    "bench": [],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 54,
+    "discard": [],
+    "prize_count": 6
+  },
+  "options": [
+    {
+      "card_id": 722,
+      "hp": 80,
+      "is_basic": true
+    },
+    {
+      "card_id": 721,
+      "hp": 130,
+      "is_basic": true
+    }
+  ],
+  "expect": {
+    "chosen_card_id": 721
+  },
+  "notes": "Snover is listed first to defeat a naive first-option ablation."
+}

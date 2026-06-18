@@ -1,0 +1,30 @@
+{
+  "id": "06_evolve_when_line_ready",
+  "kind": "evolve",
+  "hard": true,
+  "source": "synthetic",
+  "description": "With Snover in play, evolve into Mega Abomasnow ex when the play is legal.",
+  "competency": "evolve",
+  "board": {
+    "active": {
+      "card_id": 722,
+      "hp": 80
+    },
+    "bench": [],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 35,
+    "discard": [],
+    "prize_count": 5
+  },
+  "options": [
+    {
+      "card_id": 723,
+      "target_card_id": 722
+    }
+  ],
+  "expect": {
+    "chosen_card_id": 723
+  },
+  "notes": "Line is ready; take the evolution."
+}

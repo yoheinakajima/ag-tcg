@@ -1,0 +1,32 @@
+{
+  "id": "08_search_fetch_missing_basic",
+  "kind": "search_to_hand",
+  "hard": true,
+  "source": "synthetic",
+  "description": "With no Snover in play, fetch the missing setup basic (Snover) rather than an orphan Mega Abomasnow ex.",
+  "competency": "search to hand",
+  "board": {
+    "active": {
+      "card_id": 721,
+      "hp": 130
+    },
+    "bench": [],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 30,
+    "discard": [],
+    "prize_count": 5
+  },
+  "options": [
+    {
+      "card_id": 723
+    },
+    {
+      "card_id": 722
+    }
+  ],
+  "expect": {
+    "chosen_card_id": 722
+  },
+  "notes": "Fetch the basic before its evolution payoff."
+}

@@ -1,0 +1,18 @@
+# Pass 14 core-competency fixtures (reduced-model; graded via core_pilot_decide).
+# Ordered; hard fixtures block eval+queue on failure, advisory ones never block.
+schema: activegraph.fixtures.core_competency/v1
+fixtures:
+  - 01_setup_active_prefers_attacker.json
+  - 02_setup_bench_adds_backup.json
+  - 03_setup_bench_backup_attacker_when_fragile.json
+  - 04_attach_energy_to_active_attacker.json
+  - 05_attach_tool_to_active_attacker.json
+  - 06_evolve_when_line_ready.json
+  - 07_discard_excess_energy_first.json
+  - 08_search_fetch_missing_basic.json
+  - 09_search_fetch_payoff_when_ready.json
+  - 10_secret_box_advisory.json
+  - 11_deckout_guard_low_deck.json
+  - 12_attack_over_passive_draw.json
+  - 13_promote_best_after_ko.json
+  - 14_develop_backup_before_draw_when_near_ko.json

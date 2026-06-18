@@ -1,0 +1,573 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not generate broad deck-search candidates in this pass.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Keep all candidate tarballs top-level main.py + deck.csv only.
+- Read docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md and docs/NEXT_AGENT_README.md before making changes.
+- This is a generic pilot/core-competency pass, not a meta/deck-search pass.
+
+Current state:
+- Pass 13 completed.
+- Operating manual exists.
+- Active control remains combo_full_safety_v3_fixed.tar.gz using last-known-good registry score 376.6.
+- Unknown_ex_tempo was decomposed into:
+  - mega_lucario_ex_tempo, weight 0.24
+  - mega_kangaskhan_energy_stack, weight 0.12
+  - dragapult_ex, weight 0.12
+  - lightning_bellibolt, weight 0.12
+- Confirmed archetypes remain:
+  - metal_ex_zacian_ramp, weight 0.20
+  - water_kyogre_abomasnow_maxbelt, weight 0.20
+- No candidate cleared Pass 12 promotion gate.
+- The likely bottleneck is not another deck variant. It is missing generic TCG pilot competence:
+  - weak active selection
+  - weak bench development
+  - poor energy/tool attachment targeting
+  - weak evolution timing
+  - search not tied to board plan
+  - passive draw/search loops
+  - overdraw/deckout risk
+  - weak KO recovery and backup attacker planning
+- We want a layered architecture:
+  - generic core pilot rules
+  - deck playbook role tags/weights
+  - card-specific exceptions only where needed
+
+Goal:
+Run Pass 14: Core Pilot Competency Layer.
+
+Objectives:
+1. Build a deck-agnostic generic pilot layer.
+2. Add deterministic core competency fixtures.
+3. Compile one Water-shell candidate using generic pilot + Kyogre/Abomasnow playbook roles.
+4. Prove the candidate passes tarball validation and core competency gates.
+5. Run a small directional eval against active control and refined subfamily surrogates.
+6. Do not upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Read current manual and state
+
+Read:
+
+docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md
+docs/NEXT_AGENT_README.md
+data/reports/pass13_operating_manual_and_meta_decomposition.md
+experiments/pass13_refined_meta_pool.yaml
+data/kaggle_uploads/live_score_registry.json
+
+Write a short session note:
+
+data/experiments/pass14_session_plan.md
+
+It should state:
+- no upload
+- root immutable
+- candidate tarball is unit of truth
+- core competency fixtures are primary local truth
+- surrogate eval is directional only
+
+Part C — Define generic pilot architecture
+
+Create:
+
+docs/CORE_PILOT_ARCHITECTURE.md
+
+Document the layer model:
+
+Layer 0 — submission safety:
+- deck-selection returns 60
+- never crash
+- validate legal indices
+- fallback action
+
+Layer 1 — state model:
+- active/bench/hand/deck/discard/prize
+- legal option resolution
+- option → card id when possible
+- board summaries
+- deck count / hand count / bench count / status flags
+
+Layer 2 — generic pilot:
+- choose active
+- bench basics
+- attach energy
+- attach tool
+- evolve
+- search
+- discard
+- attack
+- avoid deckout
+- prepare backup attacker
+- recover after KO
+- stop passive loops
+
+Layer 3 — deck playbook:
+- role tags
+- role weights
+- plan priorities
+- safe/unsafe discard definitions
+- preferred attackers
+- evolution payoffs
+- deckout thresholds
+
+Layer 4 — card-specific exceptions:
+- Secret Box guard
+- Ultra Ball discard/search
+- Mega Signal line guard
+- chaos cards later
+
+Emphasize:
+- The generic layer should be mechanics/score based.
+- The playbook layer supplies card roles.
+- Card-specific exceptions should be rare and explicit.
+
+Part D — Create generic pilot modules
+
+Create:
+
+src/ptcg_activegraph/pilot/
+  __init__.py
+  state.py
+  roles.py
+  scoring.py
+  decisions.py
+  fixtures.py
+  compiler.py
+
+These are lab-side modules only. The submitted candidate must remain stdlib-only after compilation.
+
+Implement pure helpers where feasible:
+
+state.py:
+- safe_get(obj, key, default=None)
+- get_current(obs)
+- get_select(obs)
+- get_players(obs)
+- get_own_player(obs)
+- get_opp_player(obs)
+- get_hand_cards(obs)
+- get_active(obs)
+- get_bench(obs)
+- get_discard(obs)
+- get_deck_count(obs)
+- resolve_option_card(obs, option)
+- resolve_option_target(obs, option)
+- context_name(select)
+- option_type(option)
+
+roles.py:
+- CardRole dataclass or plain dict convention
+- load_playbook_roles(playbook)
+- role_for_card(card_id, role_map)
+- has_role(card_id, role)
+- count_role_in_zone(zone, role)
+
+scoring.py:
+- score_basic_active(card, board, playbook)
+- score_basic_bench(card, board, playbook)
+- score_energy_attach_target(target, board, playbook)
+- score_tool_attach_target(target, board, playbook)
+- score_evolution(card, target, board, playbook)
+- score_search_target(card, board, playbook, effect_card_id)
+- score_discard_candidate(card, board, playbook)
+- score_attack_option(option, board, playbook)
+- score_draw_search_action(option, board, playbook)
+- board_pressure_score(board, playbook)
+
+decisions.py:
+- choose_setup_active(options, board, playbook)
+- choose_setup_bench(options, board, playbook)
+- choose_main_action(options, board, playbook)
+- choose_discard(options, board, playbook)
+- choose_to_hand(options, board, playbook)
+- choose_attach_target(options, board, playbook)
+- choose_attack(options, board, playbook)
+
+compiler.py:
+- compile generic pilot constants + playbook roles into a stdlib-only main.py override block
+- do not import src in generated main.py
+- preserve robust deck-selection wrapper
+
+Keep implementation conservative. It is better to implement fewer, correct, testable rules than a large opaque system.
+
+Part E — Extend playbook role tags
+
+Update or create a new playbook:
+
+playbooks/v2_kyogre_abomasnow_core_pilot.yaml
+
+Do not destroy existing playbooks.
+
+It should tag current Water shell cards:
+
+cards:
+- 3 Basic Water Energy
+- 721 Kyogre
+- 722 Snover
+- 723 Mega Abomasnow ex
+- 1092 Secret Box
+- 1121 Ultra Ball
+- 1145 Mega Signal
+- 1163 Powerglass
+- 1219 Team Rocket's Petrel
+- 1227 Lillie's Determination
+- 1262 Surfing Beach
+
+roles:
+- basic_energy: [3]
+- primary_basic_attacker: [721]
+- setup_basic: [722]
+- evolution_payoff: [723]
+- search_cards: [1121, 1145]
+- high_risk_search: [1092]
+- tools: [1163]
+- draw_support: [1219, 1227, 1262]
+- stadium: [1262]
+
+plan:
+- primary_plan: kyogre_tempo
+- secondary_plan: abomasnow_evolution
+- avoid_plan: passive_draw_loop
+- avoid_plan: deckout
+
+role weights:
+- active_prefers_high_hp_basic_attacker
+- bench_prefers_backup_attacker_and_setup_basic
+- attach_prefers_active_or_next_attacker
+- search_prefers_missing_plan_piece
+- discard_prefers_excess_energy
+- preserve_only_setup_basic
+- preserve_only_attacker
+- preserve_only_evolution_payoff_when_setup_exists
+- deckout_guard_thresholds: 8, 4, 2
+
+Part F — Core competency fixtures
+
+Create fixture directory:
+
+data/fixtures/core_competency/
+
+Create JSON fixtures and an index:
+
+data/fixtures/core_competency/index.yaml
+
+Fixtures should be deterministic observations or reduced observation-like structures. They do not need to be full game replays if a reduced structure can test the decision logic.
+
+Create at least these fixtures:
+
+1. setup_active_prefers_strong_basic_attacker
+Given Kyogre and Snover as legal setup-active options:
+Expected: choose Kyogre unless playbook says fast evolution setup dominates.
+
+2. setup_bench_adds_backup
+Given active Kyogre and legal bench Kyogre/Snover:
+Expected: bench at least one useful backup/setup Pokémon when bench has space.
+
+3. setup_bench_not_empty_if_active_fragile
+Given active Snover and benchable Kyogre/Snover:
+Expected: bench a backup.
+
+4. attach_energy_to_active_attacker
+Given active Kyogre and Water Energy attach options:
+Expected: attach to active Kyogre.
+
+5. attach_tool_to_attacker
+Given Powerglass and active Kyogre:
+Expected: attach tool to Kyogre rather than random bench.
+
+6. evolve_when_line_ready
+Given Snover in play and Mega Abomasnow ex legal:
+Expected: choose evolution unless immediate attack/KO dominates.
+
+7. ultra_ball_discards_excess_energy
+Given Ultra Ball discard prompt with excess Water and setup pieces:
+Expected: discard Water Energy before only Snover/Kyogre/Mega.
+
+8. search_missing_basic_before_orphan_evolution
+Given no Snover in play and ToHand choices include Snover and Mega Abomasnow:
+Expected: choose Snover over orphan Mega.
+
+9. search_evolution_when_basic_exists
+Given Snover in play and ToHand choices include Mega Abomasnow:
+Expected: choose Mega Abomasnow.
+
+10. avoid_secret_box_without_safe_discards
+Given main action includes Secret Box but fewer than 3 safe discards:
+Expected: avoid Secret Box if productive alternative exists.
+If the main option cannot be resolved to Secret Box deterministically, mark fixture advisory/ungradeable with explanation.
+
+11. deckout_guard_low_deck
+Given deckCount <= 4 and optional draw/search vs non-draw action:
+Expected: avoid optional draw/search unless immediate win/survival.
+
+12. attack_over_passive_draw_when_ready
+Given attacker online and legal attack plus optional draw/search:
+Expected: attack or attach/attack path, not passive draw/search.
+
+13. promote_best_after_ko
+Given choose-new-active context and bench has stronger attacker:
+Expected: promote best attacker, not weakest card.
+
+14. no_bench_loss_prevention
+Given active near KO and bench option available:
+Expected: develop backup before optional draw.
+
+For each fixture include:
+- id
+- description
+- context
+- playbook
+- expected behavior
+- hard/advisory
+- source: synthetic or replay-derived
+- notes
+
+Part G — Core competency gate
+
+Create:
+
+scripts/run_core_competency_gate.py
+
+Usage:
+
+python scripts/run_core_competency_gate.py --candidate data/submissions/candidates/<candidate>.tar.gz --fixtures data/fixtures/core_competency
+
+or:
+
+python scripts/run_core_competency_gate.py --candidate-dir experiments/runs_pass14/<candidate>
+
+Behavior:
+- load fixture index
+- import candidate main.py if fixture is observation-level
+- or call lab decision function if fixture is reduced-model-level
+- compare selected action to expected behavior
+- report pass/fail/advisory/na
+- hard failures block evaluation and queue
+- write:
+  - data/experiments/pass14_core_gate.json
+  - data/experiments/pass14_core_gate.md
+
+Important:
+- Existing active control may fail some new core fixtures. That is expected and informative.
+- A new candidate must improve the gate without breaking tarball validation.
+
+Part H — Build one core-pilot candidate
+
+Generate exactly one main candidate first:
+
+candidate_id: core_pilot_water_v1
+
+Use:
+- base deck: active control deck or current Water shell deck, whichever is clearly represented by the active control tarball
+- playbook: playbooks/v2_kyogre_abomasnow_core_pilot.yaml
+- generic pilot layer compiled into stdlib-only main.py
+- existing effect-safety guards preserved
+- robust deck-selection wrapper preserved
+
+Output:
+
+experiments/runs_pass14/core_pilot_water_v1/
+data/submissions/candidates_pass14/core_pilot_water_v1.tar.gz
+
+Must pass:
+- validate_candidate_tarball.py
+- no forbidden imports
+- core competency gate
+- root unchanged
+
+If the compiler cannot safely emit the generic pilot yet, create a candidate plan and stop before eval. Do not fake pass.
+
+Part I — Optional small ablations
+
+Only if core_pilot_water_v1 builds and passes the gate, create up to 3 ablations:
+
+1. core_pilot_water_no_active_scoring
+2. core_pilot_water_no_bench_safety
+3. core_pilot_water_no_deckout_guard
+
+Purpose:
+- prove each generic primitive is load-bearing.
+- These do not need upload eligibility.
+- They should fail relevant fixtures.
+
+Part J — Local evaluation
+
+Only evaluate candidates that pass:
+- tarball validator
+- core competency hard gate
+
+Evaluate:
+- active_control
+- core_pilot_water_v1
+- optional ablations only if useful as negative controls
+
+Against:
+- refined Pass 13 subfamily surrogates:
+  - metal_ex_zacian_ramp
+  - water_kyogre_abomasnow_maxbelt
+  - mega_lucario_ex_tempo
+  - mega_kangaskhan_energy_stack
+  - dragapult_ex
+  - lightning_bellibolt
+- self-mirror diagnostic only if cheap
+
+Budget:
+- 5 games per seat per subfamily
+- seat-swapped
+- watchdog on
+- workflow if runtime exceeds tool timeout
+
+Output:
+- data/experiments/pass14_core_eval.json
+- data/experiments/pass14_core_eval.md
+- data/experiments/pass14_core_matchup_matrix.csv
+
+Label as directional only.
+
+Part K — Metrics
+
+Collect:
+- core fixture pass rate
+- hard fixture failures
+- setup active correctness
+- setup bench correctness
+- attach correctness
+- search correctness
+- discard correctness
+- deckout guard correctness
+- attack/passive-loop metric
+- local weighted meta score
+- per-subfamily score
+- crash/timeout/invalid returns
+- average game length
+- first meaningful attack step
+- bench development by early threshold
+- stuck_on_basic_snover_rate
+- no_bench_loss_rate
+- low-deck draw/search count
+
+Part L — Report site
+
+Update:
+- data/site/index.html
+- data/reports/activegraph_strategy_report.md
+- data/reports/pass14_core_pilot_competency_report.md
+
+Include:
+- why core pilot layer was needed
+- architecture diagram/text
+- fixture list
+- active control fixture failures
+- core_pilot_water_v1 fixture results
+- ablation results if any
+- local directional eval if run
+- no upload note
+- next recommendation
+
+Part M — Tests
+
+Add tests for:
+- operating manual references core pilot pass
+- playbook role tags validate
+- generic scoring chooses Kyogre over Snover for active when appropriate
+- bench scoring adds backup
+- discard scoring preserves only setup piece
+- search scoring chooses missing basic before orphan evolution
+- deckout guard penalizes draw/search
+- core competency fixture loader works
+- hard fixture failure blocks queue/eval
+- generated core candidate tarball validates
+- root files unchanged
+- no upload flag remains false
+
+Run targeted tests in small groups.
+
+Part N — Final report
+
+Report exactly:
+
+ActiveGraph Pass 14 Core Pilot Competency Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Architecture
+- docs path:
+- generic pilot modules:
+- playbook path:
+- generated candidate:
+- stdlib-only compiled runtime:
+
+3. Core competency fixtures
+- fixture path:
+- hard fixtures:
+- advisory fixtures:
+- active control pass/fail:
+- core candidate pass/fail:
+
+4. Candidate generation
+- candidate generated:
+- candidate tarball:
+- tarball validator:
+- forbidden imports:
+- ablations generated:
+- blocked and why:
+
+5. Local evaluation
+- eval run:
+- opponents/subfamilies:
+- games per seat:
+- active control score:
+- core candidate score:
+- crashes/timeouts/invalid returns:
+- directional result:
+
+6. Competency metrics
+- setup active:
+- setup bench:
+- attach:
+- evolve:
+- search:
+- discard:
+- deckout guard:
+- attack/passive loop:
+- biggest remaining weakness:
+
+7. Queue/upload guidance
+- candidates queued:
+- upload performed: no
+- submit next: yes/no:
+- reason:
+
+8. Report site
+- site path:
+- markdown report:
+- key lesson:
+
+9. Manual git notes
+- files to review:
+- files not to commit:
+- generated/ignored files:
+
+10. Next recommendation
+- one sentence only.

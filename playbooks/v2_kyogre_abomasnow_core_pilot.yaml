@@ -1,0 +1,80 @@
+# ActiveGraph Pass 14 — Core-pilot playbook for the Water (Kyogre / Mega Abomasnow) shell.
+#
+# This is the Layer-3 role/weight supply for the generic core pilot (Layer 2).
+# It does NOT replace playbooks/v2_kyogre_abomasnow.yaml; it adds the machine-readable
+# role tags + weights the core pilot consumes. All card ids are confirmed in
+# data/cards/EN_Card_Data.csv (never invented; that CSV is gitignored and not committed).
+
+deck_id: v2_kyogre_abomasnow_core_pilot
+based_on: v2_kyogre_abomasnow
+schema: activegraph.playbook.core_pilot/v1
+
+# Human-readable card list (id -> name), for traceability only.
+cards:
+  3: Basic Water Energy
+  721: Kyogre
+  722: Snover
+  723: Mega Abomasnow ex
+  1092: Secret Box
+  1121: Ultra Ball
+  1145: Mega Signal
+  1163: Powerglass
+  1219: Team Rocket's Petrel
+  1227: Lillie's Determination
+  1262: Surfing Beach
+
+# Layer-3 role tags (the generic pilot reasons over these, never over names).
+roles:
+  basic_energy: [3]
+  primary_basic_attacker: [721]
+  setup_basic: [722]
+  evolution_payoff: [723]
+  search_cards: [1121, 1145]
+  high_risk_search: [1092]
+  tools: [1163]
+  draw_support: [1219, 1227, 1262]
+  stadium: [1262]
+
+plan:
+  primary_plan: kyogre_tempo
+  secondary_plan: abomasnow_evolution
+  avoid_plans:
+    - passive_draw_loop
+    - deckout
+
+# Role-weight preferences consumed by Layer 2.
+role_weights:
+  active_prefers: [primary_basic_attacker]
+  bench_prefers: [primary_basic_attacker, setup_basic]
+  attach_prefers: [active_attacker, next_attacker]
+  search_prefers: missing_plan_piece
+  discard_prefers: [basic_energy]
+  # The pilot must never reduce these roles to zero across play+hand.
+  preserve_only:
+    - setup_basic
+    - primary_basic_attacker
+    - evolution_payoff_when_setup_exists
+
+# Deckout guard thresholds (deck count). At/under each tier the pilot penalizes or
+# declines optional draw/search.
+deckout_guard_thresholds:
+  penalize: 8
+  heavy: 4
+  critical: 2
+
+# Card-specific exceptions (Layer 4) that the pilot honors for this shell.
+exceptions:
+  secret_box:
+    min_safe_discards: 3
+    play_safety: advisory          # not deterministically gradeable; advisory only
+    forced_discard_all_is_failure: false
+  ultra_ball:
+    discard_excess_energy_first: true
+    fetch_missing_basic_before_orphan_evolution: true
+  mega_signal:
+    require_setup_basic_in_play: true
+
+notes:
+  - Generic competence is mechanics/score based; this file only supplies card roles.
+  - Card-specific exceptions are intentionally few and explicit.
+  - Existing playbooks are untouched; this is an additive Layer-3 file.

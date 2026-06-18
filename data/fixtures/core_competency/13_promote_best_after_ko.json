@@ -1,0 +1,42 @@
+{
+  "id": "13_promote_best_after_ko",
+  "kind": "promote_after_ko",
+  "hard": true,
+  "source": "synthetic",
+  "description": "After a knock-out, promote the best attacker (Kyogre) as the new active.",
+  "competency": "recover after KO",
+  "board": {
+    "active": null,
+    "bench": [
+      {
+        "card_id": 722,
+        "hp": 80
+      },
+      {
+        "card_id": 721,
+        "hp": 130
+      }
+    ],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 20,
+    "discard": [],
+    "prize_count": 3
+  },
+  "options": [
+    {
+      "card_id": 722,
+      "hp": 80,
+      "is_basic": true
+    },
+    {
+      "card_id": 721,
+      "hp": 130,
+      "is_basic": true
+    }
+  ],
+  "expect": {
+    "chosen_card_id": 721
+  },
+  "notes": "Promote the attacker, not the fragile setup basic."
+}

@@ -1,0 +1,40 @@
+{
+  "id": "02_setup_bench_adds_backup",
+  "kind": "setup_bench",
+  "hard": true,
+  "source": "synthetic",
+  "description": "With bench space and Kyogre active, bench a useful backup/setup basic rather than skipping development.",
+  "competency": "bench basics",
+  "board": {
+    "active": {
+      "card_id": 721,
+      "hp": 130,
+      "is_basic": true
+    },
+    "bench": [],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 50,
+    "discard": [],
+    "prize_count": 6
+  },
+  "options": [
+    {
+      "card_id": 722,
+      "hp": 80,
+      "is_basic": true
+    },
+    {
+      "card_id": 721,
+      "hp": 130,
+      "is_basic": true
+    }
+  ],
+  "expect": {
+    "chosen_card_id_in": [
+      721,
+      722
+    ]
+  },
+  "notes": "Must develop the bench; either useful basic is acceptable."
+}

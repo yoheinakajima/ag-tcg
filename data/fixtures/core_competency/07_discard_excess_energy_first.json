@@ -1,0 +1,42 @@
+{
+  "id": "07_discard_excess_energy_first",
+  "kind": "discard",
+  "hard": true,
+  "source": "synthetic",
+  "description": "Pay a discard cost with excess Basic Water Energy before any setup/attacker/payoff card.",
+  "competency": "discard",
+  "board": {
+    "active": {
+      "card_id": 721,
+      "hp": 130
+    },
+    "bench": [],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 30,
+    "discard": [],
+    "prize_count": 5,
+    "discard_count": 1
+  },
+  "options": [
+    {
+      "card_id": 722
+    },
+    {
+      "card_id": 3
+    },
+    {
+      "card_id": 723
+    }
+  ],
+  "expect": {
+    "chosen_card_ids_include": [
+      3
+    ],
+    "chosen_card_ids_exclude": [
+      722,
+      723
+    ]
+  },
+  "notes": "Energy is the safe discard."
+}
