@@ -1,5 +1,952 @@
 {
-  "status": "missing",
-  "requested_path": "data/kaggle_replays/80374966.json",
-  "note": "replay not uploaded; analysis pending"
+  "episode": {
+    "episode_id": 80374966,
+    "name": "cabt",
+    "module_version": "1.30.1",
+    "schema_version": 1,
+    "rewards": [
+      -1,
+      1
+    ],
+    "statuses": [
+      "DONE",
+      "DONE"
+    ],
+    "act_timeout": 1,
+    "run_timeout": 1200,
+    "episode_steps_cap": 10000,
+    "total_steps": 136,
+    "final_result": {
+      "rewards": [
+        -1,
+        1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "winner_seat": 1,
+      "draw": false
+    },
+    "agents": [
+      "Yohei Nakajima",
+      "Yohei Nakajima"
+    ]
+  },
+  "decks": {
+    "per_seat": [
+      {
+        "seat": 0,
+        "card_count": 60,
+        "unique_card_ids": [
+          3,
+          721,
+          722,
+          723,
+          1092,
+          1121,
+          1145,
+          1163,
+          1219,
+          1227,
+          1262
+        ],
+        "counts": {
+          "3": 29,
+          "721": 4,
+          "722": 4,
+          "723": 4,
+          "1092": 1,
+          "1121": 4,
+          "1145": 2,
+          "1163": 2,
+          "1219": 4,
+          "1227": 4,
+          "1262": 2
+        },
+        "matches_v1_baseline": false,
+        "matches_v2_baseline": true
+      },
+      {
+        "seat": 1,
+        "card_count": 60,
+        "unique_card_ids": [
+          3,
+          721,
+          722,
+          723,
+          1092,
+          1121,
+          1145,
+          1163,
+          1219,
+          1227,
+          1262
+        ],
+        "counts": {
+          "3": 29,
+          "721": 4,
+          "722": 4,
+          "723": 4,
+          "1092": 1,
+          "1121": 4,
+          "1145": 2,
+          "1163": 2,
+          "1219": 4,
+          "1227": 4,
+          "1262": 2
+        },
+        "matches_v1_baseline": false,
+        "matches_v2_baseline": true
+      }
+    ],
+    "uncertain": []
+  },
+  "final_state": {
+    "per_seat": [
+      {
+        "seat": 0,
+        "deck_count": 0,
+        "hand_count": 31,
+        "prize_slots": 5,
+        "prize_remaining_facedown": 0,
+        "active": [
+          721
+        ],
+        "bench": [
+          722,
+          722,
+          722,
+          721
+        ],
+        "discard_count": 17,
+        "status_flags": {
+          "asleep": false,
+          "burned": false,
+          "confused": false,
+          "paralyzed": false,
+          "poisoned": false
+        }
+      },
+      {
+        "seat": 1,
+        "deck_count": 8,
+        "hand_count": 39,
+        "prize_slots": 4,
+        "prize_remaining_facedown": 0,
+        "active": [
+          722
+        ],
+        "bench": [
+          721,
+          722
+        ],
+        "discard_count": 5,
+        "status_flags": {
+          "asleep": false,
+          "burned": false,
+          "confused": false,
+          "paralyzed": false,
+          "poisoned": false
+        }
+      }
+    ],
+    "uncertain": [
+      "win condition (prize-out vs deck-out vs no-bench) is inferred from final board + terminal rewards; the engine does not stamp an explicit reason"
+    ],
+    "loser_seat": 0,
+    "apparent_loss_reason": "seat 0 likely lost to deck-out (final deckCount 0)"
+  },
+  "telemetry": {
+    "decisions": 268,
+    "select_context_distribution": {
+      "41": 1,
+      "1": 5,
+      "38": 1,
+      "2": 19,
+      "0": 189,
+      "8": 6,
+      "7": 43,
+      "3": 1,
+      "4": 3
+    },
+    "select_type_distribution": {
+      "9": 1,
+      "1": 77,
+      "8": 1,
+      "0": 189
+    },
+    "option_type_distribution": {
+      "1": 1,
+      "2": 1,
+      "3": 347,
+      "0": 2,
+      "8": 8380,
+      "7": 706,
+      "14": 189,
+      "10": 182,
+      "13": 161,
+      "9": 394
+    },
+    "chosen_option_type_distribution": {
+      "3": 31,
+      "8": 16,
+      "7": 4,
+      "10": 5,
+      "14": 2,
+      "13": 74,
+      "9": 3
+    },
+    "attack_count": 74,
+    "play_count": 16,
+    "attach_or_evolve_count": 3,
+    "ability_count": 5,
+    "end_or_pass_count": 2,
+    "retreat_or_move_count": 4,
+    "discard_context_count": 6,
+    "search_to_hand_context_count": 43,
+    "effect_card_ids_involved": {
+      "1121": 9,
+      "1092": 5,
+      "1145": 2,
+      "1262": 1,
+      "1219": 2
+    },
+    "multi_option_decisions": 260,
+    "first_legal_pick_count": 39,
+    "first_legal_pick_rate": 0.15,
+    "type_name_legend": {
+      "3": "pick_card",
+      "7": "retreat_or_move",
+      "8": "play_from_hand",
+      "9": "attach_or_evolve",
+      "10": "ability",
+      "13": "attack",
+      "14": "pass_or_end"
+    },
+    "context_legend": {
+      "8": "discard from hand",
+      "7": "search/take to hand from deck"
+    },
+    "uncertain": [
+      "attach vs evolve share option type 9 and are not separated here",
+      "retreat and other board moves share option type 7"
+    ]
+  },
+  "effect_traces": {
+    "trace_count": 19,
+    "traces_by_effect_card": {
+      "Ultra Ball (1121)": 9,
+      "Secret Box (1092)": 5,
+      "Mega Signal (1145)": 2,
+      "Surfing Beach (1262)": 1,
+      "Team Rocket's Petrel (1219)": 2
+    },
+    "traces": [
+      {
+        "step": 8,
+        "seat": 0,
+        "effect_card": "Ultra Ball (1121)",
+        "effect_card_id": 1121,
+        "context": 8,
+        "context_name": "discard",
+        "n_options": 5,
+        "legal_card_ids": [
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Secret Box (1092)",
+          "Basic {W} Energy (3)"
+        ],
+        "chosen_card_ids": [
+          "Basic {W} Energy (3)"
+        ],
+        "chosen_raw_ids": [
+          3
+        ],
+        "pre_state": {
+          "hand_count": 5,
+          "deck_count": 46,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Kyogre (721)"
+          ]
+        },
+        "heuristic": "good"
+      },
+      {
+        "step": 9,
+        "seat": 0,
+        "effect_card": "Ultra Ball (1121)",
+        "effect_card_id": 1121,
+        "context": 7,
+        "context_name": "search_to_hand",
+        "n_options": 9,
+        "legal_card_ids": [
+          "Snover (722)",
+          "Kyogre (721)",
+          "Mega Abomasnow ex (723)",
+          "Mega Abomasnow ex (723)",
+          "Snover (722)",
+          "Snover (722)",
+          "Kyogre (721)",
+          "Snover (722)",
+          "Mega Abomasnow ex (723)"
+        ],
+        "chosen_card_ids": [
+          "Snover (722)",
+          "Kyogre (721)"
+        ],
+        "chosen_raw_ids": [
+          722,
+          721
+        ],
+        "pre_state": {
+          "hand_count": 3,
+          "deck_count": 46,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Kyogre (721)"
+          ]
+        },
+        "heuristic": "uncertain"
+      },
+      {
+        "step": 11,
+        "seat": 0,
+        "effect_card": "Secret Box (1092)",
+        "effect_card_id": 1092,
+        "context": 8,
+        "context_name": "discard",
+        "n_options": 3,
+        "legal_card_ids": [
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Snover (722)"
+        ],
+        "chosen_card_ids": [
+          "Snover (722)"
+        ],
+        "chosen_raw_ids": [
+          722
+        ],
+        "pre_state": {
+          "hand_count": 3,
+          "deck_count": 45,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Kyogre (721)"
+          ]
+        },
+        "heuristic": "bad"
+      },
+      {
+        "step": 12,
+        "seat": 0,
+        "effect_card": "Secret Box (1092)",
+        "effect_card_id": 1092,
+        "context": 7,
+        "context_name": "search_to_hand",
+        "n_options": 5,
+        "legal_card_ids": [
+          "Mega Signal (1145)",
+          "Mega Signal (1145)",
+          "Ultra Ball (1121)",
+          "Ultra Ball (1121)",
+          "Ultra Ball (1121)"
+        ],
+        "chosen_card_ids": [
+          "Mega Signal (1145)",
+          "Mega Signal (1145)",
+          "Ultra Ball (1121)"
+        ],
+        "chosen_raw_ids": [
+          1145,
+          1145,
+          1121
+        ],
+        "pre_state": {
+          "hand_count": 0,
+          "deck_count": 45,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Kyogre (721)"
+          ]
+        },
+        "heuristic": "uncertain"
+      },
+      {
+        "step": 13,
+        "seat": 0,
+        "effect_card": "Secret Box (1092)",
+        "effect_card_id": 1092,
+        "context": 7,
+        "context_name": "search_to_hand",
+        "n_options": 2,
+        "legal_card_ids": [
+          "1163",
+          "1163"
+        ],
+        "chosen_card_ids": [
+          "1163"
+        ],
+        "chosen_raw_ids": [
+          1163
+        ],
+        "pre_state": {
+          "hand_count": 1,
+          "deck_count": 44,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Kyogre (721)"
+          ]
+        },
+        "heuristic": "uncertain"
+      },
+      {
+        "step": 14,
+        "seat": 0,
+        "effect_card": "Secret Box (1092)",
+        "effect_card_id": 1092,
+        "context": 7,
+        "context_name": "search_to_hand",
+        "n_options": 7,
+        "legal_card_ids": [
+          "Lillie's Determination (1227)",
+          "Team Rocket's Petrel (1219)",
+          "Lillie's Determination (1227)",
+          "Lillie's Determination (1227)",
+          "Team Rocket's Petrel (1219)",
+          "Team Rocket's Petrel (1219)",
+          "Team Rocket's Petrel (1219)"
+        ],
+        "chosen_card_ids": [
+          "Lillie's Determination (1227)"
+        ],
+        "chosen_raw_ids": [
+          1227
+        ],
+        "pre_state": {
+          "hand_count": 2,
+          "deck_count": 43,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Kyogre (721)"
+          ]
+        },
+        "heuristic": "uncertain"
+      },
+      {
+        "step": 15,
+        "seat": 0,
+        "effect_card": "Secret Box (1092)",
+        "effect_card_id": 1092,
+        "context": 7,
+        "context_name": "search_to_hand",
+        "n_options": 2,
+        "legal_card_ids": [
+          "Surfing Beach (1262)",
+          "Surfing Beach (1262)"
+        ],
+        "chosen_card_ids": [
+          "Surfing Beach (1262)"
+        ],
+        "chosen_raw_ids": [
+          1262
+        ],
+        "pre_state": {
+          "hand_count": 3,
+          "deck_count": 42,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Kyogre (721)"
+          ]
+        },
+        "heuristic": "uncertain"
+      },
+      {
+        "step": 17,
+        "seat": 0,
+        "effect_card": "Mega Signal (1145)",
+        "effect_card_id": 1145,
+        "context": 7,
+        "context_name": "search_to_hand",
+        "n_options": 3,
+        "legal_card_ids": [
+          "Mega Abomasnow ex (723)",
+          "Mega Abomasnow ex (723)",
+          "Mega Abomasnow ex (723)"
+        ],
+        "chosen_card_ids": [
+          "Mega Abomasnow ex (723)"
+        ],
+        "chosen_raw_ids": [
+          723
+        ],
+        "pre_state": {
+          "hand_count": 3,
+          "deck_count": 41,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Kyogre (721)"
+          ]
+        },
+        "heuristic": "bad"
+      },
+      {
+        "step": 21,
+        "seat": 0,
+        "effect_card": "Surfing Beach (1262)",
+        "effect_card_id": 1262,
+        "context": 3,
+        "context_name": null,
+        "n_options": 1,
+        "legal_card_ids": [],
+        "chosen_card_ids": [],
+        "chosen_raw_ids": [],
+        "pre_state": {
+          "hand_count": 2,
+          "deck_count": 40,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Kyogre (721)"
+          ]
+        },
+        "heuristic": "uncertain"
+      },
+      {
+        "step": 28,
+        "seat": 0,
+        "effect_card": "Ultra Ball (1121)",
+        "effect_card_id": 1121,
+        "context": 8,
+        "context_name": "discard",
+        "n_options": 6,
+        "legal_card_ids": [
+          "Mega Abomasnow ex (723)",
+          "Basic {W} Energy (3)",
+          "Team Rocket's Petrel (1219)",
+          "Basic {W} Energy (3)",
+          "Surfing Beach (1262)",
+          "Basic {W} Energy (3)"
+        ],
+        "chosen_card_ids": [
+          "Mega Abomasnow ex (723)"
+        ],
+        "chosen_raw_ids": [
+          723
+        ],
+        "pre_state": {
+          "hand_count": 6,
+          "deck_count": 33,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Kyogre (721)",
+            "Kyogre (721)"
+          ]
+        },
+        "heuristic": "bad"
+      },
+      {
+        "step": 29,
+        "seat": 0,
+        "effect_card": "Ultra Ball (1121)",
+        "effect_card_id": 1121,
+        "context": 7,
+        "context_name": "search_to_hand",
+        "n_options": 6,
+        "legal_card_ids": [
+          "Mega Abomasnow ex (723)",
+          "Snover (722)",
+          "Snover (722)",
+          "Kyogre (721)",
+          "Snover (722)",
+          "Mega Abomasnow ex (723)"
+        ],
+        "chosen_card_ids": [
+          "Mega Abomasnow ex (723)",
+          "Snover (722)"
+        ],
+        "chosen_raw_ids": [
+          723,
+          722
+        ],
+        "pre_state": {
+          "hand_count": 4,
+          "deck_count": 33,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Kyogre (721)",
+            "Kyogre (721)"
+          ]
+        },
+        "heuristic": "uncertain"
+      },
+      {
+        "step": 69,
+        "seat": 0,
+        "effect_card": "Team Rocket's Petrel (1219)",
+        "effect_card_id": 1219,
+        "context": 7,
+        "context_name": "search_to_hand",
+        "n_options": 6,
+        "legal_card_ids": [
+          "Team Rocket's Petrel (1219)",
+          "Ultra Ball (1121)",
+          "Lillie's Determination (1227)",
+          "Team Rocket's Petrel (1219)",
+          "Lillie's Determination (1227)",
+          "Team Rocket's Petrel (1219)"
+        ],
+        "chosen_card_ids": [
+          "Team Rocket's Petrel (1219)"
+        ],
+        "chosen_raw_ids": [
+          1219
+        ],
+        "pre_state": {
+          "hand_count": 18,
+          "deck_count": 23,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Kyogre (721)"
+          ]
+        },
+        "heuristic": "uncertain"
+      },
+      {
+        "step": 73,
+        "seat": 0,
+        "effect_card": "Mega Signal (1145)",
+        "effect_card_id": 1145,
+        "context": 7,
+        "context_name": "search_to_hand",
+        "n_options": 1,
+        "legal_card_ids": [
+          "Mega Abomasnow ex (723)"
+        ],
+        "chosen_card_ids": [],
+        "chosen_raw_ids": [],
+        "pre_state": {
+          "hand_count": 16,
+          "deck_count": 22,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Kyogre (721)",
+            "Snover (722)",
+            "Snover (722)"
+          ]
+        },
+        "heuristic": "uncertain"
+      },
+      {
+        "step": 75,
+        "seat": 0,
+        "effect_card": "Ultra Ball (1121)",
+        "effect_card_id": 1121,
+        "context": 8,
+        "context_name": "discard",
+        "n_options": 16,
+        "legal_card_ids": [
+          "Surfing Beach (1262)",
+          "Basic {W} Energy (3)",
+          "Mega Abomasnow ex (723)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "1163",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Team Rocket's Petrel (1219)",
+          "Mega Abomasnow ex (723)"
+        ],
+        "chosen_card_ids": [],
+        "chosen_raw_ids": [],
+        "pre_state": {
+          "hand_count": 16,
+          "deck_count": 21,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Kyogre (721)",
+            "Snover (722)",
+            "Snover (722)"
+          ]
+        },
+        "heuristic": "uncertain"
+      },
+      {
+        "step": 76,
+        "seat": 0,
+        "effect_card": "Ultra Ball (1121)",
+        "effect_card_id": 1121,
+        "context": 7,
+        "context_name": "search_to_hand",
+        "n_options": 2,
+        "legal_card_ids": [
+          "Snover (722)",
+          "Kyogre (721)"
+        ],
+        "chosen_card_ids": [
+          "Snover (722)",
+          "Kyogre (721)"
+        ],
+        "chosen_raw_ids": [
+          722,
+          721
+        ],
+        "pre_state": {
+          "hand_count": 14,
+          "deck_count": 21,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Kyogre (721)",
+            "Snover (722)",
+            "Snover (722)"
+          ]
+        },
+        "heuristic": "uncertain"
+      },
+      {
+        "step": 112,
+        "seat": 0,
+        "effect_card": "Team Rocket's Petrel (1219)",
+        "effect_card_id": 1219,
+        "context": 7,
+        "context_name": "search_to_hand",
+        "n_options": 1,
+        "legal_card_ids": [
+          "Lillie's Determination (1227)"
+        ],
+        "chosen_card_ids": [],
+        "chosen_raw_ids": [],
+        "pre_state": {
+          "hand_count": 27,
+          "deck_count": 7,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Snover (722)",
+            "Snover (722)",
+            "Snover (722)"
+          ]
+        },
+        "heuristic": "uncertain"
+      },
+      {
+        "step": 114,
+        "seat": 0,
+        "effect_card": "Ultra Ball (1121)",
+        "effect_card_id": 1121,
+        "context": 8,
+        "context_name": "discard",
+        "n_options": 27,
+        "legal_card_ids": [
+          "Mega Abomasnow ex (723)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "1163",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Mega Abomasnow ex (723)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Team Rocket's Petrel (1219)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Lillie's Determination (1227)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)",
+          "Kyogre (721)",
+          "Team Rocket's Petrel (1219)",
+          "Basic {W} Energy (3)",
+          "Lillie's Determination (1227)"
+        ],
+        "chosen_card_ids": [],
+        "chosen_raw_ids": [],
+        "pre_state": {
+          "hand_count": 27,
+          "deck_count": 6,
+          "board_pokemon": [
+            "Kyogre (721)",
+            "Snover (722)",
+            "Snover (722)",
+            "Snover (722)"
+          ]
+        },
+        "heuristic": "uncertain"
+      },
+      {
+        "step": 35,
+        "seat": 1,
+        "effect_card": "Ultra Ball (1121)",
+        "effect_card_id": 1121,
+        "context": 8,
+        "context_name": "discard",
+        "n_options": 4,
+        "legal_card_ids": [
+          "Surfing Beach (1262)",
+          "Mega Abomasnow ex (723)",
+          "Basic {W} Energy (3)",
+          "Basic {W} Energy (3)"
+        ],
+        "chosen_card_ids": [],
+        "chosen_raw_ids": [],
+        "pre_state": {
+          "hand_count": 4,
+          "deck_count": 45,
+          "board_pokemon": [
+            "Snover (722)",
+            "Kyogre (721)"
+          ]
+        },
+        "heuristic": "uncertain"
+      },
+      {
+        "step": 36,
+        "seat": 1,
+        "effect_card": "Ultra Ball (1121)",
+        "effect_card_id": 1121,
+        "context": 7,
+        "context_name": "search_to_hand",
+        "n_options": 7,
+        "legal_card_ids": [
+          "Snover (722)",
+          "Snover (722)",
+          "Kyogre (721)",
+          "Mega Abomasnow ex (723)",
+          "Mega Abomasnow ex (723)",
+          "Kyogre (721)",
+          "Mega Abomasnow ex (723)"
+        ],
+        "chosen_card_ids": [
+          "Snover (722)",
+          "Snover (722)"
+        ],
+        "chosen_raw_ids": [
+          722,
+          722
+        ],
+        "pre_state": {
+          "hand_count": 2,
+          "deck_count": 45,
+          "board_pokemon": [
+            "Snover (722)",
+            "Kyogre (721)"
+          ]
+        },
+        "heuristic": "uncertain"
+      }
+    ],
+    "effect_cards_watched": {
+      "1121": "Ultra Ball",
+      "1092": "Secret Box",
+      "1145": "Mega Signal",
+      "1227": "Lillie's Determination",
+      "1219": "Team Rocket's Petrel",
+      "1262": "Surfing Beach"
+    },
+    "uncertain": [
+      "post-state hand/board after each effect is read from the *next* prompt where available; multi-card effects may interleave"
+    ]
+  },
+  "failure_tags": [
+    {
+      "tag": "searched_setup_piece_then_discarded",
+      "present": true,
+      "confidence": "medium",
+      "evidence": "setup pieces both searched and later discarded: ['Snover (722)', 'Mega Abomasnow ex (723)']"
+    },
+    {
+      "tag": "discarded_last_or_only_snover",
+      "present": true,
+      "confidence": "medium",
+      "evidence": "Snover discarded with no Snover in play at step(s) [11]"
+    },
+    {
+      "tag": "discarded_last_or_only_mega",
+      "present": true,
+      "confidence": "low",
+      "evidence": "Mega Abomasnow discarded at step(s) [28]"
+    },
+    {
+      "tag": "fetched_mega_without_snover_line",
+      "present": true,
+      "confidence": "medium",
+      "evidence": "Mega Abomasnow fetched without a Snover line at step(s) [17]"
+    },
+    {
+      "tag": "discarded_energy_ok",
+      "present": true,
+      "confidence": "high",
+      "evidence": "1 discard(s) hit only excess energy fodder"
+    },
+    {
+      "tag": "overdraw_or_oversearch_near_deckout",
+      "present": true,
+      "confidence": "medium",
+      "evidence": "search/draw effect used with deckCount<=8 at step(s) [(112, 7)]"
+    },
+    {
+      "tag": "chose_draw_when_deck_low",
+      "present": true,
+      "confidence": "low",
+      "evidence": "shares evidence with overdraw_or_oversearch_near_deckout; exact draw vs search intent not separable"
+    },
+    {
+      "tag": "effect_resolution_first_legal",
+      "present": false,
+      "confidence": "medium",
+      "evidence": "first-legal pick rate 0.15 over 260 multi-option decisions"
+    },
+    {
+      "tag": "played_stadium_when_already_stadium",
+      "present": null,
+      "confidence": "uncertain",
+      "evidence": "stadium re-play needs per-step stadium-owner diffing not yet implemented"
+    },
+    {
+      "tag": "played_secret_box_with_too_few_safe_discards",
+      "present": null,
+      "confidence": "uncertain",
+      "evidence": "Secret Box pre-play hand safety not separable from generic play prompts"
+    },
+    {
+      "tag": "attached_to_current_attacker",
+      "present": null,
+      "confidence": "uncertain",
+      "evidence": "attach target (active vs bench) not resolved from board-area options yet"
+    },
+    {
+      "tag": "attached_to_non_attacker",
+      "present": null,
+      "confidence": "uncertain",
+      "evidence": "attach target (active vs bench) not resolved from board-area options yet"
+    },
+    {
+      "tag": "timeout_safe",
+      "present": true,
+      "confidence": "high",
+      "evidence": "terminal statuses = ['DONE', 'DONE']"
+    },
+    {
+      "tag": "deckout_loss_for_loser",
+      "present": true,
+      "confidence": "medium",
+      "evidence": "seat 0 likely lost to deck-out (final deckCount 0)"
+    }
+  ],
+  "strongest_failure_tag": "searched_setup_piece_then_discarded",
+  "source_path": "data/replays/80374966.json"
 }

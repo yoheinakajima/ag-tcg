@@ -25,6 +25,8 @@ from ptcg_activegraph.experiments.queue import build_queue
 from ptcg_activegraph.experiments.ranker import (
     FOCUSED_RANKING_JSON,
     PASS4_SCOUT_RANKING_JSON,
+    PASS5_FOCUSED_RANKING_JSON,
+    PASS5_SCOUT_RANKING_JSON,
     RANKING_JSON,
 )
 from ptcg_activegraph.graph.event_store import EventStore
@@ -35,7 +37,9 @@ def main() -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true",
                         help="force dry-run (no upload) regardless of plan settings")
-    parser.add_argument("--stage", choices=["focused", "broad", "pass4_scout"],
+    parser.add_argument("--stage",
+                        choices=["focused", "broad", "pass4_scout",
+                                 "pass5_scout", "pass5_focused"],
                         default="focused",
                         help="which ranking to queue from (focused preferred)")
     parser.add_argument("--runs-root", default=str(RUNS_ROOT))
@@ -47,6 +51,8 @@ def main() -> int:
         "focused": FOCUSED_RANKING_JSON,
         "broad": RANKING_JSON,
         "pass4_scout": PASS4_SCOUT_RANKING_JSON,
+        "pass5_scout": PASS5_SCOUT_RANKING_JSON,
+        "pass5_focused": PASS5_FOCUSED_RANKING_JSON,
     }[args.stage]
     if not ranking_path.exists():
         if args.stage == "focused" and RANKING_JSON.exists():

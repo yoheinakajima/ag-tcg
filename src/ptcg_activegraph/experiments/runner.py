@@ -50,6 +50,10 @@ def _game_timeout_handler(signum, frame):  # noqa: ARG001
 
 _ATTACK_TYPE = 13
 _PASS_TYPE = 14
+# select.context codes (search-to-hand / discard) used for effect-resolution
+# telemetry. Mirrors the values used by the analyzer/generator.
+_CTX_SEARCH_TO_HAND = 7
+_CTX_DISCARD = 8
 
 
 def cabt_available() -> bool:
@@ -97,7 +101,25 @@ class _InstrumentedAgent:
             "option_count_sum": 0,
             "fallbacks": 0,
             "type_counts": {},
+            # --- Pass 5 chaos / deckout telemetry (own-observation only) ---
+            # Every field below is derived strictly from the candidate's own
+            # observation (current.players[yourIndex] + select.context). Nothing
+            # here peeks at the opponent's hidden hand/deck. Fields stay None /
+            # 0 honestly when the observation does not expose them.
+            "telemetry": {
+                "min_deck_count": None,
+                "deck_count_last": None,
+                "low_deck_decisions": 0,
+                "search_decisions": 0,
+                "discard_decisions": 0,
+                "max_bench_seen": 0,
+                "max_hand_seen": 0,
+                "context_counts": {},
+            },
         }
+        # Decision index at/below which the deck is treated as "low" (deckout
+        # proximity). Conservative; matches deckout-awareness seam intent.
+        self._low_deck_threshold = 6
 
     def __call__(self, *args, **kwargs):
         # cabt may call the agent with (observation, configuration); the
@@ -136,6 +158,12 @@ class _InstrumentedAgent:
         types = [o.get("type") if isinstance(o, dict) else None for o in options]
         if _ATTACK_TYPE in types:
             self.stats["attack_available"] += 1
+
+        # --- Pass 5 chaos / deckout telemetry (own observation only) ---
+        try:
+            self._record_telemetry(obs, select)
+        except Exception:
+            pass
         chosen = out if isinstance(out, (list, tuple)) else []
         for idx in chosen:
             if not isinstance(idx, int) or isinstance(idx, bool):
@@ -148,6 +176,55 @@ class _InstrumentedAgent:
                     self.stats["attacks"] += 1
                 elif t == _PASS_TYPE:
                     self.stats["passes"] += 1
+
+    def _record_telemetry(self, obs, select):
+        """Capture deckout / board telemetry from the candidate's OWN view.
+
+        Strictly own-observation: reads current.players[yourIndex] and the
+        select.context. Never inspects the opponent's hidden hand/deck. Any
+        field that the observation does not expose is left unchanged (None / 0),
+        not guessed.
+        """
+        tel = self.stats["telemetry"]
+
+        # Effect-resolution context tallies (search-to-hand / discard prompts).
+        ctx = select.get("context")
+        if ctx is not None:
+            ckey = str(ctx)
+            tel["context_counts"][ckey] = tel["context_counts"].get(ckey, 0) + 1
+            if ctx == _CTX_SEARCH_TO_HAND:
+                tel["search_decisions"] += 1
+            elif ctx == _CTX_DISCARD:
+                tel["discard_decisions"] += 1
+
+        # Own board state: deck proximity + bench/hand pressure.
+        cur = obs.get("current")
+        if not isinstance(cur, dict):
+            return
+        me = cur.get("yourIndex")
+        players = cur.get("players")
+        if not isinstance(players, list) or not isinstance(me, int):
+            return
+        if not (0 <= me < len(players)):
+            return
+        mine = players[me]
+        if not isinstance(mine, dict):
+            return
+
+        deck_count = mine.get("deckCount")
+        if isinstance(deck_count, int) and not isinstance(deck_count, bool):
+            tel["deck_count_last"] = deck_count
+            if tel["min_deck_count"] is None or deck_count < tel["min_deck_count"]:
+                tel["min_deck_count"] = deck_count
+            if deck_count <= self._low_deck_threshold:
+                tel["low_deck_decisions"] += 1
+
+        bench = mine.get("bench")
+        if isinstance(bench, list):
+            tel["max_bench_seen"] = max(tel["max_bench_seen"], len(bench))
+        hand = mine.get("hand")
+        if isinstance(hand, list):
+            tel["max_hand_seen"] = max(tel["max_hand_seen"], len(hand))
 
 
 def _make_cabt(ke, decks: list):

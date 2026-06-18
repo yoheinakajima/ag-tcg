@@ -42,8 +42,16 @@ class KaggleReplay:
 
     # -- episode-level accessors ------------------------------------------
     @property
+    def info(self) -> dict:
+        i = self.raw.get("info")
+        return i if isinstance(i, dict) else {}
+
+    @property
     def episode_id(self) -> Any:
-        return self.raw.get("id")
+        # The numeric Kaggle EpisodeId lives under info; the top-level ``id`` is
+        # an opaque uuid. Prefer the EpisodeId, fall back to the uuid.
+        eid = self.info.get("EpisodeId")
+        return eid if eid is not None else self.raw.get("id")
 
     @property
     def name(self) -> Any:
@@ -51,7 +59,14 @@ class KaggleReplay:
 
     @property
     def module_version(self) -> Any:
-        return self.raw.get("version")
+        # cabt episodes carry the engine build under ``module_version``; the
+        # plain ``version`` field is the replay-schema version (e.g. "1.0.0").
+        mv = self.raw.get("module_version")
+        return mv if mv is not None else self.raw.get("version")
+
+    @property
+    def schema_version(self) -> Any:
+        return self.raw.get("schema_version")
 
     @property
     def configuration(self) -> dict:
@@ -114,6 +129,36 @@ class KaggleReplay:
             if isinstance(step, list) and len(step) > seat and isinstance(step[seat], dict):
                 out.append(step[seat])
         return out
+
+    def submitted_decks(self) -> dict[int, list[int]]:
+        """Per-seat submitted deck lists.
+
+        In cabt the deck is submitted as a >=40-length integer ``action`` (the
+        full 60-card id list) on the first step where the seat acts. Returns a
+        ``{seat: [card_id, ...]}`` map; seats with no recognizable deck action
+        are omitted rather than guessed.
+        """
+        decks: dict[int, list[int]] = {}
+        for step in self.steps:
+            if not isinstance(step, list):
+                continue
+            for seat, rec in enumerate(step):
+                if seat in decks or not isinstance(rec, dict):
+                    continue
+                action = rec.get("action")
+                if isinstance(action, list) and len(action) >= 40:
+                    ids = [a for a in action if isinstance(a, int) and not isinstance(a, bool)]
+                    if len(ids) >= 40:
+                        decks[seat] = ids
+        return decks
+
+    def final_observation(self, seat: int) -> dict | None:
+        """Last non-empty observation dict for a seat (for final-state reads)."""
+        for rec in reversed(self.agent_steps(seat)):
+            obs = rec.get("observation")
+            if isinstance(obs, dict) and obs.get("current"):
+                return obs
+        return None
 
 
 def _coerce_json(text: str) -> dict:

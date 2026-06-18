@@ -27,9 +27,13 @@ from ptcg_activegraph.graph.event_store import EventStore
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--stage", choices=["broad", "focused", "pass4_scout"], default="broad",
+    parser.add_argument("--stage",
+                        choices=["broad", "focused", "pass4_scout",
+                                 "pass5_scout", "pass5_focused"], default="broad",
                         help="broad -> latest_ranking.*; focused -> focused_ranking.*; "
-                             "pass4_scout -> pass4_scout_ranking.* "
+                             "pass4_scout -> pass4_scout_ranking.*; "
+                             "pass5_scout -> pass5_scout_ranking.*; "
+                             "pass5_focused -> pass5_focused_ranking.* "
                              "(only ranks candidates evaluated at that stage)")
     parser.add_argument("--min-games", type=int, default=None,
                         help="minimum completed games before a candidate is promotable")
@@ -48,7 +52,8 @@ def main() -> int:
         # The focused / pass4_scout rankings only consider candidates actually
         # evaluated at that stage, so stale broad metrics from un-promoted
         # candidates never dilute a stage-specific board.
-        if args.stage in ("focused", "pass4_scout") and m.get("stage") != args.stage:
+        if (args.stage in ("focused", "pass4_scout", "pass5_scout", "pass5_focused")
+                and m.get("stage") != args.stage):
             continue
         metrics_list.append(m)
 
@@ -64,7 +69,8 @@ def main() -> int:
     # signal for a later focused confirmation, never auto-promote.
     min_games = args.min_games
     if min_games is None:
-        min_games = {"focused": 30, "pass4_scout": 20}.get(args.stage, 8)
+        min_games = {"focused": 30, "pass4_scout": 20,
+                     "pass5_scout": 20, "pass5_focused": 30}.get(args.stage, 8)
 
     store = EventStore(LAB_EVENTS_PATH)
     ranked = rank(metrics_list, event_store=store, min_games=min_games)

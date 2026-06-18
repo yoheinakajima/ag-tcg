@@ -1,0 +1,50 @@
+branch_id: policy_mega_signal_v2
+seam_id: policy.mega_signal_evolution_search
+family: combo
+kind: combo
+archetype: setup_evolution
+hypothesis: 'Mega Signal (1145) line-coherence: only fetch Mega Abomasnow ex (723)
+  when its Snover (722) basic is already on board; otherwise prefer fetching Snover
+  first so the evolution line is not stranded (the step-17 replay failure: Mega fetched
+  with no Snover line).'
+parent: v1_kaggle_349_8
+created_at: '2026-06-17T23:40:33'
+run_dir: /home/runner/workspace/experiments/runs/20260617_234033_05_policy_mega_signal_v2
+policy_overrides: &id001
+  p5_rules:
+    search_prefer_ids:
+    - 722
+    - 723
+    search_prefer_weight: 60
+    search_snover_before_mega: true
+    snover_first_bonus: 90
+    mega_without_snover_penalty: -120
+policy_diff: *id001
+deck_diff:
+  '3':
+    name: Basic {W} Energy
+    from: 33
+    to: 29
+    delta: -4
+  '721':
+    name: Kyogre
+    from: 2
+    to: 4
+    delta: 2
+  '1121':
+    name: Ultra Ball
+    from: 2
+    to: 4
+    delta: 2
+deck_summary:
+  size: 60
+  unique: 11
+  warnings:
+  - card 3 appears 29 times (> 4)
+  policy_refs: []
+  deck_ref: deck_energy_trim_light
+  board_aware: true
+notes:
+- board-aware p5 policy over deck_energy_trim_light
+testable: true
+blocked_reason: ''

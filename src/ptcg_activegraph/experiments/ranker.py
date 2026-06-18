@@ -35,11 +35,17 @@ FOCUSED_RANKING_JSON = Path("data/experiments/focused_ranking.json")
 FOCUSED_RANKING_MD = Path("data/experiments/focused_ranking.md")
 PASS4_SCOUT_RANKING_JSON = Path("data/experiments/pass4_scout_ranking.json")
 PASS4_SCOUT_RANKING_MD = Path("data/experiments/pass4_scout_ranking.md")
+PASS5_SCOUT_RANKING_JSON = Path("data/experiments/pass5_scout_ranking.json")
+PASS5_SCOUT_RANKING_MD = Path("data/experiments/pass5_scout_ranking.md")
+PASS5_FOCUSED_RANKING_JSON = Path("data/experiments/pass5_focused_ranking.json")
+PASS5_FOCUSED_RANKING_MD = Path("data/experiments/pass5_focused_ranking.md")
 
 STAGE_PATHS = {
     "broad": (RANKING_JSON, RANKING_MD),
     "focused": (FOCUSED_RANKING_JSON, FOCUSED_RANKING_MD),
     "pass4_scout": (PASS4_SCOUT_RANKING_JSON, PASS4_SCOUT_RANKING_MD),
+    "pass5_scout": (PASS5_SCOUT_RANKING_JSON, PASS5_SCOUT_RANKING_MD),
+    "pass5_focused": (PASS5_FOCUSED_RANKING_JSON, PASS5_FOCUSED_RANKING_MD),
 }
 
 # z-scores for the confidence intervals we report.
@@ -293,6 +299,8 @@ def _render_md(ranked: list[dict], stage: str = "broad") -> str:
     titles = {
         "focused": "focused (seat-swap confirmation)",
         "pass4_scout": "pass 4 scout (replay-derived, seat-swap)",
+        "pass5_scout": "pass 5 scout (replay-informed board-aware, seat-swap)",
+        "pass5_focused": "pass 5 focused (board-aware confirmation, seat-swap)",
         "broad": "broad (scout)",
     }
     title = titles.get(stage, "broad (scout)")

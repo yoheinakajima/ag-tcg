@@ -1,0 +1,48 @@
+branch_id: policy_setup_kyogre_active
+seam_id: policy.setup_active_choice
+family: combo
+kind: combo
+archetype: setup_evolution
+hypothesis: 'Opening setup: prefer placing Kyogre (721) during opening placement prompts
+  as a standalone basic attacker that does not depend on an evolution line being assembled
+  first.'
+parent: v1_kaggle_349_8
+created_at: '2026-06-17T23:40:33'
+run_dir: /home/runner/workspace/experiments/runs/20260617_234033_07_policy_setup_kyogre_active
+policy_overrides: &id001
+  p5_rules:
+    setup_contexts:
+    - 1
+    - 2
+    setup_prefer_ids:
+    - 721
+    setup_prefer_weight: 80
+policy_diff: *id001
+deck_diff:
+  '3':
+    name: Basic {W} Energy
+    from: 33
+    to: 29
+    delta: -4
+  '721':
+    name: Kyogre
+    from: 2
+    to: 4
+    delta: 2
+  '1121':
+    name: Ultra Ball
+    from: 2
+    to: 4
+    delta: 2
+deck_summary:
+  size: 60
+  unique: 11
+  warnings:
+  - card 3 appears 29 times (> 4)
+  policy_refs: []
+  deck_ref: deck_energy_trim_light
+  board_aware: true
+notes:
+- board-aware p5 policy over deck_energy_trim_light
+testable: true
+blocked_reason: ''

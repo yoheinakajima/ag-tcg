@@ -1,0 +1,492 @@
+{
+  "pass": 5,
+  "note": "Local-only research artifact. Chaos seams stay blocked; this contract records exactly what telemetry each would need and why our seat cannot currently supply it. No card ids invented; no conclusions fabricated.",
+  "available_own_telemetry": [
+    "candidate_won",
+    "context_counts",
+    "deck_count_last",
+    "discard_decisions",
+    "low_deck_decisions",
+    "max_bench_seen",
+    "max_hand_seen",
+    "min_deck_count",
+    "search_decisions",
+    "steps"
+  ],
+  "seams": [
+    {
+      "seam_id": "chaos.hand_avalanche_froslass",
+      "enabled": false,
+      "default_priority": 58,
+      "risk": "high",
+      "policy_requirements": [
+        "official_card_csv",
+        "chaos_decklist_confirmed"
+      ],
+      "goal": "Keep the opponent's hand large, then scale Mega Froslass ex damage off that hand size.",
+      "required_telemetry": [
+        {
+          "signal": "opponent_hand_size",
+          "side": "opponent"
+        },
+        {
+          "signal": "own_attack_damage_dealt",
+          "side": "own"
+        },
+        {
+          "signal": "candidate_won",
+          "side": "own"
+        }
+      ],
+      "opponent_side_signals": [
+        "opponent_hand_size"
+      ],
+      "own_side_signals": [
+        "own_attack_damage_dealt",
+        "candidate_won"
+      ],
+      "own_side_signals_available": [
+        "candidate_won"
+      ],
+      "own_proxies_available": [
+        "candidate_won",
+        "steps"
+      ],
+      "telemetry_availability": "blocked",
+      "confirmed_card_ids": [
+        {
+          "id": 861,
+          "name": "Mega Froslass ex",
+          "status": "MATCH"
+        },
+        {
+          "id": 103,
+          "name": "Snorunt",
+          "status": "MATCH"
+        },
+        {
+          "id": 860,
+          "name": "Snorunt",
+          "status": "MATCH"
+        },
+        {
+          "id": 1223,
+          "name": "Harlequin",
+          "status": "MATCH"
+        },
+        {
+          "id": 1237,
+          "name": "Lucian",
+          "status": "MATCH"
+        },
+        {
+          "id": 1213,
+          "name": "Judge",
+          "status": "MATCH"
+        },
+        {
+          "id": 1103,
+          "name": "Meddling Memo",
+          "status": "MATCH"
+        },
+        {
+          "id": 1087,
+          "name": "Hand Trimmer",
+          "status": "MATCH"
+        },
+        {
+          "id": 1197,
+          "name": "Xerosic\u2019s Machinations",
+          "status": "MISMATCH"
+        }
+      ],
+      "blockers": [
+        "opponent hidden-state telemetry not exposed to our seat: opponent_hand_size",
+        "own-side signals not recorded by the harness: own_attack_damage_dealt",
+        "some core card ids are not a clean MATCH against the official card table (see status field)",
+        "no full legal 60-card chaos decklist confirmed without inventing card ids (chaos_decklist_confirmed gate)"
+      ],
+      "min_metric_to_unblock": "uncertain \u2014 opponent hand size is hidden from our seat, so the damage-vs-hand-size relationship cannot be measured directly."
+    },
+    {
+      "seam_id": "chaos.bench_bloat_punisher",
+      "enabled": false,
+      "default_priority": 56,
+      "risk": "high",
+      "policy_requirements": [
+        "official_card_csv",
+        "chaos_decklist_confirmed"
+      ],
+      "goal": "Crowd the opponent's bench with Accompanying Flute, then punish with bench-count-scaling attackers.",
+      "required_telemetry": [
+        {
+          "signal": "opponent_bench_size",
+          "side": "opponent"
+        },
+        {
+          "signal": "own_attack_damage_dealt",
+          "side": "own"
+        },
+        {
+          "signal": "candidate_won",
+          "side": "own"
+        }
+      ],
+      "opponent_side_signals": [
+        "opponent_bench_size"
+      ],
+      "own_side_signals": [
+        "own_attack_damage_dealt",
+        "candidate_won"
+      ],
+      "own_side_signals_available": [
+        "candidate_won"
+      ],
+      "own_proxies_available": [
+        "candidate_won",
+        "steps"
+      ],
+      "telemetry_availability": "blocked",
+      "confirmed_card_ids": [
+        {
+          "id": 1091,
+          "name": "Accompanying Flute",
+          "status": "MATCH"
+        },
+        {
+          "id": 615,
+          "name": "Zoroark",
+          "status": "MATCH"
+        },
+        {
+          "id": 430,
+          "name": "Team Rocket's Hypno",
+          "status": "MATCH"
+        },
+        {
+          "id": 79,
+          "name": "Incineroar ex",
+          "status": "MATCH"
+        },
+        {
+          "id": 95,
+          "name": "Teal Mask Ogerpon",
+          "status": "MATCH"
+        },
+        {
+          "id": 956,
+          "name": "Zeraora",
+          "status": "MATCH"
+        },
+        {
+          "id": 1059,
+          "name": "Gengar",
+          "status": "MATCH"
+        },
+        {
+          "id": 1187,
+          "name": "Morty\u2019s Conviction",
+          "status": "MISMATCH"
+        },
+        {
+          "id": 1204,
+          "name": "Lisia\u2019s Appeal",
+          "status": "MISMATCH"
+        }
+      ],
+      "blockers": [
+        "opponent hidden-state telemetry not exposed to our seat: opponent_bench_size",
+        "own-side signals not recorded by the harness: own_attack_damage_dealt",
+        "some core card ids are not a clean MATCH against the official card table (see status field)",
+        "no full legal 60-card chaos decklist confirmed without inventing card ids (chaos_decklist_confirmed gate)"
+      ],
+      "min_metric_to_unblock": "uncertain \u2014 opponent bench size is hidden from our seat; only our own win/loss is observable."
+    },
+    {
+      "seam_id": "chaos.mill_resource_destruction",
+      "enabled": false,
+      "default_priority": 54,
+      "risk": "high",
+      "policy_requirements": [
+        "official_card_csv",
+        "chaos_decklist_confirmed"
+      ],
+      "goal": "Disrupt the opponent's deck / hand / energy so a brittle bot loses pieces or decks out.",
+      "required_telemetry": [
+        {
+          "signal": "opponent_deck_count",
+          "side": "opponent"
+        },
+        {
+          "signal": "opponent_hand_size",
+          "side": "opponent"
+        },
+        {
+          "signal": "candidate_won",
+          "side": "own"
+        },
+        {
+          "signal": "steps",
+          "side": "own"
+        }
+      ],
+      "opponent_side_signals": [
+        "opponent_deck_count",
+        "opponent_hand_size"
+      ],
+      "own_side_signals": [
+        "candidate_won",
+        "steps"
+      ],
+      "own_side_signals_available": [
+        "candidate_won",
+        "steps"
+      ],
+      "own_proxies_available": [
+        "candidate_won",
+        "steps",
+        "min_deck_count"
+      ],
+      "telemetry_availability": "blocked",
+      "confirmed_card_ids": [
+        {
+          "id": 198,
+          "name": "Durant ex",
+          "status": "MATCH"
+        },
+        {
+          "id": 58,
+          "name": "Great Tusk",
+          "status": "MATCH"
+        },
+        {
+          "id": 896,
+          "name": "Mega Scrafty ex",
+          "status": "MATCH"
+        },
+        {
+          "id": 881,
+          "name": "Team Rocket's Diglett",
+          "status": "MATCH"
+        },
+        {
+          "id": 440,
+          "name": "Team Rocket's Larvitar",
+          "status": "MATCH"
+        },
+        {
+          "id": 290,
+          "name": "Tyranitar",
+          "status": "MATCH"
+        },
+        {
+          "id": 1120,
+          "name": "Crushing Hammer",
+          "status": "MATCH"
+        },
+        {
+          "id": 1149,
+          "name": "Energy Swatter",
+          "status": "MATCH"
+        },
+        {
+          "id": 1087,
+          "name": "Hand Trimmer",
+          "status": "MATCH"
+        }
+      ],
+      "blockers": [
+        "opponent hidden-state telemetry not exposed to our seat: opponent_deck_count, opponent_hand_size",
+        "no full legal 60-card chaos decklist confirmed without inventing card ids (chaos_decklist_confirmed gate)"
+      ],
+      "min_metric_to_unblock": "uncertain \u2014 opponent deck count is hidden; opponent deckout can only be inferred weakly from a long game that we win, not measured directly."
+    },
+    {
+      "seam_id": "chaos.status_confusion_lock",
+      "enabled": false,
+      "default_priority": 52,
+      "risk": "high",
+      "policy_requirements": [
+        "official_card_csv",
+        "chaos_decklist_confirmed"
+      ],
+      "goal": "Stack Confusion / Burn / Sleep + forced switching so the bot mis-sequences and loses turns.",
+      "required_telemetry": [
+        {
+          "signal": "opponent_status_flags",
+          "side": "opponent"
+        },
+        {
+          "signal": "opponent_lost_turns",
+          "side": "opponent"
+        },
+        {
+          "signal": "candidate_won",
+          "side": "own"
+        }
+      ],
+      "opponent_side_signals": [
+        "opponent_status_flags",
+        "opponent_lost_turns"
+      ],
+      "own_side_signals": [
+        "candidate_won"
+      ],
+      "own_side_signals_available": [
+        "candidate_won"
+      ],
+      "own_proxies_available": [
+        "candidate_won",
+        "steps"
+      ],
+      "telemetry_availability": "blocked",
+      "confirmed_card_ids": [
+        {
+          "id": 1095,
+          "name": "Dangerous Laser",
+          "status": "MATCH"
+        },
+        {
+          "id": 1265,
+          "name": "Dizzying Valley",
+          "status": "MATCH"
+        },
+        {
+          "id": 813,
+          "name": "Mismagius ex",
+          "status": "MATCH"
+        },
+        {
+          "id": 1204,
+          "name": "Lisia\u2019s Appeal",
+          "status": "MISMATCH"
+        },
+        {
+          "id": 861,
+          "name": "Mega Froslass ex",
+          "status": "MATCH"
+        },
+        {
+          "id": 968,
+          "name": "Dachsbun ex",
+          "status": "MATCH"
+        },
+        {
+          "id": 854,
+          "name": "Dustox",
+          "status": "MATCH"
+        },
+        {
+          "id": 1243,
+          "name": "Perilous Jungle",
+          "status": "MATCH"
+        }
+      ],
+      "blockers": [
+        "opponent hidden-state telemetry not exposed to our seat: opponent_lost_turns, opponent_status_flags",
+        "some core card ids are not a clean MATCH against the official card table (see status field)",
+        "no full legal 60-card chaos decklist confirmed without inventing card ids (chaos_decklist_confirmed gate)"
+      ],
+      "min_metric_to_unblock": "uncertain \u2014 opponent status conditions and lost turns are hidden from our seat."
+    },
+    {
+      "seam_id": "chaos.vivillon_decidueye_four_card_lock",
+      "enabled": false,
+      "default_priority": 50,
+      "risk": "high",
+      "policy_requirements": [
+        "official_card_csv",
+        "chaos_decklist_confirmed"
+      ],
+      "goal": "Use Vivillon / Judge to pin the opponent at exactly 4 cards, enabling Decidueye ex's reduced-cost attack.",
+      "required_telemetry": [
+        {
+          "signal": "opponent_hand_size",
+          "side": "opponent"
+        },
+        {
+          "signal": "own_attack_enabled",
+          "side": "own"
+        },
+        {
+          "signal": "candidate_won",
+          "side": "own"
+        }
+      ],
+      "opponent_side_signals": [
+        "opponent_hand_size"
+      ],
+      "own_side_signals": [
+        "own_attack_enabled",
+        "candidate_won"
+      ],
+      "own_side_signals_available": [
+        "candidate_won"
+      ],
+      "own_proxies_available": [
+        "candidate_won",
+        "steps",
+        "context_counts"
+      ],
+      "telemetry_availability": "blocked",
+      "confirmed_card_ids": [
+        {
+          "id": 1017,
+          "name": "Scatterbug",
+          "status": "MATCH"
+        },
+        {
+          "id": 1018,
+          "name": "Spewpa",
+          "status": "MATCH"
+        },
+        {
+          "id": 1019,
+          "name": "Vivillon",
+          "status": "MATCH"
+        },
+        {
+          "id": 1020,
+          "name": "Rowlet",
+          "status": "MATCH"
+        },
+        {
+          "id": 1021,
+          "name": "Dartrix",
+          "status": "MATCH"
+        },
+        {
+          "id": 1022,
+          "name": "Decidueye ex",
+          "status": "MATCH"
+        },
+        {
+          "id": 1213,
+          "name": "Judge",
+          "status": "MATCH"
+        },
+        {
+          "id": 1261,
+          "name": "Forest of Vitality",
+          "status": "MATCH"
+        },
+        {
+          "id": 1231,
+          "name": "Dawn",
+          "status": "MATCH"
+        },
+        {
+          "id": 1225,
+          "name": "Hilda",
+          "status": "MATCH"
+        }
+      ],
+      "blockers": [
+        "opponent hidden-state telemetry not exposed to our seat: opponent_hand_size",
+        "own-side signals not recorded by the harness: own_attack_enabled",
+        "no full legal 60-card chaos decklist confirmed without inventing card ids (chaos_decklist_confirmed gate)"
+      ],
+      "min_metric_to_unblock": "uncertain \u2014 the exact-4 opponent hand condition is hidden from our seat, so the lock cannot be confirmed from telemetry."
+    }
+  ]
+}

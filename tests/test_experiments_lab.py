@@ -478,6 +478,34 @@ def test_report_site_nonempty(tmp_path):
     assert "demo" in md and "Current interpretation" in md
 
 
+def test_pass5_chaos_summary_does_not_fabricate_when_no_contract():
+    # No chaos contract loaded must NOT assert "all blocked" — it must say uncertain.
+    empty = report._chaos_summary({})
+    assert "uncertain" in empty.lower()
+    assert "all" not in empty.lower()
+    # All-blocked contract yields the honest "all blocked" sentence derived from data.
+    contract = {"seams": [{"telemetry_availability": "blocked"},
+                          {"telemetry_availability": "blocked"}]}
+    summary = report._chaos_summary(contract)
+    assert "2 chaos seams remain blocked" in summary
+    # Mixed availability must not over-claim "all".
+    mixed = report._chaos_summary({"seams": [{"telemetry_availability": "blocked"},
+                                             {"telemetry_availability": "partial"}]})
+    assert "1 of 2" in mixed and "uncertain" in mixed.lower()
+
+
+def test_pass5_markdown_section_degrades_without_replay():
+    # With no replay artifact, the Pass 5 section must degrade, not fabricate findings.
+    lines = report._pass5_md({"pass5_replay": {}})
+    text = "\n".join(lines)
+    assert "Pass 5" in text
+    assert "No replay analysis artifact" in text
+    # No fabricated findings/tables when the replay artifact is absent.
+    assert "Apparent loss reason" not in text
+    assert "### Deck-out evidence" not in text
+    assert "Strongest failure tag" not in text
+
+
 # --------------------------------------------------------------------------
 # ag_event append / list / summary (via the script's store)
 # --------------------------------------------------------------------------
@@ -578,10 +606,11 @@ def test_replay_parser_shape_and_final_result():
 
     analysis = analyze(replay)
     # Top-level analysis contract the report relies on.
-    for key in ("episode", "decks", "actions", "failure_tags", "source_path"):
+    for key in ("episode", "decks", "telemetry", "effect_traces",
+                "failure_tags", "source_path"):
         assert key in analysis
     assert analysis["episode"]["episode_id"] == 80374966
-    assert analysis["episode"]["num_steps"] == 2
+    assert analysis["episode"]["total_steps"] == 2
 
 
 def test_replay_loader_raises_when_absent(tmp_path):
@@ -598,7 +627,7 @@ def test_replay_parser_robust_to_empty_episode():
     # A completely empty / malformed episode must still analyze without raising.
     replay = parse_replay({})
     analysis = analyze(replay)
-    assert analysis["episode"]["num_steps"] == 0
+    assert analysis["episode"]["total_steps"] == 0
     assert analysis["episode"]["final_result"]["winner_seat"] is None
 
 

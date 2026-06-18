@@ -169,6 +169,13 @@ seams:
     risk: low
     requires: [cabt_schema]
     enabled: true
+  - id: combo.effect_resolution_deckout
+    family: policy
+    description: Combine board-aware effect resolution with deckout awareness (Pass 5).
+    default_priority: 90
+    risk: low
+    requires: [cabt_schema]
+    enabled: true
 
   # ------------------------------- archetype ------------------------------
   - id: archetype.linear_aggro

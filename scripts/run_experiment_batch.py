@@ -24,17 +24,20 @@ import _bootstrap  # noqa: F401
 from ptcg_activegraph.cards import load_card_db
 from ptcg_activegraph.experiments.branch import list_runs, load_branch_yaml
 from ptcg_activegraph.experiments.config import LAB_EVENTS_PATH, RUNS_ROOT, load_config
-from ptcg_activegraph.experiments.ranker import RANKING_JSON
+from ptcg_activegraph.experiments.ranker import (
+    PASS5_SCOUT_RANKING_JSON,
+    RANKING_JSON,
+)
 from ptcg_activegraph.experiments.runner import cabt_available, evaluate_candidate
 from ptcg_activegraph.graph.event_store import EventStore
 
 
-def _top_branch_ids(top: int) -> list[str]:
-    """Read the broad ranking and return the top-N non-rejected branch ids."""
-    if not RANKING_JSON.exists():
+def _top_branch_ids(top: int, source_json: Path = RANKING_JSON) -> list[str]:
+    """Read a scout ranking and return the top-N non-rejected branch ids."""
+    if not source_json.exists():
         return []
     try:
-        ranked = json.loads(RANKING_JSON.read_text(encoding="utf-8"))
+        ranked = json.loads(source_json.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return []
     ids = [e["branch_id"] for e in ranked if not e.get("rejected")]
@@ -50,8 +53,11 @@ def main() -> int:
                         help="seat-swap: play this many games as P0 AND as P1")
     parser.add_argument("--seat-swap", action="store_true",
                         help="balance first-/second-player advantage by swapping seats")
-    parser.add_argument("--stage", choices=["broad", "focused", "pass4_scout"], default=None,
-                        help="broad/pass4_scout = scout all runs; focused = only top ranked")
+    parser.add_argument("--stage",
+                        choices=["broad", "focused", "pass4_scout",
+                                 "pass5_scout", "pass5_focused"], default=None,
+                        help="broad/pass4_scout/pass5_scout = scout all runs; "
+                             "focused/pass5_focused = only top ranked")
     parser.add_argument("--top", type=int, default=5,
                         help="for --stage focused: how many top-ranked candidates to confirm")
     parser.add_argument("--branch", action="append", default=[],
@@ -67,9 +73,10 @@ def main() -> int:
     # Resolve the seat schedule + per-candidate game budget.
     stage = args.stage
     games_per_seat = args.games_per_seat
-    if stage == "focused" and games_per_seat is None:
+    if stage in ("focused", "pass5_focused") and games_per_seat is None:
         games_per_seat = 20
-    if stage in ("broad", "pass4_scout") and games_per_seat is None and not args.seat_swap:
+    if (stage in ("broad", "pass4_scout", "pass5_scout")
+            and games_per_seat is None and not args.seat_swap):
         games_per_seat = 5
     if games_per_seat is not None:
         games_per_seat = max(1, min(games_per_seat, cap))
@@ -82,10 +89,12 @@ def main() -> int:
 
     runs = list_runs(args.runs_root)
     selectors = list(args.branch)
-    if stage == "focused":
-        top_ids = _top_branch_ids(args.top)
+    if stage in ("focused", "pass5_focused"):
+        source = PASS5_SCOUT_RANKING_JSON if stage == "pass5_focused" else RANKING_JSON
+        top_ids = _top_branch_ids(args.top, source_json=source)
         if not top_ids:
-            print("No broad ranking found. Run the broad stage + rank_candidates first.")
+            print(f"No scout ranking at {source}. Run the scout stage + "
+                  "rank_candidates first.")
             return 1
         # Always keep the control anchor in the focused stage for comparison.
         runs = [r for r in runs if any(tid in r.name for tid in top_ids)

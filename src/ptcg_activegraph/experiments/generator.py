@@ -476,6 +476,216 @@ CHAOS_BLOCKED: list[dict] = [
 
 
 # ---------------------------------------------------------------------------
+# Pass 5: replay-informed, BOARD-AWARE candidates.
+#
+# Honesty note (important): the Pass-4 override hook only mutates keyword/option
+# -type weight dicts, and the keyword scorer only ever sees the *option* dict
+# ({area,index,type}) — never the card identity, which lives in
+# current.players[me].hand[index].id / select.deck[index].id. So card-name
+# weights are effectively inert for card-pick prompts. Pass 5 therefore injects
+# a real board-aware scoring layer (`render_p5_block`) that resolves each
+# option's card id via (area,index) against the live observation and reads board
+# state (active/bench ids) + deckCount, then ADDS a delta to the base score.
+# It is fully exception-wrapped (never raises, falls back to the base score) and
+# does not touch the select=None deck-return path or index validation. All card
+# ids below are confirmed in data/cards/EN_Card_Data.csv (see
+# pass4_id_confirmation.json); none are invented. Whether these policies help is
+# left to local evaluation — they are candidates, not assumptions.
+#
+# All Pass-5 candidates are combos over the v2 control deck (deck_energy_trim_
+# light) so the ONLY variable vs the v2 anchor is the board-aware policy.
+# ---------------------------------------------------------------------------
+
+_V2_DECK_REF = "deck_energy_trim_light"
+
+PASS5_COMBO_SPECS: list[dict] = [
+    {
+        "branch_id": "pass5_control_v2_anchor",
+        "seam_id": "archetype.baseline_exploit",
+        "archetype": "baseline_exploit",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Exact v2 control (v2 deck, no policy override) anchors the "
+        "Pass 5 board-aware batch and confirms the harness reproduces the v2 "
+        "baseline as a ~50% mirror.",
+        "required": True,
+    },
+    {
+        "branch_id": "policy_effect_resolution_v2",
+        "seam_id": "policy.effect_resolution_targeting",
+        "archetype": "consistency_engine",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Board-aware effect resolution: on discard prompts, protect "
+        "setup pieces (Snover 722 / Mega Abomasnow ex 723 / Kyogre 721) that are "
+        "not yet in play and steer the discard toward spare Basic {W} Energy (3); "
+        "on search-to-hand prompts, fetch the missing engine/attacker. Directly "
+        "targets the replay failures (Secret Box discarded Snover; Ultra Ball "
+        "discarded Mega Abomasnow).",
+        "p5_rules": {
+            "discard_avoid_ids": [722, 723, 721],
+            "discard_avoid_weight": -300,
+            "discard_prefer_ids": [3],
+            "discard_prefer_weight": 150,
+            "search_prefer_ids": [722, 723, 721, 1121, 1145, 1092],
+            "search_prefer_weight": 90,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "policy_ultra_ball_v2",
+        "seam_id": "policy.ultra_ball_discard_and_search",
+        "archetype": "consistency_engine",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Ultra Ball (1121) board-aware resolution: when paying the "
+        "Ultra Ball discard cost, prefer discarding spare energy over the "
+        "Snover/Mega/Kyogre line that is not yet on board, then fetch the missing "
+        "attacker/evolution piece (Snover first, then Mega Abomasnow, Kyogre).",
+        "p5_rules": {
+            "discard_avoid_ids": [722, 723, 721],
+            "discard_avoid_weight": -300,
+            "discard_prefer_ids": [3],
+            "discard_prefer_weight": 150,
+            "search_prefer_ids": [722, 723, 721],
+            "search_prefer_weight": 90,
+            "search_snover_before_mega": True,
+            "snover_first_bonus": 70,
+            "mega_without_snover_penalty": -70,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "policy_secret_box_v2",
+        "seam_id": "policy.secret_box_mode_selection",
+        "archetype": "consistency_engine",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Secret Box (1092) board-aware resolution: never discard the "
+        "Snover/Mega/Kyogre line to pay a cost when it is not on board (the exact "
+        "step-11 replay bug), and fetch a coherent engine package (Ultra Ball, "
+        "Mega Signal, the Snover line) on the to-hand side.",
+        "p5_rules": {
+            "discard_avoid_ids": [722, 723, 721],
+            "discard_avoid_weight": -400,
+            "discard_prefer_ids": [3],
+            "discard_prefer_weight": 150,
+            "search_prefer_ids": [1121, 1145, 722, 723, 721],
+            "search_prefer_weight": 85,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "policy_mega_signal_v2",
+        "seam_id": "policy.mega_signal_evolution_search",
+        "archetype": "setup_evolution",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Mega Signal (1145) line-coherence: only fetch Mega Abomasnow "
+        "ex (723) when its Snover (722) basic is already on board; otherwise prefer "
+        "fetching Snover first so the evolution line is not stranded (the step-17 "
+        "replay failure: Mega fetched with no Snover line).",
+        "p5_rules": {
+            "search_prefer_ids": [722, 723],
+            "search_prefer_weight": 60,
+            "search_snover_before_mega": True,
+            "snover_first_bonus": 90,
+            "mega_without_snover_penalty": -120,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "policy_deckout_guard_v1",
+        "seam_id": "policy.deckout_awareness",
+        "archetype": "tempo_control",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Deckout awareness: when the player's own deckCount is at or "
+        "below a threshold, penalize further search-to-hand draws so the deck is "
+        "not burned down into a self-inflicted deck-out loss (the seat-0 replay "
+        "loss). Reads deckCount from the live observation.",
+        "p5_rules": {
+            "deckout_threshold": 8,
+            "deckout_search_penalty": -180,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "combo_effect_resolution_v2__deckout_guard",
+        "seam_id": "combo.effect_resolution_deckout",
+        "archetype": "consistency_engine",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Combine board-aware effect resolution (protect setup, fetch "
+        "the missing line) with deckout awareness (stop over-searching when the "
+        "deck runs low) to test whether the two replay-derived fixes compound.",
+        "p5_rules": {
+            "discard_avoid_ids": [722, 723, 721],
+            "discard_avoid_weight": -300,
+            "discard_prefer_ids": [3],
+            "discard_prefer_weight": 150,
+            "search_prefer_ids": [722, 723, 721, 1121, 1145, 1092],
+            "search_prefer_weight": 90,
+            "search_snover_before_mega": True,
+            "snover_first_bonus": 70,
+            "mega_without_snover_penalty": -70,
+            "deckout_threshold": 8,
+            "deckout_search_penalty": -180,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "policy_setup_snover_active",
+        "seam_id": "policy.setup_active_choice",
+        "archetype": "setup_evolution",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Opening setup: prefer placing Snover (722) during opening "
+        "placement prompts so the Mega Abomasnow ex evolution line starts on "
+        "board. Reads the option's resolved card id during placement contexts.",
+        "p5_rules": {
+            "setup_contexts": [1, 2],
+            "setup_prefer_ids": [722],
+            "setup_prefer_weight": 80,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "policy_setup_kyogre_active",
+        "seam_id": "policy.setup_active_choice",
+        "archetype": "setup_evolution",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Opening setup: prefer placing Kyogre (721) during opening "
+        "placement prompts as a standalone basic attacker that does not depend on "
+        "an evolution line being assembled first.",
+        "p5_rules": {
+            "setup_contexts": [1, 2],
+            "setup_prefer_ids": [721],
+            "setup_prefer_weight": 80,
+        },
+        "required": True,
+    },
+    {
+        "branch_id": "policy_setup_hybrid",
+        "seam_id": "policy.setup_active_choice",
+        "archetype": "setup_evolution",
+        "policy_refs": [],
+        "deck_ref": _V2_DECK_REF,
+        "hypothesis": "Opening setup (hybrid): prefer the Snover (722) line first "
+        "but also value Kyogre (721) during placement, so the opening keeps both "
+        "the evolution line and a standalone attacker available.",
+        "p5_rules": {
+            "setup_contexts": [1, 2],
+            "setup_prefer_ids": [722, 721],
+            "setup_prefer_weight": 60,
+        },
+        "required": True,
+    },
+]
+
+
+# ---------------------------------------------------------------------------
 # Override rendering / injection
 # ---------------------------------------------------------------------------
 
@@ -500,6 +710,135 @@ def _fmt(d: dict) -> str:
     # Deterministic, valid-Python dict literal with int keys preserved.
     items = ", ".join(f"{k!r}: {v!r}" for k, v in d.items())
     return "{" + items + "}"
+
+
+def render_p5_block(branch_id: str, seam_id: str, rules: dict) -> str:
+    """Render the Pass-5 board-aware scoring override block.
+
+    The block resolves each option's card id via (area,index) against the live
+    observation and reads board state (active/bench ids) + deckCount, then ADDS
+    a per-option delta to the base score. It is fully exception-wrapped so it
+    never raises and falls back to the base score, and it does not touch the
+    select=None deck-return path or index validation in the host agent.
+    """
+    rules_lit = repr(dict(rules))
+    return f'''
+# === PASS5 BOARD-AWARE OVERRIDE: {branch_id} (seam={seam_id}) ===
+# Resolves option card ids via (area,index) and reads board state + deckCount,
+# then ADDS a delta to the base score. Never raises (falls back to base score).
+_P5_RULES = {rules_lit}
+_P5_BASE_SCORE = _score_option
+
+
+def _p5_me(obs):
+    try:
+        cur = obs.get("current")
+        me = cur.get("yourIndex")
+        players = cur.get("players")
+        if isinstance(players, list) and isinstance(me, int) and 0 <= me < len(players):
+            return players[me]
+    except Exception:
+        return None
+    return None
+
+
+def _p5_resolve_card_id(option, obs):
+    try:
+        if not isinstance(option, dict):
+            return None
+        area = option.get("area")
+        index = option.get("index")
+        if not isinstance(index, int) or isinstance(index, bool):
+            return None
+        sel = obs.get("select") if isinstance(obs, dict) else None
+        if area == 1 and isinstance(sel, dict):
+            deck = sel.get("deck")
+            if isinstance(deck, list) and 0 <= index < len(deck):
+                c = deck[index]
+                return c.get("id") if isinstance(c, dict) else None
+        if area == 2:
+            p = _p5_me(obs)
+            hand = p.get("hand") if isinstance(p, dict) else None
+            if isinstance(hand, list) and 0 <= index < len(hand):
+                c = hand[index]
+                return c.get("id") if isinstance(c, dict) else None
+    except Exception:
+        return None
+    return None
+
+
+def _p5_board_ids(obs):
+    ids = []
+    try:
+        p = _p5_me(obs) or {{}}
+        for slot in ("active", "bench"):
+            for e in p.get(slot) or []:
+                if isinstance(e, dict) and isinstance(e.get("id"), int):
+                    ids.append(e["id"])
+    except Exception:
+        return ids
+    return ids
+
+
+def _p5_deck_count(obs):
+    try:
+        p = _p5_me(obs)
+        dc = p.get("deckCount") if isinstance(p, dict) else None
+        return dc if isinstance(dc, int) and not isinstance(dc, bool) else None
+    except Exception:
+        return None
+
+
+def _p5_delta(option, obs):
+    d = 0
+    try:
+        R = _P5_RULES
+        sel = obs.get("select") if isinstance(obs, dict) else None
+        ctx = sel.get("context") if isinstance(sel, dict) else None
+        cid = _p5_resolve_card_id(option, obs)
+        board = _p5_board_ids(obs)
+        # Discard prompt (context 8): protect setup pieces not yet in play and
+        # steer the discard toward spare basic energy instead.
+        if ctx == 8 and cid is not None:
+            if cid in R.get("discard_avoid_ids", ()) and cid not in board:
+                d += R.get("discard_avoid_weight", 0)
+            if cid in R.get("discard_prefer_ids", ()):
+                d += R.get("discard_prefer_weight", 0)
+        # Search-to-hand prompt (context 7): fetch the missing engine/attacker.
+        if ctx == 7 and cid is not None:
+            if cid in R.get("search_prefer_ids", ()):
+                d += R.get("search_prefer_weight", 0)
+            if R.get("search_snover_before_mega"):
+                if cid == 722 and 722 not in board:
+                    d += R.get("snover_first_bonus", 0)
+                if cid == 723 and 722 not in board:
+                    d += R.get("mega_without_snover_penalty", 0)
+        # Deckout guard: when the deck is short, stop over-searching/drawing.
+        if ctx == 7:
+            thr = R.get("deckout_threshold")
+            dc = _p5_deck_count(obs)
+            if isinstance(thr, int) and isinstance(dc, int) and dc <= thr:
+                d += R.get("deckout_search_penalty", 0)
+        # Opening setup placement (contexts 1/2): choose the intended starter.
+        if ctx in R.get("setup_contexts", ()) and cid is not None:
+            if cid in R.get("setup_prefer_ids", ()):
+                d += R.get("setup_prefer_weight", 0)
+    except Exception:
+        return 0
+    return d
+
+
+def _p5_score(option, idx, obs):
+    base = _P5_BASE_SCORE(option, idx, obs)
+    try:
+        return base + _p5_delta(option, obs)
+    except Exception:
+        return base
+
+
+_score_option = _p5_score
+# === END PASS5 OVERRIDE ===
+'''
 
 
 def inject_override(baseline_src: str, block: str) -> str:
@@ -726,10 +1065,20 @@ def generate_combo_candidate(
     block = render_override_block(spec["branch_id"], spec["seam_id"], overrides)
     candidate_src = inject_override(baseline_src, block)
 
+    # Pass-5 candidates additionally inject a board-aware scoring layer that
+    # resolves card ids via (area,index) and reads board state + deckCount.
+    p5_rules = spec.get("p5_rules")
+    if p5_rules:
+        p5_block = render_p5_block(spec["branch_id"], spec["seam_id"], p5_rules)
+        candidate_src = inject_override(candidate_src, p5_block)
+
     run_dir = make_run_dir(spec["branch_id"], root=runs_root, ts=ts)
     (run_dir / "main.py").write_text(candidate_src, encoding="utf-8")
     save_deck(run_dir / "deck.csv", new_ids)
 
+    policy_record = dict(overrides)
+    if p5_rules:
+        policy_record["p5_rules"] = dict(p5_rules)
     diff = deck_diff(baseline_ids, new_ids)
     branch = Branch(
         branch_id=spec["branch_id"],
@@ -739,8 +1088,8 @@ def generate_combo_candidate(
         archetype=spec.get("archetype", ""),
         hypothesis=spec["hypothesis"],
         run_dir=str(run_dir),
-        policy_overrides=overrides,
-        policy_diff=overrides,
+        policy_overrides=policy_record,
+        policy_diff=policy_record,
         deck_diff=diff,
         deck_summary={
             "size": len(new_ids),
@@ -748,8 +1097,12 @@ def generate_combo_candidate(
             "warnings": result.warnings,
             "policy_refs": list(spec.get("policy_refs", [])),
             "deck_ref": spec["deck_ref"],
+            "board_aware": bool(p5_rules),
         },
-        notes=[f"combo of {'+'.join(spec.get('policy_refs', []))} x {spec['deck_ref']}"],
+        notes=[
+            "board-aware p5 policy over " + spec["deck_ref"] if p5_rules
+            else f"combo of {'+'.join(spec.get('policy_refs', []))} x {spec['deck_ref']}"
+        ],
     )
     write_branch_yaml(branch, run_dir)
     return branch
@@ -890,4 +1243,46 @@ def plan_pass4(config: ExperimentConfig) -> list[dict]:
     # 4. Chaos candidates: blocked, recorded for the report.
     for spec in CHAOS_BLOCKED:
         plan.append(_meta(spec, "chaos", False, spec.get("blocked_reason", "blocked")))
+    return plan
+
+
+def plan_pass5(config: ExperimentConfig) -> list[dict]:
+    """Plan the Pass 5 replay-informed, board-aware candidate batch.
+
+    Returns ordered ``{spec, track, ...}`` items, ``generation=5``:
+      1. the v2 control anchor (v2 deck, no policy override),
+      2. the board-aware replay-informed candidates (effect resolution, Ultra
+         Ball / Secret Box / Mega Signal line coherence, deckout guard, the
+         combined fix, and the three opening-setup variants), highest priority
+         first.
+
+    All candidates are combos over the v2 deck, so the only variable vs the
+    anchor is the injected board-aware policy. Chaos archetypes are NOT emitted
+    here as blocked candidates: their telemetry-readiness is recorded separately
+    by ``scripts/build_chaos_readiness.py`` (Part H).
+    """
+    def _meta(spec: dict, track: str) -> dict:
+        return {
+            "spec": spec,
+            "track": track,
+            "seam_id": spec["seam_id"],
+            "branch_id": spec["branch_id"],
+            "priority": config.priority_for(spec["seam_id"]),
+            "testable": True,
+            "reason": "",
+            "generation": 5,
+        }
+
+    plan: list[dict] = []
+    anchor = next(
+        c for c in PASS5_COMBO_SPECS if c["branch_id"] == "pass5_control_v2_anchor"
+    )
+    plan.append(_meta(anchor, "combo"))
+    rest = [
+        _meta(c, "combo")
+        for c in PASS5_COMBO_SPECS
+        if c["branch_id"] != "pass5_control_v2_anchor"
+    ]
+    rest.sort(key=lambda x: (-x["priority"], x["branch_id"]))
+    plan.extend(rest)
     return plan

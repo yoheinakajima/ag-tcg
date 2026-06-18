@@ -1,1 +1,2 @@
-- [ActiveGraph lab ops](activegraph-lab-ops.md) — run lab scripts from repo ROOT (cwd-relative output paths); run_experiment_batch may hang after metrics written → kill + rank separately.
+- [cabt eval harness quirks](cabt-eval-harness.md) — cabt games can hang in C-level env.run; SIGALRM watchdog can't kill them; background procs die on tool return.
+- [report honesty contract](report-honesty-contract.md) — report.py sections must degrade to "uncertain" on missing artifacts, never assert fabricated conclusions.

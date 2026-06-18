@@ -32,6 +32,7 @@ from ptcg_activegraph.experiments.generator import (
     plan_candidates,
     plan_generation2,
     plan_pass4,
+    plan_pass5,
 )
 from ptcg_activegraph.graph.event_store import EventStore
 from ptcg_activegraph.graph.events import EventType, new_event
@@ -45,9 +46,11 @@ def main() -> int:
     parser.add_argument("--generation", type=int, choices=[1, 2], default=1,
                         help="1 = priority single-seam plan; 2 = control + "
                              "single-seam confirmations + combination candidates")
-    parser.add_argument("--group", choices=["pass4"], default=None,
+    parser.add_argument("--group", choices=["pass4", "pass5_replay_policy"], default=None,
                         help="pass4 = replay-derived effect-resolution + chaos "
-                             "scout batch (overrides --generation)")
+                             "scout batch; pass5_replay_policy = replay-informed "
+                             "board-aware candidates over the v2 deck "
+                             "(both override --generation)")
     parser.add_argument("--no-optional-combos", action="store_true",
                         help="generation 2: skip the optional (non-required) combos")
     parser.add_argument("--baseline-main", default="main.py")
@@ -61,6 +64,8 @@ def main() -> int:
 
     if args.group == "pass4":
         full_plan = plan_pass4(config)
+    elif args.group == "pass5_replay_policy":
+        full_plan = plan_pass5(config)
     elif args.generation == 2:
         full_plan = plan_generation2(config, include_optional=not args.no_optional_combos)
         full_plan = full_plan[: args.limit] if args.limit and args.limit > 0 else full_plan

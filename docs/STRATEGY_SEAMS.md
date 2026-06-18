@@ -100,6 +100,19 @@ Of these, the keyword-expressible ones are generated this pass
 require board state the override hook cannot see, so they are documented but not
 generated as candidates yet.
 
+**Pass 5 update.** Pass 4's keyword weights were largely inert: the option
+scorer only sees `{area, index, type}` — the card *identity* is not in the
+option text, it lives in `select.deck[index].id` / `hand[index].id`. So name
+weights almost never bit; only option-*type* weights did. Pass 5 therefore
+injects a genuinely **board-aware** override scorer into each candidate that
+resolves the card id behind each option (via `area`/`index`), reads own
+`deckCount` and `active`/`bench`, and adds a score delta accordingly (fully
+`try/except`-guarded so it can never raise). This lets the previously-blocked
+board-dependent seams (`mega_signal_evolution_search`, `setup_active_choice`,
+`deckout_awareness`, plus a `combo.effect_resolution_deckout` pairing) be
+generated as real candidates this pass over the v2 deck — no invented card ids,
+all referencing confirmed ids only.
+
 ## 3. Strategy archetype seams
 
 Named bundles of policy (and later deck) choices forming a coherent gameplan.
@@ -161,6 +174,37 @@ How candidates are measured locally with cabt before any upload.
 - **game length** — average/maximum steps.
 - **local win rate** — wins vs the control.
 - **Kaggle rating delta** — change vs 349.8 once uploaded.
+
+### 4a. Pass 5 chaos / deckout telemetry (now available)
+
+Earlier passes treated local games as a black box that only emitted a
+win/loss reward, so chaos / deckout hypotheses had **no telemetry** to test
+against. Pass 5 lifts that blocker: the local evaluation harness
+(`experiments/runner.py`) now instruments every candidate decision and records
+a per-game `telemetry` block alongside the existing win/attack/pass stats.
+
+What is now captured (per game, candidate seat only):
+
+- **`min_deck_count` / `deck_count_last`** — the lowest own deck size seen and
+  the final own deck size, the core signal for deckout proximity.
+- **`low_deck_decisions`** — count of decisions taken at or below the deckout
+  threshold (≤ 6 cards), i.e. how often the agent acted while near deckout.
+- **`search_decisions` / `discard_decisions`** — effect-resolution prompts by
+  `select.context` (search-to-hand = 7, discard = 8), the contexts where the
+  replay's mis-resolutions occurred.
+- **`max_bench_seen` / `max_hand_seen`** — own bench and hand high-water marks,
+  the board-pressure signals chaos archetypes care about.
+- **`context_counts`** — raw histogram of every `select.context` value seen.
+
+**Limitations (honest scope).** All telemetry is derived **strictly from the
+candidate's own observation** (`current.players[yourIndex]` + `select.context`).
+It does **not** observe the opponent's hidden hand or deck contents, so chaos
+seams that depend on the *opponent's* hand size, deck composition, or status
+(e.g. hand-avalanche, mill, status-lock) still cannot be directly measured from
+our seat — those remain `uncertain` and blocked. The hooks the override layer
+can act on are also still option-type / keyword weights, not a board-state
+targeting engine; the telemetry measures outcomes, it does not add a new control
+hook.
 
 ## 5. Reporting seams
 

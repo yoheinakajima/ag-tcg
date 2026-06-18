@@ -34,6 +34,10 @@ FOCUSED_RANKING_JSON = Path("data/experiments/focused_ranking.json")
 PASS4_SCOUT_RANKING_JSON = Path("data/experiments/pass4_scout_ranking.json")
 PASS4_BLOCKED_JSON = Path("data/experiments/pass4_blocked_candidates.json")
 PASS4_REPLAY_ANALYSIS_JSON = Path("data/replays/80374966_analysis.json")
+PASS5_SCOUT_RANKING_JSON = Path("data/experiments/pass5_scout_ranking.json")
+PASS5_FOCUSED_RANKING_JSON = Path("data/experiments/pass5_focused_ranking.json")
+PASS5_REPLAY_ANALYSIS_JSON = Path("data/replays/80374966_analysis.json")
+CHAOS_TELEMETRY_CONTRACT_JSON = Path("data/experiments/chaos_telemetry_contract.json")
 V2_BASELINE_DIR = Path("data/baselines/v2_kaggle_479_1_deck_energy_trim_light")
 QUEUE_JSON = Path("data/submission_queue.json")
 
@@ -116,6 +120,10 @@ def gather(runs_root=RUNS_ROOT) -> dict:
         "pass4_scout_ranking": _load_json(PASS4_SCOUT_RANKING_JSON) or [],
         "pass4_blocked": _load_json(PASS4_BLOCKED_JSON) or [],
         "pass4_replay": _load_json(PASS4_REPLAY_ANALYSIS_JSON) or {},
+        "pass5_scout_ranking": _load_json(PASS5_SCOUT_RANKING_JSON) or [],
+        "pass5_focused_ranking": _load_json(PASS5_FOCUSED_RANKING_JSON) or [],
+        "pass5_replay": _load_json(PASS5_REPLAY_ANALYSIS_JSON) or {},
+        "chaos_contract": _load_json(CHAOS_TELEMETRY_CONTRACT_JSON) or {},
         "queue": _load_json(QUEUE_JSON) or {},
         "runs": runs,
         "baseline_readme": (BASELINE_DIR / "README.md"),
@@ -190,6 +198,7 @@ def _overview_html(data: dict) -> str:
     body = (
         f"<section><h2>Snapshot</h2><div class=cards>{cards}</div></section>"
         f"{_pass4_html(data)}"
+        f"{_pass5_html(data)}"
         f"<section><h2>Stage 1 — Broad scout ranking</h2>"
         f"{_rank_table_html(ranking)}</section>"
         f"<section><h2>Stage 2 — Focused seat-swap confirmation</h2>"
@@ -252,6 +261,130 @@ def _pass4_html(data: dict) -> str:
         f"{_rank_table_html(scout)}"
         "<h3>Blocked chaos archetypes (metadata insufficient — no invented ids)</h3>"
         f"{blocked_html}"
+        "</section>"
+    )
+
+
+def _pass5_findings(replay: dict) -> dict:
+    """Extract Pass-5 replay findings from the real analysis (honest fallbacks)."""
+    ep = replay.get("episode") or {}
+    fr = ep.get("final_result") or {}
+    fs = replay.get("final_state") or {}
+    et = replay.get("effect_traces") or {}
+    f: dict = {
+        "episode_id": ep.get("episode_id", "uncertain"),
+        "total_steps": ep.get("total_steps", "uncertain"),
+        "winner_seat": fr.get("winner_seat", "uncertain"),
+        "loser_seat": fs.get("loser_seat", "uncertain"),
+        "loss_reason": fs.get("apparent_loss_reason", "uncertain"),
+        "strongest_tag": replay.get("strongest_failure_tag", "uncertain"),
+        "trace_count": et.get("trace_count", "uncertain"),
+        "traces_by_card": et.get("traces_by_effect_card") or {},
+        "per_seat": fs.get("per_seat") or [],
+        "failure_tags": [t for t in (replay.get("failure_tags") or []) if t.get("present")],
+    }
+    return f
+
+
+def _ev_str(ev) -> str:
+    if isinstance(ev, list):
+        return "; ".join(str(x) for x in ev)
+    return str(ev)
+
+
+def _chaos_summary(chaos: dict) -> str:
+    """Honest readiness sentence derived from the loaded contract (no fabrication).
+
+    Returns plain text (no markup) so HTML and Markdown renderers can apply their
+    own emphasis. Degrades to an explicit 'uncertain' statement when no contract
+    is loaded rather than asserting a fabricated 'all blocked' conclusion.
+    """
+    seams = (chaos or {}).get("seams") or []
+    if not seams:
+        return ("Chaos telemetry contract not loaded — readiness is uncertain. "
+                "No card ids invented; no conclusions fabricated.")
+    blocked = [s for s in seams if s.get("telemetry_availability") == "blocked"]
+    if len(blocked) == len(seams):
+        return (f"All {len(seams)} chaos seams remain blocked: their decisive "
+                "signals are opponent-hidden, so own-seat telemetry cannot supply "
+                "them. No card ids invented; no conclusions fabricated.")
+    return (f"{len(blocked)} of {len(seams)} chaos seams are blocked "
+            "(opponent-hidden signals); the remainder are uncertain — see the "
+            "table below. No card ids invented; no conclusions fabricated.")
+
+
+def _pass5_html(data: dict) -> str:
+    replay = data.get("pass5_replay") or {}
+    scout = data.get("pass5_scout_ranking") or []
+    focused = data.get("pass5_focused_ranking") or []
+    chaos = data.get("chaos_contract") or {}
+
+    if not replay:
+        return ("<section><h2>Pass 5 — Replay-informed effect resolution &amp; "
+                "deck-out awareness</h2><div class=empty>No replay analysis artifact "
+                "found yet.</div></section>")
+
+    f = _pass5_findings(replay)
+
+    # Effect-resolution failure chain (strongest tag + present tags w/ evidence).
+    tag_rows = "".join(
+        f"<tr><td>{_esc(t.get('tag'))}</td><td>{_esc(t.get('confidence'))}</td>"
+        f"<td>{_esc(_ev_str(t.get('evidence')))}</td></tr>"
+        for t in f["failure_tags"]
+    ) or "<tr><td class=muted colspan=3>no failure tags present</td></tr>"
+
+    card_rows = "".join(
+        f"<tr><td>{_esc(k)}</td><td>{_esc(v)}</td></tr>"
+        for k, v in f["traces_by_card"].items()
+    ) or "<tr><td class=muted colspan=2>no effect traces</td></tr>"
+
+    seat_rows = "".join(
+        f"<tr><td>{_esc(s.get('seat'))}</td><td>{_esc(s.get('deck_count'))}</td>"
+        f"<td>{_esc(s.get('hand_count'))}</td><td>{_esc(s.get('discard_count'))}</td></tr>"
+        for s in f["per_seat"]
+    ) or "<tr><td class=muted colspan=4>no final-state per-seat data</td></tr>"
+
+    # Chaos telemetry readiness — all seams blocked (decisive signals opponent-hidden).
+    seams = chaos.get("seams") or []
+    chaos_rows = "".join(
+        f"<tr><td>{_esc(s.get('seam_id'))}</td>"
+        f"<td>{_esc(s.get('telemetry_availability'))}</td>"
+        f"<td>{_esc(', '.join(str(i) for i in (s.get('confirmed_card_ids') or [])) or '-')}</td>"
+        f"<td>{_esc(_ev_str(s.get('blockers')))}</td></tr>"
+        for s in seams
+    ) or "<tr><td class=muted colspan=4>no chaos contract loaded</td></tr>"
+
+    return (
+        "<section><h2>Pass 5 — Replay-informed effect resolution &amp; "
+        "deck-out awareness</h2>"
+        "<p class=muted>Local research only — <b>no Kaggle upload, no GitHub push</b>; "
+        f"root <code>main.py</code>/<code>deck.csv</code> immutable. Controls: v1 live "
+        f"<b>{V1_LIVE_SCORE}</b>, v2 <code>deck_energy_trim_light</code> live "
+        f"<b>{V2_LIVE_SCORE}</b>.</p>"
+        f"<h3>Replay findings (episode {_esc(f['episode_id'])})</h3>"
+        f"<p>{_esc(f['total_steps'])} steps; winner seat {_esc(f['winner_seat'])}, "
+        f"loser seat {_esc(f['loser_seat'])}. Apparent loss reason: "
+        f"<b>{_esc(f['loss_reason'])}</b>.</p>"
+        "<h3>Effect-resolution failure chain</h3>"
+        f"<p>Strongest failure tag: <b>{_esc(f['strongest_tag'])}</b> "
+        f"({_esc(f['trace_count'])} effect traces examined).</p>"
+        "<table><tr><th>Failure tag</th><th>Confidence</th><th>Evidence</th></tr>"
+        f"{tag_rows}</table>"
+        "<h4>Effect traces by card</h4>"
+        "<table><tr><th>Effect card</th><th>Traces</th></tr>"
+        f"{card_rows}</table>"
+        "<h3>Deck-out evidence (final state)</h3>"
+        "<table><tr><th>Seat</th><th>Deck</th><th>Hand</th><th>Discard</th></tr>"
+        f"{seat_rows}</table>"
+        "<h3>Candidate results (vs v2 control)</h3>"
+        "<h4>Scout ranking</h4>"
+        f"{_rank_table_html(scout)}"
+        "<h4>Focused ranking</h4>"
+        f"{_rank_table_html(focused)}"
+        "<h3>Chaos telemetry readiness</h3>"
+        f"<p class=muted>{_esc(_chaos_summary(chaos))}</p>"
+        "<table><tr><th>Seam</th><th>Telemetry</th><th>Confirmed ids</th>"
+        f"<th>Blockers</th></tr>{chaos_rows}</table>"
         "</section>"
     )
 
@@ -403,6 +536,77 @@ def _pass4_md(data: dict) -> list[str]:
     return lines
 
 
+def _pass5_md(data: dict) -> list[str]:
+    """Pass 5 — replay-informed effect resolution + deck-out awareness."""
+    replay = data.get("pass5_replay") or {}
+    scout = data.get("pass5_scout_ranking") or []
+    focused = data.get("pass5_focused_ranking") or []
+    chaos = data.get("chaos_contract") or {}
+
+    lines = ["## Pass 5 — Replay-informed effect resolution & deck-out awareness", ""]
+    if not replay:
+        lines.append("_No replay analysis artifact found yet._")
+        return lines
+
+    f = _pass5_findings(replay)
+    lines += [
+        f"- Controls: v1 live **{V1_LIVE_SCORE}**, v2 `deck_energy_trim_light` live "
+        f"**{V2_LIVE_SCORE}**.",
+        "- Scope: local research only — **no Kaggle upload, no GitHub push**; root "
+        "`main.py`/`deck.csv` immutable.",
+        "",
+        f"### Replay findings (episode {f['episode_id']})",
+        f"- {f['total_steps']} steps; winner seat {f['winner_seat']}, loser seat "
+        f"{f['loser_seat']}.",
+        f"- Apparent loss reason: **{f['loss_reason']}**.",
+        "",
+        "### Effect-resolution failure chain",
+        f"- Strongest failure tag: **{f['strongest_tag']}** ({f['trace_count']} "
+        "effect traces examined).",
+    ]
+    if f["failure_tags"]:
+        lines.append("")
+        lines.append("| Failure tag | Confidence | Evidence |")
+        lines.append("|-------------|------------|----------|")
+        for t in f["failure_tags"]:
+            lines.append(f"| {t.get('tag')} | {t.get('confidence')} | "
+                         f"{_ev_str(t.get('evidence'))} |")
+    if f["traces_by_card"]:
+        lines += ["", "**Effect traces by card:**"]
+        for k, v in f["traces_by_card"].items():
+            lines.append(f"- {k}: {v}")
+
+    lines += ["", "### Deck-out evidence (final state)"]
+    if f["per_seat"]:
+        lines.append("| Seat | Deck | Hand | Discard |")
+        lines.append("|-----:|-----:|-----:|--------:|")
+        for s in f["per_seat"]:
+            lines.append(f"| {s.get('seat')} | {s.get('deck_count')} | "
+                         f"{s.get('hand_count')} | {s.get('discard_count')} |")
+    else:
+        lines.append("_No final-state per-seat data._")
+
+    lines += ["", "### Candidate results (vs v2 control)"]
+    lines += _ranking_md(scout, "Pass 5 scout ranking")
+    lines += [""]
+    lines += _ranking_md(focused, "Pass 5 focused ranking")
+
+    lines += ["", "### Chaos telemetry readiness"]
+    lines.append(_chaos_summary(chaos))
+    seams = chaos.get("seams") or []
+    if seams:
+        lines += ["", "| Seam | Telemetry | Confirmed ids | Blockers |",
+                  "|------|-----------|---------------|----------|"]
+        for s in seams:
+            ids = ", ".join(str(i) for i in (s.get("confirmed_card_ids") or [])) or "-"
+            lines.append(f"| {s.get('seam_id')} | {s.get('telemetry_availability')} | "
+                         f"{ids} | {_ev_str(s.get('blockers'))} |")
+    else:
+        lines.append("_No chaos contract loaded._")
+
+    return lines
+
+
 def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -439,6 +643,8 @@ def write_markdown(data: dict, path: Path = REPORT_MD) -> Path:
     ]
 
     lines += _pass4_md(data)
+    lines += [""]
+    lines += _pass5_md(data)
     lines += [""]
     lines += _ranking_md(ranking, "Stage 1 — Broad scout ranking")
     lines += [""]

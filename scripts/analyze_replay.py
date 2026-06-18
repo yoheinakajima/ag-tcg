@@ -29,7 +29,7 @@ from ptcg_activegraph.replays import (
     to_markdown,
 )
 
-DEFAULT_REPLAY = "data/kaggle_replays/80374966.json"
+DEFAULT_REPLAY = "data/replays/80374966.json"
 OUT_DIR = Path("data/replays")
 
 # Replay-derived seam ideas emitted as IdeaGenerated when a replay is analyzed.
@@ -38,9 +38,9 @@ SEAM_IDEAS = [
     "policy.ultra_ball_discard_and_search",
     "policy.secret_box_mode_selection",
     "policy.mega_signal_evolution_search",
+    "policy.deckout_awareness",
     "policy.attach_targeting",
     "policy.setup_active_choice",
-    "policy.deckout_awareness",
 ]
 
 
@@ -67,7 +67,7 @@ def run(replay_path: str) -> int:
                 "note": ("replay file not present in workspace; upload it to "
                          f"{path} and re-run analyze_replay.py"),
             },
-            tags=["pass4", "replay", "missing"],
+            tags=["pass5", "replay", "missing"],
         ))
         print(f"[replay] NOT FOUND: {path}")
         print("[replay] emitted ReplayImported(status=missing).")
@@ -95,7 +95,7 @@ def run(replay_path: str) -> int:
             "episode_id": replay.episode_id,
             "num_steps": replay.num_steps,
         },
-        tags=["pass4", "replay"],
+        tags=["pass5", "replay"],
     ))
 
     analysis = analyze(replay)
@@ -112,9 +112,11 @@ def run(replay_path: str) -> int:
             "episode_id": replay.episode_id,
             "analysis_json": str(json_out),
             "analysis_md": str(md_out),
-            "decisions": analysis.get("actions", {}).get("decisions"),
+            "decisions": analysis.get("telemetry", {}).get("decisions"),
+            "effect_traces": analysis.get("effect_traces", {}).get("trace_count"),
+            "strongest_failure_tag": analysis.get("strongest_failure_tag"),
         },
-        tags=["pass4", "replay"],
+        tags=["pass5", "replay"],
     ))
 
     for tag in analysis.get("failure_tags", []):
@@ -122,7 +124,7 @@ def run(replay_path: str) -> int:
             store.append(new_event(
                 EventType.FailureRegimeTagged,
                 payload={"episode_id": replay.episode_id, **tag},
-                tags=["pass4", "replay", "failure"],
+                tags=["pass5", "replay", "failure"],
             ))
 
     for idea in SEAM_IDEAS:
@@ -130,7 +132,7 @@ def run(replay_path: str) -> int:
             EventType.IdeaGenerated,
             payload={"seam": idea, "source": "replay",
                      "episode_id": replay.episode_id},
-            tags=["pass4", "replay", "seam"],
+            tags=["pass5", "replay", "seam"],
         ))
 
     print(f"[replay] analyzed episode {replay.episode_id}")
