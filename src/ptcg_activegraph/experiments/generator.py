@@ -1774,6 +1774,119 @@ def inject_override(baseline_src: str, block: str) -> str:
     return baseline_src[:idx] + block + "\n\n" + baseline_src[idx:]
 
 
+_DECK_SAFETY_MARKER = "# === DECK-RETURN SAFETY"
+
+
+def render_deck_safety_block(deck_ids: list[int]) -> str:
+    """Render the EOF deck-return safety block for a generated candidate.
+
+    cabt's deck-selection step passes an observation whose ``current`` and
+    ``select`` both resolve to ``None``. On Kaggle that observation is a Struct
+    where those keys may be *absent* (not literally null), so a detection that
+    requires ``"select" in obs`` is skipped and the agent falls through to an
+    option-index path that returns ``[]`` — which Kaggle rejects pre-game with
+    "Player 1's deck does not have 60 cards." This block makes the deck return
+    robust three ways: (1) it embeds the full 60-card deck as a constant so the
+    return never depends on file I/O, (2) it still prefers ``deck.csv`` loaded
+    relative to ``__file__`` when that yields a valid 60-card list, and (3) it
+    detects the deck request with ``obs.get(...) is None`` (true whether the key
+    is null or absent) and returns the 60 ids *before* any option-index path.
+    The block redefines ``agent`` last, so the corrected definition wins, and it
+    delegates every non-deck observation to the previously-defined agent.
+    """
+    if not isinstance(deck_ids, list) or len(deck_ids) != 60:
+        raise ValueError(
+            f"deck-safety block needs exactly 60 ids, got {len(deck_ids)}")
+    if not all(isinstance(c, int) and not isinstance(c, bool) for c in deck_ids):
+        raise ValueError("deck-safety block ids must all be plain ints")
+    rows = ",\n    ".join(
+        ", ".join(str(c) for c in deck_ids[i:i + 10])
+        for i in range(0, len(deck_ids), 10)
+    )
+    return f'''
+{_DECK_SAFETY_MARKER}: embedded deck + robust select=None detection ===
+# Guarantees the cabt deck-selection step (current=None, select=None) returns
+# exactly 60 integer card ids, independent of cwd/file presence. See
+# render_deck_safety_block in src/ptcg_activegraph/experiments/generator.py.
+_EMBEDDED_DECK = [
+    {rows},
+]
+
+
+def _load_submission_deck():
+    """Return the 60-card deck.
+
+    Prefer ``deck.csv`` sitting next to THIS file (``__file__``-relative, so cwd
+    can never substitute a different deck), and fall back to the embedded
+    constant whenever that file is missing, unreadable, or not exactly 60 ids.
+    The embedded list always reflects this candidate's own deck, so the return
+    is correct even when no file is reachable.
+    """
+    try:
+        import os as _ds_os
+        path = _ds_os.path.join(_ds_os.path.dirname(_ds_os.path.abspath(__file__)),
+                                "deck.csv")
+        rows = []
+        with open(path, encoding="utf-8") as fh:
+            for line in fh:
+                s = line.strip()
+                if s:
+                    rows.append(int(s))
+        if len(rows) == 60:
+            return rows
+    except Exception:
+        pass
+    return list(_EMBEDDED_DECK)
+
+
+def _is_deck_request(obs):
+    """True for the cabt deck-selection step (current and select both None)."""
+    try:
+        return (isinstance(obs, dict)
+                and obs.get("select") is None
+                and obs.get("current") is None)
+    except Exception:
+        return False
+
+
+_PRE_DECK_SAFETY_AGENT = agent
+
+
+def agent(obs_dict):
+    """Kaggle entrypoint: return the 60-card deck on the deck-selection step,
+    otherwise defer to the previously-defined policy. Never returns [] for a
+    deck request and never raises."""
+    try:
+        if _is_deck_request(obs_dict):
+            return _load_submission_deck()
+    except Exception:
+        pass
+    try:
+        result = _PRE_DECK_SAFETY_AGENT(obs_dict)
+    except Exception:
+        result = None
+    if isinstance(result, list):
+        return result
+    try:
+        return fallback(obs_dict)
+    except Exception:
+        return []
+# === END DECK-RETURN SAFETY ===
+'''
+
+
+def inject_deck_safety(candidate_src: str, deck_ids: list[int]) -> str:
+    """Append the deck-return safety block to a generated candidate's source.
+
+    Idempotent: if the block is already present the source is returned
+    unchanged. The block is appended at EOF so its ``agent`` redefinition wins.
+    """
+    if _DECK_SAFETY_MARKER in candidate_src:
+        return candidate_src
+    block = render_deck_safety_block(deck_ids)
+    return candidate_src.rstrip() + "\n\n" + block + "\n"
+
+
 # ---------------------------------------------------------------------------
 # Deck delta application
 # ---------------------------------------------------------------------------

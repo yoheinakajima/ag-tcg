@@ -1,12 +1,3 @@
-- [Replay fixture gate](replay-fixture-gate.md) — Pass6 Stage0 grades candidates on hard legality + advisory preference; v2 fails 3 prefs by design (the v3 targets).
-- [Policy override layers](policy-override-layers.md) — p5 block only re-weights scores (can't skip); p6 block wraps _embedded_agent to decline ([]) when minCount==0; fixtures hit embedded path because root agent.py reads only "options" plural.
-- [Card DB energy detection](card-db-energy-detection.md) — card_db.basic_features reports is_energy=False for ALL basic energy ids; copy-limit checks must detect basic energy by NAME, not is_energy; cabt enforces 4-per-NAME.
-- [Subprocess stdlib shadowing](subprocess-stdlib-shadowing.md) — a package child run as a script puts its dir on sys.path[0], shadowing stdlib (queue.py); strip script dir or every game "crashes".
-- [In-process eval C-crash](in-process-eval-c-crash.md) — cabt batch MUST use per-game subprocess; in-process dies silently (no traceback) when one game aborts at C level; accept ~15s/game cold start.
-- [Ledger status projection](ledger-status-projection.md) — event-sourced run/game status is derived; completion must come from remaining work and every state needs a schema-map entry or inspect silently misreports.
-- [Sandbox kills background procs](sandbox-kills-background-procs.md) — nohup/background runs die when the tool call ends; run long durable evals foreground in bounded chunks and resume via the ledger.
-- [Queue artifact test leak](queue-artifact-test-leak.md) — queue builders default to real data/submission_queue.json + CANDIDATES_DIR; tests must redirect them or they clobber the live artifact; renderers accept both queue schemas.
-- [Chaos telemetry observability](chaos-telemetry-observability.md) — opponent PUBLIC board (counts/status/discard/ids) IS observable; only hand contents + own-side damage attribution hidden → partially_observable, not blocked (corrected Pass 8).
-- [ActiveGraph canonical scores](activegraph-canonical-scores.md) — v1 live=356.9 (archive dir keeps stale `349_8` name), v2 control live=479.1; report.py V1_LIVE_SCORE=356.9, never a literal.
-- [Playbook validator card-ids](playbook-validator-card-ids.md) — card-id lists outside cards/roles (e.g. discard_safety) are unchecked unless their (section,key) is in schema.CARD_ID_LIST_FIELDS.
-- [Report candidate gate labels](report-candidate-gate-labels.md) — derive gate label from hard fixture gate (eligible/blocked), not package_ok/smoke_ok; newer run dirs lack those keys → false GATE-FAIL.
+# Memory index
+
+- [Kaggle cabt env quirks](kaggle-cabt-env-quirks.md) — local cabt obs includes literal `select` key (masks deck-return bug); Kaggle omits it; kaggle_environments import (~115s) too slow for one sandbox tool call.

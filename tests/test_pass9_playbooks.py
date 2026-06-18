@@ -221,6 +221,160 @@ def test_root_main_and_deck_unchanged_vs_v1_baseline():
 
 
 # --------------------------------------------------------------------------- #
+# deck-return safety (packaging fix): embedded deck + robust select=None
+# --------------------------------------------------------------------------- #
+# The cabt deck-selection step passes an observation whose current/select both
+# resolve to None; on Kaggle those keys can be ABSENT (a Struct returns None but
+# `"select" in obs` is False). A candidate that only checks key membership
+# returns [] and Kaggle rejects it pre-game ("deck does not have 60 cards").
+DECK_SELECT_OBS = [
+    {"current": None, "select": None, "logs": [], "step": 0},
+    {"current": None, "select": None, "logs": [], "remainingOverageTime": 60},
+    {"logs": [], "step": 0},                      # Kaggle key-absent shape
+    {"logs": [], "remainingOverageTime": 60},     # Kaggle key-absent shape
+]
+
+
+def test_generated_main_embeds_deck_constant(compiled_candidate):
+    src = (compiled_candidate / "main.py").read_text(encoding="utf-8")
+    assert "_EMBEDDED_DECK = [" in src, "candidate must embed a deck constant"
+    assert "# === DECK-RETURN SAFETY" in src
+    mod = _load_agent(compiled_candidate / "main.py")
+    embedded = getattr(mod, "_EMBEDDED_DECK", None)
+    assert isinstance(embedded, list) and len(embedded) == 60
+    assert all(isinstance(c, int) and not isinstance(c, bool) for c in embedded)
+    deck_rows = _load_deck_ids(compiled_candidate / "deck.csv")
+    assert sorted(embedded) == sorted(deck_rows)
+
+
+def test_generated_agent_returns_deck_on_select_none(compiled_candidate):
+    mod = _load_agent(compiled_candidate / "main.py")
+    deck_rows = _load_deck_ids(compiled_candidate / "deck.csv")
+    for obs in DECK_SELECT_OBS:
+        out = mod.agent(obs)
+        assert isinstance(out, list), f"non-list for {obs}"
+        assert len(out) == 60, f"expected 60 cards on deck step, got {len(out)} for {obs}"
+        assert all(isinstance(c, int) and not isinstance(c, bool) for c in out)
+        assert sorted(out) == sorted(deck_rows)
+
+
+def test_embedded_deck_used_when_deckcsv_missing(tmp_path):
+    """With no deck.csv reachable, the agent still returns 60 via the embedded
+    fallback (proves the return never depends on file I/O)."""
+    from ptcg_activegraph.experiments.generator import inject_deck_safety
+    root_src = (REPO / "main.py").read_text(encoding="utf-8")
+    deck_rows = _load_deck_ids(V2_CONTROL / "deck.csv")
+    fixed = inject_deck_safety(root_src, deck_rows)
+    main_path = tmp_path / "main.py"  # deliberately NO deck.csv beside it
+    main_path.write_text(fixed, encoding="utf-8")
+    spec = importlib.util.spec_from_file_location("embed_only_main", main_path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    out = mod.agent({"logs": [], "step": 0})
+    assert isinstance(out, list) and len(out) == 60
+    assert sorted(out) == sorted(deck_rows)
+
+
+def test_inject_deck_safety_is_idempotent():
+    from ptcg_activegraph.experiments.generator import inject_deck_safety
+    root_src = (REPO / "main.py").read_text(encoding="utf-8")
+    deck_rows = _load_deck_ids(V2_CONTROL / "deck.csv")
+    once = inject_deck_safety(root_src, deck_rows)
+    twice = inject_deck_safety(once, deck_rows)
+    assert once == twice
+    assert once.count("# === DECK-RETURN SAFETY") == 1
+
+
+# --------------------------------------------------------------------------- #
+# hard candidate tarball validator gate
+# --------------------------------------------------------------------------- #
+def _build_tarball(tmp_path, main_text: str, deck_rows: list[int]):
+    cand = tmp_path / "cand"
+    cand.mkdir()
+    (cand / "main.py").write_text(main_text, encoding="utf-8")
+    (cand / "deck.csv").write_text(
+        "\n".join(str(c) for c in deck_rows) + "\n", encoding="utf-8")
+    tgz = tmp_path / "cand.tar.gz"
+    with tarfile.open(tgz, "w:gz") as tar:
+        tar.add(cand / "main.py", arcname="main.py")
+        tar.add(cand / "deck.csv", arcname="deck.csv")
+    return tgz
+
+
+def _run_validator(tgz: Path) -> int:
+    spec = importlib.util.spec_from_file_location(
+        "vct", REPO / "scripts" / "validate_candidate_tarball.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.validate(str(tgz))
+
+
+def test_validator_passes_fixed_candidate(tmp_path):
+    from ptcg_activegraph.experiments.generator import inject_deck_safety
+    root_src = (REPO / "main.py").read_text(encoding="utf-8")
+    deck_rows = _load_deck_ids(V2_CONTROL / "deck.csv")
+    tgz = _build_tarball(tmp_path, inject_deck_safety(root_src, deck_rows),
+                         deck_rows)
+    assert _run_validator(tgz) == 0
+
+
+def test_validator_catches_empty_deck_return(tmp_path):
+    """A candidate whose main.py returns [] on the Kaggle key-absent deck step
+    must be FAILED by the validator (this is the exact bug that broke v3)."""
+    bad_main = (
+        "def agent(obs):\n"
+        "    if isinstance(obs, dict) and 'select' in obs and obs['select'] is None:\n"
+        "        return [1]*60\n"
+        "    return []\n"
+    )
+    deck_rows = _load_deck_ids(V2_CONTROL / "deck.csv")
+    tgz = _build_tarball(tmp_path, bad_main, deck_rows)
+    assert _run_validator(tgz) == 1
+
+
+def test_validator_rejects_extra_tarball_members(tmp_path):
+    cand = tmp_path / "cand"
+    cand.mkdir()
+    (cand / "main.py").write_text("def agent(o):\n    return [1]*60\n",
+                                  encoding="utf-8")
+    (cand / "deck.csv").write_text("\n".join(["1"] * 60) + "\n", encoding="utf-8")
+    (cand / "extra.txt").write_text("nope", encoding="utf-8")
+    tgz = tmp_path / "cand.tar.gz"
+    with tarfile.open(tgz, "w:gz") as tar:
+        for n in ("main.py", "deck.csv", "extra.txt"):
+            tar.add(cand / n, arcname=n)
+    assert _run_validator(tgz) == 1
+
+
+def test_candidate_smoke_imports_tarball_main_not_root():
+    """The candidate smoke must operate on the extracted tarball's main.py,
+    never the repo root runtime agent."""
+    src = (REPO / "scripts" / "kaggle_candidate_smoke_test.py").read_text(
+        encoding="utf-8")
+    tree = ast.parse(src)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module == "main":
+            raise AssertionError("candidate smoke must not import root main")
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                assert alias.name != "main", "candidate smoke must not import root main"
+    assert "extractall" in src and "candidate_smoke_main" in src
+
+
+# --------------------------------------------------------------------------- #
+# fixed candidate tarball artifact (built this pass)
+# --------------------------------------------------------------------------- #
+def test_fixed_candidate_tarball_is_main_and_deck_only():
+    tgz = REPO / "data" / "submissions" / "candidates" / \
+        "combo_full_safety_v3_fixed.tar.gz"
+    if not tgz.exists():
+        pytest.skip("fixed candidate tarball not built")
+    with tarfile.open(tgz, "r:gz") as tf:
+        names = sorted(Path(n).name for n in tf.getnames() if not n.endswith("/"))
+    assert names == ["deck.csv", "main.py"], f"must be main+deck only: {names}"
+
+
+# --------------------------------------------------------------------------- #
 # dry-run queue policy
 # --------------------------------------------------------------------------- #
 def test_dry_run_queue_respects_no_more_submissions_today():

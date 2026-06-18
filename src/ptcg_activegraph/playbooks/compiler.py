@@ -22,7 +22,11 @@ from pathlib import Path
 import yaml
 
 from ..experiments.branch import Branch, make_run_dir, write_branch_yaml
-from ..experiments.generator import inject_override, render_p8_block
+from ..experiments.generator import (
+    inject_deck_safety,
+    inject_override,
+    render_p8_block,
+)
 from .loader import load_playbook
 from .report import playbook_report_summary, render_summary_md
 from .schema import RULE_MAP
@@ -87,6 +91,9 @@ def compile_playbook(playbook_path: str | Path,
     baseline_src = Path(root_main).read_text(encoding="utf-8")
     block = render_p8_block(candidate_id, seam_id, rules)
     candidate_src = inject_override(baseline_src, block)
+    # Hard packaging requirement: every generated candidate must return its own
+    # 60-card deck on the cabt deck-selection step regardless of cwd/file I/O.
+    candidate_src = inject_deck_safety(candidate_src, deck_ids)
 
     run_dir = make_run_dir(candidate_id, root=runs_root, ts=ts)
     (run_dir / "main.py").write_text(candidate_src, encoding="utf-8")

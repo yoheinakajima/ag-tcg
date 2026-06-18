@@ -1,0 +1,331 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle in this pass.
+- Do not modify root main.py or root deck.csv.
+- Preserve v1 and v2 baselines.
+- Do not change the candidate strategy yet.
+- This pass is a packaging/runtime validation fix only.
+
+Current situation:
+- We submitted combo_full_safety_v3.
+- Kaggle validation failed before gameplay.
+- Validation replay:
+  - statuses: INVALID / INVALID
+  - rewards: null / null
+  - step 0 observation had current=null, select=null
+  - agent action was []
+  - error: "Player 1's deck does not have 60 cards."
+- This means the submitted candidate main.py returned [] on the initial deck-selection call instead of returning the 60-card deck.
+- The candidate deck.csv itself had 60 lines, but the candidate smoke was only partial: it tested the candidate deck through the repo runtime, not the tarball's own main.py.
+- Therefore this is not a gameplay/strategy failure. It is an isolated candidate runtime/package validation gap.
+
+Goal:
+Fix the candidate compiler/package validator so every submitted candidate proves that its own extracted main.py returns a 60-card deck on select=None. Rebuild combo_full_safety_v3 as a fixed candidate tarball. Do not upload.
+
+Part A — Preserve failure evidence
+
+Create:
+
+data/kaggle_failures/combo_full_safety_v3_validation_failed/
+
+If the failed validation replay JSON/log is present locally, copy it there. If not, write a markdown note with the pasted facts:
+
+cat > data/kaggle_failures/combo_full_safety_v3_validation_failed/README.md <<'EOF'
+# combo_full_safety_v3 Kaggle validation failure
+
+Failure type:
+- Pre-game deck-selection failure.
+
+Kaggle validation facts:
+- statuses: INVALID / INVALID
+- rewards: null / null
+- step 0 current: null
+- step 0 select: null
+- action returned: []
+- error: "Player 1's deck does not have 60 cards."
+
+Diagnosis:
+- cabt expects the agent to return its 60-card deck list when select is null.
+- The submitted candidate returned [].
+- This indicates candidate main.py did not load/embed deck.csv correctly at runtime.
+
+This is not evidence against combo_full_safety_v3 gameplay strategy.
+EOF
+
+Emit an ActiveGraph event if possible:
+- event_type: SubmissionValidationFailed
+- candidate_id: combo_full_safety_v3
+- failure_class: deck_selection_return_empty
+- kaggle_error: "Player 1's deck does not have 60 cards."
+- remediation: isolated_candidate_deck_return_gate
+
+Part B — Reproduce locally from the exact tarball
+
+Use the failed candidate tarball:
+
+data/submissions/candidates/combo_full_safety_v3.tar.gz
+
+Extract and import its own main.py in isolation. Do not use the repo root main.py.
+
+Run or create a script to do the equivalent of:
+
+mkdir -p /tmp/ptcg_failed_candidate
+rm -rf /tmp/ptcg_failed_candidate/*
+tar -xzf data/submissions/candidates/combo_full_safety_v3.tar.gz -C /tmp/ptcg_failed_candidate
+
+python - <<'PY'
+import importlib.util, sys, os
+from pathlib import Path
+
+candidate_dir = Path("/tmp/ptcg_failed_candidate")
+main_path = candidate_dir / "main.py"
+deck_path = candidate_dir / "deck.csv"
+
+print("main.py exists:", main_path.exists())
+print("deck.csv exists:", deck_path.exists())
+
+rows = [x.strip() for x in deck_path.read_text().splitlines() if x.strip()]
+print("deck rows:", len(rows), "unique:", len(set(rows)))
+print("all ints:", all(x.isdigit() for x in rows))
+
+old_cwd = os.getcwd()
+os.chdir(candidate_dir)
+try:
+    spec = importlib.util.spec_from_file_location("candidate_main", main_path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["candidate_main"] = mod
+    spec.loader.exec_module(mod)
+
+    obs_variants = [
+        None,
+        {},
+        {"current": None, "select": None, "logs": [], "step": 0},
+        {"current": None, "select": None, "logs": [], "remainingOverageTime": 60, "step": 0},
+    ]
+
+    for obs in obs_variants:
+        try:
+            result = mod.agent(obs)
+        except Exception as e:
+            print("obs", obs, "RAISED", type(e).__name__, str(e))
+            continue
+        print("obs_type", type(obs).__name__, "result_len", len(result) if isinstance(result, list) else None, "head", result[:5] if isinstance(result, list) else result)
+finally:
+    os.chdir(old_cwd)
+PY
+
+Expected current reproduction:
+- For select=None obs, result_len is probably 0.
+- If it already returns 60, investigate path/CWD/import differences until the Kaggle failure is explainable.
+
+Part C — Fix compiler-generated candidate main.py deck handling
+
+Update the candidate compiler / render path so every generated candidate main.py contains an embedded deck constant.
+
+Requirements:
+- Generated candidate main.py must be stdlib-only.
+- It must not import src.
+- It must not rely only on deck.csv file loading.
+- It should load deck.csv from the same directory as __file__ if possible.
+- If deck.csv loading fails or returns non-60, it must fall back to the embedded deck list.
+- On the initial cabt deck-selection call, it must return exactly 60 ints.
+
+Implement in generated candidate main.py something equivalent to:
+
+_EMBEDDED_DECK = [60 ints from the candidate deck.csv]
+
+def _load_submission_deck():
+    try:
+        import os
+        path = os.path.join(os.path.dirname(__file__), "deck.csv")
+        rows = []
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                s = line.strip()
+                if s:
+                    rows.append(int(s))
+        if len(rows) == 60:
+            return rows
+    except Exception:
+        pass
+    return list(_EMBEDDED_DECK)
+
+def _is_deck_request(obs):
+    return isinstance(obs, dict) and obs.get("select") is None and obs.get("current") is None
+
+def agent(obs_dict):
+    try:
+        if _is_deck_request(obs_dict):
+            return _load_submission_deck()
+        ...
+    except Exception:
+        ...
+    return fallback
+
+Important:
+- Keep the existing action-selection logic unchanged except for deck handling.
+- Ensure this deck-return branch happens before any option-index fallback.
+- Do not return [] for select=None/current=None.
+- If obs is None or malformed with no select key, existing fallback can remain conservative; the hard requirement is the actual cabt step-0 shape.
+
+Part D — Add hard validator for candidate tarballs
+
+Create or update:
+
+scripts/validate_candidate_tarball.py
+
+It should accept:
+
+python scripts/validate_candidate_tarball.py data/submissions/candidates/combo_full_safety_v3.tar.gz
+
+It must:
+1. Extract tarball to temp dir.
+2. Assert tarball contains exactly top-level main.py and deck.csv.
+3. Assert deck.csv has exactly 60 integer rows.
+4. Import extracted main.py from that temp dir.
+5. Temporarily set cwd to the extracted temp dir.
+6. Call candidate agent with:
+   - {"current": None, "select": None, "logs": [], "step": 0}
+   - {"current": None, "select": None, "logs": [], "remainingOverageTime": 60, "step": 0}
+7. Assert both return list[int] of length 60.
+8. Assert returned deck equals deck.csv rows if possible.
+9. Call candidate agent with a normal malformed/no-option obs and assert it does not raise.
+10. Print clear PASS/FAIL.
+
+This validator must become a hard pre-upload gate.
+
+Part E — Add candidate smoke support for custom main.py
+
+Update scripts/kaggle_smoke_test.py or add:
+
+scripts/kaggle_candidate_smoke_test.py
+
+It should run a real cabt game using the extracted candidate main.py and candidate deck.csv, not the root repo runtime.
+
+Usage:
+
+python scripts/kaggle_candidate_smoke_test.py data/submissions/candidates/combo_full_safety_v3_fixed.tar.gz
+
+Behavior:
+- extract tarball
+- import candidate main.py
+- load extracted deck.csv
+- make cabt env with that deck against itself
+- run env.run([candidate_agent, candidate_agent])
+- save smoke result under data/matches/
+- report PASS only if game completes without INVALID/ERROR/TIMEOUT
+- do not use root main.py unless explicitly requested
+
+Part F — Rebuild fixed candidate
+
+Rebuild combo_full_safety_v3 from the same candidate strategy, but with fixed embedded-deck runtime.
+
+Output:
+
+data/submissions/candidates/combo_full_safety_v3_fixed.tar.gz
+
+Do not overwrite the failed tarball unless you also archive it.
+
+Archive failed tarball:
+
+mkdir -p data/submissions/candidates/archive
+cp data/submissions/candidates/combo_full_safety_v3.tar.gz data/submissions/candidates/archive/combo_full_safety_v3_failed_deck_return.tar.gz
+
+Then build fixed tarball.
+
+Validate:
+
+python scripts/validate_candidate_tarball.py data/submissions/candidates/combo_full_safety_v3_fixed.tar.gz
+python scripts/kaggle_candidate_smoke_test.py data/submissions/candidates/combo_full_safety_v3_fixed.tar.gz
+
+Part G — Update gates and tests
+
+Add tests for:
+- generated candidate main.py embeds deck constant
+- extracted candidate tarball returns 60-card deck on select=None/current=None
+- validate_candidate_tarball catches a candidate returning []
+- kaggle_candidate_smoke_test imports candidate main.py, not root main.py
+- root main.py/deck.csv remain unchanged
+- candidate tarball contains exactly main.py + deck.csv
+
+Run:
+
+python -m pytest
+python scripts/package_submission.py --verify-only
+python scripts/kaggle_smoke_test.py
+python scripts/validate_candidate_tarball.py data/submissions/candidates/combo_full_safety_v3_fixed.tar.gz
+python scripts/kaggle_candidate_smoke_test.py data/submissions/candidates/combo_full_safety_v3_fixed.tar.gz
+
+Part H — Update report site / ActiveGraph
+
+Update the report site and markdown report with:
+- combo_full_safety_v3 Kaggle validation failed before gameplay
+- cause: candidate returned [] on deck-selection call
+- fix: embedded deck constant + isolated candidate tarball validator
+- no strategic conclusion from failed upload
+- combo_full_safety_v3_fixed is ready for manual approval only if all gates pass
+
+Emit ActiveGraph events:
+- SubmissionValidationFailed
+- CandidatePackagingBugFixed
+- CandidatePackaged
+- CandidateValidated
+
+Part I — Final report format
+
+Report exactly:
+
+Combo Full Safety v3 Packaging Fix Report
+
+1. Failure classification
+- Kaggle failure reproduced locally:
+- failed tarball path:
+- observed select=None return length:
+- root cause:
+- strategic candidate invalidated by this failure: yes/no
+
+2. Compiler/runtime fix
+- embedded deck constant added:
+- deck.csv fallback retained:
+- generated main.py stdlib-only:
+- root main.py unchanged:
+- root deck.csv unchanged:
+
+3. New hard gates
+- validate_candidate_tarball.py:
+- candidate smoke imports tarball main.py:
+- package gate updated:
+- tests added:
+
+4. Fixed candidate
+- fixed candidate id:
+- fixed tarball path:
+- tarball contents:
+- deck line count:
+- null-select return length:
+- returned deck matches deck.csv:
+- candidate smoke result:
+
+5. Validation
+- pytest:
+- root package verify:
+- root smoke:
+- fixed candidate validator:
+- fixed candidate smoke:
+- crashes/timeouts/invalid returns:
+
+6. ActiveGraph / report
+- events emitted:
+- report site updated:
+- markdown report updated:
+
+7. Upload readiness
+- ready to re-upload fixed combo candidate: yes/no
+- if yes, upload file:
+- if no, blockers:
+- upload performed: no
+
+8. Next action
+- One sentence only.
