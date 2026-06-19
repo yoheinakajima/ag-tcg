@@ -1,0 +1,496 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not generate new candidates in this pass unless explicitly requested later.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Raw replay JSON files must remain gitignored.
+- This is a read-only Kaggle status + replay ingestion + post-mortem pass only.
+- No Kaggle upload.
+
+Read before acting:
+- docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md
+- docs/NEXT_AGENT_README.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/pass21_final_report.md
+- data/reports/pass22_water_anti_disruption_report.md if present
+- data/reports/pass23_water_anti_disruption_kaggle_probe_report.md
+- data/fixtures/pass21_planned_water_fixtures.yaml
+- data/fixtures/pass22_water_board_safety/index.yaml if present
+
+Current state:
+- Pass 23 submitted exactly one candidate:
+  - candidate_id: league_water_anti_disruption_pivot_v1
+  - tarball: data/submissions/candidates_pass22/league_water_anti_disruption_pivot_v1.tar.gz
+  - status was pending at Pass 23 report time.
+- User has uploaded 3 new raw replay JSON files.
+- Grok summary claims:
+  - 80623232: loss, turn 11, empty-board loss vs Fighting ex / Mega Lucario-Hariyama
+  - 80622745: win, turn 11, opponent empty-board loss vs Psychic Alakazam/Dudunsparce style
+  - 80622626: mirror, long turn 43, loser empty-board
+- Do NOT trust Grok as ground truth. Use replay JSON state/logs.
+- The key question: did the anti-disruption pivot still lose via no Pokémon in play / empty bench?
+
+Goal:
+Run Pass 24: Anti-Disruption Pivot Score + Replay Post-Mortem.
+
+Objectives:
+1. Re-read Kaggle status for league_water_anti_disruption_pivot_v1.
+2. Ingest the 3 newly uploaded replays.
+3. Identify which replay episodes belong to the Pass 23 candidate.
+4. Verify Grok’s claims from replay state.
+5. Determine whether empty-board/no-backup failure persists.
+6. Compare pivot candidate behavior against the prior league_water_core_reference failure taxonomy.
+7. Produce a clear decision: keep, fix, revert, or wait.
+8. No upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Raw replay safety
+
+Verify raw replay JSONs are in:
+
+data/meta_replays/raw/
+
+Run:
+
+find data/meta_replays/raw -maxdepth 1 -type f -name "*.json" | sort
+git check-ignore -v data/meta_replays/raw/*.json || true
+
+Required:
+- New raw replay files must be gitignored.
+- If any new raw replay is not ignored, stop and fix .gitignore.
+- Do not stage raw replay JSON files.
+
+Specifically check for:
+- 80623232.json
+- 80622745.json
+- 80622626.json
+
+If filenames differ, locate by EpisodeId inside the JSON.
+
+Output:
+- data/experiments/pass24_raw_replay_safety.json
+- data/experiments/pass24_raw_replay_safety.md
+
+Part C — Read-only Kaggle status refresh
+
+Run read-only status:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass24.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass24.csv || true
+
+If kaggle is not on PATH, use the Python kaggle.cli method used in prior passes.
+
+Required:
+- no submit command
+- no upload
+- status listing only
+
+Record:
+- latest status for league_water_anti_disruption_pivot_v1.tar.gz
+- publicScore if complete
+- whether still pending
+- whether error
+- current live best
+- score drift from Pass 23 listing
+
+Rebuild/update:
+- data/kaggle_uploads/live_score_registry.json
+- data/kaggle_uploads/live_score_registry.md
+
+Output:
+- data/experiments/pass24_kaggle_status.json
+- data/experiments/pass24_kaggle_status.md
+
+If score is still pending, continue replay analysis but do not draw score conclusions.
+
+Part D — Replay ingestion pipeline
+
+Run:
+
+python scripts/ingest_replay_inbox.py
+python scripts/extract_replay_decks.py
+python scripts/extract_meta_archetypes.py
+python scripts/analyze_kaggle_replays.py
+python scripts/update_meta_pool_from_replays.py
+
+Output:
+- data/experiments/pass24_replay_ingestion.json
+- data/experiments/pass24_replay_ingestion.md
+
+Include:
+- replay count before/after
+- new EpisodeIds detected
+- duplicates skipped
+- failed parses
+- whether 80623232, 80622745, 80622626 are present
+- deck extraction status
+- opponent archetypes
+- raw replay gitignore status
+
+Part E — Pass 23 candidate replay attribution
+
+Create:
+
+scripts/attribute_pass24_replays.py
+
+Outputs:
+- data/experiments/pass24_replay_attribution.json
+- data/experiments/pass24_replay_attribution.md
+
+For each new replay:
+- episode_id
+- players / team names
+- our seat
+- whether our submitted deck fingerprint matches league_water_anti_disruption_pivot_v1
+- whether opponent deck is known/unknown
+- candidate_id attribution confidence:
+  - high if deck fingerprint + upload timing + player seat align
+  - medium if only player + timing align
+  - low if ambiguous
+- whether replay is:
+  - pivot_vs_external
+  - pivot_self_mirror
+  - old_water_mirror
+  - unknown
+
+Important:
+- Do not assume every Yohei replay is the Pass 23 candidate.
+- Use deck fingerprint where possible.
+- If both seats are Yohei, classify as mirror and identify whether both decks match the pivot candidate.
+
+Part F — Verify Grok claims from replay state
+
+Create:
+
+scripts/verify_pass24_grok_claims.py
+
+Outputs:
+- data/experiments/pass24_grok_claim_verification.json
+- data/experiments/pass24_grok_claim_verification.md
+
+For each episode:
+- Grok claimed result
+- replay reward result
+- Grok claimed loss type
+- replay-derived loss type
+- Grok claimed turn/length
+- replay-derived steps/turns
+- matched yes/no
+- disagreements
+
+Focus claims:
+1. 80623232:
+   - claimed loss
+   - claimed turn 11
+   - claimed empty-board/no-Pokémon loss
+   - claimed Fighting ex / Mega Lucario-Hariyama opponent
+2. 80622745:
+   - claimed win
+   - claimed turn 11
+   - claimed opponent empty-board loss
+   - claimed Psychic Alakazam/Dudunsparce opponent
+3. 80622626:
+   - claimed mirror
+   - claimed turn 43
+   - claimed loser empty-board
+
+Trust replay, not Grok.
+
+Part G — Empty-board / no-backup post-mortem
+
+Create or extend:
+
+scripts/analyze_no_pokemon_loss.py
+
+Outputs:
+- data/experiments/pass24_empty_board_postmortem.json
+- data/experiments/pass24_empty_board_postmortem.md
+- data/experiments/pass24_empty_board_windows.jsonl
+
+For each new replay and our seat:
+- result
+- loss_condition:
+  - no_pokemon_in_play
+  - prize_loss
+  - deckout
+  - timeout
+  - unknown
+- final active
+- final bench count
+- final hand count
+- final deck count
+- final prizes remaining
+- whether active KO caused game end
+- whether no-pokemon-in-play occurred
+- whether benchable Basic was available earlier:
+  - Kyogre 721
+  - Snover 722
+- whether Mega Abomasnow 723 was incorrectly treated as benchable anywhere
+- whether search was available while bench empty/thin
+- whether emergency backup hook fired
+- whether it should have fired but did not
+- whether hook fired too late
+- whether hook was blocked by option resolution
+- whether bench was healthy after setup but collapsed later
+- whether the loss was due to failing to maintain bench after midgame KOs
+- whether the loss was due to no backup in hand/search
+- whether the loss was due to misprioritizing attach/play/attack/end
+
+Expected tags:
+- no_pokemon_in_play_loss
+- final_active_ko_empty_bench
+- benchable_basic_available_unplayed
+- search_backup_available_unsearched
+- emergency_backup_hook_missed
+- emergency_backup_hook_success
+- bench_collapsed_after_initial_success
+- board_safety_fixed
+- board_safety_not_fixed
+
+Part H — Anti-disruption hook effectiveness
+
+Create:
+
+scripts/analyze_pass24_hook_effectiveness.py
+
+Outputs:
+- data/experiments/pass24_hook_effectiveness.json
+- data/experiments/pass24_hook_effectiveness.md
+
+Analyze:
+- How often did the pivot candidate bench backup basics in Main context?
+- Did it play Kyogre/Snover before optional End/tool/support/search when board was thin?
+- Did it preserve last Kyogre/Snover in discard contexts?
+- Did it search for backup when bench was empty?
+- Did it over-bench or slow tempo?
+- Did it miss any obvious board-safety window?
+- Did it regress attack tempo?
+- Did it still lose to the same failure it was designed to fix?
+
+Use replay windows and logs, not assumptions.
+
+Part I — Opponent archetype classification
+
+Update or create:
+- data/experiments/pass24_archetype_updates.json
+- data/experiments/pass24_archetype_updates.md
+
+Classify the new opponents from confirmed card IDs:
+- Fighting ex / Mega Lucario-Hariyama if supported
+- Psychic Alakazam/Dudunsparce if supported
+- Water mirror / old own deck if supported
+- any other archetype if replay evidence supports it
+
+For each:
+- episode_id
+- evidence card IDs
+- evidence card names from card DB if available
+- confirmed/provisional/unknown
+- no invented IDs
+
+Part J — Strategy interpretation
+
+Create:
+
+data/experiments/pass24_strategy_interpretation.json
+data/experiments/pass24_strategy_interpretation.md
+
+Answer:
+1. Did the anti-disruption pivot score above or below the current live control?
+2. Is the score settled enough to decide?
+3. Did the pivot fix the no-bench loss mode?
+4. If empty-board loss still occurred, why?
+5. Did it win any games by pressuring earlier or preserving board?
+6. Did it regress against any archetype?
+7. Is the next step:
+   - wait_for_more_games
+   - keep_pivot_as_live_control
+   - revert_to_water_core_reference
+   - narrow_emergency_backup_hook
+   - build_midgame_bench_maintenance
+   - build_anti_fighting_ex_response
+   - ingest_more_replays
+   - no_action
+
+Decision should be conservative:
+- If status pending: wait_for_more_games
+- If score above control but empty-board persists: keep as candidate, but build_midgame_bench_maintenance
+- If score below control and same failure persists: narrow/rework hook
+- If score above control and failure reduced: keep_pivot_as_live_control, but no upload
+- If error: gate repair only
+
+Part K — Planned fixtures from new replays
+
+Create:
+- data/fixtures/pass24_planned_fixtures.yaml
+
+Fixture plans only unless cheap.
+
+Likely fixtures:
+1. midgame_maintain_second_backup
+- Board has one backup early but bench later thins to one/zero.
+- Expected: replenish bench before active is threatened.
+
+2. backup_after_first_backup_committed
+- If backup Kyogre is already committed, find/bench Snover for pivot line.
+
+3. do_not_stop_at_one_backup_vs_big_ex
+- Against high-damage ex threats, maintain at least two Pokémon in play.
+
+4. emergency_backup_after_search_chain
+- After Ultra Ball / Secret Box / Mega Signal, ensure searched Basic actually gets played before ending turn.
+
+5. fighting_ex_fast_pressure_response
+- Against Mega Lucario/Hariyama tempo, prioritize durable backup + attack pressure.
+
+6. mirror_attrition_board_maintenance
+- In long mirror, avoid letting bench collapse late.
+
+7. hook_should_not_fire_when_bench_healthy
+- Preserve current guard against over-benching.
+
+Tie each fixture to source episode(s).
+
+Part L — ActiveGraph events
+
+Emit:
+- ReplayImported for new replays if not already emitted
+- ReplayAnalyzed for each replay
+- KaggleScoreUpdated if score refreshed
+- StrategyIterationEvaluated for league_water_anti_disruption_pivot_v1
+- StrategyDecisionRecorded for Pass 24 decision
+- StrategyFixtureAdded for each planned fixture
+- ReportSiteGenerated
+
+All events:
+- no_upload: true
+- source pass24
+- candidate_id when relevant
+- episode_id when relevant
+- parent/lineage when relevant
+
+Part M — Reports and docs
+
+Update:
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- data/reports/pass24_anti_disruption_pivot_replay_report.md
+
+Include:
+- latest score/status
+- replay attribution
+- Grok claim verification
+- empty-board postmortem
+- hook effectiveness
+- new opponent archetypes
+- planned fixtures
+- strategy decision
+- no-upload note
+
+Do not erase Pass 23 facts. Add an authoritative current-state section.
+
+Part N — Tests
+
+Add/update tests for:
+- new replay IDs are ingested and preserved
+- raw replay files are gitignored
+- replay attribution does not assume every Yohei replay is pivot
+- Grok verification trusts replay over summary
+- no-pokemon loss analyzer detects empty-board loss if replay evidence supports it
+- Mega Abomasnow is not treated as benchable Basic
+- hook effectiveness includes fired/missed/blocked categories
+- planned fixtures reference real episode IDs
+- archetype updates include evidence card IDs
+- no upload flag remains false
+- root files unchanged
+- report includes replay-derived evidence caveat
+
+Run targeted tests.
+Run broader tests if feasible.
+
+Part O — Final report
+
+Report exactly:
+
+ActiveGraph Pass 24 Anti-Disruption Pivot Replay Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Kaggle status
+- status refreshed:
+- pivot status:
+- pivot publicScore:
+- active control:
+- score drift:
+- conclusion:
+
+3. Replay ingestion
+- new replay ids:
+- attribution:
+- duplicates:
+- failed parses:
+- gitignore status:
+
+4. Grok claim verification
+- 80623232:
+- 80622745:
+- 80622626:
+- disagreements:
+
+5. Empty-board postmortem
+- no_pokemon_in_play losses:
+- episodes:
+- backup basic availability:
+- emergency hook fired/missed:
+- midgame bench collapse:
+- conclusion:
+
+6. Hook effectiveness
+- Main backup hook:
+- search pivot:
+- discard preservation:
+- over-bench/tempo regression:
+- unresolved gaps:
+
+7. Opponent archetypes
+- archetypes:
+- evidence ids:
+- confirmed/provisional:
+- meta pool impact:
+
+8. Strategy decision
+- decision:
+- promote/control change:
+- next fixture/fix:
+- reason:
+
+9. Report site / ActiveGraph
+- site path:
+- markdown report:
+- events emitted:
+- event store:
+
+10. Next recommendation
+- one sentence only.

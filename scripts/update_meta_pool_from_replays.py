@@ -163,11 +163,11 @@ def build_meta_pool(archetypes_obj: dict, registry: dict,
         },
         "controls": {
             "active_control": {
-                "candidate_id": (ac.get("filename") or "").replace(".tar.gz", "")
+                "candidate_id": (_ac_file := ac.get("fileName") or ac.get("filename") or "").replace(".tar.gz", "")
                 or "unknown",
-                "submission_file": ac.get("filename"),
-                "live_public_score": ac.get("public_score"),
-                "status": ac.get("status"),
+                "submission_file": _ac_file or None,
+                "live_public_score": ac.get("publicScore", ac.get("public_score")),
+                "status": ac.get("status", "complete" if (ac.get("publicScore") or ac.get("public_score")) is not None else None),
                 "selection_rule":
                     "highest publicScore among complete non-error submissions",
                 "note": (

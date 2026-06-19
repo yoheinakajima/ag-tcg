@@ -1,4 +1,22 @@
-# ActiveGraph — Pokémon TCG Strategy Canvas (Pass 18 → 23)
+# ActiveGraph — Pokémon TCG Strategy Canvas (Pass 18 → 24)
+
+> **CURRENT AUTHORITATIVE STATE (Pass 24).** READ-ONLY post-mortem of the Pass-23
+> probe. A fresh read-only Kaggle status refresh shows the candidate
+> `league_water_anti_disruption_pivot_v1` is now the **highest live score @ 520.8**
+> (+157.8 over the prior control `submission.tar.gz` @ 363.0; `league_water_core_reference`
+> drifted 298.7 → 268.2). Ingested 3 new replays (80623232, 80622745, 80622626; raw
+> replays stay gitignored). **The targeted empty-board / no-Pokémon failure mode did NOT
+> recur in any game:** 80623232 lost with active=1 + bench=1 present (Mega Abomasnow ex
+> KO'd for a 3-prize swing vs **Fighting Mega Lucario ex / Hariyama**), and the 80622626
+> mirror loser **decked out at turn ~42 with a healthy bench=4**; 80622745 was a **win** vs
+> **Psychic Alakazam / Dudunsparce**. Grok's result/turn/archetype claims were correct
+> (3/3 each) but its **empty-board claims were WRONG in all 3** — trust replay, not Grok.
+> Hook-effectiveness (inferred from board trajectory): no illegal Mega-723-from-hand
+> benching; board developed in every game. **Decision: keep the pivot as live control**
+> (highest score AND fixed failure did not recur); new seams to investigate next pass are
+> anti-Fighting-ex tempo and grindy-mirror deckout. **No Kaggle upload/submit; no GitHub
+> push; no new candidates; root `main.py`/`deck.csv` byte-identical to baseline.** See
+> `data/reports/pass24_anti_disruption_pivot_replay_report.md`.
 
 > **CURRENT AUTHORITATIVE STATE (Pass 23).** Single **human-approved live Kaggle
 > calibration probe** of the Pass-22 candidate `league_water_anti_disruption_pivot_v1`,

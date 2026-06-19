@@ -1,6 +1,6 @@
 # Meta replay summary (Pass 10)
 
-- raw replays analyzed: **14**
+- raw replays analyzed: **19**
 - missing external replays: **metal_ex_zacian_ramp, water_kyogre_abomasnow_maxbelt**
 
 ## Episode 80374966
@@ -115,6 +115,46 @@
   - **seat 0** (Yohei Nakajima): won=False, first_attack_turn=5, evolved_mega_abomasnow=True, stuck_on_basic_snover=False, max_bench=2, decked_out=False (min_deck=31)
   - **seat 1** (Kazato Takahashi): won=True, first_attack_turn=6, evolved_mega_abomasnow=False, stuck_on_basic_snover=False, max_bench=5, decked_out=False (min_deck=34)
 
+## Episode 80594489
+- source: `data/meta_replays/raw/80594489.json`
+- agents: ['AnDy Trần', 'Yohei Nakajima']
+- self-mirror: **False**
+- steps: 63, rewards: [1, -1], winner seat: 0
+  - **seat 0** (AnDy Trần): won=True, first_attack_turn=5, evolved_mega_abomasnow=True, stuck_on_basic_snover=False, max_bench=0, decked_out=False (min_deck=31)
+  - **seat 1** (Yohei Nakajima): won=False, first_attack_turn=4, evolved_mega_abomasnow=True, stuck_on_basic_snover=False, max_bench=2, decked_out=False (min_deck=31)
+
+## Episode 80595014
+- source: `data/meta_replays/raw/80595014.json`
+- agents: ['Shota Yamazaki', 'Yohei Nakajima']
+- self-mirror: **False**
+- steps: 67, rewards: [1, -1], winner seat: 0
+  - **seat 0** (Shota Yamazaki): won=True, first_attack_turn=4, evolved_mega_abomasnow=False, stuck_on_basic_snover=True, max_bench=3, decked_out=False (min_deck=31)
+  - **seat 1** (Yohei Nakajima): won=False, first_attack_turn=5, evolved_mega_abomasnow=False, stuck_on_basic_snover=False, max_bench=0, decked_out=False (min_deck=32)
+
+## Episode 80622626
+- source: `data/meta_replays/raw/80622626.json`
+- agents: ['Yohei Nakajima', 'Yohei Nakajima']
+- self-mirror: **True**
+- steps: 126, rewards: [1, -1], winner seat: 0
+  - **seat 0** (Yohei Nakajima): won=True, first_attack_turn=5, evolved_mega_abomasnow=True, stuck_on_basic_snover=False, max_bench=4, decked_out=False (min_deck=27)
+  - **seat 1** (Yohei Nakajima): won=False, first_attack_turn=14, evolved_mega_abomasnow=True, stuck_on_basic_snover=False, max_bench=4, decked_out=True (min_deck=0)
+
+## Episode 80622745
+- source: `data/meta_replays/raw/80622745.json`
+- agents: ['mewworldorder', 'Yohei Nakajima']
+- self-mirror: **False**
+- steps: 110, rewards: [-1, 1], winner seat: 1
+  - **seat 0** (mewworldorder): won=False, first_attack_turn=7, evolved_mega_abomasnow=False, stuck_on_basic_snover=False, max_bench=5, decked_out=False (min_deck=3)
+  - **seat 1** (Yohei Nakajima): won=True, first_attack_turn=9, evolved_mega_abomasnow=True, stuck_on_basic_snover=False, max_bench=3, decked_out=False (min_deck=39)
+
+## Episode 80623232
+- source: `data/meta_replays/raw/80623232.json`
+- agents: ['ﾖﾈｸﾗ ﾃﾝｾｲne251225', 'Yohei Nakajima']
+- self-mirror: **False**
+- steps: 110, rewards: [1, -1], winner seat: 0
+  - **seat 0** (ﾖﾈｸﾗ ﾃﾝｾｲne251225): won=True, first_attack_turn=3, evolved_mega_abomasnow=False, stuck_on_basic_snover=False, max_bench=5, decked_out=False (min_deck=7)
+  - **seat 1** (Yohei Nakajima): won=False, first_attack_turn=None, evolved_mega_abomasnow=True, stuck_on_basic_snover=False, max_bench=2, decked_out=False (min_deck=32)
+
 ## Tempo failure signals (from real replay)
 - episode 80374966 seat 0: stuck on basic Snover (never evolved Mega Abomasnow ex)
 - episode 80374966 seat 0: decked out (deckCount reached 0) — over-thinning / passive long game
@@ -134,6 +174,8 @@
 - episode 80592173 seat 0: stuck on basic Snover (never evolved Mega Abomasnow ex)
 - episode 80592173 seat 1: decked out (deckCount reached 0) — over-thinning / passive long game
 - episode 80592831 seat 0: stuck on basic Snover (never evolved Mega Abomasnow ex)
+- episode 80595014 seat 0: stuck on basic Snover (never evolved Mega Abomasnow ex)
+- episode 80622626 seat 1: decked out (deckCount reached 0) — over-thinning / passive long game
 
 ## Archetypes
 - **water_kyogre_abomasnow_mirror_passive** — confirmed_from_replay (card_ids: confirmed)

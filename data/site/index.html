@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph Strategy Lab — Pass 23</title>
+<title>ActiveGraph Strategy Lab — Pass 24</title>
 <style>
   :root { --bg:#0f1420; --panel:#171f2e; --ink:#e6edf6; --muted:#9bb0c9;
           --accent:#4cc4ff; --warn:#ffcf5c; --ok:#6ee7a0; --bad:#ff7b7b;
@@ -35,10 +35,35 @@
 <header>
   <div class="wrap" style="padding-bottom:0">
     <h1>ActiveGraph Strategy Lab</h1>
-    <div class="sub">Pass 23 — Water anti-disruption Kaggle calibration probe (single human-approved upload, pending)</div>
+    <div class="sub">Pass 24 — Anti-disruption pivot score @ 520.8 (new live best) + replay post-mortem (READ-ONLY)</div>
   </div>
 </header>
 <div class="wrap">
+
+  <div class="note" style="border-left-color:var(--ok)">
+    <strong>PASS 24 — ANTI-DISRUPTION PIVOT SCORE + REPLAY POST-MORTEM (READ-ONLY, AUTHORITATIVE).</strong>
+    A fresh read-only Kaggle status refresh shows the Pass-22 candidate
+    <code>league_water_anti_disruption_pivot_v1</code> is now the <strong>highest live score @ 520.8</strong>
+    (+157.8 over the prior control <code>submission.tar.gz</code> @ 363.0; <code>league_water_core_reference</code>
+    drifted 298.7 → 268.2 — recompute the control each pass). Ingested 3 new replays
+    (<code>80623232</code>, <code>80622745</code>, <code>80622626</code>; raw replays gitignored).
+    <strong>The targeted empty-board / no-Pokémon failure mode did NOT recur in any game:</strong> 80623232
+    lost with active=1 + bench=1 present (Mega Abomasnow ex KO'd for a 3-prize swing vs
+    <strong>Fighting Mega Lucario ex / Hariyama</strong>); the 80622626 mirror loser <strong>decked out at
+    turn ~42 with a healthy bench=4</strong>; 80622745 was a <strong>win</strong> vs
+    <strong>Psychic Alakazam / Dudunsparce</strong>. Grok's result/turn/archetype claims were correct (3/3
+    each) but its <strong>empty-board claims were WRONG in all 3</strong> — trust replay state, not Grok.
+    <strong>Decision: keep the pivot as live control</strong> (highest score AND fixed failure did not recur);
+    next-pass seams are anti-Fighting-ex tempo and grindy-mirror deckout. <strong>No Kaggle upload/submit;
+    no GitHub push; no new candidates; root files byte-identical to baseline.</strong>
+  </div>
+
+  <div class="grid">
+    <div class="card"><div class="sub">Live best score (Pass 24)</div><div class="big ok">520.8</div></div>
+    <div class="card"><div class="sub">Δ vs prior control (363.0)</div><div class="big ok">+157.8</div></div>
+    <div class="card"><div class="sub">Empty-board failure recurred</div><div class="big ok">No (0/3)</div></div>
+    <div class="card"><div class="sub">Grok empty-board claims</div><div class="big bad">Wrong 0/3</div></div>
+  </div>
 
   <div class="note" style="border-left-color:var(--ok)">
     <strong>PASS 23 — WATER ANTI-DISRUPTION KAGGLE CALIBRATION PROBE (HUMAN-APPROVED, SINGLE UPLOAD).</strong>

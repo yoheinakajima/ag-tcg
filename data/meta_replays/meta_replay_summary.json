@@ -1,6 +1,6 @@
 {
   "schema": "activegraph.meta.replay_summary/v1",
-  "replays_analyzed": 14,
+  "replays_analyzed": 19,
   "missing_replays": [
     "metal_ex_zacian_ramp",
     "water_kyogre_abomasnow_maxbelt"
@@ -3490,6 +3490,976 @@
           ]
         }
       }
+    },
+    {
+      "episode": 80594489,
+      "source": "data/meta_replays/raw/80594489.json",
+      "agents": [
+        "AnDy Tr\u1ea7n",
+        "Yohei Nakajima"
+      ],
+      "is_self_mirror": false,
+      "num_steps": 63,
+      "rewards": [
+        1,
+        -1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "winner_seat": 0,
+      "seats": {
+        "0": {
+          "agent": "AnDy Tr\u1ea7n",
+          "deck_count": 60,
+          "deck_unique": 9,
+          "deck_counts": {
+            "3": 35,
+            "721": 2,
+            "722": 4,
+            "723": 4,
+            "1145": 4,
+            "1158": 1,
+            "1205": 2,
+            "1227": 4,
+            "1235": 4
+          },
+          "deck_all_ids_confirmed": false,
+          "final_reward": 1,
+          "won": true,
+          "first_attack_turn": 5,
+          "evolved_mega_abomasnow": true,
+          "used_kyogre": false,
+          "used_snover": true,
+          "stuck_on_basic_snover": false,
+          "max_bench_size": 0,
+          "benched_backup": false,
+          "min_deck_count": 31,
+          "decked_out": false,
+          "turns_observed": 13,
+          "deckcount_trajectory": [
+            {
+              "turn": 0,
+              "deckCount": 60
+            },
+            {
+              "turn": 1,
+              "deckCount": 46
+            },
+            {
+              "turn": 3,
+              "deckCount": 45
+            },
+            {
+              "turn": 5,
+              "deckCount": 44
+            },
+            {
+              "turn": 7,
+              "deckCount": 41
+            },
+            {
+              "turn": 9,
+              "deckCount": 40
+            },
+            {
+              "turn": 11,
+              "deckCount": 33
+            },
+            {
+              "turn": 13,
+              "deckCount": 31
+            }
+          ]
+        },
+        "1": {
+          "agent": "Yohei Nakajima",
+          "deck_count": 60,
+          "deck_unique": 11,
+          "deck_counts": {
+            "3": 29,
+            "721": 4,
+            "722": 4,
+            "723": 4,
+            "1092": 1,
+            "1121": 4,
+            "1145": 2,
+            "1163": 2,
+            "1219": 4,
+            "1227": 4,
+            "1262": 2
+          },
+          "deck_all_ids_confirmed": true,
+          "final_reward": -1,
+          "won": false,
+          "first_attack_turn": 4,
+          "evolved_mega_abomasnow": true,
+          "used_kyogre": true,
+          "used_snover": true,
+          "stuck_on_basic_snover": false,
+          "max_bench_size": 2,
+          "benched_backup": true,
+          "min_deck_count": 31,
+          "decked_out": false,
+          "turns_observed": 12,
+          "deckcount_trajectory": [
+            {
+              "turn": 0,
+              "deckCount": 53
+            },
+            {
+              "turn": 2,
+              "deckCount": 46
+            },
+            {
+              "turn": 4,
+              "deckCount": 40
+            },
+            {
+              "turn": 6,
+              "deckCount": 39
+            },
+            {
+              "turn": 7,
+              "deckCount": 39
+            },
+            {
+              "turn": 8,
+              "deckCount": 38
+            },
+            {
+              "turn": 10,
+              "deckCount": 32
+            },
+            {
+              "turn": 11,
+              "deckCount": 32
+            },
+            {
+              "turn": 12,
+              "deckCount": 31
+            }
+          ]
+        }
+      }
+    },
+    {
+      "episode": 80595014,
+      "source": "data/meta_replays/raw/80595014.json",
+      "agents": [
+        "Shota Yamazaki",
+        "Yohei Nakajima"
+      ],
+      "is_self_mirror": false,
+      "num_steps": 67,
+      "rewards": [
+        1,
+        -1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "winner_seat": 0,
+      "seats": {
+        "0": {
+          "agent": "Shota Yamazaki",
+          "deck_count": 60,
+          "deck_unique": 9,
+          "deck_counts": {
+            "3": 35,
+            "721": 2,
+            "722": 4,
+            "723": 4,
+            "1145": 4,
+            "1158": 1,
+            "1205": 2,
+            "1227": 4,
+            "1235": 4
+          },
+          "deck_all_ids_confirmed": false,
+          "final_reward": 1,
+          "won": true,
+          "first_attack_turn": 4,
+          "evolved_mega_abomasnow": false,
+          "used_kyogre": true,
+          "used_snover": true,
+          "stuck_on_basic_snover": true,
+          "max_bench_size": 3,
+          "benched_backup": true,
+          "min_deck_count": 31,
+          "decked_out": false,
+          "turns_observed": 30,
+          "deckcount_trajectory": [
+            {
+              "turn": 0,
+              "deckCount": 60
+            },
+            {
+              "turn": 2,
+              "deckCount": 46
+            },
+            {
+              "turn": 4,
+              "deckCount": 45
+            },
+            {
+              "turn": 6,
+              "deckCount": 44
+            },
+            {
+              "turn": 8,
+              "deckCount": 42
+            },
+            {
+              "turn": 10,
+              "deckCount": 41
+            },
+            {
+              "turn": 12,
+              "deckCount": 40
+            },
+            {
+              "turn": 14,
+              "deckCount": 39
+            },
+            {
+              "turn": 16,
+              "deckCount": 38
+            },
+            {
+              "turn": 18,
+              "deckCount": 37
+            },
+            {
+              "turn": 20,
+              "deckCount": 36
+            },
+            {
+              "turn": 22,
+              "deckCount": 35
+            },
+            {
+              "turn": 24,
+              "deckCount": 34
+            },
+            {
+              "turn": 26,
+              "deckCount": 33
+            },
+            {
+              "turn": 28,
+              "deckCount": 32
+            },
+            {
+              "turn": 30,
+              "deckCount": 31
+            }
+          ]
+        },
+        "1": {
+          "agent": "Yohei Nakajima",
+          "deck_count": 60,
+          "deck_unique": 11,
+          "deck_counts": {
+            "3": 29,
+            "721": 4,
+            "722": 4,
+            "723": 4,
+            "1092": 1,
+            "1121": 4,
+            "1145": 2,
+            "1163": 2,
+            "1219": 4,
+            "1227": 4,
+            "1262": 2
+          },
+          "deck_all_ids_confirmed": true,
+          "final_reward": -1,
+          "won": false,
+          "first_attack_turn": 5,
+          "evolved_mega_abomasnow": false,
+          "used_kyogre": true,
+          "used_snover": false,
+          "stuck_on_basic_snover": false,
+          "max_bench_size": 0,
+          "benched_backup": false,
+          "min_deck_count": 32,
+          "decked_out": false,
+          "turns_observed": 29,
+          "deckcount_trajectory": [
+            {
+              "turn": 0,
+              "deckCount": 53
+            },
+            {
+              "turn": 1,
+              "deckCount": 46
+            },
+            {
+              "turn": 3,
+              "deckCount": 45
+            },
+            {
+              "turn": 5,
+              "deckCount": 44
+            },
+            {
+              "turn": 7,
+              "deckCount": 43
+            },
+            {
+              "turn": 9,
+              "deckCount": 42
+            },
+            {
+              "turn": 11,
+              "deckCount": 41
+            },
+            {
+              "turn": 13,
+              "deckCount": 40
+            },
+            {
+              "turn": 15,
+              "deckCount": 39
+            },
+            {
+              "turn": 17,
+              "deckCount": 38
+            },
+            {
+              "turn": 19,
+              "deckCount": 37
+            },
+            {
+              "turn": 21,
+              "deckCount": 36
+            },
+            {
+              "turn": 23,
+              "deckCount": 35
+            },
+            {
+              "turn": 25,
+              "deckCount": 34
+            },
+            {
+              "turn": 27,
+              "deckCount": 33
+            },
+            {
+              "turn": 29,
+              "deckCount": 32
+            }
+          ]
+        }
+      }
+    },
+    {
+      "episode": 80622626,
+      "source": "data/meta_replays/raw/80622626.json",
+      "agents": [
+        "Yohei Nakajima",
+        "Yohei Nakajima"
+      ],
+      "is_self_mirror": true,
+      "num_steps": 126,
+      "rewards": [
+        1,
+        -1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "winner_seat": 0,
+      "seats": {
+        "0": {
+          "agent": "Yohei Nakajima",
+          "deck_count": 60,
+          "deck_unique": 11,
+          "deck_counts": {
+            "3": 29,
+            "721": 4,
+            "722": 4,
+            "723": 4,
+            "1092": 1,
+            "1121": 4,
+            "1145": 2,
+            "1163": 2,
+            "1219": 4,
+            "1227": 4,
+            "1262": 2
+          },
+          "deck_all_ids_confirmed": true,
+          "final_reward": 1,
+          "won": true,
+          "first_attack_turn": 5,
+          "evolved_mega_abomasnow": true,
+          "used_kyogre": true,
+          "used_snover": true,
+          "stuck_on_basic_snover": false,
+          "max_bench_size": 4,
+          "benched_backup": true,
+          "min_deck_count": 27,
+          "decked_out": false,
+          "turns_observed": 43,
+          "deckcount_trajectory": [
+            {
+              "turn": 0,
+              "deckCount": 60
+            },
+            {
+              "turn": 1,
+              "deckCount": 46
+            },
+            {
+              "turn": 3,
+              "deckCount": 44
+            },
+            {
+              "turn": 5,
+              "deckCount": 43
+            },
+            {
+              "turn": 7,
+              "deckCount": 42
+            },
+            {
+              "turn": 9,
+              "deckCount": 41
+            },
+            {
+              "turn": 11,
+              "deckCount": 40
+            },
+            {
+              "turn": 13,
+              "deckCount": 39
+            },
+            {
+              "turn": 15,
+              "deckCount": 38
+            },
+            {
+              "turn": 17,
+              "deckCount": 37
+            },
+            {
+              "turn": 19,
+              "deckCount": 36
+            },
+            {
+              "turn": 21,
+              "deckCount": 35
+            },
+            {
+              "turn": 23,
+              "deckCount": 34
+            },
+            {
+              "turn": 25,
+              "deckCount": 33
+            },
+            {
+              "turn": 27,
+              "deckCount": 32
+            },
+            {
+              "turn": 29,
+              "deckCount": 31
+            },
+            {
+              "turn": 31,
+              "deckCount": 30
+            },
+            {
+              "turn": 33,
+              "deckCount": 29
+            },
+            {
+              "turn": 35,
+              "deckCount": 28
+            },
+            {
+              "turn": 36,
+              "deckCount": 28
+            },
+            {
+              "turn": 37,
+              "deckCount": 27
+            },
+            {
+              "turn": 38,
+              "deckCount": 38
+            },
+            {
+              "turn": 39,
+              "deckCount": 37
+            },
+            {
+              "turn": 40,
+              "deckCount": 36
+            },
+            {
+              "turn": 41,
+              "deckCount": 35
+            },
+            {
+              "turn": 43,
+              "deckCount": 40
+            }
+          ]
+        },
+        "1": {
+          "agent": "Yohei Nakajima",
+          "deck_count": 60,
+          "deck_unique": 11,
+          "deck_counts": {
+            "3": 29,
+            "721": 4,
+            "722": 4,
+            "723": 4,
+            "1092": 1,
+            "1121": 4,
+            "1145": 2,
+            "1163": 2,
+            "1219": 4,
+            "1227": 4,
+            "1262": 2
+          },
+          "deck_all_ids_confirmed": true,
+          "final_reward": -1,
+          "won": false,
+          "first_attack_turn": 14,
+          "evolved_mega_abomasnow": true,
+          "used_kyogre": true,
+          "used_snover": true,
+          "stuck_on_basic_snover": false,
+          "max_bench_size": 4,
+          "benched_backup": true,
+          "min_deck_count": 0,
+          "decked_out": true,
+          "turns_observed": 42,
+          "deckcount_trajectory": [
+            {
+              "turn": 0,
+              "deckCount": 53
+            },
+            {
+              "turn": 2,
+              "deckCount": 46
+            },
+            {
+              "turn": 4,
+              "deckCount": 37
+            },
+            {
+              "turn": 6,
+              "deckCount": 36
+            },
+            {
+              "turn": 8,
+              "deckCount": 34
+            },
+            {
+              "turn": 10,
+              "deckCount": 32
+            },
+            {
+              "turn": 12,
+              "deckCount": 23
+            },
+            {
+              "turn": 14,
+              "deckCount": 23
+            },
+            {
+              "turn": 16,
+              "deckCount": 22
+            },
+            {
+              "turn": 18,
+              "deckCount": 21
+            },
+            {
+              "turn": 20,
+              "deckCount": 20
+            },
+            {
+              "turn": 22,
+              "deckCount": 19
+            },
+            {
+              "turn": 24,
+              "deckCount": 18
+            },
+            {
+              "turn": 26,
+              "deckCount": 17
+            },
+            {
+              "turn": 28,
+              "deckCount": 16
+            },
+            {
+              "turn": 30,
+              "deckCount": 15
+            },
+            {
+              "turn": 32,
+              "deckCount": 14
+            },
+            {
+              "turn": 34,
+              "deckCount": 13
+            },
+            {
+              "turn": 35,
+              "deckCount": 13
+            },
+            {
+              "turn": 36,
+              "deckCount": 12
+            },
+            {
+              "turn": 38,
+              "deckCount": 14
+            },
+            {
+              "turn": 40,
+              "deckCount": 7
+            },
+            {
+              "turn": 42,
+              "deckCount": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "episode": 80622745,
+      "source": "data/meta_replays/raw/80622745.json",
+      "agents": [
+        "mewworldorder",
+        "Yohei Nakajima"
+      ],
+      "is_self_mirror": false,
+      "num_steps": 110,
+      "rewards": [
+        -1,
+        1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "winner_seat": 1,
+      "seats": {
+        "0": {
+          "agent": "mewworldorder",
+          "deck_count": 60,
+          "deck_unique": 20,
+          "deck_counts": {
+            "5": 1,
+            "12": 1,
+            "19": 4,
+            "66": 4,
+            "140": 1,
+            "305": 4,
+            "741": 4,
+            "742": 4,
+            "743": 4,
+            "1079": 4,
+            "1081": 3,
+            "1086": 4,
+            "1097": 1,
+            "1129": 1,
+            "1152": 4,
+            "1156": 3,
+            "1182": 3,
+            "1184": 2,
+            "1225": 4,
+            "1231": 4
+          },
+          "deck_all_ids_confirmed": false,
+          "final_reward": -1,
+          "won": false,
+          "first_attack_turn": 7,
+          "evolved_mega_abomasnow": false,
+          "used_kyogre": false,
+          "used_snover": false,
+          "stuck_on_basic_snover": false,
+          "max_bench_size": 5,
+          "benched_backup": true,
+          "min_deck_count": 3,
+          "decked_out": false,
+          "turns_observed": 11,
+          "deckcount_trajectory": [
+            {
+              "turn": 0,
+              "deckCount": 60
+            },
+            {
+              "turn": 1,
+              "deckCount": 46
+            },
+            {
+              "turn": 3,
+              "deckCount": 43
+            },
+            {
+              "turn": 5,
+              "deckCount": 37
+            },
+            {
+              "turn": 7,
+              "deckCount": 26
+            },
+            {
+              "turn": 9,
+              "deckCount": 14
+            },
+            {
+              "turn": 11,
+              "deckCount": 3
+            }
+          ]
+        },
+        "1": {
+          "agent": "Yohei Nakajima",
+          "deck_count": 60,
+          "deck_unique": 11,
+          "deck_counts": {
+            "3": 29,
+            "721": 4,
+            "722": 4,
+            "723": 4,
+            "1092": 1,
+            "1121": 4,
+            "1145": 2,
+            "1163": 2,
+            "1219": 4,
+            "1227": 4,
+            "1262": 2
+          },
+          "deck_all_ids_confirmed": true,
+          "final_reward": 1,
+          "won": true,
+          "first_attack_turn": 9,
+          "evolved_mega_abomasnow": true,
+          "used_kyogre": true,
+          "used_snover": true,
+          "stuck_on_basic_snover": false,
+          "max_bench_size": 3,
+          "benched_backup": true,
+          "min_deck_count": 39,
+          "decked_out": false,
+          "turns_observed": 12,
+          "deckcount_trajectory": [
+            {
+              "turn": 0,
+              "deckCount": 53
+            },
+            {
+              "turn": 2,
+              "deckCount": 46
+            },
+            {
+              "turn": 4,
+              "deckCount": 42
+            },
+            {
+              "turn": 6,
+              "deckCount": 41
+            },
+            {
+              "turn": 7,
+              "deckCount": 41
+            },
+            {
+              "turn": 8,
+              "deckCount": 40
+            },
+            {
+              "turn": 9,
+              "deckCount": 40
+            },
+            {
+              "turn": 10,
+              "deckCount": 39
+            },
+            {
+              "turn": 11,
+              "deckCount": 44
+            },
+            {
+              "turn": 12,
+              "deckCount": 43
+            }
+          ]
+        }
+      }
+    },
+    {
+      "episode": 80623232,
+      "source": "data/meta_replays/raw/80623232.json",
+      "agents": [
+        "\uff96\uff88\uff78\uff97 \uff83\uff9d\uff7e\uff72ne251225",
+        "Yohei Nakajima"
+      ],
+      "is_self_mirror": false,
+      "num_steps": 110,
+      "rewards": [
+        1,
+        -1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "winner_seat": 0,
+      "seats": {
+        "0": {
+          "agent": "\uff96\uff88\uff78\uff97 \uff83\uff9d\uff7e\uff72ne251225",
+          "deck_count": 60,
+          "deck_unique": 17,
+          "deck_counts": {
+            "6": 13,
+            "673": 2,
+            "674": 2,
+            "675": 2,
+            "676": 3,
+            "677": 3,
+            "678": 4,
+            "1102": 4,
+            "1123": 2,
+            "1141": 4,
+            "1142": 4,
+            "1152": 4,
+            "1159": 1,
+            "1182": 2,
+            "1192": 4,
+            "1227": 4,
+            "1252": 2
+          },
+          "deck_all_ids_confirmed": false,
+          "final_reward": 1,
+          "won": true,
+          "first_attack_turn": 3,
+          "evolved_mega_abomasnow": false,
+          "used_kyogre": false,
+          "used_snover": false,
+          "stuck_on_basic_snover": false,
+          "max_bench_size": 5,
+          "benched_backup": true,
+          "min_deck_count": 7,
+          "decked_out": false,
+          "turns_observed": 11,
+          "deckcount_trajectory": [
+            {
+              "turn": 0,
+              "deckCount": 60
+            },
+            {
+              "turn": 1,
+              "deckCount": 45
+            },
+            {
+              "turn": 3,
+              "deckCount": 34
+            },
+            {
+              "turn": 5,
+              "deckCount": 24
+            },
+            {
+              "turn": 7,
+              "deckCount": 20
+            },
+            {
+              "turn": 9,
+              "deckCount": 11
+            },
+            {
+              "turn": 11,
+              "deckCount": 7
+            }
+          ]
+        },
+        "1": {
+          "agent": "Yohei Nakajima",
+          "deck_count": 60,
+          "deck_unique": 11,
+          "deck_counts": {
+            "3": 29,
+            "721": 4,
+            "722": 4,
+            "723": 4,
+            "1092": 1,
+            "1121": 4,
+            "1145": 2,
+            "1163": 2,
+            "1219": 4,
+            "1227": 4,
+            "1262": 2
+          },
+          "deck_all_ids_confirmed": true,
+          "final_reward": -1,
+          "won": false,
+          "first_attack_turn": null,
+          "evolved_mega_abomasnow": true,
+          "used_kyogre": true,
+          "used_snover": true,
+          "stuck_on_basic_snover": false,
+          "max_bench_size": 2,
+          "benched_backup": true,
+          "min_deck_count": 32,
+          "decked_out": false,
+          "turns_observed": 10,
+          "deckcount_trajectory": [
+            {
+              "turn": 0,
+              "deckCount": 53
+            },
+            {
+              "turn": 2,
+              "deckCount": 46
+            },
+            {
+              "turn": 3,
+              "deckCount": 38
+            },
+            {
+              "turn": 4,
+              "deckCount": 37
+            },
+            {
+              "turn": 5,
+              "deckCount": 35
+            },
+            {
+              "turn": 6,
+              "deckCount": 34
+            },
+            {
+              "turn": 8,
+              "deckCount": 33
+            },
+            {
+              "turn": 9,
+              "deckCount": 33
+            },
+            {
+              "turn": 10,
+              "deckCount": 32
+            }
+          ]
+        }
+      }
     }
   ],
   "tempo_signals": [
@@ -3510,7 +4480,9 @@
     "episode 80591511 seat 1: stuck on basic Snover (never evolved Mega Abomasnow ex)",
     "episode 80592173 seat 0: stuck on basic Snover (never evolved Mega Abomasnow ex)",
     "episode 80592173 seat 1: decked out (deckCount reached 0) \u2014 over-thinning / passive long game",
-    "episode 80592831 seat 0: stuck on basic Snover (never evolved Mega Abomasnow ex)"
+    "episode 80592831 seat 0: stuck on basic Snover (never evolved Mega Abomasnow ex)",
+    "episode 80595014 seat 0: stuck on basic Snover (never evolved Mega Abomasnow ex)",
+    "episode 80622626 seat 1: decked out (deckCount reached 0) \u2014 over-thinning / passive long game"
   ],
   "archetypes": {
     "schema": "activegraph.meta.archetypes/v1",

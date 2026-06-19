@@ -120,6 +120,7 @@ def _per_turn_views(replay, seat):
             "turn": turn,
             "active_ids": active,
             "active_count": len(active),
+            "bench_ids": bench,
             "bench_count": len(bench),
             "bench_empty": len(bench) == 0,
             "hand_ids": hand,
@@ -132,18 +133,23 @@ def _per_turn_views(replay, seat):
     return dict(sorted(views.items()))
 
 
-def analyze_episode(ep, path):
+def analyze_episode(ep, path, force_seat=None):
     replay = load_replay(path)
     info = replay.info
     agents = [a.get("Name") for a in info.get("Agents", []) if isinstance(a, dict)]
     our_seats = [i for i, a in enumerate(agents) if a == OUR_AGENT]
     is_mirror = len(our_seats) == 2
-    if not our_seats:
+    if force_seat is None and not our_seats:
         return None
-    seat = our_seats[0]
+    seat = force_seat if force_seat is not None else our_seats[0]
 
     reward = replay.rewards[seat] if seat < len(replay.rewards) else None
-    result = "self_mirror" if is_mirror else _classify(reward)
+    # When a specific seat is requested (e.g. the losing seat in a self-mirror),
+    # classify by that seat's actual reward so loss-condition logic runs.
+    if force_seat is not None:
+        result = _classify(reward)
+    else:
+        result = "self_mirror" if is_mirror else _classify(reward)
     status = replay.statuses[seat] if seat < len(replay.statuses) else None
 
     final_obs = replay.final_observation(seat)
@@ -296,7 +302,193 @@ def analyze_episode(ep, path):
     }
 
 
+PASS24_EPISODES = ["80623232", "80622745", "80622626"]
+P24_OUT_JSON = REPO / "data" / "experiments" / "pass24_empty_board_postmortem.json"
+P24_OUT_MD = REPO / "data" / "experiments" / "pass24_empty_board_postmortem.md"
+P24_OUT_JSONL = REPO / "data" / "experiments" / "pass24_empty_board_windows.jsonl"
+
+
+def _mega_benched_from_hand(views):
+    """True only if Mega Abomasnow ex (723) appears on the bench in a game where a
+    Snover (722) was never benched first (i.e. it would have to be benched directly
+    from hand — illegal for an evolution payoff). 723 on bench after a benched Snover
+    is legitimate evolution and is NOT flagged."""
+    snover_seen = False
+    for v in views:
+        if SNOVER in v.get("bench_ids", []):
+            snover_seen = True
+        if MEGA_ABOMASNOW in v.get("bench_ids", []) and not snover_seen:
+            return True
+    return False
+
+
+def _pass24_extra_signals(replay, seat, base):
+    """Hook-firing & midgame-collapse signals inferred from board trajectory only."""
+    views = list(_per_turn_views(replay, seat).values())
+    max_bench = max((v["bench_count"] for v in views), default=0)
+    final_bench_empty = base.get("final_bench_empty")
+    result = base.get("result")
+    # Did the bench ever look healthy (>=2) after setup, then collapse to empty at loss?
+    healthy_then_collapsed = (
+        max_bench >= 2 and final_bench_empty and result == "loss"
+    )
+    # Inferred emergency-backup hook outcomes (replay shows board, not agent logic):
+    #  - missed: held a benchable Basic while bench empty AND bench still empty later
+    #  - success: bench was empty + benchable in hand on turn T, then a LATER turn
+    #             shows a benchable Basic actually on the bench
+    hook_missed = base.get("failed_to_play_available_backup_basic", False)
+    hook_success = False
+    held_turns = [w["turn"] for w in base.get("backup_in_hand_windows", [])]
+    # success (inferred): after a turn where the bench was empty while a benchable
+    # Basic was held, a LATER turn shows the bench actually populated.
+    for ht in held_turns:
+        for v in views:
+            if v["turn"] > ht and v["bench_count"] >= 1 and not v["bench_empty"]:
+                hook_success = True
+                break
+        if hook_success:
+            break
+    # turn the bench first became empty after turn 2 (collapse onset)
+    collapse_turn = next((v["turn"] for v in views if v["turn"] > 2 and v["bench_empty"]), None)
+    # peak bench turn
+    peak_turn = None
+    for v in views:
+        if v["bench_count"] == max_bench:
+            peak_turn = v["turn"]
+            break
+    extra = {
+        "max_bench_count": max_bench,
+        "bench_healthy_after_setup": max_bench >= 2,
+        "bench_collapsed_after_initial_success": healthy_then_collapsed,
+        "emergency_backup_hook_missed_inferred": hook_missed,
+        "emergency_backup_hook_success_inferred": hook_success,
+        "hook_fired_too_late_inferred": (hook_success and final_bench_empty and result == "loss"),
+        "collapse_onset_turn": collapse_turn,
+        "bench_peak_turn": peak_turn,
+        # Derived (not hardcoded): 723 is benched-from-hand only if it appears on the
+        # bench in a game where Snover (722) was never benched first. 723 reaching the
+        # bench via evolution of a benched Snover is legitimate, not "treated benchable".
+        "mega_723_treated_as_benchable_anywhere": _mega_benched_from_hand(views),
+    }
+    tags = list(base.get("tags", []))
+    if extra["bench_collapsed_after_initial_success"]:
+        tags.append("bench_collapsed_after_initial_success")
+    if extra["emergency_backup_hook_missed_inferred"]:
+        tags.append("emergency_backup_hook_missed")
+    if extra["emergency_backup_hook_success_inferred"]:
+        tags.append("emergency_backup_hook_success")
+    if result == "loss" and base.get("loss_condition") == "no_pokemon_in_play":
+        tags.append("board_safety_not_fixed")
+    elif result == "win" or (result == "loss" and base.get("loss_condition") != "no_pokemon_in_play"):
+        tags.append("board_safety_fixed")
+    extra["tags"] = sorted(set(tags))
+    return extra
+
+
+def run_pass24():
+    """Pass 24 empty-board post-mortem for the 3 newly ingested replays.
+
+    For non-mirror games we analyze our (pivot) seat; for the self-mirror we
+    analyze the LOSING seat (the empty-board question is about whoever lost).
+    """
+    records = []
+    for ep in PASS24_EPISODES:
+        path = RAW_DIR / f"{ep}.json"
+        if not path.exists():
+            records.append({"episode": ep, "present": False,
+                            "note": "ABSENT — recorded as missing input, not fabricated"})
+            continue
+        replay = load_replay(path)
+        agents = [a.get("Name") for a in replay.info.get("Agents", []) if isinstance(a, dict)]
+        is_mirror = sum(1 for a in agents if a == OUR_AGENT) == 2
+        rewards = replay.rewards
+        if is_mirror:
+            # analyze the losing seat
+            seat = next((i for i, r in enumerate(rewards) if r is not None and r < 0), 0)
+        else:
+            seat = next((i for i, a in enumerate(agents) if a == OUR_AGENT), 0)
+        base = analyze_episode(ep, path, force_seat=seat)
+        extra = _pass24_extra_signals(replay, seat, base)
+        base.update(extra)
+        base["analyzed_seat"] = seat
+        base["is_self_mirror"] = is_mirror
+        records.append(base)
+
+    no_pokemon = [r for r in records if r.get("loss_condition") == "no_pokemon_in_play"]
+    tag_counts = Counter()
+    for r in records:
+        for t in r.get("tags", []):
+            tag_counts[t] += 1
+
+    out = {
+        "schema": "activegraph.pass24.empty_board_postmortem/v1",
+        "pass": 24, "part": "G", "no_upload": True,
+        "candidate_id": "league_water_anti_disruption_pivot_v1",
+        "episodes": PASS24_EPISODES,
+        "no_pokemon_in_play_losses": [r["episode"] for r in no_pokemon],
+        "tag_counts": dict(tag_counts.most_common()),
+        "caveat": "Replay observations show board state, not agent internals; hook fired/missed is INFERRED from board trajectory.",
+        "per_game": records,
+    }
+    P24_OUT_JSON.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
+    with P24_OUT_JSONL.open("w", encoding="utf-8") as f:
+        for r in records:
+            if not r.get("present", True):
+                continue
+            f.write(json.dumps({
+                "episode_id": r["episode"], "analyzed_seat": r.get("analyzed_seat"),
+                "result": r.get("result"), "loss_condition": r.get("loss_condition"),
+                "final_active_is": r.get("final_active_is"),
+                "final_bench_count": r.get("final_bench_count"),
+                "final_bench_empty": r.get("final_bench_empty"),
+                "max_bench_count": r.get("max_bench_count"),
+                "bench_collapsed_after_initial_success": r.get("bench_collapsed_after_initial_success"),
+                "emergency_backup_hook_missed_inferred": r.get("emergency_backup_hook_missed_inferred"),
+                "emergency_backup_hook_success_inferred": r.get("emergency_backup_hook_success_inferred"),
+                "no_pokemon_loss_root_cause": r.get("no_pokemon_loss_root_cause"),
+                "tags": r.get("tags"),
+            }) + "\n")
+    L = ["# Pass 24 — Empty-board / no-backup post-mortem (Part G)", "",
+         "> Read-only. Board state is ground truth; hook fired/missed is INFERRED from "
+         "the board trajectory (replay does not expose agent internals). "
+         "Benchable Basic = Kyogre 721 / Snover 722; Mega Abomasnow ex 723 is NOT benchable.", "",
+         f"- candidate: `league_water_anti_disruption_pivot_v1`",
+         f"- no-Pokémon-in-play losses among new replays: **{len(no_pokemon)}** "
+         f"({', '.join(out['no_pokemon_in_play_losses']) or 'none'})", "",
+         "## Tag counts"]
+    for t, n in tag_counts.most_common():
+        L.append(f"- `{t}`: {n}")
+    L.append("")
+    L.append("## Per-game")
+    for r in records:
+        if not r.get("present", True):
+            L.append(f"\n### {r['episode']} — ABSENT (recorded missing, not fabricated)")
+            continue
+        L.append(f"\n### {r['episode']} — seat {r.get('analyzed_seat')} {str(r.get('result')).upper()} "
+                 f"({r.get('loss_condition')})  {'[mirror]' if r.get('is_self_mirror') else ''}")
+        L.append(f"- final active: {r.get('final_active_is')}; bench={r.get('final_bench_count')} "
+                 f"(empty={r.get('final_bench_empty')}); max bench this game={r.get('max_bench_count')}")
+        L.append(f"- prizes left: ours={r.get('our_prize_left')} opp={r.get('opp_prize_left')}; "
+                 f"deck={r.get('final_deck_count')}; steps={r.get('num_steps')}")
+        L.append(f"- bench_healthy_then_collapsed={r.get('bench_collapsed_after_initial_success')} "
+                 f"(collapse onset turn {r.get('collapse_onset_turn')}, peak bench turn {r.get('bench_peak_turn')})")
+        L.append(f"- emergency hook (inferred): missed={r.get('emergency_backup_hook_missed_inferred')}, "
+                 f"success={r.get('emergency_backup_hook_success_inferred')}, "
+                 f"too_late={r.get('hook_fired_too_late_inferred')}")
+        L.append(f"- mega 723 treated as benchable anywhere: {r.get('mega_723_treated_as_benchable_anywhere')}")
+        L.append(f"- **root cause: `{r.get('no_pokemon_loss_root_cause')}`** | tags: "
+                 f"{', '.join(r.get('tags', [])) or 'none'}")
+    P24_OUT_MD.write_text("\n".join(L) + "\n", encoding="utf-8")
+    for r in records:
+        print(f"{r['episode']}: seat={r.get('analyzed_seat')} {r.get('result')} "
+              f"loss_cond={r.get('loss_condition')} max_bench={r.get('max_bench_count')} "
+              f"collapse={r.get('bench_collapsed_after_initial_success')}")
+    return 0
+
+
 def main():
+    if "--pass24" in sys.argv:
+        return run_pass24()
     raw_paths = sorted(RAW_DIR.glob("*.json"))
     per_game = []
     for p in raw_paths:

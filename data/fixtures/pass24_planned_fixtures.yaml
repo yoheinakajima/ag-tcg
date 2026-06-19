@@ -1,0 +1,98 @@
+# Pass 24 — Planned fixtures from real replay post-mortem (Part K)
+#
+# PLANS ONLY. None of these are implemented or wired to the runtime this pass.
+# This is a READ-ONLY pass: no Kaggle upload, no new candidate, no root mutation.
+# Each fixture references a real replay episode as its source evidence. No card id
+# is invented; signature cards come from extracted replay decks
+# (data/meta_replays/decks/<episode>_p<seat>_deck.csv).
+#
+# Context: the anti-disruption pivot (league_water_anti_disruption_pivot_v1) is the
+# live best score (520.8). The targeted empty-board / no-Pokemon failure mode did
+# NOT recur in any of the three new replays (80623232, 80622745, 80622626). The two
+# losses came from unrelated seams: Fighting Mega Lucario ex tempo (3-prize Mega ex
+# KO) and a grindy mirror deckout with a full board. These fixtures plan coverage
+# for those new seams plus regression guards for the now-working board-safety hooks.
+schema: activegraph.pass24.planned_fixtures/v1
+pass: 24
+not_implemented_this_pass: true
+read_only_pass: true
+candidate_under_test: league_water_anti_disruption_pivot_v1
+fixtures:
+  - id: avoid_feeding_mega_ex_three_prize_ko_vs_fighting
+    description: >-
+      Versus a fast Fighting Mega Lucario ex / Hariyama board, do not over-commit
+      Mega Abomasnow ex into an open KO that hands the opponent a 3-prize swing;
+      weigh retreat / board state before promoting the Mega ex.
+    source_episode: "80623232"
+    source_archetype: fighting_mega_lucario_ex_hariyama
+    signature_cards: [678, 674, 723]
+    severity: hard
+    evidence_confidence: high
+    requires_runtime_hook: true
+    implemented: false
+  - id: retreat_discipline_when_behind_on_prizes
+    description: >-
+      When trailing on prizes (e.g. 6 left vs opponent 3) with a developed opposing
+      bench, prefer preserving the Mega ex attacker over a forced trade.
+    source_episode: "80623232"
+    source_archetype: fighting_mega_lucario_ex_hariyama
+    signature_cards: [678, 1142]
+    severity: advisory
+    evidence_confidence: medium
+    requires_runtime_hook: true
+    implemented: false
+  - id: midgame_deck_conservation_in_grindy_mirror
+    description: >-
+      In long mirror attrition (40+ turns), throttle optional draw/search to avoid
+      decking out while the board is healthy (loser decked out with bench=4).
+    source_episode: "80622626"
+    source_archetype: league_water_anti_disruption_pivot_v1
+    signature_cards: [721, 722, 723]
+    severity: hard
+    evidence_confidence: high
+    requires_runtime_hook: true
+    implemented: false
+  - id: preserve_resources_over_redundant_search_late
+    description: >-
+      Late in a grindy game, skip redundant search when the needed pieces are
+      already in play to reduce deckout risk.
+    source_episode: "80622626"
+    source_archetype: league_water_anti_disruption_pivot_v1
+    signature_cards: [721, 722]
+    severity: advisory
+    evidence_confidence: medium
+    requires_runtime_hook: true
+    implemented: false
+  - id: regression_guard_no_empty_board_collapse
+    description: >-
+      Regression guard: in the observed games the board never collapsed to an empty
+      bench; keep at least one backup Pokemon in play once developed.
+    source_episode: "80623232"
+    source_archetype: fighting_mega_lucario_ex_hariyama
+    signature_cards: [721, 722]
+    severity: hard
+    evidence_confidence: high
+    requires_runtime_hook: true
+    implemented: false
+  - id: regression_guard_mega_only_via_evolution
+    description: >-
+      Regression guard: Mega Abomasnow ex (723) must reach the bench only via
+      evolution of a benched Snover, never benched directly from hand.
+    source_episode: "80622626"
+    source_archetype: league_water_anti_disruption_pivot_v1
+    signature_cards: [722, 723]
+    severity: hard
+    evidence_confidence: high
+    requires_runtime_hook: true
+    implemented: false
+  - id: pressure_psychic_alakazam_before_setup
+    description: >-
+      Versus Psychic Alakazam / Dudunsparce, sustain early pressure before the
+      Alakazam engine fully sets up (this matchup was a win; keep the pattern).
+    source_episode: "80622745"
+    source_archetype: psychic_alakazam_dudunsparce
+    signature_cards: [743, 66, 721]
+    severity: advisory
+    evidence_confidence: medium
+    requires_runtime_hook: true
+    implemented: false

@@ -2,3 +2,4 @@
 - [Kaggle probe ops](kaggle-probe-ops.md) — CLI absent (use Python API), smoke needs absolute --out, submission events bypass ag_strategy_event, live scores drift.
 - [cabt select encoding](cabt-select-encoding.md) — ctx0=Main; option type 7=play-from-hand(by hand index), 8=attach, 13=attack; detect bench-a-basic via type7 + hand[index] role.
 - [core-pilot context wiring](core-pilot-context-wiring.md) — only wire cross-source-confirmed contexts; broad ctx0 stays delegated (narrow sub-actions OK); runtime_contexts = base + only this pass's hooks, or scope silently drifts.
+- [Replay post-mortem pitfalls](replay-postmortem-pitfalls.md) — trust replay state not Grok's loss-mechanism prose; 723-on-bench is usually legit evolution; live_score_registry uses camelCase fileName/publicScore (mismatch nulls active_control).

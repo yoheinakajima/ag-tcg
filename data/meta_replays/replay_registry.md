@@ -1,7 +1,7 @@
 # Replay registry (Pass 11B)
 
-- replays in inbox: **14**
-- registered (deduplicated): **14**
+- replays in inbox: **19**
+- registered (deduplicated): **19**
 - duplicates skipped: **0**
 - parse errors: **0**
 - known own decks: combo_full_safety_v3_fixed, pass10_candidate_cand_a, pass10_candidate_combo_effect_resolution_v3__secret_box_safety, pass10_candidate_combo_full_safety_v3, pass10_candidate_combo_full_safety_v3_fixed, pass10_candidate_deck_energy_trim_light, pass10_candidate_deck_energy_trim_medium, pass10_candidate_deck_less_draw_more_attack, pass10_candidate_deck_no_secret_box, pass10_candidate_playbook_attack_deadline, pass10_candidate_playbook_bench_safety, pass10_candidate_playbook_fast_evolution, pass10_candidate_playbook_hybrid_tempo, pass10_candidate_playbook_kyogre_tempo, pass10_candidate_policy_pass_avoidant, pass10_candidate_policy_winner, v1_deck_loader_fix, v2_deck_energy_trim_light
@@ -22,6 +22,11 @@
 | 80592173 | our_win | 0 | 1 | unknown_ex_tempo | provisional |
 | 80592831 | our_loss | 0 | -1 | unknown | unknown |
 | 80593320 | our_loss | 0 | -1 | unknown | unknown |
+| 80594489 | our_loss | 1 | -1 | water_kyogre_abomasnow_maxbelt | confirmed |
+| 80595014 | our_loss | 1 | -1 | water_kyogre_abomasnow_maxbelt | confirmed |
+| 80622626 | self_mirror | [0, 1] | None | - | - |
+| 80622745 | our_win | 1 | 1 | unknown | unknown |
+| 80623232 | our_loss | 1 | -1 | unknown_ex_tempo | provisional |
 
 ## Per-episode detail
 ### Episode 80374966 — self_mirror
@@ -107,4 +112,34 @@
 - agents: ['Yohei Nakajima', 'Kazato Takahashi'], rewards: [-1, 1], steps: 91
   - seat 0 (ours, Yohei Nakajima): deck=`v2_deck_energy_trim_light` uniq=11 archetype=water_kyogre_abomasnow_passive_mirror/confirmed
   - seat 1 (opponent, Kazato Takahashi): deck=`opponent_unknown` uniq=24 archetype=unknown/unknown
+
+### Episode 80594489 — our_loss
+- file: `80594489.json` (sha256 `4cdeb3499ece…`)
+- agents: ['AnDy Trần', 'Yohei Nakajima'], rewards: [1, -1], steps: 63
+  - seat 0 (opponent, AnDy Trần): deck=`opponent_unknown` uniq=9 archetype=water_kyogre_abomasnow_maxbelt/confirmed
+  - seat 1 (ours, Yohei Nakajima): deck=`v2_deck_energy_trim_light` uniq=11 archetype=water_kyogre_abomasnow_passive_mirror/confirmed
+
+### Episode 80595014 — our_loss
+- file: `80595014.json` (sha256 `3edbc7016380…`)
+- agents: ['Shota Yamazaki', 'Yohei Nakajima'], rewards: [1, -1], steps: 67
+  - seat 0 (opponent, Shota Yamazaki): deck=`opponent_unknown` uniq=9 archetype=water_kyogre_abomasnow_maxbelt/confirmed
+  - seat 1 (ours, Yohei Nakajima): deck=`v2_deck_energy_trim_light` uniq=11 archetype=water_kyogre_abomasnow_passive_mirror/confirmed
+
+### Episode 80622626 — self_mirror
+- file: `80622626.json` (sha256 `387334c7de39…`)
+- agents: ['Yohei Nakajima', 'Yohei Nakajima'], rewards: [1, -1], steps: 126
+  - seat 0 (ours, Yohei Nakajima): deck=`v2_deck_energy_trim_light` uniq=11 archetype=water_kyogre_abomasnow_passive_mirror/confirmed
+  - seat 1 (ours, Yohei Nakajima): deck=`v2_deck_energy_trim_light` uniq=11 archetype=water_kyogre_abomasnow_passive_mirror/confirmed
+
+### Episode 80622745 — our_win
+- file: `80622745.json` (sha256 `09e66f24e9a2…`)
+- agents: ['mewworldorder', 'Yohei Nakajima'], rewards: [-1, 1], steps: 110
+  - seat 0 (opponent, mewworldorder): deck=`opponent_unknown` uniq=20 archetype=unknown/unknown
+  - seat 1 (ours, Yohei Nakajima): deck=`v2_deck_energy_trim_light` uniq=11 archetype=water_kyogre_abomasnow_passive_mirror/confirmed
+
+### Episode 80623232 — our_loss
+- file: `80623232.json` (sha256 `e5a5d2e4dfdc…`)
+- agents: ['ﾖﾈｸﾗ ﾃﾝｾｲne251225', 'Yohei Nakajima'], rewards: [1, -1], steps: 110
+  - seat 0 (opponent, ﾖﾈｸﾗ ﾃﾝｾｲne251225): deck=`opponent_unknown` uniq=17 archetype=unknown_ex_tempo/provisional
+  - seat 1 (ours, Yohei Nakajima): deck=`v2_deck_energy_trim_light` uniq=11 archetype=water_kyogre_abomasnow_passive_mirror/confirmed
 

@@ -15,10 +15,19 @@
     "80591511",
     "80592173",
     "80592831",
-    "80593320"
+    "80593320",
+    "80594489",
+    "80595014",
+    "80622626",
+    "80622745",
+    "80623232"
   ],
   "processed_file_sha256": [
+    "09e66f24e9a2bb9ad3747bc4a6769e4ad15e27fa489947517e6d111ecf8862f6",
     "1e73b4da9e67f4e7e275dcbaecd6c060fe553b836fde0250aed658e4ad103e66",
+    "387334c7de391d810db48a1bdb307b6d74e8ac10706b0a4968687ba7a357bed7",
+    "3edbc701638028027a4f59f24a165b15d6a60594ff1bd4d9a977e7940a6e9b40",
+    "4cdeb3499ece3c80c9a82f088d0ce580b47f2dd9397a3fbac38475116546ff70",
     "533a9e934953f906d28ad8ad4c8672e3c4147af33bdc1450c5f0b007cb63fa08",
     "678b139d5bcff31c257972b97a9dbd993df382bf1cfb8786db405bd0835001f1",
     "7ebd6047ff2efc951217e2792652cd271068b37fb07478e62217e4deb9368e02",
@@ -29,6 +38,7 @@
     "c63e5fa9a3cf00718713f18a6e8293d49f29d6b212a68c4cbff4f2c2148eee27",
     "d56ebe9c21be209c766823a9e6d720c609b568d060b898cdd8216fa2d7fbb1d4",
     "dfc86be530898924b9b1e248d079d23108fd0162620af49e681c87c99961b04d",
+    "e5a5d2e4dfdc4fdf96f5a60e44899ea145a09cbb31d6086a95d7bc2b2e208f0b",
     "f41e8d3d31a2add88b12c3b4c6b99b1d3ce707b77e767e834700cd264c264db8",
     "fa1193d8404292e16fac24a4ecfa19a97c03325a412ea46933522bccb874f25a",
     "fbf9cdb88cfd1e1ac66e9eb45edea9cbcfb2797983c0fe0022e7b66fd2536b1c"
@@ -61,11 +71,21 @@
     "data/meta_replays/decks/80592831_p0_deck.csv",
     "data/meta_replays/decks/80592831_p1_deck.csv",
     "data/meta_replays/decks/80593320_p0_deck.csv",
-    "data/meta_replays/decks/80593320_p1_deck.csv"
+    "data/meta_replays/decks/80593320_p1_deck.csv",
+    "data/meta_replays/decks/80594489_p0_deck.csv",
+    "data/meta_replays/decks/80594489_p1_deck.csv",
+    "data/meta_replays/decks/80595014_p0_deck.csv",
+    "data/meta_replays/decks/80595014_p1_deck.csv",
+    "data/meta_replays/decks/80622626_p0_deck.csv",
+    "data/meta_replays/decks/80622626_p1_deck.csv",
+    "data/meta_replays/decks/80622745_p0_deck.csv",
+    "data/meta_replays/decks/80622745_p1_deck.csv",
+    "data/meta_replays/decks/80623232_p0_deck.csv",
+    "data/meta_replays/decks/80623232_p1_deck.csv"
   ],
   "counts": {
-    "in_inbox": 14,
-    "registered": 14,
+    "in_inbox": 19,
+    "registered": 19,
     "duplicates": 0,
     "errors": 0
   }
