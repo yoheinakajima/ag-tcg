@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph Strategy Lab — Pass 20</title>
+<title>ActiveGraph Strategy Lab — Pass 21</title>
 <style>
   :root { --bg:#0f1420; --panel:#171f2e; --ink:#e6edf6; --muted:#9bb0c9;
           --accent:#4cc4ff; --warn:#ffcf5c; --ok:#6ee7a0; --bad:#ff7b7b;
@@ -35,10 +35,31 @@
 <header>
   <div class="wrap" style="padding-bottom:0">
     <h1>ActiveGraph Strategy Lab</h1>
-    <div class="sub">Pass 20 — Water reference live calibration probe (human-approved)</div>
+    <div class="sub">Pass 21 — Water reference replay post-mortem (probe resolved @ 420.8)</div>
   </div>
 </header>
 <div class="wrap">
+
+  <div class="note" style="border-left-color:var(--ok)">
+    <strong>PASS 21 — REPLAY INGESTION + WATER POST-MORTEM (ANALYSIS ONLY).</strong> Five new ladder
+    replays ingested (9 → 14). The Pass-20 probe <strong>resolved from <code>pending</code> to
+    <code>complete</code> @ public 420.8</strong>, making <code>league_water_core_reference</code> the
+    <strong>new live active control</strong> (above <code>combo_full_safety_v3_fixed</code> @ 391.1,
+    which fails the entrypoint validator). New-replay record (excl. self-mirror) <strong>1W/3L</strong>:
+    win vs Roman Tamrazov (fighting Mega Lucario/Hariyama ex); losses to Latitu (grass Crustle +
+    <strong>Crushing Hammer</strong> energy denial), Leopard Jaguar (no-bench fast loss), Kazato (Dipplin
+    toolbox grind). Main failure = <strong>lack of anti-disruption pivot</strong>; stuck-on-basic-Snover
+    is correlated but <strong>not decisive</strong> (won while stuck; lost after evolving). Decision =
+    <code>build_water_anti_disruption</code>. <strong>No upload, no GitHub push, root files unchanged,
+    no new candidate built.</strong> Replay evidence trusted over Grok summaries.
+  </div>
+
+  <div class="grid">
+    <div class="card"><div class="sub">Pass 20 probe</div><div class="big ok">complete @ 420.8</div></div>
+    <div class="card"><div class="sub">Live active control</div><div class="big ok">league_water_core_reference @ 420.8</div></div>
+    <div class="card"><div class="sub">New replays (Pass 21)</div><div class="big">5 (1W/3L excl. mirror)</div></div>
+    <div class="card"><div class="sub">Candidates uploaded (Pass 21)</div><div class="big ok">0</div></div>
+  </div>
 
   <div class="note">
     <strong>PASS 20 — HUMAN-APPROVED LIVE CALIBRATION PROBE.</strong> A single
@@ -143,17 +164,20 @@
 
   <h2>Reports</h2>
   <ul>
+    <li><code>data/reports/pass21_water_reference_replay_analysis_report.md</code> — Pass 21 water replay post-mortem</li>
+    <li><code>data/experiments/pass21_water_replay_analysis.md</code> · <code>pass21_archetype_updates.md</code> · <code>pass21_water_failure_taxonomy.md</code> · <code>pass21_strategy_interpretation.md</code></li>
+    <li><code>data/fixtures/pass21_planned_water_fixtures.yaml</code> — planned fixtures (plans only)</li>
     <li><code>data/reports/pass20_water_reference_kaggle_probe_report.md</code> — Pass 20 live calibration probe report</li>
     <li><code>data/reports/pass20_final_report.md</code> — Pass 20 10-section final report</li>
     <li><code>data/reports/pass19_final_report.md</code> — 10-section final report</li>
     <li><code>data/reports/pass19_dragapult_parent_child_report.md</code> — parent/child forensics deep-dive</li>
-    <li><code>data/reports/activegraph_strategy_report.md</code> — strategy narrative (through Pass 19)</li>
+    <li><code>data/reports/activegraph_strategy_report.md</code> — strategy narrative (through Pass 21)</li>
     <li><code>docs/PTCG_STRATEGY_CANVAS.md</code> · <code>docs/STRATEGY_PORTFOLIO_LOOP.md</code></li>
     <li><code>data/experiments/pass19_strategy_decision.md</code> — strategy decision</li>
     <li><code>data/experiments/pass19_dragapult_parent_child_trace.md</code> · <code>pass19_dragapult_decision_delta.md</code></li>
     <li><code>data/experiments/pass19_dragapult_mini_league.md</code> · <code>pass19_meta_sanity.md</code> · <code>pass19_candidate_validation.md</code></li>
   </ul>
 </div>
-<footer>ActiveGraph — local lab. Pass 20: ONE human-approved live calibration probe (no GitHub push). Root main.py / deck.csv immutable.</footer>
+<footer>ActiveGraph — local lab. Pass 21: replay ingestion + water post-mortem (ANALYSIS ONLY; no upload, no GitHub push, no new candidate). Root main.py / deck.csv immutable.</footer>
 </body>
 </html>

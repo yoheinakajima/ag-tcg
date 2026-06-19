@@ -1,6 +1,6 @@
 # Meta replay summary (Pass 10)
 
-- raw replays analyzed: **9**
+- raw replays analyzed: **14**
 - missing external replays: **metal_ex_zacian_ramp, water_kyogre_abomasnow_maxbelt**
 
 ## Episode 80374966
@@ -75,6 +75,46 @@
   - **seat 0** (AMIBEN): won=False, first_attack_turn=12, evolved_mega_abomasnow=False, stuck_on_basic_snover=False, max_bench=5, decked_out=False (min_deck=1)
   - **seat 1** (Yohei Nakajima): won=True, first_attack_turn=5, evolved_mega_abomasnow=False, stuck_on_basic_snover=True, max_bench=3, decked_out=False (min_deck=22)
 
+## Episode 80590776
+- source: `data/meta_replays/raw/80590776.json`
+- agents: ['Yohei Nakajima', 'Yohei Nakajima']
+- self-mirror: **True**
+- steps: 148, rewards: [1, -1], winner seat: 0
+  - **seat 0** (Yohei Nakajima): won=True, first_attack_turn=5, evolved_mega_abomasnow=True, stuck_on_basic_snover=False, max_bench=2, decked_out=False (min_deck=24)
+  - **seat 1** (Yohei Nakajima): won=False, first_attack_turn=18, evolved_mega_abomasnow=True, stuck_on_basic_snover=False, max_bench=4, decked_out=True (min_deck=0)
+
+## Episode 80591511
+- source: `data/meta_replays/raw/80591511.json`
+- agents: ['Latitu', 'Yohei Nakajima']
+- self-mirror: **False**
+- steps: 97, rewards: [1, -1], winner seat: 0
+  - **seat 0** (Latitu): won=True, first_attack_turn=5, evolved_mega_abomasnow=False, stuck_on_basic_snover=False, max_bench=3, decked_out=False (min_deck=30)
+  - **seat 1** (Yohei Nakajima): won=False, first_attack_turn=4, evolved_mega_abomasnow=False, stuck_on_basic_snover=True, max_bench=1, decked_out=False (min_deck=31)
+
+## Episode 80592173
+- source: `data/meta_replays/raw/80592173.json`
+- agents: ['Yohei Nakajima', 'Roman Tamrazov']
+- self-mirror: **False**
+- steps: 112, rewards: [1, -1], winner seat: 0
+  - **seat 0** (Yohei Nakajima): won=True, first_attack_turn=4, evolved_mega_abomasnow=False, stuck_on_basic_snover=True, max_bench=1, decked_out=False (min_deck=29)
+  - **seat 1** (Roman Tamrazov): won=False, first_attack_turn=4, evolved_mega_abomasnow=False, stuck_on_basic_snover=False, max_bench=3, decked_out=True (min_deck=0)
+
+## Episode 80592831
+- source: `data/meta_replays/raw/80592831.json`
+- agents: ['Yohei Nakajima', 'Leopard Jaguar']
+- self-mirror: **False**
+- steps: 23, rewards: [-1, 1], winner seat: 1
+  - **seat 0** (Yohei Nakajima): won=False, first_attack_turn=5, evolved_mega_abomasnow=False, stuck_on_basic_snover=True, max_bench=0, decked_out=False (min_deck=43)
+  - **seat 1** (Leopard Jaguar): won=True, first_attack_turn=4, evolved_mega_abomasnow=False, stuck_on_basic_snover=False, max_bench=0, decked_out=False (min_deck=39)
+
+## Episode 80593320
+- source: `data/meta_replays/raw/80593320.json`
+- agents: ['Yohei Nakajima', 'Kazato Takahashi']
+- self-mirror: **False**
+- steps: 91, rewards: [-1, 1], winner seat: 1
+  - **seat 0** (Yohei Nakajima): won=False, first_attack_turn=5, evolved_mega_abomasnow=True, stuck_on_basic_snover=False, max_bench=2, decked_out=False (min_deck=31)
+  - **seat 1** (Kazato Takahashi): won=True, first_attack_turn=6, evolved_mega_abomasnow=False, stuck_on_basic_snover=False, max_bench=5, decked_out=False (min_deck=34)
+
 ## Tempo failure signals (from real replay)
 - episode 80374966 seat 0: stuck on basic Snover (never evolved Mega Abomasnow ex)
 - episode 80374966 seat 0: decked out (deckCount reached 0) — over-thinning / passive long game
@@ -89,6 +129,11 @@
 - episode 80506042 seat 1: stuck on basic Snover (never evolved Mega Abomasnow ex)
 - episode 80515553 seat 1: stuck on basic Snover (never evolved Mega Abomasnow ex)
 - episode 80516161 seat 1: stuck on basic Snover (never evolved Mega Abomasnow ex)
+- episode 80590776 seat 1: decked out (deckCount reached 0) — over-thinning / passive long game
+- episode 80591511 seat 1: stuck on basic Snover (never evolved Mega Abomasnow ex)
+- episode 80592173 seat 0: stuck on basic Snover (never evolved Mega Abomasnow ex)
+- episode 80592173 seat 1: decked out (deckCount reached 0) — over-thinning / passive long game
+- episode 80592831 seat 0: stuck on basic Snover (never evolved Mega Abomasnow ex)
 
 ## Archetypes
 - **water_kyogre_abomasnow_mirror_passive** — confirmed_from_replay (card_ids: confirmed)

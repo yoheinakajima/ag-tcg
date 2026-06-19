@@ -1,0 +1,74 @@
+# Pass 21 — Planned water fixtures from real replay failures (Part I)
+#
+# PLANS ONLY. None of these are implemented or wired to the runtime this pass.
+# Each fixture references a real replay episode as its source evidence. No card id
+# is invented; signature cards come from extracted replay decks.
+schema: activegraph.pass21.planned_fixtures/v1
+pass: 21
+not_implemented_this_pass: true
+candidate_under_test: league_water_core_reference
+fixtures:
+  - id: anti_energy_denial_backup_plan
+    description: >-
+      If Kyogre repeatedly loses Energy or cannot attack, develop/evolve a backup
+      threat instead of continuing the passive single-Kyogre line.
+    source_episode: "80591511"
+    source_archetype: grass_crustle_energy_denial_control
+    severity: hard
+    evidence_confidence: high
+    requires_runtime_hook: true
+    implemented: false
+  - id: evolve_snover_when_kyogre_plan_stalls
+    description: >-
+      If Snover + Mega Abomasnow ex are available and Kyogre pressure is blocked,
+      prioritize the evolution rather than holding the basic.
+    source_episode: "80591511"
+    source_archetype: grass_crustle_energy_denial_control
+    severity: advisory
+    evidence_confidence: medium
+    requires_runtime_hook: true
+    implemented: false
+  - id: preserve_snover_line_after_secret_box
+    description: >-
+      Do not discard only Snover / only the Mega Abomasnow payoff when an evolution
+      pivot is the needed plan-B.
+    source_episode: "80592831"
+    source_archetype: grass_fire_crustle_typhlosion_control
+    severity: advisory
+    evidence_confidence: low
+    requires_runtime_hook: true
+    implemented: false
+    note: >-
+      Discard-choice logs are not resolvable from the current parse; this plan is
+      provisional pending Ultra Ball / Secret Box choice instrumentation.
+  - id: backup_bench_before_no_bench_loss
+    description: >-
+      If the active is exposed and the bench is empty or weak, bench a backup before
+      taking optional draw/search.
+    source_episode: "80592831"
+    source_archetype: grass_fire_crustle_typhlosion_control
+    severity: hard
+    evidence_confidence: high
+    requires_runtime_hook: true
+    implemented: false
+  - id: choose_pivot_search_target
+    description: >-
+      When energy denial / control is detected, search for an evolution or backup
+      attacker rather than only Kyogre tools.
+    source_episode: "80591511"
+    source_archetype: grass_crustle_energy_denial_control
+    severity: advisory
+    evidence_confidence: medium
+    requires_runtime_hook: true
+    implemented: false
+  - id: anti_crushing_hammer_energy_spread
+    description: >-
+      Avoid concentrating all plan equity / energy on one Energy-starved attacker
+      when Crushing-Hammer-style energy removal is present.
+    source_episode: "80591511"
+    source_archetype: grass_crustle_energy_denial_control
+    severity: advisory
+    evidence_confidence: high
+    requires_runtime_hook: true
+    implemented: false
+highest_priority_fixture: anti_energy_denial_backup_plan

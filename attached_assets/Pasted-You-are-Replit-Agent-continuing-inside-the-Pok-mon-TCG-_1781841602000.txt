@@ -1,0 +1,462 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not generate new candidates in this pass.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Raw replay JSON files must remain gitignored.
+- This is an analysis + reporting + strategy-decision pass only.
+- Read docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md, docs/NEXT_AGENT_README.md, docs/PTCG_STRATEGY_CANVAS.md, data/reports/pass20_final_report.md, and data/reports/pass20_water_reference_kaggle_probe_report.md before acting.
+
+Current state:
+- Pass 20 submitted exactly one human-approved Kaggle probe:
+  - candidate_id: league_water_core_reference
+  - tarball: data/submissions/candidates_pass17/league_water_core_reference.tar.gz
+- Upload succeeded and was pending at report time.
+- User has now added 5 new raw Kaggle replay JSON logs to data/meta_replays/raw/.
+- At least two observed games:
+  - vs Latitu / Grass Crustle-style disruption-control: loss, energy denial / Crushing Hammer, no Mega Abomasnow evolution.
+  - vs Roman Tamrazov / Fighting ex Lucario-Hariyama style: win, Kyogre pressure, no Mega Abomasnow evolution.
+- The public score is still moving and should be treated as unstable until read from Kaggle status.
+- Do not upload again.
+
+Goal:
+Run Pass 21: Kaggle Replay Ingestion + Water Reference Post-Mortem.
+
+Objectives:
+1. Read-only refresh Kaggle status for league_water_core_reference.
+2. Ingest the 5 newly added raw replay JSONs.
+3. Deduplicate by EpisodeId and file hash.
+4. Extract decks and classify opponent archetypes.
+5. Analyze the Water reference’s real Kaggle performance.
+6. Identify repeatable tactical failures and wins.
+7. Update ActiveGraph lineage and reports.
+8. Produce next strategy recommendations.
+9. No Kaggle upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Raw replay file safety
+
+Verify all new raw replay logs are in:
+
+data/meta_replays/raw/
+
+Run:
+
+find data/meta_replays/raw -maxdepth 1 -type f -name "*.json" | sort
+git check-ignore -v data/meta_replays/raw/*.json || true
+
+Required:
+- raw replay JSON files must be gitignored.
+- if any raw replay is not gitignored, stop and fix .gitignore before continuing.
+- do not stage raw replay files.
+
+Write:
+
+data/experiments/pass21_raw_replay_safety.json
+data/experiments/pass21_raw_replay_safety.md
+
+Part C — Read-only Kaggle status refresh
+
+Run read-only status commands:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass21.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass21.csv || true
+
+If kaggle is not on PATH, use the already-installed Python kaggle.cli method used in prior passes.
+
+Then rebuild or update:
+
+data/kaggle_uploads/live_score_registry.json
+data/kaggle_uploads/live_score_registry.md
+
+Rules:
+- read-only only.
+- no upload.
+- if status is pending, record pending and stop interpreting score.
+- if status is complete, record publicScore.
+- if score differs from earlier screenshots, note score drift.
+- do not hardcode score values.
+- active control should be recomputed from the live listing, but do not overwrite history without noting drift.
+
+Output:
+
+data/experiments/pass21_water_probe_status.json
+data/experiments/pass21_water_probe_status.md
+
+Part D — Replay ingestion pipeline
+
+Run the replay pipeline:
+
+python scripts/ingest_replay_inbox.py
+python scripts/extract_replay_decks.py
+python scripts/extract_meta_archetypes.py
+python scripts/analyze_kaggle_replays.py
+python scripts/update_meta_pool_from_replays.py
+
+Output expectations:
+- data/meta_replays/replay_registry.json updated
+- data/meta_replays/replay_processing_state.json updated
+- data/meta_replays/replay_inbox_errors.json updated
+- data/meta_replays/decks/*.csv updated
+- data/meta_replays/archetypes.yaml updated
+- experiments/meta_pool.yaml updated
+
+Write a pass-specific summary:
+
+data/experiments/pass21_replay_ingestion.json
+data/experiments/pass21_replay_ingestion.md
+
+Include:
+- raw replay count before/after if detectable
+- new EpisodeIds detected
+- duplicates skipped
+- failed parses
+- new decks extracted
+- new opponent archetypes
+- unknown / provisional archetypes
+- raw replay gitignore status
+
+Part E — Water reference Kaggle replay analysis
+
+Create:
+
+scripts/analyze_pass21_water_replays.py
+
+Inputs:
+- data/meta_replays/replay_registry.json
+- newly ingested raw replays
+- data/kaggle_uploads/live_score_registry.json
+- card metadata from data/cards/EN_Card_Data.csv if available
+
+Outputs:
+- data/experiments/pass21_water_replay_analysis.json
+- data/experiments/pass21_water_replay_analysis.md
+- data/experiments/pass21_water_game_summaries.jsonl
+
+Analyze only games involving our submitted league_water_core_reference / Yohei seat where detectable.
+
+For every relevant game, compute:
+- episode_id
+- opponent name
+- our seat
+- reward / win/loss/draw
+- statuses
+- number of steps / turns if available
+- opponent deck fingerprint
+- opponent archetype
+- our opening active
+- whether Kyogre became active
+- whether Snover became active
+- whether Mega Abomasnow ex ever entered play
+- whether any evolution occurred
+- whether Kyogre attacked
+- first meaningful attack step
+- first KO step if detectable
+- bench development by early threshold
+- no-bench loss
+- stuck_on_basic_snover
+- energy attachments
+- energy removals / Crushing Hammer-like effects if detectable
+- energy denial loss tag
+- searched cards via Ultra Ball / Secret Box / Mega Signal
+- discard choices from Ultra Ball / Secret Box
+- low-deck / overdraw risk
+- final board state
+- primary loss/win cause
+
+Important:
+- Do not fabricate card effects.
+- If a card name/effect cannot be resolved, report unknown.
+- Use card IDs and logs when possible.
+- If Grok summary says something but replay evidence does not support it, trust replay evidence.
+
+Part F — Opponent archetype updates
+
+Based on the new replays, update or create archetype labels if evidence supports them.
+
+Likely new/provisional labels may include:
+- grass_crustle_energy_denial_control
+- fighting_lucario_hariyama_ex
+- water_mirror_or_old_control if one of the games is against an older own deck
+- any other replay-derived archetype with confirmed card IDs
+
+For each new archetype:
+- use replay deck card IDs
+- resolve names from card DB if available
+- list signature cards
+- classify status: confirmed / provisional / unknown
+- assign evidence episodes
+- do not invent missing cards
+
+Output:
+- data/experiments/pass21_archetype_updates.json
+- data/experiments/pass21_archetype_updates.md
+
+If experiments/meta_pool.yaml is updated, document:
+- old weights
+- new weights
+- whether the new 5 logs materially change the meta pool
+- whether the pool is still biased toward our ladder neighborhood
+
+Part G — Tactical failure taxonomy
+
+Create:
+
+data/experiments/pass21_water_failure_taxonomy.json
+data/experiments/pass21_water_failure_taxonomy.md
+
+Track tags across the new games:
+
+Possible tags:
+- kyogre_pressure_success
+- kyogre_energy_denied
+- no_mega_abomasnow_evolution
+- no_backup_plan_after_energy_denial
+- no_bench_loss
+- stuck_on_basic_snover
+- passive_draw_loop
+- over_search_or_over_thin
+- crushing_hammer_or_energy_removal_loss
+- fast_ko_win
+- beat_big_ex_before_setup
+- late_game_grind_loss
+- opponent_control_outgrind
+- search_found_missing_piece
+- search_failed_to_find_pivot
+- discard_preserved_key_piece
+- discard_lost_key_piece
+
+For each tag:
+- count
+- episodes
+- evidence snippet / log pointer if possible
+- confidence: high/medium/low
+- recommended next fixture or strategy response
+
+Part H — Strategic interpretation
+
+Create:
+
+data/experiments/pass21_strategy_interpretation.json
+data/experiments/pass21_strategy_interpretation.md
+
+Answer:
+1. Is league_water_core_reference actually better live than the previous control?
+2. Is the score settled enough to promote?
+3. Which games did it win and why?
+4. Which games did it lose and why?
+5. Is the main failure:
+   - deck list,
+   - generic pilot,
+   - Water-specific playbook,
+   - lack of anti-disruption pivot,
+   - failure to evolve,
+   - or matchup weakness?
+6. Should Water remain the live-control candidate?
+7. Should the next candidate be:
+   - Water anti-disruption pivot,
+   - Mega Abomasnow evolution plan,
+   - Dragapult deeper confirmation,
+   - or another replay-informed branch?
+
+Decision labels:
+- promote_live_control
+- hold_pending_score
+- keep_existing_control
+- ingest_more_replays
+- build_water_anti_disruption
+- build_evolution_pivot
+- dragapult_deeper_confirmation
+- no_action
+
+Do not promote automatically if:
+- status is pending,
+- score is still volatile,
+- new candidate has too few games,
+- score is below current live control,
+- or replay analysis shows a clear unaddressed failure.
+
+Part I — Planned fixtures from real replay failures
+
+Create:
+
+data/fixtures/pass21_planned_water_fixtures.yaml
+
+Fixture plans only, unless cheap.
+
+Include fixture plans for:
+1. anti_energy_denial_backup_plan
+- If Kyogre loses Energy repeatedly or cannot attack, develop/evolve backup instead of continuing passive Kyogre line.
+
+2. evolve_snover_when_kyogre_plan_stalls
+- If Snover + Mega Abomasnow ex are available and Kyogre pressure is blocked, prioritize evolution.
+
+3. preserve_snover_line_after_secret_box
+- Do not discard only Snover / only Mega payoff when evolution pivot is needed.
+
+4. backup_bench_before_no_bench_loss
+- If active is exposed and bench is empty or weak, bench backup before optional draw/search.
+
+5. choose_pivot_search_target
+- When energy denial/control is detected, search for evolution/backup rather than only Kyogre tools.
+
+6. anti_crushing_hammer_energy_spread
+- Avoid concentrating all plan equity in one Energy-starved attacker if replay evidence supports it.
+
+Mark each fixture:
+- source episode
+- hard/advisory
+- evidence confidence
+- requires runtime hook yes/no
+- not implemented this pass
+
+Part J — ActiveGraph events
+
+Emit events:
+- ReplayImported for each new replay
+- ReplayAnalyzed for each analyzed replay
+- KaggleScoreUpdated if score/status refreshed
+- StrategyIterationEvaluated for league_water_core_reference
+- StrategyDecisionRecorded for the interpretation decision
+- StrategyFixtureAdded for planned fixture specs
+- ReportSiteGenerated
+
+Include:
+- episode_id
+- candidate_id
+- opponent
+- result
+- archetype
+- tags
+- source paths
+- no_upload true
+
+Part K — Report site and docs
+
+Update:
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- data/reports/pass21_water_reference_replay_analysis_report.md
+
+Include:
+- latest Kaggle status / score
+- new replay count
+- win/loss summary
+- opponent archetypes
+- tactical failure taxonomy
+- planned fixtures
+- strategic decision
+- no-upload note
+- replay-derived evidence caveat
+
+Do not erase historical Pass 20 facts. Add an authoritative current-state section.
+
+Part L — Tests
+
+Add/update tests for:
+- raw replay files are gitignored
+- ingestion dedupes by EpisodeId
+- new EpisodeIds are preserved in registry
+- replay analysis includes all newly added episodes
+- Water replay analysis does not fabricate card IDs
+- archetype updates have evidence episodes
+- failure taxonomy has counts and evidence
+- planned fixtures reference real episode IDs
+- score status refresh is read-only
+- no upload flag remains false
+- root files unchanged
+- report includes replay-derived evidence caveat
+
+Run targeted tests.
+Run broader tests only if feasible and not too slow.
+
+Part M — Final report
+
+Report exactly:
+
+ActiveGraph Pass 21 Water Reference Replay Analysis Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Kaggle score status
+- status refreshed:
+- latest status:
+- latest publicScore:
+- active control:
+- score drift:
+- conclusion:
+
+3. Replay ingestion
+- raw files found:
+- new replays:
+- duplicates:
+- failed parses:
+- registry path:
+- gitignore status:
+
+4. Game results
+- analyzed games:
+- wins/losses/draws:
+- opponents:
+- episode ids:
+- score/reward summary:
+
+5. Opponent archetypes
+- archetypes detected:
+- new archetypes:
+- provisional archetypes:
+- evidence card ids:
+- meta pool update:
+
+6. Tactical findings
+- top win pattern:
+- top loss pattern:
+- energy denial:
+- evolution failure:
+- Kyogre pressure:
+- bench/no-bench issues:
+- search/discard findings:
+
+7. Planned fixtures / strategy response
+- fixture plan path:
+- fixtures proposed:
+- highest-priority fixture:
+- runtime hook needed:
+- deck/playbook response:
+
+8. Strategy decision
+- decision:
+- promote live control: yes/no:
+- next candidate family:
+- reason:
+
+9. Report site / ActiveGraph
+- site path:
+- markdown report:
+- events emitted:
+- event store:
+
+10. Next recommendation
+- one sentence only.

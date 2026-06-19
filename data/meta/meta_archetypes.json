@@ -1,6 +1,6 @@
 {
   "replays_dir": "data/meta_replays",
-  "n_replays": 6,
+  "n_replays": 7,
   "n_archetypes_extracted": 0,
   "strategy_tracks": [
     {
@@ -206,6 +206,41 @@
     },
     {
       "replay": "data/meta_replays/replay_registry.json",
+      "coverage": "partial",
+      "track": "unclassified",
+      "confidence": "low",
+      "reason": "insufficient role/card metadata to assign a track",
+      "deck_skeleton": {
+        "coverage": "partial",
+        "card_count": "unknown",
+        "card_ids": [],
+        "card_id_counts": {},
+        "energy_count": "unknown",
+        "pokemon_count": "unknown",
+        "trainer_count": "unknown",
+        "evolution_lines": "unknown",
+        "role_counts": {},
+        "unknown_id_cards": 0,
+        "uncertain": true,
+        "notes": [
+          "no deck/decklist/cards array present; skeleton is unknown"
+        ]
+      },
+      "early_policy": {
+        "coverage": "partial",
+        "first_active": "unknown",
+        "bench_setup": "unknown",
+        "first_supporter": "unknown",
+        "first_attack_turn": "unknown",
+        "tutor_target_choices": [],
+        "uncertain": true,
+        "notes": [
+          "no steps array; early-game policy is unknown"
+        ]
+      }
+    },
+    {
+      "replay": "data/meta_replays/unknown_ex_tempo_decomposition.json",
       "coverage": "partial",
       "track": "unclassified",
       "confidence": "low",

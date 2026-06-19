@@ -15,9 +15,9 @@ sources:
   replay_analysis: data/meta_replays/replay_analysis.json
 controls:
   active_control:
-    candidate_id: combo_full_safety_v3_fixed
-    submission_file: combo_full_safety_v3_fixed.tar.gz
-    live_public_score: 376.6
+    candidate_id: league_water_core_reference
+    submission_file: league_water_core_reference.tar.gz
+    live_public_score: 420.8
     status: complete
     selection_rule: highest publicScore among complete non-error submissions
     note: Dynamic active control from the live score registry. Promoted from Pass-10
@@ -53,7 +53,19 @@ archetypes:
   - 547
   - 695
   - 988
-  weight: 0.1429
+  weight: 0.0909
+- key: unknown
+  status: unknown
+  confidence: unknown
+  is_ours: false
+  surrogate_deck: data/meta_replays/decks/80591511_p0_deck.csv
+  replay_episode: 80591511
+  replay_episodes:
+  - 80591511
+  - 80592831
+  - 80593320
+  evidence_card_ids: []
+  weight: 0.2727
 - key: unknown_ex_tempo
   status: provisional
   confidence: provisional
@@ -66,12 +78,13 @@ archetypes:
   - 80506042
   - 80515553
   - 80516161
+  - 80592173
   evidence_card_ids:
   - 121
   - 269
   - 678
   - 756
-  weight: 0.7143
+  weight: 0.5455
 - key: water_kyogre_abomasnow_maxbelt
   status: confirmed_from_replay
   confidence: confirmed
@@ -86,7 +99,7 @@ archetypes:
   - 723
   - 1205
   - 1235
-  weight: 0.1429
+  weight: 0.0909
 - key: water_kyogre_abomasnow_passive_mirror
   status: confirmed_from_replay
   confidence: confirmed
@@ -103,15 +116,21 @@ archetypes:
   - 80506042
   - 80515553
   - 80516161
+  - 80590776
+  - 80591511
+  - 80592173
+  - 80592831
+  - 80593320
   evidence_card_ids:
   - 721
   - 722
   - 723
   weight: null
 evaluation_weights:
-  metal_ex_zacian_ramp: 0.1429
-  unknown_ex_tempo: 0.7143
-  water_kyogre_abomasnow_maxbelt: 0.1429
+  metal_ex_zacian_ramp: 0.0909
+  unknown: 0.2727
+  unknown_ex_tempo: 0.5455
+  water_kyogre_abomasnow_maxbelt: 0.0909
 coverage:
   coverage_status: usable
   confirmed_archetypes:
@@ -122,17 +141,18 @@ coverage:
   blocked_archetypes: []
   available_archetypes:
   - metal_ex_zacian_ramp
+  - unknown
   - unknown_ex_tempo
   - water_kyogre_abomasnow_maxbelt
   - water_kyogre_abomasnow_passive_mirror
-  weight_confirmed: 0.2858
-  weight_provisional: 0.7143
+  weight_confirmed: 0.1818
+  weight_provisional: 0.5455
   weight_missing: 0.0
   eval_complete: false
   games_runnable_locally: true
   conclusion: 'Meta coverage is USABLE: 2 opponent archetype(s) are CONFIRMED from
     real extracted replays (metal_ex_zacian_ramp, water_kyogre_abomasnow_maxbelt),
     and 1 provisional bucket(s) (unknown_ex_tempo) hold real surrogate decks but lack
-    a precise named signature (71% of opponent weight). Local cabt self-play is runnable,
+    a precise named signature (55% of opponent weight). Local cabt self-play is runnable,
     so candidates can be evaluated against these surrogates — but the provisional
     bucket means the eval is not a fully named meta and no candidate is auto-promotable.'

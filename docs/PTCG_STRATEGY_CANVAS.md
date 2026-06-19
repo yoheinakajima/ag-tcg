@@ -1,4 +1,17 @@
-# ActiveGraph — Pokémon TCG Strategy Canvas (Pass 18 → 20)
+# ActiveGraph — Pokémon TCG Strategy Canvas (Pass 18 → 21)
+
+> **CURRENT AUTHORITATIVE STATE (Pass 21).** Five new ladder replays ingested (9 → 14); the
+> `league_water_core_reference` seat post-mortemed. The Pass-20 probe **resolved from `pending`
+> to `complete` @ public 420.8**, making the Water reference the **new live active control**
+> (above `combo_full_safety_v3_fixed` @ 391.1, which fails the entrypoint validator). New-replay
+> record (excl. self-mirror) **1W/3L**: win vs Roman Tamrazov (fighting Mega Lucario/Hariyama ex);
+> losses to Latitu (grass Crustle **+ Crushing Hammer** energy denial), Leopard Jaguar (no-bench
+> fast loss), Kazato (Dipplin toolbox grind). Main failure = **lack of anti-disruption pivot**;
+> stuck-on-basic-Snover is correlated but **not decisive** (won while stuck; lost after evolving).
+> Decision = **`build_water_anti_disruption`** (no auto-promote; Water stays live control).
+> **No Kaggle upload/submit; no GitHub push; root `main.py`/`deck.csv` unchanged; no new candidate
+> built.** Replay evidence is trusted over Grok summaries. See
+> `data/reports/pass21_water_reference_replay_analysis_report.md`.
 
 > **CURRENT AUTHORITATIVE STATE (Pass 20).** A single **HUMAN-APPROVED live calibration
 > probe** of `league_water_core_reference` (clean Water reference; Pass-17 internal-league
