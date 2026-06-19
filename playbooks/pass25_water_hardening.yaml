@@ -1,0 +1,89 @@
+# ActiveGraph Pass 25 — Water Live-Control Hardening playbook (shared base).
+#
+# Same deck + roles as the proven water core (core_pilot_water_v2_runtime /
+# league_water_anti_disruption_pivot_v1). The ONLY additions this pass are two
+# narrow, flag-gated, evidence-grounded hardening levers layered on top of the
+# proven deck-safe base via the compiler override. No invented ids. No deck
+# change. The build script (scripts/build_pass25_candidates.py) toggles the
+# per-candidate flags + runtime contexts so each candidate isolates ONE delta
+# from the control (the Pass-22 pivot).
+#
+# Benchable basics (by ROLE, never id guesswork):
+#   * primary_basic_attacker: Kyogre (721)   <- low-liability 1-prize attacker
+#   * setup_basic:            Snover (722)
+# Mega Abomasnow ex (723) is evolution_payoff (2-prize) -> NOT benchable.
+
+deck_id: league_water_hardening_pass25
+based_on: league_water_anti_disruption_pivot_v1
+schema: activegraph.playbook.core_pilot/v1
+
+cards:
+  3: Basic {W} Energy
+  721: Kyogre
+  722: Snover
+  723: Mega Abomasnow ex
+  1092: Secret Box
+  1121: Ultra Ball
+  1145: Mega Signal
+  1163: Powerglass
+  1219: Team Rocket's Petrel
+  1227: Lillie's Determination
+  1262: Surfing Beach
+
+roles:
+  basic_energy: [3]
+  primary_basic_attacker: [721]
+  setup_basic: [722]
+  evolution_payoff: [723]
+  search: [1121, 1145]
+  high_risk_search: [1092]
+  tool: [1163]
+  draw: [1219, 1227, 1262]
+  stadium: [1262]
+
+plan:
+  primary_plan: kyogre_tempo
+  secondary_plan: abomasnow_evolution
+  avoid_plans: [passive_draw_loop, deckout, lone_mega_prize_liability]
+
+role_weights:
+  active_prefers: [primary_basic_attacker]
+  bench_prefers: [primary_basic_attacker, setup_basic]
+  attach_prefers: [active_attacker, next_attacker]
+  search_prefers: missing_plan_piece
+  discard_prefers: [basic_energy]
+  preserve_only:
+    - setup_basic
+    - primary_basic_attacker
+    - evolution_payoff_when_setup_exists
+
+deckout_guard_thresholds:
+  penalize: 8
+  heavy: 4
+  critical: 2
+
+# Base (control-equivalent) Pass-22 narrow hooks. Each is OFF unless its flag is
+# true AND its cabt context is in the emitted runtime_contexts.
+flags:
+  emergency_backup_bench: true            # Main/ctx0: bench a backup basic when bench empty (never over an attack)
+  anti_disruption_search_pivot: true      # ctx7: fetch a backup basic while bench empty
+  preserve_backup_basic_on_discard: true  # ctx8: keep the last backup basic
+  # Pass-25 hardening flags below default FALSE here; the build script enables
+  # them per candidate so each candidate isolates exactly one delta:
+  #   prize_liability_search_pivot (ctx7) -> prize_liability_guard_v1, hybrid_guard_v1
+  #   ctx38 draw-count deckout clamp (wired via runtime_contexts, no flag needed)
+  prize_liability_search_pivot: false
+
+deck_specific_constraints:
+  - "Keep at least one Snover (setup_basic) so Mega Abomasnow ex is never orphaned."
+  - "Keep a 1-prize Kyogre attacker so the 2-prize Mega ex is never our lone attacker."
+  - "ctx38 draw-count clamp keeps >=1 card in deck (only bites at low deck)."
+
+unsafe_or_deferred:
+  - "Broad Main stays delegated to base; only the narrow emergency backup-bench sub-action is refined at ctx0, never over an attack."
+  - "ctx7 ToHand search resolution is FORCED by the engine (minCount==1); no legal decline, so the deckout seam cannot be fixed by declining a search."
+  - "Recovery trainers (Night Stretcher 1097 / Sacred Ash 1129) are real but the pilot has no runtime hook to play them; a deck change is deferred (see data/experiments/pass25_recovery_evaluation.json)."
+
+notes:
+  - "Faithful to the v2/pivot roles; adds Pass-25 prize-liability + deckout levers only."
+  - "All upload/push disabled; local-only candidates."

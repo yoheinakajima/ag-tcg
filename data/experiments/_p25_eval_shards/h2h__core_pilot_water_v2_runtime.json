@@ -1,0 +1,29 @@
+{
+  "kind": "h2h",
+  "id": "core_pilot_water_v2_runtime",
+  "role": "base_lineage",
+  "vs": "control",
+  "result": {
+    "label": "core_pilot_water_v2_runtime vs control",
+    "n_games": 20,
+    "n_played": 20,
+    "wins": 14,
+    "losses": 6,
+    "draws": 0,
+    "win_rate": 0.7,
+    "wilson_low": 0.481,
+    "wilson_high": 0.8545,
+    "our_attack_rate": 1.0,
+    "our_mean_attacks": 1.8,
+    "our_evolution_rate": 0.85,
+    "bad_statuses": [],
+    "crashes": 0,
+    "timeouts": 0,
+    "skipped": 0,
+    "errors": []
+  },
+  "elapsed_s": 23.4,
+  "generated_at": "2026-06-19T10:34:32Z",
+  "h2h_per_seat": 10,
+  "seam_per_seat": 5
+}

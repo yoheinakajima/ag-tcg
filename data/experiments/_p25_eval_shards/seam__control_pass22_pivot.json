@@ -1,0 +1,49 @@
+{
+  "kind": "seam",
+  "id": "control_pass22_pivot",
+  "role": "active_control",
+  "per_seam": {
+    "fighting": {
+      "label": "control_pass22_pivot vs fighting",
+      "n_games": 10,
+      "n_played": 10,
+      "wins": 8,
+      "losses": 2,
+      "draws": 0,
+      "win_rate": 0.8,
+      "wilson_low": 0.4902,
+      "wilson_high": 0.9433,
+      "our_attack_rate": 1.0,
+      "our_mean_attacks": 1.8,
+      "our_evolution_rate": 1.0,
+      "bad_statuses": [],
+      "crashes": 0,
+      "timeouts": 0,
+      "skipped": 0,
+      "errors": []
+    },
+    "mirror": {
+      "label": "control_pass22_pivot vs mirror",
+      "n_games": 10,
+      "n_played": 10,
+      "wins": 7,
+      "losses": 3,
+      "draws": 0,
+      "win_rate": 0.7,
+      "wilson_low": 0.3968,
+      "wilson_high": 0.8922,
+      "our_attack_rate": 1.0,
+      "our_mean_attacks": 1.8,
+      "our_evolution_rate": 0.9,
+      "bad_statuses": [],
+      "crashes": 0,
+      "timeouts": 0,
+      "skipped": 0,
+      "errors": []
+    }
+  },
+  "elapsed_s": 21.8,
+  "generated_at": "2026-06-19T10:34:55Z",
+  "h2h_per_seat": 10,
+  "seam_per_seat": 5
+}

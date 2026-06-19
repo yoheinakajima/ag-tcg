@@ -1,0 +1,27 @@
+{
+  "id": "dko_05_does_not_suppress_attack",
+  "kind": "main_action",
+  "hard": true,
+  "source": "replay_window:80622626",
+  "source_episode": "80622626",
+  "evidence_confidence": "high",
+  "competency": "deckout_drawcount_guard_narrowness",
+  "requires_context": 38,
+  "expected_behavior": "Even at a low deck the deckout guard is confined to the draw-count choice; a Main action with an attack available must still attack, never throttle the offence.",
+  "current_pivot_status": "PASS (deckout guard is isolated to ctx38 draw-count; it never suppresses attacks)",
+  "board": {
+    "active": {"card_id": 721, "hp": 200},
+    "bench": [{"card_id": 722, "hp": 90}],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 6,
+    "discard": [],
+    "prize_count": 3
+  },
+  "options": [
+    {"card_id": 721, "is_attack": true, "type": 13},
+    {"card_id": 1219, "type": 7}
+  ],
+  "expect": {"action_kind": "attack"},
+  "notes": "Proves the deckout guard does not bleed into the Main phase and never suppresses an attack at low deck."
+}

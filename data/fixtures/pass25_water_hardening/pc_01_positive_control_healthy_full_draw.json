@@ -1,0 +1,27 @@
+{
+  "id": "pc_01_positive_control_healthy_full_draw",
+  "kind": "draw_count",
+  "hard": true,
+  "source": "replay_window:80622745",
+  "source_episode": "80622745",
+  "evidence_confidence": "high",
+  "competency": "positive_control_no_dampening",
+  "expected_behavior": "On a healthy winning board (deck_count=39, mirrors the 80622745 control game) the hardening guards must not dampen card flow: draw the maximum offered (3).",
+  "current_pivot_status": "PASS (control and all candidates draw max -- guards leave healthy play untouched)",
+  "board": {
+    "active": {"card_id": 721, "hp": 200},
+    "bench": [{"card_id": 722, "hp": 90}, {"card_id": 723, "hp": 340}],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 39,
+    "discard": [],
+    "prize_count": 6
+  },
+  "options": [
+    {"number": 1},
+    {"number": 2},
+    {"number": 3}
+  ],
+  "expect": {"chosen_number": 3},
+  "notes": "Positive control from the won game (opponent deckout): the Pass-25 levers must be inert on healthy boards so they cannot regress the control's winning lines."
+}

@@ -1,0 +1,49 @@
+{
+  "kind": "seam",
+  "id": "deckout_guard_v1",
+  "role": "candidate",
+  "per_seam": {
+    "fighting": {
+      "label": "deckout_guard_v1 vs fighting",
+      "n_games": 10,
+      "n_played": 10,
+      "wins": 6,
+      "losses": 4,
+      "draws": 0,
+      "win_rate": 0.6,
+      "wilson_low": 0.3127,
+      "wilson_high": 0.8318,
+      "our_attack_rate": 1.0,
+      "our_mean_attacks": 2.0,
+      "our_evolution_rate": 0.9,
+      "bad_statuses": [],
+      "crashes": 0,
+      "timeouts": 0,
+      "skipped": 0,
+      "errors": []
+    },
+    "mirror": {
+      "label": "deckout_guard_v1 vs mirror",
+      "n_games": 10,
+      "n_played": 10,
+      "wins": 7,
+      "losses": 3,
+      "draws": 0,
+      "win_rate": 0.7,
+      "wilson_low": 0.3968,
+      "wilson_high": 0.8922,
+      "our_attack_rate": 1.0,
+      "our_mean_attacks": 2.1,
+      "our_evolution_rate": 0.9,
+      "bad_statuses": [],
+      "crashes": 0,
+      "timeouts": 0,
+      "skipped": 0,
+      "errors": []
+    }
+  },
+  "elapsed_s": 23.2,
+  "generated_at": "2026-06-19T10:35:19Z",
+  "h2h_per_seat": 10,
+  "seam_per_seat": 5
+}

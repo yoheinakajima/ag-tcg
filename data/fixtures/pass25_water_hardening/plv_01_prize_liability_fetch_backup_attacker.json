@@ -1,0 +1,27 @@
+{
+  "id": "plv_01_prize_liability_fetch_backup_attacker",
+  "kind": "search_to_hand",
+  "hard": true,
+  "source": "replay_window:80623232",
+  "source_episode": "80623232",
+  "evidence_confidence": "medium",
+  "competency": "prize_liability_search_pivot",
+  "requires_flag": "prize_liability_search_pivot",
+  "expected_behavior": "Board leans on TWO 2-prize Mega payoffs with no setup and no 1-prize attacker; fetch the 1-prize Kyogre (721) rather than start a third high-liability line.",
+  "current_pivot_status": "FAIL (control fetches setup_basic 722, deepening the multi-prize liability)",
+  "board": {
+    "active": {"card_id": 723, "hp": 340},
+    "bench": [{"card_id": 723, "hp": 340}],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 15,
+    "discard": [],
+    "prize_count": 6
+  },
+  "options": [
+    {"card_id": 721},
+    {"card_id": 722}
+  ],
+  "expect": {"chosen_card_id": 721},
+  "notes": "The ONE board where the prize-liability hook produces a real delta vs the proven base. Grounded in the 0-prizes-taken Mega-line blowout (80623232, backup_attacker=False)."
+}

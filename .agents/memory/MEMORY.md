@@ -1,5 +1,3 @@
-- [H2H variance floor](h2h-variance-floor.md) — a small-sample head-to-head "loss" can be within noise and flip sign across samples; verify reproducibility before treating a mechanistic delta as a real regression.
-- [Kaggle probe ops](kaggle-probe-ops.md) — CLI absent (use Python API), smoke needs absolute --out, submission events bypass ag_strategy_event, live scores drift.
-- [cabt select encoding](cabt-select-encoding.md) — ctx0=Main; option type 7=play-from-hand(by hand index), 8=attach, 13=attack; detect bench-a-basic via type7 + hand[index] role.
-- [core-pilot context wiring](core-pilot-context-wiring.md) — only wire cross-source-confirmed contexts; broad ctx0 stays delegated (narrow sub-actions OK); runtime_contexts = base + only this pass's hooks, or scope silently drifts.
-- [Replay post-mortem pitfalls](replay-postmortem-pitfalls.md) — trust replay state not Grok's loss-mechanism prose; 723-on-bench is usually legit evolution; live_score_registry uses camelCase fileName/publicScore (mismatch nulls active_control).
+- [Kaggle leaderboard early-episode variance](kaggle-leaderboard-early-variance.md) — a fresh submission's publicScore can read very high early then settle down as episodes accrue; never bank a strategy on an early lead.
+- [Water pilot ctx7 search-pivot ordering](water-pilot-ctx7-pivot-ordering.md) — the bench-empty anti-disruption pivot runs BEFORE the prize-liability pivot in choose_to_hand and masks it; test/ground later ctx7 levers with a non-empty bench.
+- [ActiveGraph live-control eval limits](activegraph-eval-limits.md) — surrogate eval ≠ Kaggle and deep board metrics are unmeasurable from the opaque cabt board blob; decision-replay behaviour deltas are the trustworthy evidence.

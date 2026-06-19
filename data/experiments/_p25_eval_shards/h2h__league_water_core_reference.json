@@ -1,0 +1,29 @@
+{
+  "kind": "h2h",
+  "id": "league_water_core_reference",
+  "role": "reference",
+  "vs": "control",
+  "result": {
+    "label": "league_water_core_reference vs control",
+    "n_games": 20,
+    "n_played": 20,
+    "wins": 12,
+    "losses": 8,
+    "draws": 0,
+    "win_rate": 0.6,
+    "wilson_low": 0.3866,
+    "wilson_high": 0.7812,
+    "our_attack_rate": 1.0,
+    "our_mean_attacks": 1.75,
+    "our_evolution_rate": 0.9,
+    "bad_statuses": [],
+    "crashes": 0,
+    "timeouts": 0,
+    "skipped": 0,
+    "errors": []
+  },
+  "elapsed_s": 23.6,
+  "generated_at": "2026-06-19T10:34:02Z",
+  "h2h_per_seat": 10,
+  "seam_per_seat": 5
+}

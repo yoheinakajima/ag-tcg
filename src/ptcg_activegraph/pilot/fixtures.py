@@ -72,6 +72,15 @@ def _check_expect(expect: dict, result: dict) -> tuple:
     if "action_kind_not" in expect:
         want = expect["action_kind_not"]
         return action != want, "action=%r want_not=%r" % (action, want)
+    if "chosen_number" in expect:
+        want = expect["chosen_number"]
+        got = result.get("chosen_number")
+        return got == want, "chosen_number=%r want=%r" % (got, want)
+    if "chosen_number_max" in expect:
+        want = expect["chosen_number_max"]
+        got = result.get("chosen_number")
+        ok = isinstance(got, int) and not isinstance(got, bool) and got <= want
+        return ok, "chosen_number=%r want_max=%r" % (got, want)
     return False, "no recognized expect key: %r" % (sorted(expect),)
 
 

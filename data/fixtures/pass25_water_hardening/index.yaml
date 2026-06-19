@@ -1,0 +1,31 @@
+# Pass 25 Water live-control hardening fixtures (reduced-model; graded via
+# core_pilot_decide against a candidate's EMBEDDED playbook by
+# scripts/run_core_competency_gate.py / the Pass-25 hardening gate).
+#
+# Two evidence-grounded seams (Part C: data/experiments/pass25_loss_seam_analysis):
+#   * prize-liability  (plv_*): 80623232 Mega-line 0-prizes-taken blowout.
+#   * deckout          (dko_*): 80622626 mirror deckout via forced searches.
+#   * positive-control (pc_*) : 80622745 won game -- guards must stay inert.
+#
+# Applicability tags (consumed by the Pass-25 gate; ignored by the grader):
+#   requires_flag: prize_liability_search_pivot  -> applies to candidates with that flag
+#   requires_context: 38                         -> applies to candidates wiring ctx38
+# Fixtures with neither tag apply to every candidate.
+#
+# HONEST CAVEAT: plv_02/plv_03/plv_04 PASS on the Pass-22 control too -- the
+# proven base already fetches the 1-prize attacker in nearly all prize-liability
+# windows. Only plv_01 (two Mega payoffs, no setup, no attacker) is a real delta.
+# No invented card ids; all ids are deck/role members of the proven water core.
+schema: activegraph.fixtures.core_competency/v1
+deck: league_water_hardening_pass25
+fixtures:
+  - plv_01_prize_liability_fetch_backup_attacker.json
+  - plv_02_base_already_fetches_attacker.json
+  - plv_03_narrow_skip_when_attacker_present.json
+  - plv_04_narrow_bail_when_no_attacker_searchable.json
+  - dko_01_drawcount_clamp_low_deck.json
+  - dko_02_drawcount_min_when_none_safe.json
+  - dko_03_drawcount_full_when_healthy.json
+  - dko_04_drawcount_unknown_deck_default_max.json
+  - dko_05_does_not_suppress_attack.json
+  - pc_01_positive_control_healthy_full_draw.json

@@ -1,0 +1,29 @@
+{
+  "kind": "h2h",
+  "id": "deckout_guard_v1",
+  "role": "candidate",
+  "vs": "control",
+  "result": {
+    "label": "deckout_guard_v1 vs control",
+    "n_games": 20,
+    "n_played": 20,
+    "wins": 10,
+    "losses": 10,
+    "draws": 0,
+    "win_rate": 0.5,
+    "wilson_low": 0.2993,
+    "wilson_high": 0.7007,
+    "our_attack_rate": 1.0,
+    "our_mean_attacks": 1.7,
+    "our_evolution_rate": 0.95,
+    "bad_statuses": [],
+    "crashes": 0,
+    "timeouts": 0,
+    "skipped": 0,
+    "errors": []
+  },
+  "elapsed_s": 26.5,
+  "generated_at": "2026-06-19T10:32:31Z",
+  "h2h_per_seat": 10,
+  "seam_per_seat": 5
+}

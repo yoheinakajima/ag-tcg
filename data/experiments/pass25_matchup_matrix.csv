@@ -1,0 +1,14 @@
+axis,participant,role,opponent,n_games,wins,losses,draws,win_rate,wilson_low,wilson_high,our_attack_rate,our_mean_attacks,our_evolution_rate,bad_statuses,crashes,timeouts,skipped
+h2h,deckout_guard_v1,candidate,control,20,10,10,0,0.5,0.2993,0.7007,1.0,1.7,0.95,,0,0,0
+h2h,prize_liability_guard_v1,candidate,control,20,13,7,0,0.65,0.4329,0.8188,1.0,1.85,0.95,,0,0,0
+h2h,hybrid_guard_v1,candidate,control,20,8,12,0,0.4,0.2188,0.6134,1.0,2.05,1.0,,0,0,0
+h2h,league_water_core_reference,reference,control,20,12,8,0,0.6,0.3866,0.7812,1.0,1.75,0.9,,0,0,0
+h2h,core_pilot_water_v2_runtime,base_lineage,control,20,14,6,0,0.7,0.481,0.8545,1.0,1.8,0.85,,0,0,0
+seam,control_pass22_pivot,active_control,fighting,10,8,2,0,0.8,0.4902,0.9433,1.0,1.8,1.0,,0,0,0
+seam,control_pass22_pivot,active_control,mirror,10,7,3,0,0.7,0.3968,0.8922,1.0,1.8,0.9,,0,0,0
+seam,deckout_guard_v1,candidate,fighting,10,6,4,0,0.6,0.3127,0.8318,1.0,2.0,0.9,,0,0,0
+seam,deckout_guard_v1,candidate,mirror,10,7,3,0,0.7,0.3968,0.8922,1.0,2.1,0.9,,0,0,0
+seam,prize_liability_guard_v1,candidate,fighting,10,7,3,0,0.7,0.3968,0.8922,1.0,2.2,1.0,,0,0,0
+seam,prize_liability_guard_v1,candidate,mirror,10,5,5,0,0.5,0.2366,0.7634,1.0,1.6,0.7,,0,0,0
+seam,hybrid_guard_v1,candidate,fighting,10,7,3,0,0.7,0.3968,0.8922,1.0,2.3,1.0,,0,0,0
+seam,hybrid_guard_v1,candidate,mirror,10,6,4,0,0.6,0.3127,0.8318,1.0,1.7,1.0,,0,0,0

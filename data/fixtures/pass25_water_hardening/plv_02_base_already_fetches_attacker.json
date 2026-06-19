@@ -1,0 +1,28 @@
+{
+  "id": "plv_02_base_already_fetches_attacker",
+  "kind": "search_to_hand",
+  "hard": true,
+  "source": "replay_window:80623232",
+  "source_episode": "80623232",
+  "evidence_confidence": "high",
+  "competency": "prize_liability_search_pivot",
+  "requires_flag": "prize_liability_search_pivot",
+  "expected_behavior": "On the actual 80623232 end-board pattern (Snover active, Mega benched, no Kyogre), the 1-prize attacker is the missing plan piece and must be fetched.",
+  "current_pivot_status": "PASS (base score_search_target already fetches the 1-prize attacker here; documents the seam is largely covered by the proven base)",
+  "board": {
+    "active": {"card_id": 722, "hp": 90},
+    "bench": [{"card_id": 723, "hp": 340}],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 18,
+    "discard": [],
+    "prize_count": 6
+  },
+  "options": [
+    {"card_id": 721},
+    {"card_id": 722},
+    {"card_id": 3}
+  ],
+  "expect": {"chosen_card_id": 721},
+  "notes": "Honest control: both the Pass-22 control AND the prize-liability candidate fetch Kyogre. The base already handles most prize-liability windows -- the hook is near-no-op."
+}

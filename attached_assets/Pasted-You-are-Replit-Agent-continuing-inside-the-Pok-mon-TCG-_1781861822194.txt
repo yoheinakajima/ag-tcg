@@ -1,0 +1,623 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Raw replay JSON files must remain gitignored.
+- Keep all candidate tarballs top-level main.py + deck.csv only.
+- This is a big local research/evaluation pass only.
+- No Kaggle upload.
+
+Read before acting:
+- docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md
+- docs/NEXT_AGENT_README.md
+- docs/CORE_PILOT_ARCHITECTURE.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/pass21_final_report.md
+- data/reports/pass22_water_anti_disruption_report.md if present
+- data/reports/pass23_water_anti_disruption_kaggle_probe_report.md
+- data/reports/pass24_anti_disruption_pivot_replay_report.md
+- data/fixtures/pass24_planned_fixtures.yaml
+- data/activegraph/lab_events.jsonl
+
+Current authoritative state:
+- league_water_anti_disruption_pivot_v1 is the current live best.
+- Pass 24 fresh Kaggle score:
+  - league_water_anti_disruption_pivot_v1: 520.8
+  - submission.tar.gz: 363.0
+  - combo_full_safety_v3_fixed: 353.5
+  - league_water_core_reference: 268.2
+  - deck_energy_trim_light: 288.4
+- The Pass 22/23 anti-disruption pivot appears to have fixed the original empty-board / no-Pokémon-in-play loss mode:
+  - no no_pokemon_in_play losses in Pass 24 replays
+  - pivot developed board in every game
+  - Mega 723 was not illegally treated as a Basic
+- New remaining seams:
+  1. Fighting/Mega Lucario tempo loss:
+     - 80623232 loss
+     - final board NOT empty
+     - Mega Abomasnow ex KO’d / large prize swing / tempo loss
+  2. Mirror/grind deckout:
+     - 80622626 mirror
+     - loser had healthy board but deckCount hit 0
+  3. Psychic win:
+     - 80622745 win
+     - use as positive control / do not overfit away from pressure wins
+- The next pass should harden the Water live-control family without assuming local results equal Kaggle results.
+
+Goal:
+Run Pass 25: Water Live-Control Hardening Sprint.
+
+Objectives:
+1. Re-read live score status read-only and preserve current live-control state.
+2. Build replay-window diagnostics for the two remaining seams:
+   - Fighting/Mega Lucario tempo / prize-liability seam
+   - Mirror/grind deckout seam
+3. Create fixture suites for prize-liability and deckout-conservation behavior.
+4. Build 3–5 targeted Water variants, all grounded in replay evidence.
+5. Run validation, live smoke, internal league, and replay-derived meta sanity.
+6. Produce a strategy decision:
+   - keep current live control
+   - queue candidate for deeper local confirmation
+   - candidate for future human-approved Kaggle probe
+   - reject/rework
+7. No upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Read-only live score refresh
+
+Run read-only status:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass25.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass25.csv || true
+
+If kaggle is not on PATH, use the Python kaggle.cli/API method used in prior passes.
+
+Rebuild/update:
+
+data/kaggle_uploads/live_score_registry.json
+data/kaggle_uploads/live_score_registry.md
+
+Rules:
+- no submit command
+- no upload
+- status listing only
+- publicScore may be a string; coerce safely to float
+- recompute active control from the live listing
+- record score drift from Pass 24
+- if league_water_anti_disruption_pivot_v1 remains live best, mark it active_control
+- if scores have moved, record current state honestly
+
+Output:
+- data/experiments/pass25_live_score_status.json
+- data/experiments/pass25_live_score_status.md
+
+Part C — Replay-window diagnostics
+
+Create:
+
+scripts/analyze_pass25_water_loss_seams.py
+
+Inputs:
+- data/meta_replays/raw/*.json
+- data/meta_replays/replay_registry.json
+- data/experiments/pass24_empty_board_postmortem.json if available
+- local card DB if available
+
+Outputs:
+- data/experiments/pass25_loss_seam_analysis.json
+- data/experiments/pass25_loss_seam_analysis.md
+- data/experiments/pass25_loss_windows.jsonl
+
+Analyze these episodes first:
+- 80623232 — Fighting/Mega Lucario tempo loss
+- 80622626 — mirror / deckout loss
+- 80622745 — Psychic win positive control
+
+For each replay, compute:
+- candidate attribution
+- our seat
+- result
+- final board
+- final deckCount
+- final prize state if available
+- final hand/discard
+- loss_condition:
+  - prize_loss
+  - deckout
+  - no_pokemon_in_play
+  - timeout
+  - unknown
+- whether board was healthy at loss
+- whether active/bench included Kyogre, Snover, Mega Abomasnow ex
+- whether Mega Abomasnow ex was KO’d
+- whether Mega Abomasnow ex gave up multi-prize / large prize swing if detectable
+- whether a 3-prize swing or prize-risk state occurred
+- whether opponent had high-damage attacker online
+- whether retreat/switch/backup options existed
+- whether the agent could avoid exposing Mega Abomasnow ex
+- deckout trajectory:
+  - deckCount by turn
+  - number of draw/search effects used
+  - low-deck optional draw/search decisions
+  - ctx38 draw-count decisions
+  - ctx7 ToHand/search decisions
+  - Secret Box / Ultra Ball / Lillie usage
+- whether the win in 80622745 depended on maintaining aggression / Kyogre pressure
+
+Do not fabricate card effects.
+If an effect or prize value cannot be proven from replay state, mark unknown.
+
+Part D — Fixture suite: prize-liability and deckout conservation
+
+Create:
+
+data/fixtures/pass25_water_hardening/
+data/fixtures/pass25_water_hardening/index.yaml
+
+Minimum fixtures:
+
+A. Prize-liability / Fighting-tempo fixtures
+
+1. avoid_unnecessary_mega_ex_exposure_when_behind
+- Board has Kyogre active and backup bench.
+- Mega Abomasnow ex evolution/play is available but opponent has high-damage threat or prize pressure tag.
+- Expected: do not promote/expose Mega unless it meaningfully stabilizes or attacks.
+- Advisory if exact KO risk cannot be proven; hard only if reduced model is clear.
+
+2. prefer_backup_basic_before_mega_ex_when_board_thin
+- Board thin, Snover/Kyogre backup and Mega option available.
+- Expected: ensure backup Basic before committing Mega payoff.
+- Hard.
+
+3. do_not_orphan_mega_without_snover
+- Search options include orphan Mega Abomasnow and missing Snover/Kyogre.
+- Expected: choose Basic/pivot line before orphan Mega.
+- Hard.
+
+4. fighting_ex_fast_pressure_response
+- Source episode: 80623232.
+- Reduced model where opponent pressure is tagged.
+- Expected: maintain board + avoid single exposed 3-prize liability.
+- Advisory/hard depending evidence.
+
+B. Deckout / draw-conservation fixtures
+
+5. low_deck_decline_optional_draw
+- deckCount low.
+- Optional draw/search available.
+- Expected: decline or choose 0 when legal.
+- Hard.
+
+6. low_deck_minimize_ctx38_number
+- context 38 / DrawCount.
+- deckCount near threshold.
+- Options include 0/1/N.
+- Expected: choose safe lower number, not max draw.
+- Hard.
+
+7. mirror_stop_optional_search_when_deck_low
+- Mirror/grind tag true, deckCount low.
+- ctx7 search optional.
+- Expected: decline or choose only if it prevents immediate loss / wins.
+- Hard/advisory depending legal action semantics.
+
+8. preserve_deck_in_mirror_after_turn_threshold
+- turn high, deckCount decreasing, board stable.
+- Expected: avoid optional Lillie/Secret Box/Ultra Ball unless necessary.
+- Advisory.
+
+9. do_not_discard_recovery_or_pivot_when_deckout_risk
+- If recovery cards are added in a deck variant, preserve them under low-deck risk.
+- Only include if recovery variant is built.
+- Advisory/hard depending variant.
+
+C. Positive-control fixture
+
+10. do_not_block_kyogre_pressure_when_ahead
+- Source: 80622745 positive win.
+- Board state where Kyogre pressure is working and deck not low.
+- Expected: keep attacking / do not over-conserve.
+- Hard/advisory.
+
+Every fixture must include:
+- source_episode if replay-derived
+- evidence_confidence
+- hard/advisory
+- expected behavior
+- no invented IDs
+- whether current pivot passes/fails
+
+Part E — Candidate variants
+
+Build at most 5 targeted candidates. Do not upload any.
+
+Base candidate:
+- league_water_anti_disruption_pivot_v1
+
+Candidate 1:
+candidate_id: water_pivot_deckout_guard_v1
+Type: runtime/playbook only.
+Hypothesis:
+- Preserve the successful board-safety behavior while reducing mirror/grind deckout risk.
+Hooks:
+- ctx38 low-deck draw-count clamp
+- ctx7 optional search decline / narrower search when deckCount low
+- optional Main Play conservation for known draw/search cards only if option resolves cleanly and deckCount is low
+Guardrails:
+- do not suppress attack
+- do not suppress emergency backup bench
+- do not suppress search when it prevents no-pokemon loss
+- do not suppress Kyogre pressure when deck healthy
+
+Candidate 2:
+candidate_id: water_pivot_prize_liability_guard_v1
+Type: runtime/playbook only.
+Hypothesis:
+- Avoid unnecessary Mega Abomasnow ex exposure into high-damage / multi-prize tempo swings.
+Hooks:
+- avoid orphan Mega search
+- prefer backup Basic / second attacker before Mega when board thin
+- if Mega play/evolve option cannot resolve cleanly, delegate
+- do NOT broadly block Mega Abomasnow; only gate risky exposure states
+
+Candidate 3:
+candidate_id: water_pivot_hybrid_guard_v1
+Type: runtime/playbook.
+Hypothesis:
+- Combine deckout guard + prize-liability guard.
+Guardrails:
+- if combined hooks conflict, prioritize:
+  1. legal action
+  2. avoid immediate no-pokemon loss
+  3. maintain attacker pressure
+  4. conserve deck
+  5. avoid risky Mega exposure
+
+Candidate 4:
+candidate_id: water_pivot_recovery_deck_v1
+Type: small deck + playbook variant.
+Build only if card IDs validate:
+- Night Stretcher 1097
+- Sacred Ash 1129
+Use a conservative deck diff:
+- remove 2–4 Basic Water Energy
+- add 2 Night Stretcher and/or 1 Sacred Ash
+- keep 60 cards
+- obey 4-copy caps
+Hypothesis:
+- Recover basics / reduce deckout pressure / improve grind.
+Guardrails:
+- do not invent IDs
+- if card effects cannot be used reliably by runtime, label as deck-only exploratory
+- if legality/validator fails, block honestly
+
+Candidate 5:
+candidate_id: water_pivot_recovery_hybrid_v1
+Type: optional.
+Build only if Candidate 4 validates and runtime can safely preserve/use recovery cards.
+Otherwise skip and document blocked.
+
+Every candidate:
+- playbook path
+- run dir
+- tarball path
+- deck diff
+- runtime context diff
+- parent candidate
+- hypothesis
+- ActiveGraph StrategyIterationCreated event
+
+Part F — Candidate generation
+
+Output:
+- experiments/runs_pass25/<candidate_id>/
+- data/submissions/candidates_pass25/<candidate_id>.tar.gz
+- data/experiments/pass25_candidate_manifest.json
+- data/experiments/pass25_candidate_manifest.md
+
+Every tarball:
+- top-level main.py + deck.csv only
+- stdlib-only runtime
+- robust last-callable entrypoint
+- returns 60-card deck on deck-selection
+- legal action indices
+- no root mutation
+
+Part G — Validation gates
+
+Run for every built candidate:
+
+python scripts/validate_candidate_tarball.py <tarball>
+python scripts/validate_candidate_entrypoint.py <tarball>
+
+Run:
+- existing core competency gate
+- pass22 water board-safety gate
+- pass25 water hardening gate
+
+Run live smoke:
+- self-play 1 game/seat if feasible
+- vs current live control 1 game/seat
+- vs a Fighting/Mega Lucario surrogate if available
+- vs mirror if feasible
+
+Outputs:
+- data/experiments/pass25_candidate_validation.json
+- data/experiments/pass25_candidate_validation.md
+- data/experiments/pass25_live_smoke.json
+- data/experiments/pass25_live_smoke.md
+
+Required for eval eligibility:
+- tarball validator PASS
+- entrypoint validator PASS
+- no hard failure on board-safety gate
+- no INVALID/ERROR/TIMEOUT in smoke
+
+Part H — Decision replay on real windows
+
+Create:
+
+scripts/replay_pass25_decisions.py
+
+Compare:
+- current live control: league_water_anti_disruption_pivot_v1
+- each Pass 25 candidate
+
+Replay windows:
+- 80623232 high-tempo / Mega KO / Fighting pressure windows
+- 80622626 low-deck mirror windows
+- 80622745 positive-control attack-pressure windows
+
+Outputs:
+- data/experiments/pass25_decision_replay.json
+- data/experiments/pass25_decision_replay.md
+
+For each window:
+- old action
+- new action
+- expected behavior
+- whether new action changes decision
+- whether changed decision is legal
+- whether changed decision is narrow
+- whether positive-control behavior is preserved
+- whether hook misfires
+
+Part I — Internal league / focused eval
+
+Run a larger local evaluation with subprocess isolation / Replit workflow if needed.
+
+Participants:
+- league_water_anti_disruption_pivot_v1 current control
+- water_pivot_deckout_guard_v1 if valid
+- water_pivot_prize_liability_guard_v1 if valid
+- water_pivot_hybrid_guard_v1 if valid
+- water_pivot_recovery_deck_v1 if valid
+- water_pivot_recovery_hybrid_v1 if valid
+- league_water_core_reference as historical reference if feasible
+- core_pilot_water_v2_runtime as historical reference if feasible
+
+Opponents:
+A. Direct head-to-head:
+- each candidate vs current control
+
+B. Replay-derived subfamilies:
+- fighting_lucario_hariyama_ex
+- fighting/mega-lucario tempo from 80623232
+- mirror/water
+- grass_crustle_energy_denial_control
+- grass_fire_crustle_typhlosion_control
+- grass_water_dipplin_toolbox
+- psychic_alakazam_dudunsparce if confirmed
+- Pass 13 refined subfamilies if still available
+
+Budget:
+- 10 games/seat for direct H2H if feasible
+- 5 games/seat for broad subfamily eval
+- seat-swapped
+- watchdog/subprocess isolated
+- if heavy, run as a Replit workflow
+- no upload
+
+Outputs:
+- data/experiments/pass25_focused_eval.json
+- data/experiments/pass25_focused_eval.md
+- data/experiments/pass25_matchup_matrix.csv
+- data/experiments/pass25_rankings.json
+- data/experiments/pass25_rankings.md
+
+Metrics:
+- weighted win rate
+- H2H vs current control
+- per-archetype score
+- Fighting/Mega Lucario score
+- mirror/deckout score
+- grass-control score
+- no_pokemon_in_play loss rate
+- deckout loss rate
+- low-deck optional-draw count
+- low-deck optional-search count
+- Mega exposure / KO count if detectable
+- prize-liability tag count
+- recovery-card usage if built
+- crashes/timeouts/invalid returns
+- Wilson intervals
+
+Part J — Strategy decision
+
+Create:
+- data/experiments/pass25_strategy_decision.json
+- data/experiments/pass25_strategy_decision.md
+
+Decision labels:
+- keep_current_control
+- candidate_for_deeper_confirmation
+- future_kaggle_probe_candidate
+- reject_deckout_guard
+- reject_prize_guard
+- reject_recovery_variant
+- build_next_fixture
+- wait_for_more_replays
+
+Rules:
+- No automatic upload.
+- A candidate can be future_kaggle_probe_candidate only if:
+  - validators PASS
+  - smoke PASS
+  - no hard fixture regressions
+  - H2H vs current control non-negative or strong subfamily gain with no collapse
+  - no positive-control regression
+  - enough local games to support the label
+- If no candidate clears that bar, keep current control.
+
+Part K — ActiveGraph events
+
+Emit:
+- StrategyIterationCreated for every built candidate
+- StrategyFixtureAdded for pass25 fixtures
+- StrategyIterationEvaluated for eval results
+- StrategyDecisionRecorded for strategy decision
+- ReportSiteGenerated
+- no_upload true on all events
+
+Include:
+- parent candidate
+- deck diff
+- playbook diff
+- runtime context diff
+- hypotheses
+- validation status
+- eval status
+- decision
+
+Part L — Reports and docs
+
+Update:
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- data/reports/pass25_water_live_control_hardening_report.md
+
+Include:
+- latest score state
+- remaining loss seams
+- fixture suite
+- candidate variants
+- validation table
+- decision replay table
+- focused eval
+- strategy decision
+- no-upload note
+
+Part M — Tests
+
+Add/update tests for:
+- score refresh handles string publicScore
+- active control remains pivot when live listing says so
+- 80623232 and 80622626 windows are present
+- fixture suite references real episode IDs
+- deckout guard clamps ctx38 only when low deck
+- deckout guard does not suppress attack/pressure positive-control
+- prize-liability guard does not broadly block Mega Abomasnow
+- Mega Abomasnow is never treated as Basic
+- recovery variant validates IDs 1097/1129 or blocks honestly
+- candidate tarballs are top-level only
+- entrypoint validators pass for eligible candidates
+- league/eval excludes invalid candidates
+- no upload flag false / no_upload true
+- root files unchanged
+- report includes local/surrogate caveat
+
+Run targeted tests.
+Run broader tests if feasible.
+
+Part N — Final report
+
+Report exactly:
+
+ActiveGraph Pass 25 Water Live-Control Hardening Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Live score state
+- status refreshed:
+- active control:
+- active control score:
+- score drift:
+- conclusion:
+
+3. Loss seam analysis
+- 80623232:
+- 80622626:
+- 80622745:
+- key failure seams:
+- positive-control seam:
+
+4. Fixture suite
+- fixture path:
+- fixtures created:
+- hard/advisory:
+- replay-grounded:
+- current control failures:
+
+5. Candidate generation
+- candidates built:
+- candidates blocked:
+- deck diffs:
+- runtime diffs:
+- no invented IDs:
+
+6. Validation / smoke
+- tarball validators:
+- entrypoint validators:
+- gates:
+- live smoke:
+- invalid/crash/timeout:
+
+7. Decision replay
+- windows:
+- candidates compared:
+- useful behavior changes:
+- misfires:
+- positive-control preservation:
+
+8. Focused eval
+- participants:
+- opponents:
+- games:
+- best candidate:
+- H2H vs control:
+- mirror/deckout result:
+- Fighting tempo result:
+- Wilson intervals:
+- caveats:
+
+9. Strategy decision / queue
+- decision:
+- candidates queued:
+- upload performed: no
+- future probe candidate:
+- reason:
+
+10. Next recommendation
+- one sentence only.

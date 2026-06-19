@@ -1,0 +1,27 @@
+{
+  "id": "plv_03_narrow_skip_when_attacker_present",
+  "kind": "search_to_hand",
+  "hard": true,
+  "source": "synthetic_control:prize_liability_narrowness",
+  "source_episode": "80623232",
+  "evidence_confidence": "high",
+  "competency": "prize_liability_search_pivot_narrowness",
+  "requires_flag": "prize_liability_search_pivot",
+  "expected_behavior": "We already have a 1-prize Kyogre in play, so the prize-liability hook MUST NOT fire; the base search target is unchanged.",
+  "current_pivot_status": "PASS (control and candidate both pick the base target -- proves narrowness, no over-fire)",
+  "board": {
+    "active": {"card_id": 721, "hp": 200},
+    "bench": [{"card_id": 723, "hp": 340}],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 20,
+    "discard": [],
+    "prize_count": 4
+  },
+  "options": [
+    {"card_id": 721},
+    {"card_id": 722}
+  ],
+  "expect": {"chosen_card_id": 722},
+  "notes": "Narrowness: have_primary == True disables the hook; behaviour is byte-identical to the proven control."
+}

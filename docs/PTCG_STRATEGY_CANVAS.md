@@ -267,3 +267,68 @@ equals a Kaggle result or justifies an upload.
 No Kaggle upload/submit; no GitHub push; root `main.py`/`deck.csv` byte-identical to
 v1; no invented card ids; tarballs are top-level `main.py` + `deck.csv` only; Durant
 excluded; all no-upload flags `false`.
+
+---
+
+# Pass 25 — Water live-control hardening
+
+## P25.0 Drift finding (Part B)
+Read-only Kaggle refresh: the Pass-24 pivot reading of **520.8 settled to 358.7**
+(−162.1) — the +157 "lead" was an **early-episode artifact**. Live best is
+`submission.tar.gz` @ **363.0**; pivot Δ −4.3 (within noise). The family is
+statistically tied, so the sprint is well-motivated but the bar for a live-control
+change is **raised**, not lowered.
+
+## P25.1 Loss seams (Part C)
+Two evidence-grounded seams from 3 attributed replays: **80623232** Fighting/Mega-
+Lucario **prize-liability tempo loss** (Mega KO → multi-prize swing, healthy board,
+we took 0 prizes) and **80622626** mirror **grind-deckout** (deck=0, bench=4 full
+board, 16 forced searches). **80622745** is the positive-control **win** (opp
+deckout). Proven: ctx7 low-deck search is forced (`min==max==1`, no legal decline);
+**ctx38 appears ~1×/game → a draw-count clamp has no replay grounding**.
+
+## P25.2 Fixtures (Part D)
+10 fixtures: prize-liability `plv_01–04`, deckout `dko_01–05`, positive-control
+`pc_01`. No invented IDs. **Honest caveat: `plv_02/03/04` PASS on the control too —
+only `plv_01` is a genuine delta** (the base already fetches the 1-prize attacker).
+
+## P25.3 Candidates (Parts E/F)
+Three single-delta candidates over the byte-identical proven Water v2 base (deck=60):
+`deckout_guard_v1` (ctx38 clamp), `prize_liability_guard_v1` (flag-gated ctx7 pivot),
+`hybrid_guard_v1` (both). A **recovery** angle (real IDs 1097/1129) **validated but
+BLOCKED pre-build** — no runtime play hook → deck dilution.
+
+## P25.4 Validation + smoke (Part G)
+All three **ELIGIBLE**: validators PASS (60-card, callable `core_pilot_agent`); core
+gate 13/0/1; board-safety 9/0/0; new hardening gate 0 applicable hard-fails; live
+smoke clean self/control/fighting/mirror (no INVALID/ERROR/TIMEOUT).
+
+## P25.5 Decision replay (Part H) — the pivotal finding
+**262 analysed-seat decisions across 3 episodes; ALL candidates: changed=0, on_seam=0,
+misfires=0, illegal=0, positive-control preserved.** The deckout clamp had **zero
+applicable ctx38 decisions** on our seat; the prize pivot's fire-condition was **never
+met**. The hooks are provably safe & narrow but **inert on the real seams**.
+
+## P25.6 Focused eval (Part I — surrogate, directional)
+All games clean. **No candidate clears the bar.** H2H-vs-control: deckout 0.50, prize
+0.65, hybrid 0.40 — all Wilson intervals straddle 0.5. Seam agg: control **0.75**;
+deckout 0.65 (−0.10), prize 0.60 (−0.15), hybrid 0.65 (−0.10) — **no material gain**.
+Deep board metrics **NOT_MEASURED** (opaque cabt blob). Directional only.
+
+## P25.7 Decision (Part J)
+**`keep_current_control`** for all three (secondary `inert_no_measurable_effect_on_
+real_seams`). `current_best` stays `league_water_anti_disruption_pivot_v1`. No
+candidate clears `future_kaggle_probe` (needs eligible + pos-ctrl + non-negative H2H +
+**material seam gain ≥ +0.08 backed by an on-seam behaviour delta**). **No upload, no
+submit, no push.**
+
+## P25.8 Honest limits
+Surrogate eval ≠ Kaggle; deep board metrics unmeasurable from the opaque board blob;
+the decision rests on the **behavioural replay**, not the surrogate win-rates. Neither
+justifies an upload.
+
+## P25.9 Guardrails honored
+No Kaggle upload/submit; no GitHub push; root `main.py`/`deck.csv` byte-identical; no
+invented card ids; tarballs top-level `main.py`+`deck.csv` only; all Pass-25
+build/eval/decision event `no_upload` flags true (the shared read-only Part-B
+score-refresh events perform no upload by construction).

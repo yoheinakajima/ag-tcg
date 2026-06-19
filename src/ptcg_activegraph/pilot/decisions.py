@@ -229,6 +229,33 @@ def choose_to_hand(options, board, playbook):
                 best = sorted(backups, key=lambda o: _backup_basic_rank(card_id(o), ri))[0]
                 return _result(card_id(best), action_kind="search_to_hand",
                                rationale="anti-disruption: fetch a backup basic while bench empty")
+    # Prize-liability search pivot (flag-gated, Pass 25): when our board leans on
+    # the high-liability (2-prize) evolution payoff line (Mega ex / its setup
+    # basic) and we have NO low-liability (1-prize) primary attacker in play,
+    # fetch a primary_basic_attacker (Kyogre) so the Mega ex is never our lone
+    # attacker feeding multi-prize KOs into a high-damage line. Grounded in
+    # 80623232 (we lost 0-prizes-taken with no Kyogre backup). Narrow: only fires
+    # when both conditions hold AND a primary attacker is actually searchable;
+    # still selects exactly ONE target -- only WHICH target changes.
+    if ri.flags.get("prize_liability_search_pivot"):
+        in_play = []
+        if isinstance(board, dict):
+            a = board.get("active")
+            if a is not None:
+                in_play.append(card_id(a))
+            for c in (board.get("bench") or []):
+                in_play.append(card_id(c))
+        have_primary = any(has_role(c, "primary_basic_attacker", ri) for c in in_play)
+        leans_mega = any(has_role(c, "evolution_payoff", ri) or has_role(c, "setup_basic", ri)
+                         for c in in_play)
+        if leans_mega and not have_primary:
+            primaries = [o for o in options
+                         if has_role(card_id(o), "primary_basic_attacker", ri)]
+            if primaries:
+                best = sorted(primaries, key=lambda o: _backup_basic_rank(card_id(o), ri))[0]
+                return _result(card_id(best), action_kind="search_to_hand",
+                               rationale="prize-liability: keep a 1-prize backup attacker "
+                                         "(avoid a lone 2-prize Mega ex line)")
     _, opt = _pick_best(options, lambda o: score_search_target(o, board, ri))
     return _result(card_id(opt), action_kind="search_to_hand",
                    rationale="fetch the missing plan piece")

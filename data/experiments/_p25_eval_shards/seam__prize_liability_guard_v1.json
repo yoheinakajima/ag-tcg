@@ -1,0 +1,49 @@
+{
+  "kind": "seam",
+  "id": "prize_liability_guard_v1",
+  "role": "candidate",
+  "per_seam": {
+    "fighting": {
+      "label": "prize_liability_guard_v1 vs fighting",
+      "n_games": 10,
+      "n_played": 10,
+      "wins": 7,
+      "losses": 3,
+      "draws": 0,
+      "win_rate": 0.7,
+      "wilson_low": 0.3968,
+      "wilson_high": 0.8922,
+      "our_attack_rate": 1.0,
+      "our_mean_attacks": 2.2,
+      "our_evolution_rate": 1.0,
+      "bad_statuses": [],
+      "crashes": 0,
+      "timeouts": 0,
+      "skipped": 0,
+      "errors": []
+    },
+    "mirror": {
+      "label": "prize_liability_guard_v1 vs mirror",
+      "n_games": 10,
+      "n_played": 10,
+      "wins": 5,
+      "losses": 5,
+      "draws": 0,
+      "win_rate": 0.5,
+      "wilson_low": 0.2366,
+      "wilson_high": 0.7634,
+      "our_attack_rate": 1.0,
+      "our_mean_attacks": 1.6,
+      "our_evolution_rate": 0.7,
+      "bad_statuses": [],
+      "crashes": 0,
+      "timeouts": 0,
+      "skipped": 0,
+      "errors": []
+    }
+  },
+  "elapsed_s": 21.6,
+  "generated_at": "2026-06-19T10:35:48Z",
+  "h2h_per_seat": 10,
+  "seam_per_seat": 5
+}

@@ -12,3 +12,9 @@ id = "e5CddyXe5TZ0RTnYb2WHn"
 uri = "file://data/reports/pass18_final_report.md"
 type = "text"
 title = "Pass 18 — Final Report (10-section)"
+
+[[outputs]]
+id = "SVoJN0TmsaSqjkbcPqa6s"
+uri = "file://data/experiments/pass25_water_live_control_hardening_report.md"
+type = "text"
+title = "Pass 25 — Water Live-Control Hardening Report (10 sections)"

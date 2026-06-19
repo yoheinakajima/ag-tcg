@@ -1,0 +1,28 @@
+{
+  "id": "dko_04_drawcount_unknown_deck_default_max",
+  "kind": "draw_count",
+  "hard": false,
+  "advisory": true,
+  "source": "synthetic_control:deckout_unknown",
+  "source_episode": "80622626",
+  "evidence_confidence": "low",
+  "competency": "deckout_drawcount_guard_narrowness",
+  "requires_context": 38,
+  "expected_behavior": "With deck_count unknown the guard cannot prove a deckout risk and must not clamp; it draws the maximum offered (3).",
+  "current_pivot_status": "PASS (no provable risk -> no clamp)",
+  "board": {
+    "active": {"card_id": 721, "hp": 200},
+    "bench": [{"card_id": 722, "hp": 90}],
+    "bench_max": 5,
+    "hand": [],
+    "discard": [],
+    "prize_count": 5
+  },
+  "options": [
+    {"number": 1},
+    {"number": 2},
+    {"number": 3}
+  ],
+  "expect": {"chosen_number": 3},
+  "notes": "Advisory: when deck_count is unobservable the guard stays inert rather than guessing."
+}

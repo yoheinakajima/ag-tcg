@@ -1,0 +1,28 @@
+{
+  "id": "dko_03_drawcount_full_when_healthy",
+  "kind": "draw_count",
+  "hard": true,
+  "source": "synthetic_control:deckout_narrowness",
+  "source_episode": "80622626",
+  "evidence_confidence": "high",
+  "competency": "deckout_drawcount_guard_narrowness",
+  "requires_context": 38,
+  "expected_behavior": "At a healthy deck_count=40 the guard MUST NOT clamp: draw the maximum offered (3).",
+  "current_pivot_status": "PASS (no clamp at healthy deck -- proves the guard only bites at low deck)",
+  "board": {
+    "active": {"card_id": 721, "hp": 200},
+    "bench": [{"card_id": 722, "hp": 90}],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 40,
+    "discard": [],
+    "prize_count": 5
+  },
+  "options": [
+    {"number": 1},
+    {"number": 2},
+    {"number": 3}
+  ],
+  "expect": {"chosen_number": 3},
+  "notes": "Narrowness: the deckout guard is inert at healthy deck counts and never throttles card flow."
+}

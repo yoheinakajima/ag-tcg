@@ -1,0 +1,28 @@
+{
+  "id": "plv_04_narrow_bail_when_no_attacker_searchable",
+  "kind": "search_to_hand",
+  "hard": false,
+  "advisory": true,
+  "source": "synthetic_control:prize_liability_narrowness",
+  "source_episode": "80623232",
+  "evidence_confidence": "high",
+  "competency": "prize_liability_search_pivot_narrowness",
+  "requires_flag": "prize_liability_search_pivot",
+  "expected_behavior": "Mega line in play and no 1-prize attacker, but NO Kyogre is among the search options; the hook must bail to the base target rather than invent a fetch.",
+  "current_pivot_status": "PASS (control and candidate both pick the base setup target -- hook bails safely)",
+  "board": {
+    "active": {"card_id": 723, "hp": 340},
+    "bench": [],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 18,
+    "discard": [],
+    "prize_count": 5
+  },
+  "options": [
+    {"card_id": 722},
+    {"card_id": 3}
+  ],
+  "expect": {"chosen_card_id": 722},
+  "notes": "Narrowness/safety: the hook only ever reorders to an actually-searchable primary attacker; with none offered it never changes the base choice."
+}

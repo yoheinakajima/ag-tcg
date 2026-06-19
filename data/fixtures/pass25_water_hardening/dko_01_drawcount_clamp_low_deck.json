@@ -1,0 +1,28 @@
+{
+  "id": "dko_01_drawcount_clamp_low_deck",
+  "kind": "draw_count",
+  "hard": true,
+  "source": "replay_window:80622626",
+  "source_episode": "80622626",
+  "evidence_confidence": "medium",
+  "competency": "deckout_drawcount_guard",
+  "requires_context": 38,
+  "expected_behavior": "At deck_count=2 a draw-count choice must keep >=1 card in deck: draw 1, not 2 or 3.",
+  "current_pivot_status": "N/A at runtime (control does not wire ctx38; this fixture verifies the guard the deckout candidates enable)",
+  "board": {
+    "active": {"card_id": 721, "hp": 200},
+    "bench": [{"card_id": 722, "hp": 90}],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 2,
+    "discard": [],
+    "prize_count": 3
+  },
+  "options": [
+    {"number": 1},
+    {"number": 2},
+    {"number": 3}
+  ],
+  "expect": {"chosen_number": 1},
+  "notes": "Deckout guard clamps the draw to leave at least one card in deck. Grounded in the mirror deckout (80622626)."
+}
