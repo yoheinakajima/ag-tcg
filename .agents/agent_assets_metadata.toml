@@ -1,0 +1,14 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "KocYh7nVj-a-D8xmvKeci"
+uri = "file://data/reports/pass18_strategy_family_iteration_report.md"
+type = "text"
+title = "Pass 18 — Strategy Family Iteration Report"
+
+[[outputs]]
+id = "e5CddyXe5TZ0RTnYb2WHn"
+uri = "file://data/reports/pass18_final_report.md"
+type = "text"
+title = "Pass 18 — Final Report (10-section)"
