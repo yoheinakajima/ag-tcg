@@ -1,0 +1,163 @@
+# ActiveGraph Pass 18 — Strategy Family Registry.
+#
+# LOCAL ONLY. No Kaggle upload. This file is the source of truth for the strategy
+# families the lab maintains and iterates on. scripts/build_pass18_strategy_registry.py
+# validates it, renders data/experiments/pass18_strategy_family_registry.{json,md},
+# and emits StrategyFamilyRegistered / StrategyHypothesisLogged ActiveGraph events.
+#
+# Card ids referenced by member playbooks are validated against
+# data/cards/EN_Card_Data.csv (gitignored, never committed). No invented ids.
+
+schema: activegraph.strategy_families/v1
+pass: "18"
+upload_performed: false
+
+families:
+
+  - family_id: water_kyogre_abomasnow
+    status: active_reference
+    deck_ids:
+      - water_core_reference
+    candidate_ids:
+      - league_water_core_reference
+      - core_pilot_water_v2_runtime
+    playbook_paths:
+      - playbooks/pass17_water_core_reference.yaml
+    fixture_paths:
+      - data/fixtures/core_competency
+    current_best: league_water_core_reference
+    hypothesis: >
+      The Kyogre / Snover / Mega Abomasnow ex water shell is the most
+      generic-pilot-compatible deck in the lab: a basic attacker with a single
+      evolution payoff and abundant draw/search the core pilot already pilots
+      well. It is the stable benchmark all other families are measured against.
+    strengths:
+      - highest internal-league compatibility (23-7, adj 0.767)
+      - generic pilot compatible
+    risks:
+      - may be locally overfit to the internal league
+      - active historical Kaggle anchor differs from clean local candidates
+    latest_results:
+      internal_league: "league_water_core_reference 23-7-0 (adj 0.767); v2 18-12-0 (adj 0.600)"
+    blockers: []
+    next_experiment: keep stable benchmark; diff clean reference vs v2 anchor (Part H)
+
+  - family_id: dragapult_spread
+    status: promising_research
+    deck_ids:
+      - dragapult_spread_control
+    candidate_ids:
+      - league_dragapult_spread
+      - league_dragapult_spread_v1
+    playbook_paths:
+      - playbooks/pass17_dragapult_spread.yaml
+      - playbooks/pass18_dragapult_spread_v1.yaml
+    fixture_paths:
+      - data/fixtures/core_competency
+      - data/fixtures/pass18_dragapult_spread
+    current_best: league_dragapult_spread
+    hypothesis: >
+      The Dragapult ex Stage-2 spread/control shell is compatible with the
+      generic pilot for setup/search/draw, but lacks evolution-sequencing and
+      spread-damage placement awareness. Light role tags + evolution fixtures
+      should hold or modestly improve its internal result without overbuilding
+      spread targeting.
+    strengths:
+      - good internal-league result (19-11, adj 0.633)
+      - likely compatible with generic pilot
+    risks:
+      - spread-damage placement not modeled
+      - evolution line requires sequencing (Dreepy -> Drakloak -> Dragapult ex)
+    latest_results:
+      internal_league: "league_dragapult_spread 19-11-0 (adj 0.633)"
+      pass18_refinement: "v1 light refinement built (search_cards/draw_support role recognition); 5/5 targeted fixtures pass; evaluated in Pass-18 league (Part K)"
+    blockers: []
+    next_experiment: evaluate v1 vs parent in Pass-18 league; promote v1 only if it holds/improves (Parts K/M)
+
+  - family_id: raging_bolt_ogerpon
+    status: backlog
+    deck_ids:
+      - raging_bolt_ogerpon_basic_aggro
+    candidate_ids:
+      - league_raging_bolt_ogerpon
+    playbook_paths:
+      - playbooks/pass17_raging_bolt_ogerpon.yaml
+    fixture_paths:
+      - data/fixtures/core_competency
+    current_best: league_raging_bolt_ogerpon
+    hypothesis: >
+      The Raging Bolt ex + Teal Mask Ogerpon ex basic-aggro shell went 0-30
+      under the generic pilot. The Pass-18 diagnosis (Part D) instrumented the
+      pilot's own decisions and DISPROVED the energy/tempo hypothesis: the pilot
+      already brings Raging Bolt active, attaches the correct Lightning+Fighting
+      energy onto it, benches Ogerpon, and attacks (never passing while an attack
+      is offered) — yet still loses the prize race. The failure is therefore
+      deck/structural, not an energy-color or attack-first pilot gap. An aggro
+      attach/attack runtime hook would be a no-op, so Parts E/F were not built.
+    strengths:
+      - simple Basic aggro shell in theory
+      - low evolution burden
+    risks:
+      - loses the prize race even when piloted correctly (deck strength)
+      - Crispin (1198) acceleration is never sequenced by the generic pilot
+    latest_results:
+      internal_league: "league_raging_bolt_ogerpon 0-30-0 (legal, kept in Pass-18 league unchanged)"
+      pass18_diagnosis: "deck/structural; correct energy IS attached and attacks ARE taken; rescue NOT justified (data/experiments/pass18_raging_bolt_diagnosis.{json,md})"
+    blockers:
+      - deck loses the prize race vs the strong Water shell even with correct piloting
+      - generic pilot does not sequence the Crispin energy-acceleration supporter (a Play, deliberately not overridden)
+    next_experiment: defer rescue; revisit only via deck-strength changes or a supporter-sequencing capability, NOT energy color-matching (already works)
+
+  - family_id: durant_deckout_carousel
+    status: chaos_research_blocked
+    deck_ids:
+      - durant_deckout_carousel
+    candidate_ids: []
+    playbook_paths:
+      - playbooks/pass17_durant_deckout_carousel.yaml
+    fixture_paths: []
+    current_best: null
+    hypothesis: >
+      Durant ex deck-out/mill is strategically differentiated and may exploit
+      simple agents, but its win condition (mill, not prizes) requires special
+      triggers the generic core pilot does not implement. Piloted generically it
+      mis-races prizes and produced an INVALID smoke. Keep it chaos-research-only:
+      fixture/playbook design may be sketched, but no league entry until a legal
+      smoke-safe playbook exists.
+    strengths:
+      - strategically differentiated
+      - may exploit simple agents
+    risks:
+      - current generic pilot cannot legally run it (INVALID smoke)
+      - requires deckout/mill/wall-specific rules
+    latest_results:
+      internal_league: "blocked / INVALID smoke (excluded)"
+    blockers:
+      - no deckout/mill win-condition logic in the generic pilot
+      - generic pilot races prizes incorrectly with this shell
+    next_experiment: fixture/playbook design only; no league until smoke-safe
+
+  - family_id: future_high_ceiling_evolution
+    status: backlog
+    deck_ids: []
+    candidate_ids:
+      - charizard_x
+      - gardevoir
+      - venusaur
+    playbook_paths: []
+    fixture_paths: []
+    current_best: null
+    hypothesis: >
+      High-ceiling Mega evolution shells (Charizard X energy dump, Gardevoir
+      Psychic ramp, Venusaur bulky Grass sustain) are promising but premature:
+      validate them only after the per-family playbook/fixture architecture
+      stabilizes, so they are not piloted blindly.
+    strengths:
+      - high strategic ceiling
+    risks:
+      - heavy evolution sequencing not yet modeled
+      - unvalidated card lists
+    latest_results: {}
+    blockers:
+      - playbook/fixture architecture not yet stable enough
+    next_experiment: validate later after playbook architecture stabilizes

@@ -1,0 +1,22 @@
+{
+  "id": "dp_01_evolve_payoff_when_line_ready",
+  "kind": "evolve",
+  "hard": true,
+  "source": "synthetic",
+  "description": "With Dreepy active, evolve toward Dragapult ex when the line is ready.",
+  "competency": "evolve",
+  "board": {
+    "active": {"card_id": 119, "hp": 60},
+    "bench": [],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 40,
+    "discard": [],
+    "prize_count": 6
+  },
+  "options": [
+    {"card_id": 121, "target_card_id": 119}
+  ],
+  "expect": {"chosen_card_id": 121},
+  "notes": "Setup basic (Dreepy) is in play; take the evolution payoff."
+}

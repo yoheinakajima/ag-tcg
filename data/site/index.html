@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph Strategy Lab — Pass 17</title>
+<title>ActiveGraph Strategy Lab — Pass 18</title>
 <style>
   :root { --bg:#0f1420; --panel:#171f2e; --ink:#e6edf6; --muted:#9bb0c9;
           --accent:#4cc4ff; --warn:#ffcf5c; --ok:#6ee7a0; --bad:#ff7b7b;
@@ -35,42 +35,92 @@
 <header>
   <div class="wrap" style="padding-bottom:0">
     <h1>ActiveGraph Strategy Lab</h1>
-    <div class="sub">Pass 17 — Internal deck league + deck/pilot compatibility</div>
+    <div class="sub">Pass 18 — Strategy family registry + targeted playbook iteration</div>
   </div>
 </header>
 <div class="wrap">
 
   <div class="note">
-    <strong>INTERNAL LEAGUE — NOT A KAGGLE LEADERBOARD.</strong> INTERNAL LEAGUE -- NOT A KAGGLE LEADERBOARD. All participants are our own decks piloted by the same generic core pilot; opponents are not real Kaggle policies. Win rates measure internal deck/pilot compatibility only and do not predict Kaggle results. No candidate is uploaded or submitted.
+    <strong>INTERNAL LEAGUE — NOT A KAGGLE LEADERBOARD.</strong> All league
+    participants are our own decks piloted by the same generic core pilot;
+    opponents are not real Kaggle policies. The meta sanity check is
+    surrogate-based and <strong>directional only</strong>. Win rates measure
+    internal deck/pilot compatibility, not competitive strength, and do not
+    predict Kaggle results. No candidate is uploaded or submitted.
   </div>
 
   <div class="grid">
-    <div class="card"><div class="sub">Decks in study</div><div class="big">4</div></div>
-    <div class="card"><div class="sub">League-eligible</div><div class="big ok">3</div></div>
-    <div class="card"><div class="sub">Top internal deck</div><div class="big">league_water_core_reference</div></div>
+    <div class="card"><div class="sub">Strategy families</div><div class="big">5</div></div>
+    <div class="card"><div class="sub">League-eligible candidate</div><div class="big ok">dragapult_spread_v1</div></div>
+    <div class="card"><div class="sub">Top internal deck</div><div class="big">league_dragapult_spread_v1</div></div>
     <div class="card"><div class="sub">Candidates uploaded</div><div class="big ok">0</div></div>
   </div>
 
-  <h2>Deck validation</h2>
-  <table><tr><th>deck</th><th>cards</th><th>errors</th><th>legality</th><th>league</th></tr><tr><td><code>league_water_core_reference</code></td><td>60</td><td>0</td><td class='ok'>valid</td><td>✅</td></tr><tr><td><code>league_raging_bolt_ogerpon</code></td><td>60</td><td>0</td><td class='ok'>valid</td><td>✅</td></tr><tr><td><code>league_dragapult_spread</code></td><td>60</td><td>0</td><td class='ok'>valid</td><td>✅</td></tr><tr><td><code>league_durant_deckout_carousel</code></td><td>60</td><td>0</td><td class='ok'>valid</td><td>⛔ blocked</td></tr></table>
+  <h2>Strategy family registry</h2>
+  <table><tr><th>family</th><th>status</th><th>current best</th><th>league</th></tr>
+    <tr><td><code>water_kyogre_abomasnow</code></td><td>active_reference</td><td><code>league_water_core_reference</code></td><td class='ok'>benchmark</td></tr>
+    <tr><td><code>dragapult_spread</code></td><td>promising_research</td><td><code>league_dragapult_spread_v1</code></td><td class='ok'>candidate ✅</td></tr>
+    <tr><td><code>raging_bolt_ogerpon</code></td><td>backlog</td><td><code>league_raging_bolt_ogerpon</code></td><td class='warn'>carried unchanged</td></tr>
+    <tr><td><code>durant_deckout_carousel</code></td><td>chaos_research_blocked</td><td>—</td><td class='bad'>⛔ excluded</td></tr>
+    <tr><td><code>future_high_ceiling_evolution</code></td><td>backlog</td><td>—</td><td class='sub'>not evaluated</td></tr>
+  </table>
 
-  <h2>Validation / live smoke</h2>
-  <table><tr><th>candidate</th><th>tarball</th><th>entrypoint</th><th>self smoke</th><th>league</th></tr><tr><td><code>league_water_core_reference</code></td><td class='ok'>pass</td><td class='ok'>pass</td><td class='ok'>clean</td><td class='ok'>eligible</td></tr><tr><td><code>league_raging_bolt_ogerpon</code></td><td class='ok'>pass</td><td class='ok'>pass</td><td class='ok'>clean</td><td class='ok'>eligible</td></tr><tr><td><code>league_dragapult_spread</code></td><td class='ok'>pass</td><td class='ok'>pass</td><td class='ok'>clean</td><td class='ok'>eligible</td></tr><tr><td><code>league_durant_deckout_carousel</code></td><td class='ok'>pass</td><td class='ok'>pass</td><td class='bad'>INVALID</td><td class='bad'>excluded</td></tr></table>
+  <h2>Candidate eligibility (Part J)</h2>
+  <table><tr><th>candidate</th><th>tarball</th><th>entrypoint</th><th>core (vs parent)</th><th>targeted</th><th>smoke</th><th>league</th></tr>
+    <tr><td><code>league_dragapult_spread_v1</code></td><td class='ok'>pass</td><td class='ok'>pass</td><td class='ok'>12/14 == 12/14 (no regression)</td><td class='ok'>5/5</td><td class='ok'>clean</td><td class='ok'>eligible</td></tr>
+  </table>
+  <div class="note">Core fixture <code>06_evolve_when_line_ready</code> fails for
+    <em>both</em> v1 and its parent (it wants a Water-line card the Dragapult
+    playbook does not tag), so eligibility uses no-regression-vs-parent on the
+    core set plus an absolute pass on the targeted set.</div>
 
-  <h2>Internal league standings</h2>
-  <table><tr><th>#</th><th>deck</th><th>role</th><th>W-L-D</th><th>adj win rate</th></tr><tr><td>1</td><td><code>league_water_core_reference</code></td><td>league_candidate</td><td>23-7-0</td><td>0.7667</td></tr><tr><td>2</td><td><code>league_dragapult_spread</code></td><td>league_candidate</td><td>19-11-0</td><td>0.6333</td></tr><tr><td>3</td><td><code>core_pilot_water_v2_runtime</code></td><td>historical_reference</td><td>18-12-0</td><td>0.6</td></tr><tr><td>4</td><td><code>league_raging_bolt_ogerpon</code></td><td>league_candidate</td><td>0-30-0</td><td>0.0</td></tr></table>
+  <h2>Internal league standings (Part K)</h2>
+  <table><tr><th>#</th><th>deck</th><th>role</th><th>W-L-D</th><th>adj win rate</th><th>95% CI</th></tr>
+    <tr><td>1</td><td><code>league_dragapult_spread_v1</code></td><td>pass18_candidate</td><td>28-12-0</td><td class='ok'>0.700</td><td>[0.546, 0.819]</td></tr>
+    <tr><td>2</td><td><code>league_dragapult_spread</code></td><td>parent_for_comparison</td><td>27-13-0</td><td>0.675</td><td>[0.520, 0.799]</td></tr>
+    <tr><td>3</td><td><code>league_water_core_reference</code></td><td>stable_benchmark</td><td>25-15-0</td><td>0.625</td><td>[0.470, 0.758]</td></tr>
+    <tr><td>4</td><td><code>core_pilot_water_v2_runtime</code></td><td>historical_reference</td><td>19-21-0</td><td>0.475</td><td>[0.329, 0.625]</td></tr>
+    <tr><td>5</td><td><code>league_raging_bolt_ogerpon</code></td><td>carried_unchanged</td><td>1-39-0</td><td class='bad'>0.025</td><td>[0.004, 0.129]</td></tr>
+  </table>
+  <div class="note"><strong>Head-to-head caveat:</strong> v1 ranks #1 on aggregate
+    but <strong>loses the direct head-to-head vs its parent (0.3 for v1)</strong>.
+    Its edge is field-driven, not parent dominance.</div>
 
   <h2>League matrix (row deck's win rate vs column)</h2>
-  <table><tr><th>deck \ opp</th><th>league_water_core_reference</th><th>league_raging_bolt_ogerpon</th><th>league_dragapult_spread</th><th>core_pilot_water_v2_runtime</th></tr><tr><td><code>league_water_core_reference</code></td><td>—</td><td>1.0</td><td>0.7</td><td>0.6</td></tr><tr><td><code>league_raging_bolt_ogerpon</code></td><td>0.0</td><td>—</td><td>0.0</td><td>0.0</td></tr><tr><td><code>league_dragapult_spread</code></td><td>0.3</td><td>1.0</td><td>—</td><td>0.6</td></tr><tr><td><code>core_pilot_water_v2_runtime</code></td><td>0.4</td><td>1.0</td><td>0.4</td><td>—</td></tr></table>
+  <table><tr><th>deck \ opp</th><th>water_ref</th><th>dragapult_v1</th><th>dragapult(parent)</th><th>raging_bolt</th><th>water_v2</th></tr>
+    <tr><td><code>league_water_core_reference</code></td><td>—</td><td>0.3</td><td>0.5</td><td>1.0</td><td>0.7</td></tr>
+    <tr><td><code>league_dragapult_spread_v1</code></td><td>0.7</td><td>—</td><td class='warn'>0.3</td><td>1.0</td><td>0.8</td></tr>
+    <tr><td><code>league_dragapult_spread</code></td><td>0.5</td><td>0.7</td><td>—</td><td>0.9</td><td>0.6</td></tr>
+    <tr><td><code>league_raging_bolt_ogerpon</code></td><td>0.0</td><td>0.0</td><td>0.1</td><td>—</td><td>0.0</td></tr>
+    <tr><td><code>core_pilot_water_v2_runtime</code></td><td>0.3</td><td>0.2</td><td>0.4</td><td>1.0</td><td>—</td></tr>
+  </table>
 
-  <h2>Deck / pilot compatibility</h2>
-  <table><tr><th>deck</th><th>archetype</th><th>rating</th><th>adj win rate</th><th>record</th></tr><tr><td><code>league_water_core_reference</code></td><td>tempo + evolution payoff</td><td class='ok'>good</td><td>0.7667</td><td>23-7-0</td></tr><tr><td><code>league_dragapult_spread</code></td><td>Stage-2 evolution control</td><td class='ok'>good</td><td>0.6333</td><td>19-11-0</td></tr><tr><td><code>league_raging_bolt_ogerpon</code></td><td>fast basic aggro</td><td class='bad'>poor</td><td>0.0</td><td>0-30-0</td></tr><tr><td><code>league_durant_deckout_carousel</code></td><td>deck-out / mill chaos</td><td class='bad'>incompatible</td><td>None</td><td>None</td></tr></table>
+  <h2>Meta sanity check (Part L — surrogate, directional)</h2>
+  <table><tr><th>deck</th><th>metal</th><th>water_maxbelt</th><th>mega_lucario</th><th>mega_kanga</th><th>dragapult_ex</th><th>lightning</th><th>weighted</th></tr>
+    <tr><td><code>league_dragapult_spread_v1</code></td><td>0.833</td><td>0.500</td><td>0.667</td><td>1.000</td><td>1.000</td><td>0.667</td><td class='ok'>0.747</td></tr>
+    <tr><td><code>league_water_core_reference</code></td><td>0.333</td><td>0.667</td><td>0.833</td><td>0.333</td><td>0.500</td><td>0.667</td><td>0.580</td></tr>
+  </table>
+  <div class="note">Sanity verdict: <strong>passed</strong> — v1 does not collapse
+    (&lt;10%) against any replay-derived subfamily. Directional only; not a Kaggle
+    signal.</div>
+
+  <h2>Decision (Part M)</h2>
+  <div class="note">
+    <strong>Dry-run recommendation:</strong> promote
+    <code>league_dragapult_spread_v1</code> to the <strong>local research
+    lead</strong> for the Dragapult family — <strong>dry-run only</strong>.
+    upload_recommended: <strong>false</strong>, submit_recommended:
+    <strong>false</strong>. Caveat: v1 loses the parent head-to-head (0.3);
+    internal/surrogate results never equal Kaggle results.
+  </div>
 
   <h2>Reports</h2>
   <ul>
-    <li><code>data/reports/pass17_internal_deck_league_report.md</code> — 10-section league report</li>
-    <li><code>data/reports/activegraph_strategy_report.md</code> — strategy narrative</li>
+    <li><code>data/reports/pass18_strategy_family_iteration_report.md</code> — 10-section iteration report</li>
+    <li><code>data/reports/activegraph_strategy_report.md</code> — strategy narrative (through Pass 18)</li>
     <li><code>docs/PTCG_STRATEGY_CANVAS.md</code> — strategy canvas</li>
+    <li><code>data/experiments/pass18_strategy_decisions.md</code> — per-family decisions</li>
+    <li><code>data/experiments/pass18_internal_league.md</code> · <code>pass18_meta_sanity.md</code> · <code>pass18_candidate_validation.md</code></li>
   </ul>
 </div>
 <footer>ActiveGraph — local-only lab. No Kaggle upload, no GitHub push. Root main.py / deck.csv immutable.</footer>

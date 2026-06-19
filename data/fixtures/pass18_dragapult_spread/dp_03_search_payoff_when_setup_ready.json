@@ -1,0 +1,23 @@
+{
+  "id": "dp_03_search_payoff_when_setup_ready",
+  "kind": "search_to_hand",
+  "hard": true,
+  "source": "synthetic",
+  "description": "With Dreepy in play, fetch the payoff (Dragapult ex) over another basic.",
+  "competency": "search to hand",
+  "board": {
+    "active": {"card_id": 119, "hp": 60},
+    "bench": [],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 38,
+    "discard": [],
+    "prize_count": 6
+  },
+  "options": [
+    {"card_id": 121},
+    {"card_id": 119}
+  ],
+  "expect": {"chosen_card_id": 121},
+  "notes": "Setup basic established; fetch the evolution payoff."
+}

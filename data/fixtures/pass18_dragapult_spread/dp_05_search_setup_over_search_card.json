@@ -1,0 +1,23 @@
+{
+  "id": "dp_05_search_setup_over_search_card",
+  "kind": "search_to_hand",
+  "hard": true,
+  "source": "synthetic",
+  "description": "Prefer the missing setup basic over a redundant search card.",
+  "competency": "search to hand",
+  "board": {
+    "active": {},
+    "bench": [],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 40,
+    "discard": [],
+    "prize_count": 6
+  },
+  "options": [
+    {"card_id": 1086},
+    {"card_id": 119}
+  ],
+  "expect": {"chosen_card_id": 119},
+  "notes": "With no line established, the setup basic outranks another search card."
+}

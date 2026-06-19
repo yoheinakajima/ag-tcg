@@ -1,128 +1,127 @@
-# ActiveGraph — Pokémon TCG Strategy Canvas (Pass 17)
+# ActiveGraph — Pokémon TCG Strategy Canvas (Pass 18)
 
 > **LOCAL ONLY.** Nothing in this pass is uploaded to Kaggle or pushed to GitHub.
 > The internal deck league is **not** a Kaggle leaderboard and its win rates do
 > **not** predict Kaggle results — opponents are our own decks piloted by the same
-> generic core pilot. Card ids are validated against `data/cards/EN_Card_Data.csv`
-> (gitignored, never committed). No invented ids.
+> generic core pilot. The meta sanity check is **surrogate-based and directional
+> only**: replay-derived opponents are deck lists piloted by a generic surrogate,
+> not real opponent policies. Card ids are validated against
+> `data/cards/EN_Card_Data.csv` (gitignored, never committed). No invented ids.
 
 ## 1. Purpose
 
-Pass 17 turns the single proven Water deck into a small **internal deck league**:
-several legal decks, each piloted by the **same generic core pilot** plus a minimal
-per-deck **playbook** (card roles only). We run a round-robin among them to learn
-which archetypes the current generic pilot can actually pilot, and where it breaks
-down — a **deck/pilot compatibility** study, not a tournament for ranking strength.
+Pass 18 turns the loose collection of decks from Pass 17 into a **formal strategy
+family registry** with explicit iteration tracking, and runs one **targeted
+playbook iteration** end to end (Dragapult spread `v1`). The question this pass
+answers is process-level: *can we register a family, form a hypothesis, build a
+minimally-refined candidate, gate it, league it, sanity-check it against the
+replay meta, and record an honest decision — without overbuilding and without
+touching the immutable root agent?*
 
-## 2. The pilot model
+## 2. The pilot model (unchanged from Pass 17)
 
-- **Generic core pilot.** One brain. Generic competence comes from mechanics/score
-  evaluation in the base agent, not from hand-tuned per-card logic.
-- **Playbooks add roles, not rules.** A playbook tags each card
-  (`primary_basic_attacker`, `setup_basic`, `evolution_payoff`, `search`, `draw`,
-  `disruption`, `stadium`, `deckout_or_mill`, …) and expresses light preferences
-  (what to put active, what to search, what to discard). It never hard-codes a
-  scripted line.
-- **Runtime contexts** decide which decision points the pilot refines:
-  - `(7, 8)` = search + discard refinement (faithful Water reference).
-  - `(1, 2, 7, 8, 38)` = also setup-active / setup-bench / draw, so a new deck's
-    setup preferences (e.g. "prefer Raging Bolt active") can express themselves.
-- **Broad Main stays delegated** to the base policy. The pilot only overrides the
-  seams listed above.
+- **Generic core pilot.** One brain. Generic competence comes from
+  mechanics/score evaluation in the base agent, not hand-tuned per-card logic.
+- **Playbooks add roles, not rules.** A playbook tags each card and expresses
+  light preferences (what to put active, what to search, what to discard). It
+  never hard-codes a scripted line.
+- **Runtime contexts** decide which decision seams the pilot refines. The
+  Dragapult `v1` refinement only adds *role recognition* (`search_cards`,
+  `draw_support`) at existing seams; it adds no new override and no aggro hook.
+- **Broad Main stays delegated** to the base policy.
 
-## 3. Deck archetypes in the league
+## 3. Strategy family registry
 
-| Deck | Archetype | Why it is in the study | League |
+Five families are registered in `experiments/strategy_families.yaml` (source of
+truth → `data/experiments/pass18_strategy_family_registry.{json,md}`):
+
+| Family | Status (after Pass 18) | Current best | League |
 |---|---|---|---|
-| `league_water_core_reference` | Tempo + evolution payoff | Proven clean reference (v2) | ✅ in |
-| `league_raging_bolt_ogerpon` | Fast basic aggro | Low evolution burden; tests early attach + attack | ✅ in |
-| `league_dragapult_spread` | Stage-2 evolution control | Tests evolution sequencing (Dreepy→Drakloak→Dragapult ex) | ✅ in |
-| `league_durant_deckout_carousel` | Deck-out / mill chaos | Needs special mill triggers the pilot lacks | ⛔ scout-only |
+| `water_kyogre_abomasnow` | active_reference | `league_water_core_reference` | ✅ benchmark |
+| `dragapult_spread` | promising_research | `league_dragapult_spread_v1` | ✅ candidate |
+| `raging_bolt_ogerpon` | backlog | `league_raging_bolt_ogerpon` | ✅ carried unchanged |
+| `durant_deckout_carousel` | chaos_research_blocked | — | ⛔ excluded (chaos-research-only) |
+| `future_high_ceiling_evolution` | backlog | — | not evaluated |
 
-A historical reference (`core_pilot_water_v2_runtime`) may also be entered as a
-separate fixed yardstick.
+> Note on `current_best`: the columns above reflect the **post-decision** state
+> (Part M promoted `v1`). The registry JSON was generated in Part B *before* the
+> iteration existed, so its stored `current_best` for `dragapult_spread` still
+> points at the parent — an intentional registration-time snapshot, not a contradiction.
 
-### Why Durant is blocked
-Durant's win condition is decking the opponent out, which requires triggers the
-generic pilot does **not** implement: keep Durant ex benched until its mill is set
-up, use Deino/Zweilous as the damage sponge, prioritize Neutralization Zone, loop
-the mill engine, and **never race prizes**. Piloted generically it would chase KOs
-and invert its own plan, so it is built and validated for legality only and kept
-out of the league. (See `playbooks/pass17_durant_deckout_carousel.yaml`.)
+## 4. The Pass-18 iteration: `dragapult_spread_v1`
 
-## 4. Deck construction rules
+- **Hypothesis.** The Dragapult Stage-2 spread/control shell is compatible with
+  the generic pilot for setup/search/draw but under-uses its search and draw
+  support. Light role tags should *hold or modestly improve* its internal result
+  without modelling spread-damage placement.
+- **Change.** `playbooks/pass18_dragapult_spread_v1.yaml` adds `search_cards` /
+  `draw_support` role recognition only. Deck list is unchanged from the parent;
+  no invented ids.
+- **Fixtures.** `data/fixtures/pass18_dragapult_spread/` (5 targeted fixtures),
+  all passing, on top of the shared `core_competency` set.
 
-- Exactly **60 cards**. At most **4 copies** of any non-basic-energy card; basic
-  energy is unlimited.
-- Decks start from a hand skeleton, then are filled to 60 **only** with validated
-  consistency cards or basic energy. Every filler is documented in
-  `experiments/deck_ideas.yaml`.
-- Every id is checked against `EN_Card_Data.csv` before a deck is built — no
-  invented ids, ever.
+## 5. Eligibility gate (Part J)
 
-## 5. Compatibility framework (what the league measures)
+The core-competency fixture `06_evolve_when_line_ready` is a **hard failure for
+both `v1` and its parent** (it wants a Water-line card `723` that the Dragapult
+playbook legitimately does not tag). Eligibility therefore uses a
+**no-regression-vs-parent** rule on the core set plus an **absolute pass** on the
+targeted set:
 
-For each buildable deck we ask:
-- **Does it run at all?** No crashes / timeouts / illegal actions in live cabt.
-- **Adjusted win rate** vs the other decks (seat-swapped to cancel first-player bias).
-- **Where does the generic pilot fit the deck, and where does it fight it?**
-  - Aggro: does it attach and attack early, or sit and draw?
-  - Evolution: does it build the line, or orphan its Stage 2?
-  - Mill: (Durant) cannot be expressed → blocked.
-- Honest gaps are recorded as **compatibility findings**, not hidden (e.g. the pilot
-  does not color-match energy, does not place spread damage, has no mill plan).
+- core fixtures: `v1` 12/14 **==** parent 12/14 (no regression) ✅
+- targeted fixtures: 5/5 ✅
+- tarball + entrypoint validators ✅, live smoke clean ✅
 
-## 6. Pipeline (this pass)
+→ `league_dragapult_spread_v1` is **league-eligible**.
 
-1. Strategy canvas + deck ideas → **this file** + `experiments/deck_ideas.yaml`.
-2. Validate ids / legality → `scripts/validate_deck_ideas.py`.
-3. Minimal playbooks → `playbooks/pass17_*.yaml`.
-4. Build candidates → `data/submissions/candidates_pass17/<id>.tar.gz`
-   (Durant built but blocked).
-5. Validation gates + live smoke.
-6. Internal round-robin league (seat-swapped, watchdog).
-7. Deck/pilot compatibility analysis.
-8. Ranked report + next action.
+## 6. Internal league (Part K)
 
-## 7. League results
+Round-robin, 5 games/seat (seat-swapped), Durant excluded. Engine isolation via a
+batched subprocess worker (memory isolation + real timeouts).
 
-Round-robin, seat-swapped (5 games/seat × 2 seats = 10 games/pairing), watchdog +
-global budget. Participants: the 3 league-eligible candidates plus the historical
-`core_pilot_water_v2_runtime` as a fixed yardstick. Durant is **blocked** (its live
-self-smoke is INVALID — see §5). Full data:
-`data/experiments/pass17_internal_league.{json,md}`,
-`pass17_league_matrix.csv`, `pass17_league_rankings.{json,md}`.
+| # | deck | role | W-L-D | adj win rate |
+|---|---|---|---|---|
+| 1 | `league_dragapult_spread_v1` | pass18_candidate | 28-12-0 | 0.700 |
+| 2 | `league_dragapult_spread` | parent_for_comparison | 27-13-0 | 0.675 |
+| 3 | `league_water_core_reference` | stable_benchmark | 25-15-0 | 0.625 |
+| 4 | `core_pilot_water_v2_runtime` | historical_reference | 19-21-0 | 0.475 |
+| 5 | `league_raging_bolt_ogerpon` | carried_unchanged | 1-39-0 | 0.025 |
 
-> These are **internal compatibility** numbers, **not** Kaggle results — every
-> opponent is one of our own decks run by the same generic pilot.
+**Critical nuance:** `v1` ranks #1 on aggregate but **loses the direct
+head-to-head vs its parent (0.3 for `v1`)**. Its aggregate edge comes from beating
+the weaker field harder, not from beating the parent.
 
-| rank | deck | role | W-L-D | adj win rate | rating |
-|---|---|---|---|---|---|
-| 1 | `league_water_core_reference` | candidate | 23-7-0 | **0.767** | good |
-| 2 | `league_dragapult_spread` | candidate | 19-11-0 | **0.633** | good |
-| 3 | `core_pilot_water_v2_runtime` | reference | 18-12-0 | 0.600 | (anchor) |
-| 4 | `league_raging_bolt_ogerpon` | candidate | 0-30-0 | **0.000** | poor |
+## 7. Meta sanity check (Part L)
 
-**Findings (deck/pilot compatibility — `pass17_deck_pilot_compatibility.{md,json}`):**
+Our decks vs the Pass-13 replay-derived subfamilies, each piloted by the generic
+surrogate. Directional only.
 
-- **Tempo/evolution transfers.** The Water reference (the deck the pilot was tuned
-  around) and Dragapult (Stage-2 evolution) are both piloted *well* — evolution
-  sequencing carries over. Dragapult even beats the historical anchor.
-- **Aggro does not transfer.** `league_raging_bolt_ogerpon` plays every game to a
-  **legal finish** (0 invalids/timeouts/crashes) yet wins **0 of 30**. The generic
-  pilot does not color-match energy and has no attack-first bias, so Raging Bolt
-  ex's discard-scaling attack never comes online before it is out-raced. This is a
-  **pilot-fit failure, not a deck-legality failure** — strength ≠ fit.
-- **Mill is out of reach.** Durant cannot even produce a legal game under the
-  generic pilot; it is blocked, not ranked.
+- `league_dragapult_spread_v1` weighted meta score **0.747**, no collapse against
+  any subfamily.
+- `league_water_core_reference` weighted **0.580**.
+- Sanity verdict: **passed** (no collapse < 10%, candidate does not trail Water).
 
-**Next action:** before any Kaggle probe, add an aggro playbook (early energy
-color-matching + attack-first bias) and re-run the league to see whether
-`league_raging_bolt_ogerpon` becomes pilotable. No candidate is uploaded.
+## 8. Decisions (Part M)
 
-## 8. Guardrails
+- **Dragapult:** promote `v1` to **local research lead** — with the explicit
+  caveat about the parent head-to-head loss. **Dry-run only; no upload.**
+- **Water:** keep as the stable benchmark, unchanged.
+- **Raging Bolt:** defer rescue. The league confirms the Part-D diagnosis — the
+  0-for failure is **deck/structural**, not an energy-color or attack-first pilot
+  gap (correct energy is attached and attacks are taken). Revisit only via
+  deck-strength changes or supporter sequencing.
+- **Durant:** chaos-research-only, excluded from the league (INVALID smoke).
+- **Future high-ceiling evolution:** backlog, not evaluated.
 
-NO Kaggle upload/submit. NO GitHub push. Root `main.py` / `deck.csv` stay
-byte-identical to the v1 baseline. Tarballs contain only top-level `main.py` +
-`deck.csv`. stdlib-only runtime. Card CSV / raw replays / credentials never
-committed.
+## 9. Honest limits
+
+The league is local only and not a Kaggle leaderboard; the meta check is
+surrogate and directional. Neither equals a Kaggle result and neither is
+sufficient to upload or submit. The Dragapult `v1` lead is an **internal research
+lead**, not a competitive-strength or leaderboard claim.
+
+## 10. Guardrails honored
+
+No Kaggle upload/submit; no GitHub push; root `main.py`/`deck.csv` byte-identical
+to v1; no invented card ids; tarballs are top-level `main.py` + `deck.csv` only;
+Durant excluded from the league; all no-upload flags `false`.

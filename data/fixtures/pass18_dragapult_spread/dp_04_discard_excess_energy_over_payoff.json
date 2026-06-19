@@ -1,0 +1,23 @@
+{
+  "id": "dp_04_discard_excess_energy_over_payoff",
+  "kind": "discard",
+  "hard": true,
+  "source": "synthetic",
+  "description": "Pay a discard cost with surplus basic energy, never the evolution payoff.",
+  "competency": "discard",
+  "board": {
+    "active": {"card_id": 121, "hp": 320},
+    "bench": [],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 30,
+    "discard": [],
+    "prize_count": 6
+  },
+  "options": [
+    {"card_id": 5},
+    {"card_id": 121}
+  ],
+  "expect": {"chosen_card_id": 5},
+  "notes": "Surplus basic energy is the safe discard; never trash Dragapult ex."
+}

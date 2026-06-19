@@ -1,0 +1,23 @@
+{
+  "id": "dp_02_search_missing_setup_basic_first",
+  "kind": "search_to_hand",
+  "hard": true,
+  "source": "synthetic",
+  "description": "With no line in play, fetch the setup basic (Dreepy) before the payoff.",
+  "competency": "search to hand",
+  "board": {
+    "active": {},
+    "bench": [],
+    "bench_max": 5,
+    "hand": [],
+    "deck_count": 40,
+    "discard": [],
+    "prize_count": 6
+  },
+  "options": [
+    {"card_id": 121},
+    {"card_id": 119}
+  ],
+  "expect": {"chosen_card_id": 119},
+  "notes": "No setup basic in play; never orphan the payoff — fetch Dreepy first."
+}

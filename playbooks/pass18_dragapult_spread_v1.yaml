@@ -1,0 +1,94 @@
+# ActiveGraph Pass 18 — Dragapult ex spread / control, v1 (LIGHT refinement of Pass 17).
+#
+# Parent: playbooks/pass17_dragapult_spread.yaml (league_dragapult_spread).
+# This is a SMALL, targeted refinement, not a rewrite. The only behavioral change is
+# aligning two role names to the generic pilot's scorer vocabulary so the existing
+# search / discard scoring actually engages for this deck:
+#   * roles.search_cards  (was only "search")  -> score_search_target +search bonus
+#   * roles.draw_support  (was only "draw")    -> score_discard_candidate preserves draw
+# Everything else (deck, plan, weights, guards) is carried over unchanged. No deck
+# changes. All ids confirmed in data/cards/EN_Card_Data.csv (gitignored, never committed).
+# No invented ids. Broad Main stays delegated to the base policy.
+
+deck_id: league_dragapult_spread_v1
+parent_deck_id: league_dragapult_spread
+based_on: generic_core_pilot
+schema: activegraph.playbook.core_pilot/v1
+
+refinement:
+  kind: light
+  summary: >-
+    Rename/add scorer-recognized role keys (search_cards, draw_support) so the generic
+    pilot's search-to-hand and discard scoring engage for Dragapult; tighten the
+    "never orphan the payoff" search constraint. No deck or plan changes.
+  changed_roles: [search_cards, draw_support]
+  unchanged: [deck, plan, role_weights, deckout_guard_thresholds]
+
+cards:
+  119: Dreepy
+  120: Drakloak
+  121: Dragapult ex
+  131: Duskull
+  133: Dusknoir
+  1079: Rare Candy
+  1231: Dawn
+  1224: Cheren
+  1121: Ultra Ball
+  1086: Buddy-Buddy Poffin
+  1182: Boss's Orders
+  1097: Night Stretcher
+  5: Basic {P} Energy
+  2: Basic {R} Energy
+
+roles:
+  basic_energy: [5, 2]
+  setup_basic: [119, 131]
+  evolution_mid: [120]
+  evolution_payoff: [121, 133]
+  evolution_accel: [1079]
+  # Scorer-recognized names (the actual refinement):
+  search_cards: [1121, 1086]
+  draw_support: [1224, 1231]
+  # Back-compat aliases kept so older tooling still reads them:
+  search: [1121, 1086]
+  draw: [1224, 1231]
+  energy: [5, 2]
+  disruption: [1182]
+  recovery: [1097]
+
+plan:
+  primary_plan: dragapult_spread
+  secondary_plan: dusknoir_bench_pressure
+  avoid_plans: [deckout, orphan_evolution]
+
+role_weights:
+  active_prefers: [evolution_payoff, setup_basic]
+  bench_prefers: [setup_basic, evolution_mid, evolution_payoff]
+  attach_prefers: [active_attacker, next_attacker]
+  search_prefers: missing_evolution_piece
+  discard_prefers: [surplus_basic_energy]
+  preserve_only:
+    - setup_basic
+    - evolution_mid
+    - evolution_payoff_when_setup_exists
+
+deckout_guard_thresholds:
+  penalize: 8
+  heavy: 4
+  critical: 2
+
+deck_specific_constraints:
+  - Keep at least one Dreepy (setup_basic) so Dragapult ex is never orphaned.
+  - Prefer Rare Candy onto Dreepy to jump to Dragapult ex when the basic is established.
+  - Never search the payoff (Dragapult ex / Dusknoir) with no corresponding basic in play.
+
+unsafe_or_deferred:
+  - Spread-damage placement (Phantom Dive distribution) is NOT modeled by the generic
+    pilot (compatibility gap); damage spreading is left to the base policy.
+  - Rare Candy timing is advisory only.
+  - Broad Main remains delegated to the base policy.
+
+notes:
+  - Roles only; generic competence (mechanics/score) drives play.
+  - Runtime contexts (1, 2, 7, 8, 38) let the pilot express evolution setup preferences.
+  - Light refinement; behavior differs from Pass 17 only in search/discard role recognition.

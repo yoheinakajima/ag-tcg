@@ -1,0 +1,11 @@
+# Pass 18 Dragapult ex spread fixtures (reduced-model; graded via core_pilot_decide).
+# Targeted at the v1 light refinement (search/discard role recognition + never-orphan
+# the payoff). All hard; ordered. Graded by scripts/run_core_competency_gate.py.
+schema: activegraph.fixtures.core_competency/v1
+deck: league_dragapult_spread_v1
+fixtures:
+  - dp_01_evolve_payoff_when_line_ready.json
+  - dp_02_search_missing_setup_basic_first.json
+  - dp_03_search_payoff_when_setup_ready.json
+  - dp_04_discard_excess_energy_over_payoff.json
+  - dp_05_search_setup_over_search_card.json

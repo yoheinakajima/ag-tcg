@@ -1,0 +1,596 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Keep all candidate tarballs top-level main.py + deck.csv only.
+- Read docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md, docs/NEXT_AGENT_README.md, docs/CORE_PILOT_ARCHITECTURE.md, docs/PTCG_STRATEGY_CANVAS.md, data/reports/pass16_final_report.md, and data/reports/pass17_internal_deck_league_report.md before making changes.
+- This is a strategy-family iteration + targeted playbook pass only.
+- No Kaggle upload.
+
+Current state:
+- Pass 17 completed.
+- Internal league result:
+  - league_water_core_reference: 23-7-0, adj win 0.767, good generic-pilot fit
+  - league_dragapult_spread: 19-11-0, adj win 0.633, good generic-pilot fit
+  - core_pilot_water_v2_runtime: 18-12-0, adj win 0.600
+  - league_raging_bolt_ogerpon: 0-30-0, legal but poor pilot fit
+  - league_durant_deckout_carousel: blocked / INVALID smoke
+- Key lesson:
+  - deck strength and pilot fit are separate axes.
+  - a single generic pilot can handle some tempo/evolution shells but fails aggro and chaos-control.
+- Desired architecture:
+  - maintain a few core strategy families,
+  - track strategy iterations in ActiveGraph,
+  - add custom rules/fixtures/playbooks per family,
+  - run internal round robins for compatibility,
+  - occasionally pick the strongest, cleanest candidate for deeper local eval and possible future manual Kaggle probe.
+- No candidate from Pass 17 is Kaggle-ready by itself.
+
+Goal:
+Run Pass 18: Strategy Family Registry + Targeted Playbook Iteration.
+
+Objectives:
+1. Formalize strategy families and iteration tracking.
+2. Add ActiveGraph lineage events for strategy families and candidate iterations.
+3. Diagnose why Raging Bolt/Ogerpon went 0-30.
+4. Build a targeted aggro playbook/runtime hook for Raging Bolt/Ogerpon if the failure diagnosis supports it.
+5. Refine Dragapult minimally with evolution/spread-aware fixtures and role tags.
+6. Keep Water reference stable as the benchmark.
+7. Keep Durant as chaos/control research-only unless a legal smoke-safe playbook is built.
+8. Run a new round-robin league and a small replay-derived meta sanity check.
+9. Produce a strategy-family report and dry-run-only recommendation.
+10. No upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Strategy family registry
+
+Create:
+
+experiments/strategy_families.yaml
+data/experiments/pass18_strategy_family_registry.json
+data/experiments/pass18_strategy_family_registry.md
+
+Define at least these families:
+
+1. water_kyogre_abomasnow
+- status: active_reference
+- current candidates:
+  - league_water_core_reference
+  - core_pilot_water_v2_runtime
+- strengths:
+  - highest internal-league compatibility
+  - generic pilot compatible
+- risks:
+  - may be locally overfit
+  - active historical Kaggle anchor differs from clean local candidates
+- next action:
+  - keep stable benchmark
+
+2. dragapult_spread
+- status: promising_research
+- current candidate:
+  - league_dragapult_spread
+- strengths:
+  - good internal-league result
+  - likely compatible with generic pilot
+- risks:
+  - spread-damage placement not modeled
+  - evolution line requires sequencing
+- next action:
+  - add evolution/spread fixtures and light playbook rules
+
+3. raging_bolt_ogerpon
+- status: rescue_candidate
+- current candidate:
+  - league_raging_bolt_ogerpon
+- strengths:
+  - simple Basic aggro shell in theory
+  - low evolution burden
+- risks:
+  - current generic pilot goes 0-30
+  - likely missing mixed-energy attachment and attack-first plan
+- next action:
+  - diagnose failures, add aggro playbook if justified
+
+4. durant_deckout_carousel
+- status: chaos_research_blocked
+- current candidate:
+  - blocked
+- strengths:
+  - strategically differentiated
+  - may exploit simple agents
+- risks:
+  - current generic pilot cannot legally run it
+  - requires deckout/mill/wall-specific rules
+- next action:
+  - fixture/playbook design only, no league until smoke-safe
+
+5. future_high_ceiling_evolution
+- status: backlog
+- candidates:
+  - Charizard X
+  - Gardevoir
+  - Venusaur
+- next action:
+  - validate later after playbook architecture stabilizes
+
+Each family entry should include:
+- family_id
+- deck_ids
+- candidate_ids
+- playbook_paths
+- fixture_paths
+- current_best
+- status
+- hypothesis
+- latest_results
+- blockers
+- next_experiment
+
+Emit ActiveGraph events:
+- StrategyFamilyRegistered
+- StrategyIterationCreated
+- StrategyHypothesisLogged
+- StrategyDecisionRecorded
+
+Part C — ActiveGraph iteration tracking
+
+Create:
+
+scripts/ag_strategy_event.py
+
+or extend the existing ActiveGraph event helper.
+
+It should append events to:
+
+data/activegraph/lab_events.jsonl
+
+Support event types:
+- StrategyFamilyRegistered
+- StrategyIterationCreated
+- StrategyIterationEvaluated
+- StrategyFixtureAdded
+- StrategyBlocked
+- StrategyPromotionDecision
+- InternalLeagueStarted
+- InternalLeagueFinished
+- StrategyReportGenerated
+
+Every candidate built in this pass should record:
+- parent family
+- parent candidate, if any
+- hypothesis
+- deck diff
+- playbook diff
+- runtime context diff
+- validation status
+- league result
+- decision
+
+Part D — Raging Bolt failure diagnosis
+
+Create:
+
+scripts/diagnose_raging_bolt_failure.py
+
+Inputs:
+- Pass 17 league game traces if available
+- league_raging_bolt_ogerpon candidate tarball
+- league matrix/results
+- optional fresh short self-play and vs Water traces
+
+Outputs:
+- data/experiments/pass18_raging_bolt_diagnosis.json
+- data/experiments/pass18_raging_bolt_diagnosis.md
+
+Diagnose:
+- Did Raging Bolt ever become active?
+- Did it attach Energy?
+- Did it attach the right Energy types?
+- Did it attack?
+- Did it bench Ogerpon?
+- Did it use Crispin if available?
+- Did it use Burst Roar or Bellowing Thunder if those are visible?
+- Did it lose by no bench / no attack / wrong energy / deckout / KO race?
+- How often did it pass/end while attack setup was possible?
+- Which cabt contexts/options would need wiring?
+
+If data is unavailable, run a small diagnostic:
+- Raging Bolt vs Water, 2 games/seat
+- Raging Bolt self-play, 2 games/seat
+- record logs and metrics
+
+Do not fabricate card effects. Use card metadata and observed options only.
+
+Part E — Raging Bolt aggro playbook and fixtures
+
+Only if Part D confirms the failure is energy/tempo/pilot-related, create:
+
+playbooks/pass18_raging_bolt_aggro_v1.yaml
+data/fixtures/pass18_raging_bolt_aggro/
+
+Fixtures:
+1. active_prefers_raging_bolt
+Expected: Raging Bolt ex active over support basics.
+
+2. bench_prefers_ogerpon_backup
+Expected: bench Ogerpon / backup attacker when legal.
+
+3. attach_missing_energy_type_to_raging_bolt
+Expected: attach Lightning or Fighting to Raging Bolt based on missing requirement.
+
+4. do_not_attach_wrong_energy_to_low_value_target
+Expected: avoid random attachment to irrelevant Pokémon.
+
+5. attack_first_when_raging_bolt_online
+Expected: prefer legal attack over passive draw/search when attack is online.
+
+6. preserve_required_energy
+Expected: avoid discarding the only missing required Energy if discard prompt appears.
+
+7. use_basic_aggro_plan
+Expected: setup attacker + attach + attack, not evolution/search loop.
+
+Playbook should include:
+- primary_basic_attacker: [63]
+- support_basic: [96]
+- energy_required_by_attacker:
+  - 63: [4, 6]  # Lightning + Fighting
+- support_energy:
+  - 96: [1]     # Grass
+- search/support:
+  - 1198, 1231, 1224, 1121, 1086, 1182, 1097
+- plan:
+  - primary_plan: fast_basic_aggro
+  - avoid_plan: passive_draw_loop
+  - attach priority: satisfy attack requirements
+  - attack priority: attack when online
+
+Part F — Aggro runtime hook
+
+Create a conservative, deck-specific runtime hook for aggro candidates.
+
+Do not wire broad Main generally.
+
+Wire only a guarded subaction if all are true:
+- context is broad Main ctx 0
+- option type resolves to Attach or Attack
+- card and target resolve cleanly
+- candidate playbook declares an aggro energy requirement
+- no uncertain Play/Ability is being overridden
+- score margin is clear
+
+Behaviors:
+- For Raging Bolt:
+  - attach missing required Energy to Raging Bolt first
+  - prefer attack option if Raging Bolt has required energy and legal attack exists
+  - if unsure, delegate to previous proven agent
+
+This hook should be opt-in via playbook flag:
+runtime_hooks:
+  aggro_energy_attach: true
+  attack_when_online: true
+
+Do not apply this hook to Water/Dragapult unless explicitly enabled.
+
+Part G — Dragapult light refinement
+
+Create:
+
+playbooks/pass18_dragapult_spread_v1.yaml
+data/fixtures/pass18_dragapult_spread/
+
+Do not overbuild spread targeting yet.
+
+Fixtures:
+1. active_prefers_dreepy_or_dragapult_line
+2. bench_prioritizes_dreepy_backup
+3. search_dragapult_when_line_ready
+4. preserve_dragapult_line_in_discard
+5. attach_psychic_fire_energy_to_dragapult_line
+6. spread_damage_targeting_advisory_only
+
+Playbook:
+- setup_basic: [119]
+- stage1: [120]
+- evolution_payoff: [121]
+- support_line: [131, 133]
+- energy_required_by_attacker:
+  - 121: [5, 2]  # Psychic + Fire
+- search: [1079, 1231, 1121, 1086]
+- gust: [1182]
+- recovery: [1097]
+- plan:
+  - evolution_spread_control
+- Runtime:
+  - same ToHand/discard core pilot behavior
+  - optional narrow attach if requirements can be resolved cleanly
+  - spread target logic remains advisory/deferred
+
+Part H — Water reference stabilization
+
+Do not make major Water changes.
+
+Create a diff report:
+
+data/experiments/pass18_water_reference_diff.json
+data/experiments/pass18_water_reference_diff.md
+
+Compare:
+- league_water_core_reference
+- core_pilot_water_v2_runtime
+- current active historical combo anchor
+- deck.csv differences
+- playbook/runtime differences
+- validator/entrypoint differences
+- league differences
+
+Purpose:
+- identify why league_water_core_reference beat core_pilot_water_v2_runtime internally.
+- decide whether it is a better clean Water reference.
+- do not upload.
+
+Part I — Candidate generation
+
+Build at most three new candidates:
+
+1. league_raging_bolt_aggro_v1
+Only if Part D/E/F justify it.
+
+2. league_dragapult_spread_v1
+Light playbook refinement only.
+
+3. league_water_core_reference_v1
+Only if needed to normalize naming and registry; no strategic changes.
+
+Output:
+- experiments/runs_pass18/<candidate_id>/
+- data/submissions/candidates_pass18/<candidate_id>.tar.gz
+
+Each must:
+- pass tarball validator
+- pass entrypoint validator
+- pass relevant family fixture gate
+- live smoke cleanly
+
+Do not build Durant as a league participant this pass.
+Durant may get fixture plans only.
+
+Part J — Validation and smoke
+
+For every built candidate:
+
+python scripts/validate_candidate_tarball.py <tarball>
+python scripts/validate_candidate_entrypoint.py <tarball>
+
+Run relevant fixture gates:
+- core competency gate
+- aggro fixture gate
+- Dragapult fixture gate
+
+Run live smoke:
+- self-play 1 game/seat
+- vs Water reference 1 game/seat
+
+Output:
+- data/experiments/pass18_candidate_validation.json
+- data/experiments/pass18_candidate_validation.md
+
+Part K — Internal league v2
+
+Run a round robin among validator-passing candidates:
+
+Participants:
+- league_water_core_reference or normalized water reference
+- core_pilot_water_v2_runtime
+- league_dragapult_spread
+- league_dragapult_spread_v1 if built
+- league_raging_bolt_ogerpon original
+- league_raging_bolt_aggro_v1 if built
+- Durant excluded unless smoke-safe, expected excluded
+
+Format:
+- every deck vs every other deck
+- seat-swapped
+- 5 games per seat per pairing
+- if runtime heavy, 3 games per seat with reduced-fidelity note
+- watchdog enabled
+- no upload
+
+Output:
+- data/experiments/pass18_internal_league.json
+- data/experiments/pass18_internal_league.md
+- data/experiments/pass18_league_matrix.csv
+- data/experiments/pass18_league_rankings.json
+- data/experiments/pass18_league_rankings.md
+
+Part L — Replay-derived meta sanity check
+
+Run a small directional check for top internal candidates only.
+
+Candidates:
+- water reference
+- best Dragapult candidate
+- aggro candidate if it no longer fails internally
+- core_pilot_water_v2_runtime anchor
+
+Opponents:
+Use Pass 13 refined subfamilies:
+- metal_ex_zacian_ramp
+- water_kyogre_abomasnow_maxbelt
+- mega_lucario_ex_tempo
+- mega_kangaskhan_energy_stack
+- dragapult_ex
+- lightning_bellibolt
+
+Budget:
+- 3 games per seat per subfamily
+- seat-swapped
+- watchdog enabled
+- no upload
+
+Output:
+- data/experiments/pass18_meta_sanity.json
+- data/experiments/pass18_meta_sanity.md
+- data/experiments/pass18_meta_sanity_matrix.csv
+
+Reminder:
+- surrogate decks are directional only.
+- no candidate becomes Kaggle-ready from this pass alone.
+
+Part M — Strategy decision report
+
+Create:
+
+data/experiments/pass18_strategy_decisions.json
+data/experiments/pass18_strategy_decisions.md
+
+For each family:
+- current best candidate
+- latest iteration
+- league result
+- meta sanity result
+- fixture result
+- status:
+  - stable_reference
+  - improve_next
+  - blocked
+  - ready_for_deeper_confirmation
+  - candidate_for_future_probe
+- next recommended experiment
+
+Expected logic:
+- Water likely stable_reference.
+- Dragapult likely improve_next or ready_for_deeper_confirmation.
+- Raging Bolt either rescued or remains blocked/poor-fit.
+- Durant remains blocked / chaos-planning.
+- No direct upload.
+
+Part N — Report site and docs
+
+Update:
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/site/index.html
+- data/reports/activegraph_strategy_report.md
+- data/reports/pass18_strategy_family_iteration_report.md
+
+Include:
+- strategy family registry
+- ActiveGraph event lineage
+- Raging Bolt diagnosis
+- aggro playbook results
+- Dragapult refinement results
+- Water diff
+- league v2 matrix
+- meta sanity check
+- family decisions
+- no-upload note
+
+Part O — Tests
+
+Add/update tests for:
+- strategy_families.yaml schema
+- every strategy family has status/hypothesis/current_best/next_experiment
+- ActiveGraph strategy events emitted
+- Raging Bolt diagnosis preserves evidence and does not invent effects
+- aggro playbook role tags validate
+- aggro fixture gate catches wrong-energy attachment
+- Dragapult playbook role tags validate
+- Durant remains excluded unless smoke-safe
+- generated candidates pass tarball + entrypoint validators
+- league excludes validator/smoke failures
+- league matrix is not Kaggle leaderboard and upload_performed false
+- strategy decisions include no-upload by default
+- root files unchanged
+- report includes surrogate/internal-league disclaimers
+
+Run targeted tests, then broader suite if feasible.
+
+Part P — Final report
+
+Report exactly:
+
+ActiveGraph Pass 18 Strategy Family Iteration Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Strategy family registry
+- registry path:
+- families:
+- ActiveGraph events emitted:
+- current stable reference:
+
+3. Raging Bolt diagnosis
+- diagnosis path:
+- core failure:
+- energy matching:
+- attack-first:
+- rescued: yes/no:
+- evidence:
+
+4. Playbooks and fixtures
+- aggro playbook:
+- aggro fixtures:
+- Dragapult playbook:
+- Dragapult fixtures:
+- Durant status:
+- Water diff:
+
+5. Candidate generation
+- candidates built:
+- candidates blocked:
+- tarballs:
+- validators:
+- live smoke:
+
+6. Internal league v2
+- participants:
+- games per pairing:
+- league matrix:
+- top deck:
+- biggest improvement:
+- worst deck:
+- notable matchups:
+
+7. Meta sanity check
+- candidates:
+- opponents:
+- weighted result:
+- best candidate:
+- caveats:
+
+8. Strategy decisions
+- Water:
+- Dragapult:
+- Raging Bolt:
+- Durant:
+- next candidate for deeper confirmation:
+
+9. Queue/upload guidance
+- candidates queued:
+- upload performed: no
+- submit next: yes/no:
+- reason:
+
+10. Next recommendation
+- one sentence only.

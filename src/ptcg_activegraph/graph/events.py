@@ -73,6 +73,19 @@ class EventType(str, Enum):
     PlaybookArchitectureStarted = "PlaybookArchitectureStarted"
     ConfirmationPassStarted = "ConfirmationPassStarted"
 
+    # --- Pass 18: strategy family registry + iteration tracking -----------
+    StrategyFamilyRegistered = "StrategyFamilyRegistered"
+    StrategyIterationCreated = "StrategyIterationCreated"
+    StrategyIterationEvaluated = "StrategyIterationEvaluated"
+    StrategyHypothesisLogged = "StrategyHypothesisLogged"
+    StrategyFixtureAdded = "StrategyFixtureAdded"
+    StrategyBlocked = "StrategyBlocked"
+    StrategyDecisionRecorded = "StrategyDecisionRecorded"
+    StrategyPromotionDecision = "StrategyPromotionDecision"
+    InternalLeagueStarted = "InternalLeagueStarted"
+    InternalLeagueFinished = "InternalLeagueFinished"
+    StrategyReportGenerated = "StrategyReportGenerated"
+
 
 @dataclass
 class Event:

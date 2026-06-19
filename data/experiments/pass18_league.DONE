@@ -1,0 +1,11 @@
+{
+  "status": "ran",
+  "elapsed_s": 97.8,
+  "participants": [
+    "league_water_core_reference",
+    "league_dragapult_spread_v1",
+    "league_dragapult_spread",
+    "league_raging_bolt_ogerpon",
+    "core_pilot_water_v2_runtime"
+  ]
+}
