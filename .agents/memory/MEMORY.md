@@ -5,3 +5,4 @@
 - [Forensic metric canonicalization](forensic-metric-canonicalization.md) — derived metrics flow from the forensics layer (median+min+semantics), not raw per-deck diagnostics; guard with a cross-artifact test that blocks stale-outlier phrasing variants.
 - [Board-wide discard refutes color mismatch](board-wide-discard-color-match.md) — for whole-board-cost attacks (Bellowing Thunder), per-Pokémon energy color-match is NOT a misplay signal; prove causality from the trace.
 - [Effect-loop head diagnosis](effect-loop-head-diagnosis.md) — classify a cabt effect-loop by its HEAD context (Venusaur ctx0 offers end+in_play_action, declines end 1958/1958 = optional_loop_with_exit), not the inner ctx33/21 churn that looks falsely "forced".
+- [Hardening-pass variant-track cap](hardening-pass-track-cap.md) — the "AT MOST N tracks" cap counts plan list-entries; put sibling A/B builds in one track via a `variants` sub-list or it silently breaks the cap.

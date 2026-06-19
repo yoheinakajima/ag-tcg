@@ -1,0 +1,5 @@
+deck \ opponent (a_win_rate),league_water_core_reference,league_dragapult_v1_search_only,league_mega_charizard_x_burst,league_dragapult_v1_draw_only
+league_water_core_reference,—,0.4,0.6,0.5
+league_dragapult_v1_search_only,0.6,—,0.55,0.45
+league_mega_charizard_x_burst,0.4,0.45,—,0.25
+league_dragapult_v1_draw_only,0.5,0.55,0.75,—

@@ -1,0 +1,650 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not invent card IDs.
+- Do not clone opponent decks.
+- Do not build exact opponent replay decks.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Raw replay JSON files must remain gitignored.
+- Candidate tarballs must contain only top-level main.py + deck.csv.
+- This is a LOCAL portfolio-hardening pass over OUR existing deck ideas and candidates.
+- No Kaggle upload.
+- No Kaggle submit.
+- Goal is to identify the best next human-approved probe candidate, not to submit it.
+
+Read before acting:
+- docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md
+- docs/NEXT_AGENT_README.md
+- docs/CORE_PILOT_ARCHITECTURE.md
+- docs/CORE_PILOT_ROLE_TAXONOMY.md
+- docs/CORE_GAMEPLAY_BACKLOG.md if present
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/pass17_internal_deck_league_report.md
+- data/reports/pass19_dragapult_parent_child_report.md
+- data/reports/pass20_water_reference_kaggle_probe_report.md
+- data/reports/pass21_final_report.md
+- data/reports/pass24_anti_disruption_pivot_replay_report.md
+- data/reports/pass25_water_live_control_hardening_report.md
+- data/reports/pass26_action_opportunity_mining_report.md
+- data/reports/pass27_multi_archetype_portfolio_report.md
+- data/reports/pass28_cross_deck_forensic_report.md
+- data/reports/pass29_observability_ratchet_report.md
+- experiments/pass27_portfolio_decks.yaml
+- experiments/strategy_families.yaml if present
+- data/activegraph/lab_events.jsonl
+
+Current authoritative interpretation:
+- We do NOT want to copy opponent decks.
+- We already have enough deck ideas and local candidates.
+- Pass 28 refuted the naive Raging Bolt color-match / attack-pressure hypotheses.
+- Pass 29 improved observability and built effect_loop_exit_guard_v1 locally, but that was not promoted.
+- The best next direction is to harden our existing portfolio:
+  1. Water remains the live reference / benchmark.
+  2. Dragapult is viable but needs parent/child confirmation.
+  3. Venusaur has a clear local effect-loop fix candidate.
+  4. Raging Bolt needs structural hardening, not generic color/attack rules.
+  5. Charizard and Gardevoir remain high-complexity diagnostics until engine-card observability improves.
+  6. Durant/chaos remains blocked unless a special pilot exists.
+- This pass should produce a tournament-style view of our existing strategies, plus a small number of hardening variants.
+
+Goal:
+Run Pass 30: Existing Portfolio Hardening Tournament.
+
+Core question:
+Among our existing deck families and evidence-backed variants, which deck/pilot combination is most worth deeper confirmation or a future human-approved Kaggle probe?
+
+Objectives:
+1. Preserve root safety.
+2. Refresh live score read-only only.
+3. Create a current portfolio registry of OUR decks/candidates only.
+4. Build a small set of hardening variants from existing decks, not opponent clones.
+5. Validate all built candidates.
+6. Run an internal tournament / round robin.
+7. Run parent-child confirmations for key variants.
+8. Run limited meta sanity against replay-derived archetypes as directional only.
+9. Produce a dry-run queue with at most one candidate for future consideration.
+10. No upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Read-only live score status
+
+Run read-only Kaggle status if possible:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass30.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass30.csv || true
+
+If kaggle is not on PATH, use the Python kaggle.cli/API method used in prior passes.
+
+Rules:
+- no submit
+- no upload
+- status listing only
+- publicScore may be string; coerce safely to float
+- preserve distinct fields:
+  - live_score_leader
+  - water_family_current_best
+  - portfolio_reference
+- do not make a promotion decision
+
+Output:
+- data/experiments/pass30_live_score_status.json
+- data/experiments/pass30_live_score_status.md
+
+Part C — Existing portfolio registry
+
+Create:
+
+data/experiments/pass30_existing_portfolio_registry.json
+data/experiments/pass30_existing_portfolio_registry.md
+experiments/pass30_existing_portfolio.yaml
+
+Inventory OUR existing deck families and candidates only. Do not include cloned opponent decks.
+
+Families to include if artifacts exist:
+
+1. Water family
+- league_water_anti_disruption_pivot_v1
+- league_water_core_reference
+- core_pilot_water_v2_runtime
+- any Water pivot / Water reference tarballs from prior passes
+Role:
+- live reference / benchmark
+Hardening stance:
+- no new Water candidate unless needed as reference
+
+2. Dragapult family
+- league_dragapult_spread parent
+- league_dragapult_spread_v1 child if present
+- league_dragapult_v1_search_only if present
+- league_dragapult_v1_draw_only if present
+Role:
+- viable control/spread family
+Hardening stance:
+- run stronger confirmation; possibly keep search_only as candidate_for_confirmation, not promotion
+
+3. Venusaur family
+- league_mega_venusaur_tank
+- effect_loop_exit_guard_v1 if built in Pass 29
+Role:
+- effect-loop failure/fix family
+Hardening stance:
+- test whether effect_loop_exit_guard makes Venusaur actually playable in league, not just fixes the static loop
+
+4. Raging Bolt / Ogerpon family
+- league_raging_bolt_ogerpon
+Role:
+- aggro stress deck
+Hardening stance:
+- do NOT assume color/attack rules are needed
+- build small structural deck variants only if IDs and counts validate
+- variants should come from our existing deck idea, not opponent decks
+
+5. Charizard family
+- league_mega_charizard_x_burst
+Role:
+- combo/burst diagnostic
+Hardening stance:
+- no deep hook unless evidence exists
+- include as benchmark
+
+6. Gardevoir family
+- league_mega_gardevoir_psychic_ramp
+Role:
+- ramp/scaling diagnostic
+Hardening stance:
+- no deep hook unless evidence exists
+- include as benchmark
+
+7. Durant/chaos family
+- league_durant_deckout_carousel
+Role:
+- chaos/deckout future lane
+Hardening stance:
+- blocked unless smoke-valid or special pilot exists
+- do not include in league if invalid
+
+For each entry:
+- candidate_id
+- family_id
+- parent_id
+- tarball path
+- playbook path
+- deck path
+- status
+- validation status if known
+- prior league result if known
+- prior Kaggle score if any
+- notes
+- no_upload: true
+
+Part D — Hardening variant selection
+
+Create:
+
+data/experiments/pass30_hardening_plan.json
+data/experiments/pass30_hardening_plan.md
+
+Select at most 5 variants to build or reuse.
+
+Required variant tracks:
+
+Track 1 — Dragapult confirmation
+- Reuse existing:
+  - league_dragapult_spread parent
+  - league_dragapult_v1_search_only if present
+  - league_dragapult_v1_draw_only if present
+- Build no new Dragapult variant unless needed to reproduce prior artifacts.
+- Goal: resolve parent vs search_only vs draw_only with more games and stable metrics.
+
+Track 2 — Venusaur effect-loop fixed candidate
+- Reuse effect_loop_exit_guard_v1 if present.
+- If not present, rebuild exactly from Pass 29 artifacts.
+- Goal: determine whether fixing the loop makes Venusaur league-playable.
+
+Track 3 — Raging Bolt structural hardening
+- Build up to 2 small deck-skeleton variants from OUR Raging Bolt/Ogerpon idea.
+- No runtime rule changes.
+- No opponent-card copying.
+- Suggested variant A: more consistency / less complexity.
+- Suggested variant B: more energy / more direct attacker support.
+- Use only existing validated IDs from the deck idea:
+  - Raging Bolt ex 63
+  - Teal Mask Ogerpon ex 96
+  - Crispin 1198
+  - draw/search cards already validated
+  - Basic Fighting / Lightning / Grass energy IDs from card DB
+- Do not invent replacements.
+- Document exact deck diffs and hypothesis.
+
+Track 4 — Water benchmark
+- No new Water variant.
+- Include current best Water in league.
+
+Track 5 — Charizard/Gardevoir/Venusaur diagnostics
+- Include existing candidates if smoke-valid.
+- Do not build new complex-engine variants unless required to run the portfolio.
+
+For every variant:
+- hypothesis
+- expected improvement
+- risk
+- parent
+- delta type:
+  - deck_skeleton
+  - playbook_roles
+  - runtime_hook
+  - reused_prior_candidate
+- build_allowed true/false
+- reason
+
+Part E — Build/reuse candidates
+
+Create:
+
+scripts/build_pass30_existing_portfolio_variants.py
+
+Outputs:
+- experiments/runs_pass30/<candidate_id>/
+- data/submissions/candidates_pass30/<candidate_id>.tar.gz
+- data/experiments/pass30_candidate_manifest.json
+- data/experiments/pass30_candidate_manifest.md
+
+Rules:
+- Reuse existing tarballs when possible; record source path.
+- Build new tarballs only for approved Raging Bolt structural variants or missing prior candidates.
+- No root mutation.
+- Robust deck-selection.
+- Last-callable entrypoint invariant.
+- Runtime stdlib-only.
+- Top-level main.py + deck.csv only.
+- Every deck exactly 60 cards.
+- Basic Energy may exceed 4 copies.
+- Non-energy cards max 4.
+- No invented IDs.
+
+If a candidate cannot build or validate:
+- block honestly
+- record reason
+
+Part F — Validation and live smoke
+
+For every candidate included in tournament:
+
+python scripts/validate_candidate_tarball.py <tarball>
+python scripts/validate_candidate_entrypoint.py <tarball>
+
+Run:
+- live self-smoke 1 game/seat
+- smoke vs Water reference 1 game/seat where feasible
+- core competency gate where applicable
+- deck-specific gate if fixtures exist
+
+Outputs:
+- data/experiments/pass30_candidate_validation.json
+- data/experiments/pass30_candidate_validation.md
+- data/experiments/pass30_live_smoke.json
+- data/experiments/pass30_live_smoke.md
+
+Eligibility:
+- tarball validator PASS
+- entrypoint validator PASS
+- no INVALID/ERROR/TIMEOUT
+- finite rewards
+- not stuck in endless loop
+- no broad unknown failure
+
+Part G — Internal portfolio tournament
+
+Run a round-robin tournament with all eligible candidates.
+
+Participants should include, if valid:
+- current Water family best
+- league_water_core_reference
+- core_pilot_water_v2_runtime
+- Dragapult parent
+- Dragapult search_only
+- Dragapult draw_only
+- Venusaur parent
+- Venusaur effect_loop_exit_guard_v1
+- Raging Bolt base
+- Raging Bolt structural variant A
+- Raging Bolt structural variant B
+- Charizard burst
+- Gardevoir ramp
+- any other existing smoke-valid portfolio candidate
+
+Exclude:
+- Durant unless smoke-valid
+- any invalid candidate
+- any candidate missing entrypoint validator pass
+
+Budget:
+- Stage 1 broad: 3 games/seat round-robin
+- Stage 2 focused: top 4 plus key parent/child comparisons, 10 games/seat if feasible
+- Always seat-swapped
+- subprocess isolated
+- Replit workflow if needed
+- no upload
+
+Outputs:
+- data/experiments/pass30_portfolio_tournament.json
+- data/experiments/pass30_portfolio_tournament.md
+- data/experiments/pass30_portfolio_matrix.csv
+- data/experiments/pass30_portfolio_rankings.json
+- data/experiments/pass30_portfolio_rankings.md
+
+Metrics:
+- W/L/D
+- adjusted win rate
+- Wilson CI
+- invalid/crash/timeout
+- average steps
+- deckout/no-pokemon losses
+- first attack turn
+- attack rate
+- attach rate
+- evolution rate
+- bench development
+- effect-loop count
+- deck/pilot compatibility label
+
+Labels:
+- strong_reference
+- candidate_for_confirmation
+- promising_but_noisy
+- legal_but_weak
+- fixed_but_not_competitive
+- invalid_or_blocked
+- needs_special_pilot
+- keep_as_benchmark
+
+Caveat:
+- Internal tournament is not Kaggle.
+- It only measures our own decks under our own pilot.
+- It is not a promotion signal by itself.
+
+Part H — Parent/child confirmations
+
+Create:
+
+data/experiments/pass30_parent_child_confirmations.json
+data/experiments/pass30_parent_child_confirmations.md
+
+Run or reuse direct H2H for:
+
+1. Dragapult parent vs search_only
+2. Dragapult parent vs draw_only
+3. Venusaur parent vs effect_loop_exit_guard
+4. Raging Bolt base vs structural variant A
+5. Raging Bolt base vs structural variant B
+6. Water current best vs best non-Water candidate
+
+Budget:
+- 10 games/seat minimum if feasible
+- 20 games/seat if a result is near decision boundary and workflow time allows
+- seat-swapped
+- subprocess isolated
+
+For each:
+- parent wins
+- child wins
+- draws
+- child adjusted win rate
+- Wilson CI
+- behavior-change rationale
+- verdict:
+  - child_better
+  - parent_better
+  - inconclusive
+  - child_fixed_bug_but_weaker
+  - needs_more_games
+
+Part I — Meta sanity, limited and directional
+
+Run limited meta sanity only for top candidates:
+- Water current best
+- tournament top 3
+- any candidate that fixes a hard bug, such as Venusaur loop guard
+
+Opponents:
+- replay-derived archetypes from Pass 13/21/24
+- if budget limited, use strongest known external archetype surrogates
+
+Outputs:
+- data/experiments/pass30_meta_sanity.json
+- data/experiments/pass30_meta_sanity.md
+- data/experiments/pass30_meta_matrix.csv
+
+Metrics:
+- weighted score
+- per-archetype score
+- hard collapses
+- invalid/timeouts
+- no-pokemon/deckout losses
+
+Caveat:
+- surrogate only
+- not Kaggle
+- not sufficient for promotion
+
+Part J — Compatibility / hardening diagnosis
+
+Create:
+
+data/experiments/pass30_hardening_diagnosis.json
+data/experiments/pass30_hardening_diagnosis.md
+
+For each family:
+- best candidate
+- worst candidate
+- whether hardening helped
+- what failed
+- whether the family should stay active
+- next needed work:
+  - more deck skeleton tuning
+  - role/playbook tuning
+  - runtime rule
+  - special pilot
+  - no_action
+
+Special required conclusions:
+- Raging Bolt:
+  - Did structural hardening improve from 0-win baseline?
+  - If yes, continue deck skeleton tuning.
+  - If no, classify as needs_special_pilot or low-priority.
+- Venusaur:
+  - Did effect-loop exit guard turn it from broken to playable?
+  - If yes, keep candidate for further testing.
+  - If no, classify fixed_but_not_competitive.
+- Dragapult:
+  - Is search_only robustly better than parent?
+  - If H2H remains unstable, keep parent as current best.
+- Water:
+  - Does any candidate beat Water enough to challenge it as local reference?
+  - If not, keep Water as benchmark.
+
+Part K — Strategy decision / dry-run queue
+
+Create:
+- data/experiments/pass30_strategy_decision.json
+- data/experiments/pass30_strategy_decision.md
+- data/submission_queue.json
+
+Decision labels:
+- keep_water_as_reference
+- candidate_for_deeper_confirmation
+- future_kaggle_probe_candidate
+- continue_raging_bolt_hardening
+- continue_venusaur_loop_hardening
+- continue_dragapult_confirmation
+- build_special_pilot_for_chaos
+- no_action
+
+Rules:
+- No upload.
+- Dry-run queue max 1.
+- A candidate may enter dry-run queue only if:
+  - validators PASS
+  - smoke PASS
+  - no INVALID/ERROR/TIMEOUT
+  - internal tournament strong
+  - parent/child confirmation supports it OR it fixes a hard bug and remains competitive
+  - meta sanity non-negative
+  - no major regression
+- If no candidate clears, queue empty.
+- If one candidate looks promising but not enough, mark candidate_for_deeper_confirmation, not future_kaggle_probe_candidate.
+
+Part L — ActiveGraph events
+
+Emit:
+- StrategyIterationCreated for new variants
+- StrategyIterationEvaluated for every candidate in tournament
+- LocalEvaluationFinished for tournament
+- StrategyDecisionRecorded
+- SubmissionQueued only if dry-run queue has one candidate
+- ReportSiteGenerated
+
+All events:
+- no_upload: true
+- pass30 tags
+- family_id
+- candidate_id
+- parent_id
+- source_artifacts
+- validation status
+- tournament status
+- decision label
+
+Part M — Reports and docs
+
+Update:
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- data/reports/pass30_existing_portfolio_hardening_report.md
+
+Include:
+- live score state
+- existing portfolio registry
+- hardening plan
+- candidates built/reused
+- validation/smoke
+- internal tournament
+- parent/child confirmations
+- meta sanity
+- compatibility diagnosis
+- strategy decision
+- dry-run queue
+- no-upload note
+- caveat: internal tournament is not Kaggle
+
+Part N — Tests
+
+Add/update tests for:
+- no opponent deck clones are built
+- all candidates are from existing portfolio or variants of existing portfolio
+- Raging Bolt hardening variants use only known user deck idea IDs
+- root files unchanged
+- candidate tarballs top-level only
+- entrypoint validators pass for eligible candidates
+- invalid candidates excluded from tournament
+- Durant excluded unless smoke-valid
+- internal tournament has is_kaggle_leaderboard false
+- dry-run queue max 1
+- no upload flag false / no_upload true
+- reports include internal/Kaggle caveat
+- parent/child confirmation artifacts exist
+- Venusaur loop guard is evaluated if present
+- Dragapult parent/search_only comparison recorded
+- Water kept as benchmark unless clearly beaten
+
+Run targeted tests.
+Run broader tests if feasible.
+
+Part O — Final report
+
+Report exactly:
+
+ActiveGraph Pass 30 Existing Portfolio Hardening Tournament Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Live score state
+- live_score_leader:
+- water_family_current_best:
+- portfolio_reference:
+- conclusion:
+
+3. Portfolio / hardening plan
+- families included:
+- variants planned:
+- candidates reused:
+- candidates built:
+- blocked:
+
+4. Validation / smoke
+- tarball validators:
+- entrypoint validators:
+- smoke-valid:
+- invalid/crash/timeout:
+- excluded:
+
+5. Internal tournament
+- participants:
+- games per seat:
+- top candidate:
+- top family:
+- worst family:
+- caveat:
+
+6. Parent/child confirmations
+- Dragapult:
+- Venusaur:
+- Raging Bolt:
+- Water comparison:
+- strongest finding:
+
+7. Meta sanity
+- run:
+- best candidate:
+- collapses:
+- caveat:
+
+8. Compatibility diagnosis
+- Water:
+- Dragapult:
+- Venusaur:
+- Raging Bolt:
+- Charizard:
+- Gardevoir:
+- Chaos/Durant:
+
+9. Strategy decision / ActiveGraph
+- decision:
+- dry-run queue:
+- next family:
+- events emitted:
+- report site:
+
+10. Next recommendation
+- one sentence only.

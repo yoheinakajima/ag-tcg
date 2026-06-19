@@ -1,0 +1,231 @@
+# ActiveGraph Pass 30 — Existing Portfolio Hardening Tournament registry.
+#
+# LOCAL ONLY. No Kaggle upload/submit, no GitHub push. This pass hardens OUR
+# existing deck families and evidence-backed variants. NO opponent clones, NO
+# invented card ids. Every Raging Bolt variant id below is confirmed present in
+# data/cards/EN_Card_Data.csv (gitignored, never committed). The builder
+# (scripts/build_pass30_existing_portfolio_variants.py) REUSES prior tarballs
+# verbatim where possible and only BUILDS the two new Raging Bolt structural
+# skeletons (variant A/B) from our own Raging Bolt / Ogerpon deck idea.
+#
+# Each candidate keeps: candidate_id, family_id, parent_id, source tarball (for
+# reuse), playbook, role, status, and notes. is_kaggle_leaderboard is always
+# false; no_upload is always true.
+
+schema: activegraph.pass30.existing_portfolio/v1
+pass: "30"
+no_upload: true
+upload_performed: false
+is_kaggle_leaderboard: false
+
+basic_energy_ids: [1, 2, 3, 4, 5, 6, 7, 8]
+
+families:
+
+  # 1. Water family — live reference / benchmark. No new Water candidate.
+  water:
+    family_id: water_kyogre_abomasnow
+    role: live_reference_benchmark
+    hardening_stance: "No new Water candidate; keep current best as benchmark."
+    candidates:
+      - candidate_id: league_water_anti_disruption_pivot_v1
+        parent_id: league_water_core_reference
+        kind: reused_prior_candidate
+        source_tarball: data/submissions/candidates_pass22/league_water_anti_disruption_pivot_v1.tar.gz
+        playbook: playbooks/pass17_water_core_reference.yaml
+        role: water_family_current_best
+        prior_kaggle_score: 376.5
+        notes: "Live-score leader and water_family_current_best (read-only)."
+      - candidate_id: league_water_core_reference
+        parent_id: core_pilot_water_v2_runtime
+        kind: reused_prior_candidate
+        source_tarball: data/submissions/candidates_pass27/league_water_core_reference.tar.gz
+        playbook: playbooks/pass17_water_core_reference.yaml
+        role: portfolio_reference
+        prior_kaggle_score: 222.3
+        notes: "In-portfolio reference the internal tournament is calibrated on."
+      - candidate_id: core_pilot_water_v2_runtime
+        parent_id: null
+        kind: reused_prior_candidate
+        source_tarball: data/submissions/candidates_pass14/core_pilot_water_v2_runtime.tar.gz
+        playbook: playbooks/pass17_water_core_reference.yaml
+        role: historical_reference
+        notes: "Historical Water v2 yardstick."
+
+  # 2. Dragapult family — viable control/spread; needs parent/child confirmation.
+  dragapult:
+    family_id: dragapult_spread
+    role: evolution_control_spread
+    hardening_stance: "Confirm parent vs search_only vs draw_only with more games."
+    candidates:
+      - candidate_id: league_dragapult_spread
+        parent_id: null
+        kind: reused_prior_candidate
+        source_tarball: data/submissions/candidates_pass27/league_dragapult_spread.tar.gz
+        playbook: playbooks/pass17_dragapult_spread.yaml
+        role: parent
+        notes: "Dragapult parent (current best of family)."
+      - candidate_id: league_dragapult_v1_search_only
+        parent_id: league_dragapult_spread
+        kind: reused_prior_candidate
+        source_tarball: data/submissions/candidates_pass19/league_dragapult_v1_search_only.tar.gz
+        playbook: playbooks/pass19_dragapult_v1_search_only.yaml
+        role: child_search_only
+        notes: "Pass 19 search-only child; candidate_for_confirmation only."
+      - candidate_id: league_dragapult_v1_draw_only
+        parent_id: league_dragapult_spread
+        kind: reused_prior_candidate
+        source_tarball: data/submissions/candidates_pass19/league_dragapult_v1_draw_only.tar.gz
+        playbook: playbooks/pass19_dragapult_v1_draw_only.yaml
+        role: child_draw_only
+        notes: "Pass 19 draw-only child."
+
+  # 3. Venusaur family — effect-loop failure/fix family.
+  venusaur:
+    family_id: mega_venusaur_tank
+    role: effect_loop_failure_fix
+    hardening_stance: >
+      Test whether the effect-loop exit guard makes Venusaur league-playable,
+      not just whether it fixes the static loop.
+    candidates:
+      - candidate_id: league_mega_venusaur_tank
+        parent_id: null
+        kind: reused_prior_candidate
+        source_tarball: data/submissions/candidates_pass27/league_mega_venusaur_tank.tar.gz
+        playbook: playbooks/pass27_mega_venusaur_tank.yaml
+        role: parent
+        notes: "Venusaur parent (exhibits the effect loop)."
+      - candidate_id: effect_loop_exit_guard_v1
+        parent_id: league_mega_venusaur_tank
+        kind: reused_prior_candidate
+        source_tarball: data/submissions/candidates_pass29/effect_loop_exit_guard_v1.tar.gz
+        playbook: playbooks/pass27_mega_venusaur_tank.yaml
+        role: child_loop_guard
+        notes: "Pass 29 runtime hook; deck identical to parent, guard fires only on loop."
+
+  # 4. Raging Bolt / Ogerpon family — aggro stress deck; structural hardening only.
+  raging_bolt:
+    family_id: raging_bolt_ogerpon
+    role: aggro_stress
+    hardening_stance: >
+      Do NOT add color/attack runtime rules (Pass 28 refuted these). Build up to
+      two small structural deck skeletons from OUR Raging Bolt / Ogerpon idea
+      using only validated ids; document exact diffs and hypotheses.
+    candidates:
+      - candidate_id: league_raging_bolt_ogerpon
+        parent_id: null
+        kind: reused_prior_candidate
+        source_tarball: data/submissions/candidates_pass27/league_raging_bolt_ogerpon.tar.gz
+        playbook: playbooks/pass17_raging_bolt_ogerpon.yaml
+        role: base
+        notes: "Raging Bolt base (0-win baseline in prior internal leagues)."
+      # Structural variant A — more consistency / less complexity.
+      - candidate_id: league_raging_bolt_consistency_v1
+        parent_id: league_raging_bolt_ogerpon
+        kind: deck_skeleton
+        build: true
+        playbook: playbooks/pass17_raging_bolt_ogerpon.yaml
+        runtime_contexts: [1, 2, 7, 8, 38]
+        role: structural_variant_a
+        hypothesis: >
+          Trimming situational disruption/recovery (Boss's Orders, Night
+          Stretcher) and adding a smoother energy base raises consistent
+          attach/attack frequency vs the base skeleton.
+        diff_vs_parent:
+          "1182": -2   # Boss's Orders 4 -> 2
+          "1097": -2   # Night Stretcher 4 -> 2
+          "6": +3      # Basic {F} 13 -> 16
+          "1": +1      # Basic {G} 3 -> 4
+        cards:
+          63: 4        # Raging Bolt ex
+          96: 4        # Teal Mask Ogerpon ex
+          1198: 4      # Crispin
+          1231: 4      # Dawn
+          1224: 4      # Cheren
+          1121: 4      # Ultra Ball
+          1086: 4      # Buddy-Buddy Poffin
+          1182: 2      # Boss's Orders (trimmed)
+          1097: 2      # Night Stretcher (trimmed)
+          6: 16        # Basic {F} Energy
+          4: 8         # Basic {L} Energy
+          1: 4         # Basic {G} Energy
+      # Structural variant B — more energy / more direct attacker support.
+      - candidate_id: league_raging_bolt_energy_attacker_v1
+        parent_id: league_raging_bolt_ogerpon
+        kind: deck_skeleton
+        build: true
+        playbook: playbooks/pass17_raging_bolt_ogerpon.yaml
+        runtime_contexts: [1, 2, 7, 8, 38]
+        role: structural_variant_b
+        hypothesis: >
+          Raging Bolt ex's attack scales with Basic Energy in play; maximizing the
+          Fighting energy base plus Crispin acceleration (at the cost of some draw)
+          fuels its big attack faster than the base skeleton.
+        diff_vs_parent:
+          "1224": -2   # Cheren 4 -> 2
+          "1182": -2   # Boss's Orders 4 -> 2
+          "1097": -2   # Night Stretcher 4 -> 2
+          "6": +5      # Basic {F} 13 -> 18
+          "1": +1      # Basic {G} 3 -> 4
+        cards:
+          63: 4        # Raging Bolt ex
+          96: 4        # Teal Mask Ogerpon ex
+          1198: 4      # Crispin (energy accel)
+          1231: 4      # Dawn
+          1224: 2      # Cheren (trimmed)
+          1121: 4      # Ultra Ball
+          1086: 4      # Buddy-Buddy Poffin
+          1182: 2      # Boss's Orders (trimmed)
+          1097: 2      # Night Stretcher (trimmed)
+          6: 18        # Basic {F} Energy (maximized)
+          4: 8         # Basic {L} Energy
+          1: 4         # Basic {G} Energy
+
+  # 5. Charizard family — combo/burst diagnostic; benchmark only.
+  charizard:
+    family_id: mega_charizard_x_burst
+    role: combo_burst_diagnostic
+    hardening_stance: "No deep hook unless evidence exists; include as benchmark."
+    candidates:
+      - candidate_id: league_mega_charizard_x_burst
+        parent_id: null
+        kind: reused_prior_candidate
+        source_tarball: data/submissions/candidates_pass27/league_mega_charizard_x_burst.tar.gz
+        playbook: playbooks/pass27_mega_charizard_x_burst.yaml
+        role: benchmark_diagnostic
+        notes: "High-complexity engine; diagnostic benchmark."
+
+  # 6. Gardevoir family — ramp/scaling diagnostic; benchmark only.
+  gardevoir:
+    family_id: mega_gardevoir_ramp
+    role: ramp_scaling_diagnostic
+    hardening_stance: "No deep hook unless evidence exists; include as benchmark."
+    candidates:
+      - candidate_id: league_mega_gardevoir_psychic_ramp
+        parent_id: null
+        kind: reused_prior_candidate
+        source_tarball: data/submissions/candidates_pass27/league_mega_gardevoir_psychic_ramp.tar.gz
+        playbook: playbooks/pass27_mega_gardevoir_psychic_ramp.yaml
+        role: benchmark_diagnostic
+        notes: "High-complexity engine; diagnostic benchmark."
+
+  # 7. Durant / chaos family — blocked unless smoke-valid or special pilot exists.
+  durant:
+    family_id: durant_deckout_carousel
+    role: chaos_deckout_future_lane
+    hardening_stance: >
+      Blocked from the tournament: the generic pilot cannot legally pilot a
+      deckout/mill win condition. Smoke-tested for honesty but excluded.
+    candidates:
+      - candidate_id: league_durant_deckout_carousel
+        parent_id: null
+        kind: reused_prior_candidate
+        source_tarball: data/submissions/candidates_pass27/league_durant_deckout_carousel.tar.gz
+        playbook: playbooks/pass17_durant_deckout_carousel.yaml
+        role: chaos_blocked
+        blocked_from_league: true
+        block_reason: >
+          Deckout/mill is the win condition and needs special triggers the generic
+          core pilot does not implement; piloted generically it misplays the
+          carousel, so it is scout-only and excluded from the tournament.
+        notes: "Built + smoke-tested for honesty; excluded from the tournament."
