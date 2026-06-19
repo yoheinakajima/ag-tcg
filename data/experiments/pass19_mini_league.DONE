@@ -1,0 +1,35 @@
+{
+  "status": "ran",
+  "elapsed_s": 198.5,
+  "participants": [
+    "league_dragapult_spread",
+    "league_dragapult_spread_v1",
+    "league_dragapult_v1_search_only",
+    "league_dragapult_v1_draw_only",
+    "league_water_core_reference",
+    "core_pilot_water_v2_runtime"
+  ],
+  "parent_h2h": {
+    "league_dragapult_spread_v1": {
+      "vs_parent_wins": 10,
+      "parent_wins": 7,
+      "draws": 3,
+      "win_rate_vs_parent": 0.5882,
+      "improves_parent_h2h": true
+    },
+    "league_dragapult_v1_search_only": {
+      "vs_parent_wins": 8,
+      "parent_wins": 12,
+      "draws": 0,
+      "win_rate_vs_parent": 0.4,
+      "improves_parent_h2h": false
+    },
+    "league_dragapult_v1_draw_only": {
+      "vs_parent_wins": 7,
+      "parent_wins": 13,
+      "draws": 0,
+      "win_rate_vs_parent": 0.35,
+      "improves_parent_h2h": false
+    }
+  }
+}

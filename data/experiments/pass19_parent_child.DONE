@@ -1,0 +1,7 @@
+{
+  "status": "ok",
+  "elapsed_s": 15.5,
+  "n_games": 20,
+  "child_win_rate": 0.35,
+  "decision_divergences": 2
+}

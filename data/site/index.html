@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph Strategy Lab — Pass 18</title>
+<title>ActiveGraph Strategy Lab — Pass 19</title>
 <style>
   :root { --bg:#0f1420; --panel:#171f2e; --ink:#e6edf6; --muted:#9bb0c9;
           --accent:#4cc4ff; --warn:#ffcf5c; --ok:#6ee7a0; --bad:#ff7b7b;
@@ -35,7 +35,7 @@
 <header>
   <div class="wrap" style="padding-bottom:0">
     <h1>ActiveGraph Strategy Lab</h1>
-    <div class="sub">Pass 18 — Strategy family registry + targeted playbook iteration</div>
+    <div class="sub">Pass 19 — Dragapult parent/child H2H forensics + strategy portfolio loop</div>
   </div>
 </header>
 <div class="wrap">
@@ -50,77 +50,94 @@
   </div>
 
   <div class="grid">
-    <div class="card"><div class="sub">Strategy families</div><div class="big">5</div></div>
-    <div class="card"><div class="sub">League-eligible candidate</div><div class="big ok">dragapult_spread_v1</div></div>
-    <div class="card"><div class="sub">Top internal deck</div><div class="big">league_dragapult_spread_v1</div></div>
+    <div class="card"><div class="sub">Decision</div><div class="big warn">needs_more_h2h</div></div>
+    <div class="card"><div class="sub">current_best (kept)</div><div class="big">league_dragapult_spread</div></div>
+    <div class="card"><div class="sub">Top aggregate deck</div><div class="big ok">v1_search_only</div></div>
     <div class="card"><div class="sub">Candidates uploaded</div><div class="big ok">0</div></div>
   </div>
+
+  <div class="note"><strong>The paradox, resolved.</strong> In Pass 18 the child
+    <code>dragapult_spread_v1</code> won the aggregate league yet "lost" the direct
+    head-to-head vs its parent. Pass 19 traces the cause to <strong>two added role
+    aliases</strong> (<code>search_cards</code>, <code>draw_support</code>) that wake two
+    dormant scoring branches — a +5 over-search bias (inert) and a +10 willingness to
+    discard the deck's own draw engine (the active culprit). But the effect is
+    <strong>below the variance floor</strong>: the child-vs-parent H2H flips sign between
+    samples (forensic trace 0.35 → mini-league 0.588) and every aggregate CI overlaps the
+    parent. The original "loss" does not reproduce.</div>
 
   <h2>Strategy family registry</h2>
   <table><tr><th>family</th><th>status</th><th>current best</th><th>league</th></tr>
     <tr><td><code>water_kyogre_abomasnow</code></td><td>active_reference</td><td><code>league_water_core_reference</code></td><td class='ok'>benchmark</td></tr>
-    <tr><td><code>dragapult_spread</code></td><td>promising_research</td><td><code>league_dragapult_spread_v1</code></td><td class='ok'>candidate ✅</td></tr>
+    <tr><td><code>dragapult_spread</code></td><td>promising_research</td><td><code>league_dragapult_spread</code> (parent)</td><td class='warn'>needs_more_h2h</td></tr>
     <tr><td><code>raging_bolt_ogerpon</code></td><td>backlog</td><td><code>league_raging_bolt_ogerpon</code></td><td class='warn'>carried unchanged</td></tr>
     <tr><td><code>durant_deckout_carousel</code></td><td>chaos_research_blocked</td><td>—</td><td class='bad'>⛔ excluded</td></tr>
     <tr><td><code>future_high_ceiling_evolution</code></td><td>backlog</td><td>—</td><td class='sub'>not evaluated</td></tr>
   </table>
 
-  <h2>Candidate eligibility (Part J)</h2>
-  <table><tr><th>candidate</th><th>tarball</th><th>entrypoint</th><th>core (vs parent)</th><th>targeted</th><th>smoke</th><th>league</th></tr>
-    <tr><td><code>league_dragapult_spread_v1</code></td><td class='ok'>pass</td><td class='ok'>pass</td><td class='ok'>12/14 == 12/14 (no regression)</td><td class='ok'>5/5</td><td class='ok'>clean</td><td class='ok'>eligible</td></tr>
+  <h2>Justified ablations + validation (Parts F–H)</h2>
+  <table><tr><th>candidate</th><th>role</th><th>tarball</th><th>entrypoint</th><th>core (vs parent)</th><th>dp19_04 discriminator</th><th>smoke</th></tr>
+    <tr><td><code>league_dragapult_v1_search_only</code></td><td>targeted revert (drop draw_support)</td><td class='ok'>pass</td><td class='ok'>pass</td><td class='ok'>12/14 (no regression)</td><td class='ok'>PASS (keeps draw engine)</td><td class='ok'>clean</td></tr>
+    <tr><td><code>league_dragapult_v1_draw_only</code></td><td>diagnostic (keep only draw_support)</td><td class='ok'>pass</td><td class='ok'>pass</td><td class='ok'>12/14 (no regression)</td><td class='bad'>FAIL (discards draw engine)</td><td class='ok'>clean</td></tr>
   </table>
-  <div class="note">Core fixture <code>06_evolve_when_line_ready</code> fails for
-    <em>both</em> v1 and its parent (it wants a Water-line card the Dragapult
-    playbook does not tag), so eligibility uses no-regression-vs-parent on the
-    core set plus an absolute pass on the targeted set.</div>
+  <div class="note">The whole parent/child delta is <strong>two added role aliases</strong>
+    on already-tagged ids (deck byte-identical). <code>draw_support</code> activates a
+    +10 <code>score_discard_candidate</code> branch (discard own draw engine) — the active
+    culprit; <code>search_cards</code> activates a +5 over-search bias that was inert in
+    replay. The discriminator fixture <code>dp19_04_preserve_draw_engine_in_discard</code>
+    cleanly separates the two: parent &amp; <code>search_only</code> PASS, child &amp;
+    <code>draw_only</code> FAIL. Every Dragapult-family deck scores 12/14 on the generic
+    core gate, so candidates are judged for no-regression-vs-parent.</div>
 
-  <h2>Internal league standings (Part K)</h2>
+  <h2>Mini-league standings (Part I — 300 games, Durant excluded)</h2>
   <table><tr><th>#</th><th>deck</th><th>role</th><th>W-L-D</th><th>adj win rate</th><th>95% CI</th></tr>
-    <tr><td>1</td><td><code>league_dragapult_spread_v1</code></td><td>pass18_candidate</td><td>28-12-0</td><td class='ok'>0.700</td><td>[0.546, 0.819]</td></tr>
-    <tr><td>2</td><td><code>league_dragapult_spread</code></td><td>parent_for_comparison</td><td>27-13-0</td><td>0.675</td><td>[0.520, 0.799]</td></tr>
-    <tr><td>3</td><td><code>league_water_core_reference</code></td><td>stable_benchmark</td><td>25-15-0</td><td>0.625</td><td>[0.470, 0.758]</td></tr>
-    <tr><td>4</td><td><code>core_pilot_water_v2_runtime</code></td><td>historical_reference</td><td>19-21-0</td><td>0.475</td><td>[0.329, 0.625]</td></tr>
-    <tr><td>5</td><td><code>league_raging_bolt_ogerpon</code></td><td>carried_unchanged</td><td>1-39-0</td><td class='bad'>0.025</td><td>[0.004, 0.129]</td></tr>
+    <tr><td>1</td><td><code>league_dragapult_v1_search_only</code></td><td>targeted_revert</td><td>55-44-1</td><td class='ok'>0.556</td><td>[0.457, 0.650]</td></tr>
+    <tr><td>2</td><td><code>league_water_core_reference</code></td><td>water_benchmark</td><td>53-47-0</td><td>0.530</td><td>[0.433, 0.625]</td></tr>
+    <tr><td>3</td><td><code>league_dragapult_spread</code></td><td><strong>parent (current_best)</strong></td><td>51-46-3</td><td>0.526</td><td>[0.427, 0.622]</td></tr>
+    <tr><td>4</td><td><code>league_dragapult_spread_v1</code></td><td>child</td><td>48-49-3</td><td>0.495</td><td>[0.398, 0.593]</td></tr>
+    <tr><td>5</td><td><code>league_dragapult_v1_draw_only</code></td><td>diagnostic</td><td>45-54-1</td><td>0.455</td><td>[0.360, 0.553]</td></tr>
+    <tr><td>6</td><td><code>core_pilot_water_v2_runtime</code></td><td>anchor</td><td>44-56-0</td><td>0.440</td><td>[0.347, 0.538]</td></tr>
   </table>
-  <div class="note"><strong>Head-to-head caveat:</strong> v1 ranks #1 on aggregate
-    but <strong>loses the direct head-to-head vs its parent (0.3 for v1)</strong>.
-    Its edge is field-driven, not parent dominance.</div>
+  <div class="note"><strong>Head-to-head vs parent is unstable.</strong> Direct H2H this
+    sample: child <strong>0.588</strong> (10-7-3), search_only 0.40 (8-12-0), draw_only
+    0.35 (7-13-0). The child-vs-parent result <strong>flips sign</strong> from the forensic
+    trace (0.35) — the mechanistic delta is real and deterministic but sits below the
+    variance floor at 20 games/side, and <strong>every aggregate CI overlaps the
+    parent's</strong>. No candidate is robustly better than the parent.</div>
 
-  <h2>League matrix (row deck's win rate vs column)</h2>
-  <table><tr><th>deck \ opp</th><th>water_ref</th><th>dragapult_v1</th><th>dragapult(parent)</th><th>raging_bolt</th><th>water_v2</th></tr>
-    <tr><td><code>league_water_core_reference</code></td><td>—</td><td>0.3</td><td>0.5</td><td>1.0</td><td>0.7</td></tr>
-    <tr><td><code>league_dragapult_spread_v1</code></td><td>0.7</td><td>—</td><td class='warn'>0.3</td><td>1.0</td><td>0.8</td></tr>
-    <tr><td><code>league_dragapult_spread</code></td><td>0.5</td><td>0.7</td><td>—</td><td>0.9</td><td>0.6</td></tr>
-    <tr><td><code>league_raging_bolt_ogerpon</code></td><td>0.0</td><td>0.0</td><td>0.1</td><td>—</td><td>0.0</td></tr>
-    <tr><td><code>core_pilot_water_v2_runtime</code></td><td>0.3</td><td>0.2</td><td>0.4</td><td>1.0</td><td>—</td></tr>
+  <h2>Meta sanity check (Part J — surrogate, directional only)</h2>
+  <table><tr><th>deck</th><th>weighted surrogate score</th></tr>
+    <tr><td><code>league_dragapult_v1_search_only</code></td><td class='ok'>0.827</td></tr>
+    <tr><td><code>league_dragapult_spread</code> (parent)</td><td>0.767</td></tr>
+    <tr><td><code>league_water_core_reference</code></td><td>0.700</td></tr>
+    <tr><td><code>league_dragapult_spread_v1</code> (child)</td><td>0.687</td></tr>
   </table>
+  <div class="note">Sanity verdict: <strong>passed</strong> — no candidate collapses
+    against any replay-derived subfamily. Surrogate-vs-surrogate and directional only;
+    not a Kaggle signal and not a promotion/upload trigger.</div>
 
-  <h2>Meta sanity check (Part L — surrogate, directional)</h2>
-  <table><tr><th>deck</th><th>metal</th><th>water_maxbelt</th><th>mega_lucario</th><th>mega_kanga</th><th>dragapult_ex</th><th>lightning</th><th>weighted</th></tr>
-    <tr><td><code>league_dragapult_spread_v1</code></td><td>0.833</td><td>0.500</td><td>0.667</td><td>1.000</td><td>1.000</td><td>0.667</td><td class='ok'>0.747</td></tr>
-    <tr><td><code>league_water_core_reference</code></td><td>0.333</td><td>0.667</td><td>0.833</td><td>0.333</td><td>0.500</td><td>0.667</td><td>0.580</td></tr>
-  </table>
-  <div class="note">Sanity verdict: <strong>passed</strong> — v1 does not collapse
-    (&lt;10%) against any replay-derived subfamily. Directional only; not a Kaggle
-    signal.</div>
-
-  <h2>Decision (Part M)</h2>
+  <h2>Decision (Part K)</h2>
   <div class="note">
-    <strong>Dry-run recommendation:</strong> promote
-    <code>league_dragapult_spread_v1</code> to the <strong>local research
-    lead</strong> for the Dragapult family — <strong>dry-run only</strong>.
-    upload_recommended: <strong>false</strong>, submit_recommended:
-    <strong>false</strong>. Caveat: v1 loses the parent head-to-head (0.3);
-    internal/surrogate results never equal Kaggle results.
+    <strong>Label: <code>needs_more_h2h</code></strong> (secondary
+    <code>candidate_for_deeper_confirmation</code>). <code>current_best</code> stays the
+    <strong>parent</strong> <code>league_dragapult_spread</code>; <strong>v1 strictly
+    better than parent: false</strong>. Best refinement candidate
+    <code>league_dragapult_v1_search_only</code> is flagged for deeper confirmation only.
+    <strong>upload_recommended: false</strong>, <strong>submit_recommended: false</strong>,
+    upload_not_recommended: true. Next: a large fixed-seed parent-vs-{child, search_only}
+    head-to-head (≥200 games/side, one worker). Internal/surrogate results never equal a
+    Kaggle result.
   </div>
 
   <h2>Reports</h2>
   <ul>
-    <li><code>data/reports/pass18_strategy_family_iteration_report.md</code> — 10-section iteration report</li>
-    <li><code>data/reports/activegraph_strategy_report.md</code> — strategy narrative (through Pass 18)</li>
-    <li><code>docs/PTCG_STRATEGY_CANVAS.md</code> — strategy canvas</li>
-    <li><code>data/experiments/pass18_strategy_decisions.md</code> — per-family decisions</li>
-    <li><code>data/experiments/pass18_internal_league.md</code> · <code>pass18_meta_sanity.md</code> · <code>pass18_candidate_validation.md</code></li>
+    <li><code>data/reports/pass19_final_report.md</code> — 10-section final report</li>
+    <li><code>data/reports/pass19_dragapult_parent_child_report.md</code> — parent/child forensics deep-dive</li>
+    <li><code>data/reports/activegraph_strategy_report.md</code> — strategy narrative (through Pass 19)</li>
+    <li><code>docs/PTCG_STRATEGY_CANVAS.md</code> · <code>docs/STRATEGY_PORTFOLIO_LOOP.md</code></li>
+    <li><code>data/experiments/pass19_strategy_decision.md</code> — strategy decision</li>
+    <li><code>data/experiments/pass19_dragapult_parent_child_trace.md</code> · <code>pass19_dragapult_decision_delta.md</code></li>
+    <li><code>data/experiments/pass19_dragapult_mini_league.md</code> · <code>pass19_meta_sanity.md</code> · <code>pass19_candidate_validation.md</code></li>
   </ul>
 </div>
 <footer>ActiveGraph — local-only lab. No Kaggle upload, no GitHub push. Root main.py / deck.csv immutable.</footer>

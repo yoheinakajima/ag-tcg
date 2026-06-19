@@ -1,0 +1,13 @@
+{
+  "id": "dp19_06_attach_energy_to_dragapult_line",
+  "kind": "attach_energy",
+  "hard": false,
+  "advisory": true,
+  "source": "synthetic",
+  "competency": "attach energy",
+  "description": "Attach basic energy toward the Dragapult line's attacker. Advisory: attach-target preferences are deck-agnostic in the generic pilot.",
+  "board": {"active": {"card_id": 121, "hp": 320}, "bench": [{"card_id": 119, "hp": 60}], "bench_max": 5, "hand": [], "deck_count": 25, "discard": [], "prize_count": 5},
+  "options": [{"card_id": 5, "target_card_id": 121}, {"card_id": 5, "target_card_id": 119}],
+  "expect": {"advisory": true},
+  "notes": "Advisory only: confirms attach decisions are reachable, not a hard gate."
+}

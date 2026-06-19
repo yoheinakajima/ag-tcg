@@ -1,0 +1,13 @@
+{
+  "id": "dp19_08_spread_targeting_advisory_only",
+  "kind": "attack",
+  "hard": false,
+  "advisory": true,
+  "source": "synthetic",
+  "competency": "spread targeting",
+  "description": "Phantom Dive spread-damage distribution is NOT modeled by the generic pilot (compatibility gap). This fixture is explicitly advisory/NA to document that spread targeting is left to the base policy and is never asserted as a hard competency.",
+  "board": {"active": {"card_id": 121, "hp": 320}, "bench": [], "bench_max": 5, "hand": [], "deck_count": 18, "discard": [], "prize_count": 4},
+  "options": [{"card_id": 121, "attack_index": 0}],
+  "expect": {"advisory": true},
+  "notes": "Advisory/NA by design: spread targeting is unmodeled; no hard assertion."
+}

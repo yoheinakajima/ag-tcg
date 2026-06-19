@@ -1,0 +1,20 @@
+# Pass 19 — Dragapult parent/child targeted fixtures (reduced-model; graded via
+# core_pilot_decide). LOCAL ONLY. These target the OBSERVED parent/child decision modes
+# from the Pass-19 forensic trace (data/experiments/pass19_dragapult_parent_child_trace)
+# only. The single KEY discriminator is dp19_04 (preserve the draw engine in discard):
+# parent and the search_only ablation PASS it; the child (league_dragapult_spread_v1) and
+# the draw_only diagnostic ablation FAIL it, localizing the parent-H2H regression to the
+# draw_support role alias. Advisory fixtures document unmodeled/deck-agnostic areas
+# (over-search, attach, attack, spread targeting) without asserting hard competence.
+# All card ids confirmed in data/cards/EN_Card_Data.csv (gitignored, never committed).
+schema: activegraph.fixtures.core_competency/v1
+deck: league_dragapult_parent_child
+fixtures:
+  - dp19_01_search_dreepy_before_orphan_dragapult.json
+  - dp19_02_search_dragapult_when_dreepy_line_ready.json
+  - dp19_03_preserve_only_dragapult_payoff_in_discard.json
+  - dp19_04_preserve_draw_engine_in_discard.json
+  - dp19_05_avoid_over_search_when_line_complete.json
+  - dp19_06_attach_energy_to_dragapult_line.json
+  - dp19_07_attack_when_dragapult_online.json
+  - dp19_08_spread_targeting_advisory_only.json

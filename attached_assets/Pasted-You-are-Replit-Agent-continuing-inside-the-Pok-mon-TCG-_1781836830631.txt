@@ -1,0 +1,489 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Keep all candidate tarballs top-level main.py + deck.csv only.
+- Read docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md, docs/NEXT_AGENT_README.md, docs/CORE_PILOT_ARCHITECTURE.md, docs/PTCG_STRATEGY_CANVAS.md, data/reports/pass17_internal_deck_league_report.md, and data/reports/pass18_final_report.md before making changes.
+- This is a Dragapult parent/child forensics + strategy portfolio hygiene pass.
+- No Kaggle upload.
+
+Current state:
+- Pass 18 completed.
+- Strategy families now exist:
+  - water_kyogre_abomasnow: stable reference
+  - dragapult_spread: promising research lead
+  - raging_bolt_ogerpon: backlog / structural failure, not energy-color issue
+  - durant_deckout_carousel: chaos research blocked
+  - future_high_ceiling_evolution: backlog
+- Pass 18 internal league:
+  - league_dragapult_spread_v1 ranks #1 aggregate, adj win rate 0.700
+  - parent league_dragapult_spread ranks #2, adj win rate 0.675
+  - water reference ranks #3, adj win rate 0.625
+  - Raging Bolt remains poor, 0.025
+- Critical caveat:
+  - dragapult_spread_v1 loses direct head-to-head vs parent, 0.3.
+  - Therefore v1 is a local research lead, not upload-ready.
+- Pass 18 meta sanity:
+  - dragapult_spread_v1 weighted 0.7467 vs water 0.58.
+  - Directional only; not Kaggle evidence.
+- Desired architecture:
+  - strategy family registry
+  - iteration lineage
+  - parent/child head-to-head
+  - targeted fixtures
+  - internal league
+  - replay-derived meta sanity
+  - dry-run decision
+  - occasional manual Kaggle probe only after strong evidence
+- Goal now:
+  - explain why Dragapult v1 wins aggregate but loses parent head-to-head,
+  - decide whether to keep v1, revert parts of it, or create a narrow v2.
+
+Goal:
+Run Pass 19: Dragapult Head-to-Head Forensics + Strategy Portfolio Loop.
+
+Objectives:
+1. Make the strategy portfolio loop explicit and durable.
+2. Analyze Dragapult v1 vs parent head-to-head in detail.
+3. Identify whether v1's aggregate edge comes from field matchups, role-tag changes, variance, or a real plan improvement.
+4. Build only evidence-justified Dragapult ablations/refinements.
+5. Run a controlled parent/child mini-league and meta sanity check.
+6. Update ActiveGraph lineage and decision reports.
+7. Produce a no-upload recommendation.
+8. No Kaggle upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Strategy portfolio operating model
+
+Create or update:
+
+docs/STRATEGY_PORTFOLIO_LOOP.md
+experiments/strategy_families.yaml
+data/experiments/pass19_strategy_portfolio_state.json
+data/experiments/pass19_strategy_portfolio_state.md
+
+Document the loop:
+
+1. Family registered
+2. Candidate iteration created
+3. Fixture gate
+4. Parent/child head-to-head
+5. Internal league
+6. Replay-derived meta sanity
+7. Strategy decision
+8. Optional deeper confirmation
+9. Manual Kaggle probe only if human-approved
+
+For each strategy family, track:
+- family_id
+- status
+- current_best
+- parent_candidate
+- child_iterations
+- fixtures
+- league results
+- meta sanity results
+- blockers
+- next experiment
+- upload posture
+
+Add a clear decision rule:
+- A child cannot replace a parent if it improves aggregate league but collapses direct parent H2H, unless the report explicitly accepts that tradeoff.
+- Internal league is compatibility evidence, not Kaggle evidence.
+- Meta sanity is directional stress evidence, not Kaggle evidence.
+- Kaggle upload requires manual approval and separate upload-readiness pass.
+
+Part C — ActiveGraph lineage hardening
+
+Extend or verify:
+
+scripts/ag_strategy_event.py
+data/activegraph/lab_events.jsonl
+
+Ensure events exist for:
+- StrategyFamilyRegistered
+- StrategyIterationCreated
+- StrategyIterationEvaluated
+- StrategyFixtureAdded
+- StrategyBlocked
+- StrategyPromotionDecision
+- InternalLeagueStarted
+- InternalLeagueFinished
+- StrategyReportGenerated
+- ParentChildComparisonStarted
+- ParentChildComparisonFinished
+
+If new event types are added, update tests.
+
+For Dragapult, emit:
+- parent candidate: league_dragapult_spread
+- child candidate: league_dragapult_spread_v1
+- hypothesis: role-name alignment improves generic pilot decision quality
+- caveat: child loses parent H2H despite aggregate edge
+
+Part D — Dragapult parent/child forensic trace
+
+Create:
+
+scripts/analyze_dragapult_parent_child.py
+
+Inputs:
+- parent tarball: data/submissions/candidates_pass17/league_dragapult_spread.tar.gz
+- child tarball: data/submissions/candidates_pass18/league_dragapult_spread_v1.tar.gz
+- Pass 18 league artifacts
+- card metadata if available
+- cabt local runner
+
+Outputs:
+- data/experiments/pass19_dragapult_parent_child_trace.json
+- data/experiments/pass19_dragapult_parent_child_trace.md
+- data/experiments/pass19_dragapult_parent_child_games.jsonl
+
+Run:
+- parent vs child
+- 10 games per seat minimum
+- 20 games per seat if runtime allows
+- fixed seeds if cabt supports seeds
+- batched subprocess worker, not long-lived in-process loop
+- no upload
+
+Collect per game:
+- winner
+- seat
+- steps
+- first meaningful attack step
+- first KO step if detectable
+- active chosen at setup
+- bench development by early threshold
+- Dreepy/Drakloak/Dragapult in play counts if detectable
+- Dragapult attack usage if detectable by attackId/logs
+- Dusknoir usage if detectable
+- energy attachment target/type
+- search target choices from ToHand
+- discard choices
+- deckout / low deck
+- no-bench loss
+- stuck_on_basic
+- prize/KO progression if detectable
+
+Most important:
+- compare parent vs child decision deltas at shared contexts:
+  - SetupActive
+  - SetupBench
+  - Discard
+  - ToHand
+  - Main action choices, but do not override broad Main
+- identify exactly where child differs from parent.
+
+Part E — Dragapult decision-delta analysis
+
+Create:
+
+data/experiments/pass19_dragapult_decision_delta.json
+data/experiments/pass19_dragapult_decision_delta.md
+
+Questions:
+1. Does v1 search better than parent?
+2. Does v1 preserve the Dragapult line better?
+3. Does v1 over-search or over-thin?
+4. Does v1 delay attacks?
+5. Does v1 choose worse active/bench setup?
+6. Does v1 lose parent H2H due to variance or repeatable behavior?
+7. Does v1's aggregate league edge come from beating Water/Raging Bolt more cleanly?
+8. Which role-tag change likely caused the H2H regression?
+
+If evidence is insufficient, say so explicitly.
+
+Part F — Build targeted ablations only if justified
+
+Build up to 3 Dragapult ablations/refinements, but only if Part D/E supports them.
+
+Possible candidates:
+
+1. dragapult_v1_search_only
+- include search_cards role alignment
+- exclude draw_support change if that appears harmful
+
+2. dragapult_v1_draw_only
+- include draw_support role alignment
+- exclude search_cards change
+- diagnostic only
+
+3. dragapult_v2_parent_h2h_guard
+- preserve v1's targeted fixture improvements
+- add a conservative guard to avoid the decision pattern that causes parent-H2H losses, if identified
+
+4. dragapult_v1_revert_specific_role
+- revert only the role tag that appears responsible for H2H regression
+
+Rules:
+- Do not build a refinement if the diagnosis does not support it.
+- Do not add broad Main overrides.
+- Do not add spread-damage target logic unless attack target metadata is reliably resolved.
+- Do not change deck list in this pass unless analysis shows deck composition caused the issue.
+- No new card IDs.
+
+Output:
+- experiments/runs_pass19/<candidate_id>/
+- data/submissions/candidates_pass19/<candidate_id>.tar.gz
+
+Part G — Targeted fixture updates
+
+Update or create:
+
+data/fixtures/pass19_dragapult_parent_child/
+
+Fixtures should target observed failure modes only.
+
+Potential fixtures:
+1. search_dreepy_before_orphan_dragapult
+2. search_dragapult_when_dreepy_line_ready
+3. preserve_only_dragapult_payoff_in_discard
+4. avoid_over_search_when_line_complete
+5. attach_energy_to_dragapult_line
+6. attack_when_dragapult_online
+7. spread_targeting_advisory_only
+
+Run fixture gate for:
+- parent
+- v1
+- any ablation/refinement
+
+Output:
+- data/experiments/pass19_dragapult_fixture_results.json
+- data/experiments/pass19_dragapult_fixture_results.md
+
+Part H — Validation
+
+For every built Pass 19 candidate:
+
+python scripts/validate_candidate_tarball.py <tarball>
+python scripts/validate_candidate_entrypoint.py <tarball>
+
+Run:
+- core competency gate
+- Dragapult targeted fixture gate
+- parent/child fixture gate
+
+Run live smoke:
+- self-play 1 game/seat
+- vs parent 1 game/seat
+- vs water reference 1 game/seat
+
+Output:
+- data/experiments/pass19_candidate_validation.json
+- data/experiments/pass19_candidate_validation.md
+
+Part I — Controlled Dragapult mini-league
+
+Participants:
+- parent: league_dragapult_spread
+- child: league_dragapult_spread_v1
+- any Pass 19 ablation/refinement
+- water reference
+- core_pilot_water_v2_runtime optional anchor
+
+Format:
+- focus on Dragapult family first
+- parent/child/refinement round robin
+- then vs Water reference
+- 10 games per seat minimum
+- 20 games per seat if runtime allows
+- use batched subprocess worker
+- no upload
+
+Outputs:
+- data/experiments/pass19_dragapult_mini_league.json
+- data/experiments/pass19_dragapult_mini_league.md
+- data/experiments/pass19_dragapult_mini_matrix.csv
+- data/experiments/pass19_dragapult_mini_rankings.json
+- data/experiments/pass19_dragapult_mini_rankings.md
+
+Required reporting:
+- direct parent H2H
+- aggregate league score
+- confidence intervals
+- seat split
+- invalid/crash/timeout
+- whether child/refinement actually improves parent H2H
+
+Part J — Meta sanity check
+
+Run only if a candidate is validator-clean and mini-league-clean.
+
+Candidates:
+- parent
+- v1
+- best Pass 19 refinement if any
+- Water reference
+
+Opponents:
+Use Pass 13 refined meta subfamilies:
+- metal_ex_zacian_ramp
+- water_kyogre_abomasnow_maxbelt
+- mega_lucario_ex_tempo
+- mega_kangaskhan_energy_stack
+- dragapult_ex
+- lightning_bellibolt
+
+Budget:
+- 3 games per seat per subfamily
+- 5 games per seat if runtime allows
+- directional only
+- no upload
+
+Outputs:
+- data/experiments/pass19_meta_sanity.json
+- data/experiments/pass19_meta_sanity.md
+- data/experiments/pass19_meta_sanity_matrix.csv
+
+Part K — Strategy decision
+
+Create:
+
+data/experiments/pass19_strategy_decision.json
+data/experiments/pass19_strategy_decision.md
+
+Decision labels:
+- keep_parent
+- keep_v1_as_research_lead
+- promote_refinement_to_research_lead
+- needs_more_h2h
+- blocked
+- candidate_for_deeper_confirmation
+- upload_not_recommended
+
+Decision rules:
+- If v1/refinement loses parent H2H badly, do not call it superior.
+- If v1/refinement wins aggregate but loses parent H2H, call it "field-specialized" or "field-driven", not strictly better.
+- If a refinement beats parent H2H and keeps aggregate/meta sanity, mark it as candidate_for_deeper_confirmation.
+- No direct upload recommendation from this pass.
+- If no refinement is justified, record that.
+
+Part L — Reports and site
+
+Update:
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- data/reports/pass19_dragapult_parent_child_report.md
+
+Include:
+- portfolio loop summary
+- parent/child H2H forensics
+- decision deltas
+- fixtures
+- ablations/refinements, if any
+- mini-league
+- meta sanity
+- strategy decision
+- no-upload note
+- "internal league is not Kaggle leaderboard" disclaimer
+- "surrogate meta is directional only" disclaimer
+
+Part M — Tests
+
+Add/update tests for:
+- strategy portfolio loop doc exists and states no upload by default
+- strategy family registry has parent/child lineage
+- ActiveGraph emits parent/child comparison events
+- parent/child trace artifact preserves game count and seat split
+- decision delta artifact names the H2H caveat
+- ablations are only built when diagnosis supports them
+- no broad Main override added
+- all Pass 19 candidates pass tarball + entrypoint validators
+- mini-league includes parent and child
+- strategy decision does not call v1 strictly better if H2H remains negative
+- report includes internal-league-not-Kaggle disclaimer
+- report includes surrogate-directional disclaimer
+- root files unchanged
+- no upload flags false
+
+Run targeted tests, then broader suite if feasible.
+
+Part N — Final report
+
+Report exactly:
+
+ActiveGraph Pass 19 Dragapult Parent/Child Forensics Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Portfolio loop
+- doc path:
+- registry path:
+- ActiveGraph events:
+- families updated:
+
+3. Parent/child forensic trace
+- trace path:
+- games:
+- parent wins:
+- child wins:
+- seat split:
+- key repeated differences:
+
+4. Decision delta
+- delta path:
+- search behavior:
+- discard behavior:
+- attack tempo:
+- setup:
+- likely H2H cause:
+
+5. Candidate generation
+- ablations/refinements built:
+- blocked/skipped and why:
+- tarballs:
+- validators:
+
+6. Fixtures and smoke
+- fixture path:
+- parent result:
+- child result:
+- refinement result:
+- live smoke:
+
+7. Mini-league
+- participants:
+- games per seat:
+- rankings:
+- parent vs child:
+- best candidate:
+- notable matchups:
+
+8. Meta sanity
+- candidates:
+- opponents:
+- weighted result:
+- caveat:
+
+9. Strategy decision / queue
+- decision:
+- candidates queued:
+- upload performed: no
+- submit next: no
+- reason:
+
+10. Next recommendation
+- one sentence only.

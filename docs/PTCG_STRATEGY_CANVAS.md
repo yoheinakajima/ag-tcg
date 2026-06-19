@@ -1,4 +1,10 @@
-# ActiveGraph — Pokémon TCG Strategy Canvas (Pass 18)
+# ActiveGraph — Pokémon TCG Strategy Canvas (Pass 18 → 19)
+
+> **CURRENT AUTHORITATIVE STATE (Pass 19).** Dragapult decision = `needs_more_h2h`;
+> `current_best` stays the **parent** `league_dragapult_spread` (v1 strictly better than
+> parent = **false**); the parent H2H is **unstable** across samples; **no upload, no
+> submit**. The Pass-18 sections below are retained as history — see the "Pass 19" part at
+> the bottom for the resolved analysis.
 
 > **LOCAL ONLY.** Nothing in this pass is uploaded to Kaggle or pushed to GitHub.
 > The internal deck league is **not** a Kaggle leaderboard and its win rates do
@@ -125,3 +131,71 @@ lead**, not a competitive-strength or leaderboard claim.
 No Kaggle upload/submit; no GitHub push; root `main.py`/`deck.csv` byte-identical
 to v1; no invented card ids; tarballs are top-level `main.py` + `deck.csv` only;
 Durant excluded from the league; all no-upload flags `false`.
+
+---
+
+# Pass 19 — Dragapult Parent/Child Forensics + Portfolio Loop
+
+> Same LOCAL-ONLY guardrails as above. The internal league is **not** a Kaggle
+> leaderboard; the meta sanity check is **surrogate and directional only**.
+
+## P19.1 The question
+Pass 18 left a paradox: the child `league_dragapult_spread_v1` **won the aggregate
+league (0.700)** yet **lost the direct head-to-head vs its parent (~0.3)**. Pass 19
+asks *why* — mechanistically — and whether that justifies any refinement.
+
+## P19.2 The entire parent/child delta
+Deck **byte-identical**. The two `main.py` files differ only by the override comment
+and **two added role aliases**: `search_cards = [1121, 1086]` and
+`draw_support = [1224, 1231]` (ids already tagged `search`/`draw`). They wake two
+dormant scoring branches:
+- `score_search_target` **+5** for `search_cards` — mild over-search bias, **inert**
+  in the replay (changed no decision);
+- `score_discard_candidate` **+10** for `draw_support` — the **active** culprit: the
+  child discards its own draw engine more readily.
+
+## P19.3 Forensic trace (Part D)
+20 games (10/seat, seat-swapped): parent **13–7** (child 0.35), 0 invalid/timeout,
+avg 107.5 steps. Decision-replay over 9 shared contexts: **2 diverged, both on the
+probe contexts; 0 control divergences** — the child differs from the parent *only*
+where the two aliases fire.
+
+## P19.4 Justified diagnostic builds (Part F)
+- `league_dragapult_v1_search_only` — **targeted revert**: drops `draw_support`
+  (matches the parent: keeps the draw engine).
+- `league_dragapult_v1_draw_only` — **diagnostic**: keeps only `draw_support`
+  (matches the child: discards the draw engine).
+The redundant H2H-guard variant was **not** built (it duplicates `search_only`).
+
+## P19.5 Fixtures + validation (Parts G–H)
+Key discriminator `dp19_04_preserve_draw_engine_in_discard`: **parent & search_only
+PASS**, **child & draw_only FAIL**. Both candidates pass tarball + entrypoint
+validators and live smoke; every Dragapult-family deck scores 12/14 (1 hard fail) on
+the generic core gate, so candidates are judged for **no regression vs the parent
+baseline** — which both satisfy.
+
+## P19.6 Mini-league (Part I) — the pivotal finding
+300 games, 6 participants (Durant excluded), 0 invalid/timeout. `search_only` ranks
+**#1 aggregate (0.556)**, parent #3 (0.526), child #4 (0.495). But the child-vs-parent
+H2H **flips sign between samples** (trace 0.35 → league 0.588) and **all aggregate CIs
+overlap the parent's**. The mechanistic delta is real but **below the variance floor**
+at 20 games/side: the original "H2H loss" does not reproduce.
+
+## P19.7 Meta sanity (Part J — surrogate, directional)
+Parent/child/search_only/Water vs Pass-13 subfamilies, 3/seat: **no collapses**.
+Weighted: search_only 0.827, parent 0.767, Water 0.700, child 0.687. Directional only.
+
+## P19.8 Decision (Part K)
+**`needs_more_h2h`** (secondary `candidate_for_deeper_confirmation`). `current_best`
+stays the **parent**; `v1 strictly better: false`. `search_only` is the deeper-
+confirmation candidate. **No upload, no submission.** Next: a large fixed-seed
+parent-vs-{child, search_only} H2H (≥200 games/side, one worker).
+
+## P19.9 Honest limits
+Internal league ≠ Kaggle leaderboard; meta sanity is surrogate/directional. Neither
+equals a Kaggle result or justifies an upload.
+
+## P19.10 Guardrails honored
+No Kaggle upload/submit; no GitHub push; root `main.py`/`deck.csv` byte-identical to
+v1; no invented card ids; tarballs are top-level `main.py` + `deck.csv` only; Durant
+excluded; all no-upload flags `false`.

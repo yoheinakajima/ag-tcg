@@ -1,0 +1,13 @@
+{
+  "id": "dp19_07_attack_when_dragapult_online",
+  "kind": "attack",
+  "hard": false,
+  "advisory": true,
+  "source": "synthetic",
+  "competency": "attack",
+  "description": "When Dragapult ex is the active attacker and powered, take an attack. Advisory: attack selection is deck-agnostic in the generic pilot and attack-id metadata is not modeled per deck.",
+  "board": {"active": {"card_id": 121, "hp": 320}, "bench": [{"card_id": 119, "hp": 60}], "bench_max": 5, "hand": [], "deck_count": 18, "discard": [], "prize_count": 4},
+  "options": [{"card_id": 121, "attack_index": 0}, {"card_id": 121, "attack_index": 1}],
+  "expect": {"advisory": true},
+  "notes": "Advisory only: confirms an attack decision is reachable when online."
+}

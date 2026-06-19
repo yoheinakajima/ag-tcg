@@ -1,0 +1,13 @@
+{
+  "id": "dp19_05_avoid_over_search_when_line_complete",
+  "kind": "search_to_hand",
+  "hard": false,
+  "advisory": true,
+  "source": "synthetic",
+  "competency": "search to hand",
+  "description": "With the Dragapult line complete, prefer a board-impact card (Boss's Orders) over fetching yet another search card. Advisory: the over-search bias from search_cards is mild and not strongly modeled by the generic scorer.",
+  "board": {"active": {"card_id": 121, "hp": 320}, "bench": [{"card_id": 119, "hp": 60}], "bench_max": 5, "hand": [], "deck_count": 20, "discard": [], "prize_count": 4},
+  "options": [{"card_id": 1182}, {"card_id": 1121}],
+  "expect": {"advisory": true, "chosen_card_id": 1182},
+  "notes": "Advisory only: directional preference; not a hard gate."
+}

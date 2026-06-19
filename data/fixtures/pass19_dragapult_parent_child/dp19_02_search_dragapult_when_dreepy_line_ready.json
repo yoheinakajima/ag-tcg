@@ -1,0 +1,12 @@
+{
+  "id": "dp19_02_search_dragapult_when_dreepy_line_ready",
+  "kind": "search_to_hand",
+  "hard": true,
+  "source": "synthetic",
+  "competency": "search to hand",
+  "description": "With Dreepy established, fetch the payoff (Dragapult ex) over another basic.",
+  "board": {"active": {"card_id": 119, "hp": 60}, "bench": [], "bench_max": 5, "hand": [], "deck_count": 38, "discard": [], "prize_count": 6},
+  "options": [{"card_id": 121}, {"card_id": 119}],
+  "expect": {"chosen_card_id": 121},
+  "notes": "Observed-mode control: setup basic in play, take the evolution payoff."
+}

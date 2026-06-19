@@ -47,6 +47,8 @@ STRATEGY_EVENT_TYPES = (
     "InternalLeagueStarted",
     "InternalLeagueFinished",
     "StrategyReportGenerated",
+    "ParentChildComparisonStarted",
+    "ParentChildComparisonFinished",
 )
 
 

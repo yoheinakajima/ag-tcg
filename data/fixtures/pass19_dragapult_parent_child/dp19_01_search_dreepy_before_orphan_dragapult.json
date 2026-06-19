@@ -1,0 +1,12 @@
+{
+  "id": "dp19_01_search_dreepy_before_orphan_dragapult",
+  "kind": "search_to_hand",
+  "hard": true,
+  "source": "synthetic",
+  "competency": "search to hand",
+  "description": "No line in play: fetch the setup basic (Dreepy) before the payoff so Dragapult ex is never orphaned.",
+  "board": {"active": {}, "bench": [], "bench_max": 5, "hand": [], "deck_count": 40, "discard": [], "prize_count": 6},
+  "options": [{"card_id": 121}, {"card_id": 119}],
+  "expect": {"chosen_card_id": 119},
+  "notes": "Observed-mode control: both parent and v1 must fetch Dreepy first."
+}

@@ -1,0 +1,12 @@
+{
+  "id": "dp19_03_preserve_only_dragapult_payoff_in_discard",
+  "kind": "discard",
+  "hard": true,
+  "source": "synthetic",
+  "competency": "discard",
+  "description": "Pay a discard cost with surplus basic energy, never the evolution payoff (Dragapult ex).",
+  "board": {"active": {"card_id": 121, "hp": 320}, "bench": [], "bench_max": 5, "hand": [], "deck_count": 30, "discard": [], "prize_count": 6},
+  "options": [{"card_id": 121}, {"card_id": 5}],
+  "expect": {"chosen_card_id": 5},
+  "notes": "Observed-mode control: discard surplus energy, keep the payoff."
+}

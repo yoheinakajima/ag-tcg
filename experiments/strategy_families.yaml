@@ -9,8 +9,14 @@
 # data/cards/EN_Card_Data.csv (gitignored, never committed). No invented ids.
 
 schema: activegraph.strategy_families/v1
-pass: "18"
+pass: "19"
 upload_performed: false
+
+# Portfolio operating model: docs/STRATEGY_PORTFOLIO_LOOP.md (nine-stage loop).
+# Binding rule: a child cannot replace its parent if it wins the aggregate league
+# but collapses the direct parent head-to-head, unless a report explicitly accepts
+# that tradeoff. Internal league = compatibility evidence; meta sanity = directional
+# stress evidence; neither is Kaggle evidence. Upload requires human approval.
 
 families:
 
@@ -49,13 +55,39 @@ families:
     candidate_ids:
       - league_dragapult_spread
       - league_dragapult_spread_v1
+    parent_candidate: league_dragapult_spread
+    child_iterations:
+      - candidate_id: league_dragapult_spread_v1
+        parent: league_dragapult_spread
+        change: >-
+          adds two scorer-recognized role aliases (search_cards, draw_support) over
+          the parent; deck byte-identical. Activates score_search_target +5 for
+          search_cards and score_discard_candidate +10 for draw_support.
+        status: research_lead
+        h2h_vs_parent: "loses direct parent H2H (Pass-18 ~0.3)"
+      - candidate_id: league_dragapult_v1_search_only
+        parent: league_dragapult_spread_v1
+        change: "drops draw_support alias (keeps search_cards) — targeted revert of the suspected H2H culprit"
+        status: pass19_ablation
+      - candidate_id: league_dragapult_v1_draw_only
+        parent: league_dragapult_spread_v1
+        change: "drops search_cards alias (keeps draw_support) — diagnostic isolation"
+        status: pass19_ablation_diagnostic
     playbook_paths:
       - playbooks/pass17_dragapult_spread.yaml
       - playbooks/pass18_dragapult_spread_v1.yaml
+      - playbooks/pass19_dragapult_v1_search_only.yaml
+      - playbooks/pass19_dragapult_v1_draw_only.yaml
     fixture_paths:
       - data/fixtures/core_competency
       - data/fixtures/pass18_dragapult_spread
+      - data/fixtures/pass19_dragapult_parent_child
     current_best: league_dragapult_spread
+    current_best_note: >-
+      current_best stays the PARENT. v1 wins the Pass-18 aggregate league (adj 0.700)
+      but LOSES the direct parent head-to-head (~0.3), so it is a field-specialized
+      research lead, NOT promoted over the parent. See the binding decision rule above.
+    upload_posture: no_upload
     hypothesis: >
       The Dragapult ex Stage-2 spread/control shell is compatible with the
       generic pilot for setup/search/draw, but lacks evolution-sequencing and

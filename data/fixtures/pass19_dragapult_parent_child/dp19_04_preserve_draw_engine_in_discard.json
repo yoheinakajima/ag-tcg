@@ -1,0 +1,12 @@
+{
+  "id": "dp19_04_preserve_draw_engine_in_discard",
+  "kind": "discard",
+  "hard": true,
+  "source": "synthetic",
+  "competency": "discard",
+  "description": "With no surplus basic energy, do NOT discard the draw-support engine (Cheren) when a less essential card (Night Stretcher recovery) is available. This is the exact Pass-19 regression mode: the child's draw_support alias makes it discard its own draw engine.",
+  "board": {"active": {"card_id": 121, "hp": 320}, "bench": [], "bench_max": 5, "hand": [], "deck_count": 30, "discard": [], "prize_count": 6},
+  "options": [{"card_id": 1097}, {"card_id": 1224}],
+  "expect": {"chosen_card_id_not": 1224},
+  "notes": "KEY discriminator: parent + search_only PASS (keep draw engine); child + draw_only FAIL (discard it)."
+}

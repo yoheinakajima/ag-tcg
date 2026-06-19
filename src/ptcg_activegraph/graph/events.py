@@ -86,6 +86,10 @@ class EventType(str, Enum):
     InternalLeagueFinished = "InternalLeagueFinished"
     StrategyReportGenerated = "StrategyReportGenerated"
 
+    # --- Pass 19: parent/child head-to-head forensics ---------------------
+    ParentChildComparisonStarted = "ParentChildComparisonStarted"
+    ParentChildComparisonFinished = "ParentChildComparisonFinished"
+
 
 @dataclass
 class Event:
