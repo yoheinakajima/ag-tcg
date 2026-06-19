@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph Strategy Lab — Pass 21</title>
+<title>ActiveGraph Strategy Lab — Pass 22</title>
 <style>
   :root { --bg:#0f1420; --panel:#171f2e; --ink:#e6edf6; --muted:#9bb0c9;
           --accent:#4cc4ff; --warn:#ffcf5c; --ok:#6ee7a0; --bad:#ff7b7b;
@@ -35,10 +35,35 @@
 <header>
   <div class="wrap" style="padding-bottom:0">
     <h1>ActiveGraph Strategy Lab</h1>
-    <div class="sub">Pass 21 — Water reference replay post-mortem (probe resolved @ 420.8)</div>
+    <div class="sub">Pass 22 — Water anti-disruption + emergency backup bench (local-only candidate)</div>
   </div>
 </header>
 <div class="wrap">
+
+  <div class="note" style="border-left-color:var(--ok)">
+    <strong>PASS 22 — WATER ANTI-DISRUPTION + EMERGENCY BACKUP BENCH (LOCAL-ONLY).</strong> Built
+    <strong>one</strong> narrow candidate <code>league_water_anti_disruption_pivot_v1</code> on the
+    <strong>byte-identical</strong> v2 Water deck to close the Pass-21 seam (lack of an anti-disruption
+    pivot). Replay forensics: <strong>8 of 9 losses are <code>no_pokemon_in_play</code></strong>; the
+    dominant root cause (5/8) is <strong>held a benchable Kyogre/Snover but never benched it</strong>.
+    Required loss 80592831 present; <strong>80594000 ABSENT (recorded missing, not fabricated)</strong>.
+    Three narrow flag-gated hooks: ctx0 <code>emergency_backup_bench</code> (never over an attack, never
+    the non-benchable Mega Abomasnow ex 723), ctx7 <code>anti_disruption_search_pivot</code>, ctx8
+    <code>preserve_backup_basic_on_discard</code>. <strong>9/9</strong> board-safety fixtures PASS;
+    tarball + entrypoint + live smoke PASS. Decision replay on real loss windows: <strong>75</strong>
+    empty-bench windows, <strong>5</strong> legal corrections, every choice a single legal index.
+    Surrogate eval is <strong>directional only</strong> (0.74 vs 0.5, tiny sample) and cannot measure the hooks'
+    intended benefit, so decision = <strong>do NOT promote / do NOT upload</strong>; live control stays
+    <code>league_water_core_reference</code> @ 420.8. <strong>No Kaggle upload; no GitHub push; root
+    files unchanged.</strong>
+  </div>
+
+  <div class="grid">
+    <div class="card"><div class="sub">Pass 22 candidate</div><div class="big">league_water_anti_disruption_pivot_v1</div></div>
+    <div class="card"><div class="sub">Board-safety fixtures</div><div class="big ok">9/9 PASS</div></div>
+    <div class="card"><div class="sub">Decision replay</div><div class="big">75 windows · 5 legal fixes</div></div>
+    <div class="card"><div class="sub">Candidates uploaded (Pass 22)</div><div class="big ok">0</div></div>
+  </div>
 
   <div class="note" style="border-left-color:var(--ok)">
     <strong>PASS 21 — REPLAY INGESTION + WATER POST-MORTEM (ANALYSIS ONLY).</strong> Five new ladder

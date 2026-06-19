@@ -1,0 +1,23 @@
+{
+  "id": "pbd_02_discard_basic_when_forced",
+  "kind": "discard",
+  "hard": true,
+  "source": "synthetic_control",
+  "description": "Must discard one card and the only eligible card is a backup basic. The preserve rule cannot reduce the required count, so the basic is discarded (legality over preference).",
+  "competency": "preserve_backup_basic_on_discard",
+  "board": {
+    "active": {"card_id": 721, "hp": 200},
+    "bench": [],
+    "bench_max": 5,
+    "hand": [722],
+    "deck_count": 19,
+    "discard": [],
+    "prize_count": 3,
+    "discard_count": 1
+  },
+  "options": [
+    {"card_id": 722}
+  ],
+  "expect": {"chosen_card_ids_include": [722]},
+  "notes": "Narrowness guard: preserve only removes a basic from the candidate set when enough non-basic alternatives satisfy the count; it never changes the count."
+}

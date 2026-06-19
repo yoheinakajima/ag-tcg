@@ -1,4 +1,21 @@
-# ActiveGraph — Pokémon TCG Strategy Canvas (Pass 18 → 21)
+# ActiveGraph — Pokémon TCG Strategy Canvas (Pass 18 → 22)
+
+> **CURRENT AUTHORITATIVE STATE (Pass 22).** Built **one** narrow candidate
+> `league_water_anti_disruption_pivot_v1` to address the Pass-21 seam (lack of an
+> anti-disruption pivot). Forensics on 16 of our seat's episodes: **8 of 9 losses are
+> `no_pokemon_in_play`**; the dominant root cause (5/8) is **`held_backup_basic_but_never_benched`**
+> — a benchable Kyogre/Snover sat in hand while the bench was empty. Required loss 80592831 is
+> present; **80594000 is ABSENT (recorded missing, not fabricated)**. Three narrow, flag-gated
+> hooks added on the **byte-identical** v2 deck: ctx0 `emergency_backup_bench` (never over an
+> attack, never the non-benchable Mega 723), ctx7 `anti_disruption_search_pivot`, ctx8
+> `preserve_backup_basic_on_discard`. **9/9** board-safety fixtures PASS; tarball+entrypoint+live
+> smoke PASS; default core gate 13 pass/1 advisory/0 hard-fail. Decision replay on the **real**
+> loss windows: **75** empty-bench windows, **5** legal corrections where the reference orphaned
+> the active, every choice a single legal index. Surrogate focused eval is **directional only**
+> (0.74 candidate vs 0.5 reference, tiny sample) and **does not** measure the hooks' intended benefit, so the
+> decision is **do NOT promote / do NOT upload**; live control stays `league_water_core_reference`
+> @ 420.8. **No Kaggle upload/submit; no GitHub push; root `main.py`/`deck.csv` unchanged.** See
+> `data/reports/pass22_water_anti_disruption_report.md`.
 
 > **CURRENT AUTHORITATIVE STATE (Pass 21).** Five new ladder replays ingested (9 → 14); the
 > `league_water_core_reference` seat post-mortemed. The Pass-20 probe **resolved from `pending`

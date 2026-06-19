@@ -1,0 +1,23 @@
+{
+  "id": "ebb_05_mega_excluded_basic_chosen",
+  "kind": "emergency_backup_bench",
+  "hard": true,
+  "source": "replay_window:80591511",
+  "description": "Bench empty with both a non-benchable Mega Abomasnow ex and a benchable Snover offered. Choose the Snover, never the Mega.",
+  "competency": "emergency_backup_bench",
+  "board": {
+    "active": {"card_id": 721, "hp": 200},
+    "bench": [],
+    "bench_max": 5,
+    "hand": [723, 722, 3, 3],
+    "deck_count": 24,
+    "discard": [],
+    "prize_count": 2
+  },
+  "options": [
+    {"card_id": 723},
+    {"card_id": 722}
+  ],
+  "expect": {"chosen_card_id": 722},
+  "notes": "Confirms evolution_payoff (723) is excluded from benchable basics by role, not by id guesswork."
+}

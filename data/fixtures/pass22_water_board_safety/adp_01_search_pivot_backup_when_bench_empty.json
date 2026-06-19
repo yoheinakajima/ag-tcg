@@ -1,0 +1,23 @@
+{
+  "id": "adp_01_search_pivot_backup_when_bench_empty",
+  "kind": "search_to_hand",
+  "hard": true,
+  "source": "replay_window:80595014",
+  "description": "Search-to-hand with an empty bench: pivot to fetching a backup benchable basic instead of a thinning/utility target.",
+  "competency": "anti_disruption_search_pivot",
+  "board": {
+    "active": {"card_id": 721, "hp": 200},
+    "bench": [],
+    "bench_max": 5,
+    "hand": [1121],
+    "deck_count": 22,
+    "discard": [],
+    "prize_count": 3
+  },
+  "options": [
+    {"card_id": 1121},
+    {"card_id": 722}
+  ],
+  "expect": {"chosen_card_id": 722},
+  "notes": "Anti-disruption: when one KO ends the game, the search target becomes board width, not card advantage."
+}

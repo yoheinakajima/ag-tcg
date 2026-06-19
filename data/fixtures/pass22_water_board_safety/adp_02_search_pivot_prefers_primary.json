@@ -1,0 +1,24 @@
+{
+  "id": "adp_02_search_pivot_prefers_primary",
+  "kind": "search_to_hand",
+  "hard": true,
+  "source": "replay_window:80504288",
+  "description": "Search-to-hand with an empty bench and both backups searchable: pivot prefers the primary attacker basic.",
+  "competency": "anti_disruption_search_pivot",
+  "board": {
+    "active": {"card_id": 721, "hp": 200},
+    "bench": [],
+    "bench_max": 5,
+    "hand": [1121],
+    "deck_count": 21,
+    "discard": [],
+    "prize_count": 3
+  },
+  "options": [
+    {"card_id": 722},
+    {"card_id": 721},
+    {"card_id": 1121}
+  ],
+  "expect": {"chosen_card_id": 721},
+  "notes": "Consistent backup ranking with the emergency bench hook: primary attacker over pure setup basic."
+}

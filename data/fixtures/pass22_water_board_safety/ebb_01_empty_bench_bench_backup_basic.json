@@ -1,0 +1,24 @@
+{
+  "id": "ebb_01_empty_bench_bench_backup_basic",
+  "kind": "emergency_backup_bench",
+  "hard": true,
+  "source": "replay_window:80595014",
+  "description": "Bench is empty with a lone active; a backup Snover (setup_basic) is playable from hand. Bench it before the active is orphaned.",
+  "competency": "emergency_backup_bench",
+  "board": {
+    "active": {"card_id": 721, "hp": 200},
+    "bench": [],
+    "bench_max": 5,
+    "hand": [1145, 3, 722, 3],
+    "deck_count": 30,
+    "discard": [],
+    "prize_count": 4
+  },
+  "options": [
+    {"card_id": 1145},
+    {"card_id": 722},
+    {"card_id": 723}
+  ],
+  "expect": {"chosen_card_id": 722},
+  "notes": "Real no-Pokemon loss mode: held a benchable backup basic but never benched it. Mega Abomasnow ex (723) is NOT a bench play."
+}

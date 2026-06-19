@@ -1,0 +1,23 @@
+{
+  "id": "ebb_03_no_benchable_only_mega_skip",
+  "kind": "emergency_backup_bench",
+  "hard": true,
+  "source": "replay_window:80505567",
+  "description": "Bench empty but the only Pokemon in hand is Mega Abomasnow ex (evolution payoff, not benchable). No emergency bench is possible; do not act.",
+  "competency": "emergency_backup_bench",
+  "board": {
+    "active": {"card_id": 721, "hp": 200},
+    "bench": [],
+    "bench_max": 5,
+    "hand": [1145, 723, 3],
+    "deck_count": 26,
+    "discard": [],
+    "prize_count": 3
+  },
+  "options": [
+    {"card_id": 1145},
+    {"card_id": 723}
+  ],
+  "expect": {"action_kind": "skip"},
+  "notes": "Real loss mode: only_non_benchable_mega_in_hand. The hook must not invent a bench play for a non-basic."
+}

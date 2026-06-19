@@ -1,0 +1,22 @@
+{
+  "id": "ebb_04_bench_occupied_no_emergency",
+  "kind": "emergency_backup_bench",
+  "hard": true,
+  "source": "synthetic_control",
+  "description": "Bench already has a backup; there is no board-collapse emergency. The hook must not fire.",
+  "competency": "emergency_backup_bench",
+  "board": {
+    "active": {"card_id": 721, "hp": 200},
+    "bench": [{"card_id": 721, "hp": 200}],
+    "bench_max": 5,
+    "hand": [722, 3],
+    "deck_count": 25,
+    "discard": [],
+    "prize_count": 3
+  },
+  "options": [
+    {"card_id": 722}
+  ],
+  "expect": {"action_kind": "skip"},
+  "notes": "Narrowness guard: the emergency hook is empty-bench-only."
+}

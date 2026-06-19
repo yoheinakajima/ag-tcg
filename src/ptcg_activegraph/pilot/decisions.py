@@ -199,10 +199,36 @@ def choose_evolution(options, board, playbook):
                    rationale="evolve when the line is ready")
 
 
+def _is_benchable_basic(cid, ri) -> bool:
+    """A Basic that can be put on the bench: a setup or primary attacker basic.
+
+    Evolution payoffs (e.g. Mega Abomasnow ex) are deliberately excluded -- they
+    are played onto a Basic and are never a legal bench play."""
+    return has_role(cid, "primary_basic_attacker", ri) or has_role(cid, "setup_basic", ri)
+
+
+def _backup_basic_rank(cid, ri):
+    """Prefer a primary attacker basic over a pure setup basic, then lowest id."""
+    pref = 0 if has_role(cid, "primary_basic_attacker", ri) else 1
+    return (pref, cid if isinstance(cid, int) and not isinstance(cid, bool) else 1 << 30)
+
+
 def choose_to_hand(options, board, playbook):
     ri = load_playbook_roles(playbook)
     if not options:
         return _result(action_kind="search_to_hand", rationale="no options")
+    # Anti-disruption search pivot (flag-gated, Pass 22): when our board is
+    # collapsing (bench empty), fetch a backup benchable Basic instead of a
+    # greedy thinning/tool target so a single KO cannot end the game. Still
+    # selects exactly ONE search target -- only WHICH target changes.
+    if ri.flags.get("anti_disruption_search_pivot"):
+        bench = board.get("bench") or [] if isinstance(board, dict) else []
+        if len(bench) == 0:
+            backups = [o for o in options if _is_benchable_basic(card_id(o), ri)]
+            if backups:
+                best = sorted(backups, key=lambda o: _backup_basic_rank(card_id(o), ri))[0]
+                return _result(card_id(best), action_kind="search_to_hand",
+                               rationale="anti-disruption: fetch a backup basic while bench empty")
     _, opt = _pick_best(options, lambda o: score_search_target(o, board, ri))
     return _result(card_id(opt), action_kind="search_to_hand",
                    rationale="fetch the missing plan piece")
@@ -213,8 +239,17 @@ def choose_discard(options, board, playbook):
     if not options:
         return _result(action_kind="discard", rationale="no options")
     need = _need_count(board, options)
+    work = list(range(len(options)))
+    # Preserve-backup-basic (flag-gated, Pass 22): never include a benchable Basic
+    # in the discard selection when enough non-basic candidates can satisfy the
+    # required COUNT. The count the base policy committed to is unchanged -- only
+    # WHICH cards are discarded changes, so the last backup line is never trashed.
+    if ri.flags.get("preserve_backup_basic_on_discard"):
+        non_basic = [i for i in work if not _is_benchable_basic(card_id(options[i]), ri)]
+        if len(non_basic) >= max(1, need):
+            work = non_basic
     ranked = sorted(
-        range(len(options)),
+        work,
         key=lambda i: (-score_discard_candidate(options[i], board, ri),
                        (card_id(options[i]) if isinstance(card_id(options[i]), int)
                         else 1 << 30), i),
@@ -222,7 +257,34 @@ def choose_discard(options, board, playbook):
     chosen_idx = ranked[:max(1, need)]
     chosen_ids = [card_id(options[i]) for i in sorted(chosen_idx)]
     return _result(chosen_ids[0] if chosen_ids else None, chosen_ids,
-                   action_kind="discard", rationale="pay costs with excess energy")
+                   action_kind="discard", rationale="pay costs with excess energy (preserve backups)")
+
+
+def choose_emergency_backup_bench(options, board, playbook):
+    """Pass 22 ctx0 emergency hook: when the bench is EMPTY, bench a backup
+    benchable Basic before the lone active is orphaned and a single KO ends the
+    game. Flag-gated (``emergency_backup_bench``) and narrow:
+
+      * only fires when the bench is empty (the literal board-collapse risk);
+      * only chooses among options that are benchable Basics by role;
+      * returns ``chosen_card_id=None`` (no change) otherwise.
+
+    The compiler wiring additionally never overrides an attack option, so this
+    never trades a knock-out for a bench play."""
+    ri = load_playbook_roles(playbook)
+    if not options:
+        return _result(action_kind="skip", rationale="no options")
+    if not ri.flags.get("emergency_backup_bench"):
+        return _result(action_kind="skip", rationale="hook disabled")
+    bench = board.get("bench") or [] if isinstance(board, dict) else []
+    if len(bench) > 0:
+        return _result(action_kind="skip", rationale="bench not empty; no emergency")
+    cands = [o for o in options if _is_benchable_basic(card_id(o), ri)]
+    if not cands:
+        return _result(action_kind="skip", rationale="no backup basic available to bench")
+    best = sorted(cands, key=lambda o: _backup_basic_rank(card_id(o), ri))[0]
+    return _result(card_id(best), action_kind="emergency_backup_bench",
+                   rationale="bench a backup basic before the active is orphaned")
 
 
 def _active_near_ko(board) -> bool:
@@ -326,6 +388,7 @@ _DISPATCH = {
     "discard": lambda o, b, p: choose_discard(o, b, p),
     "main_action": lambda o, b, p: choose_main_action(o, b, p),
     "attack": lambda o, b, p: choose_attack(o, b, p),
+    "emergency_backup_bench": lambda o, b, p: choose_emergency_backup_bench(o, b, p),
 }
 
 

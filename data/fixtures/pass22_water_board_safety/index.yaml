@@ -1,0 +1,22 @@
+# Pass 22 Water board-safety fixtures (reduced-model; graded via core_pilot_decide).
+# Targeted at the three narrow flag-gated Pass-22 hooks on the water core:
+#   * emergency_backup_bench (Main/ctx0): bench a backup benchable Basic when the
+#     bench is empty, never overriding an attack, never benching a non-basic Mega.
+#   * anti_disruption_search_pivot (ctx7): fetch a backup basic while bench empty.
+#   * preserve_backup_basic_on_discard (ctx8): keep the last backup basic.
+# All hard; graded against the candidate's EMBEDDED playbook (flags on) by
+# scripts/run_core_competency_gate.py. Fixtures derive from real no-Pokemon-loss /
+# energy-denial windows (data/experiments/pass22_no_pokemon_loss_analysis,
+# pass22_energy_denial_analysis); two synthetic controls assert narrowness.
+schema: activegraph.fixtures.core_competency/v1
+deck: league_water_anti_disruption_pivot_v1
+fixtures:
+  - ebb_01_empty_bench_bench_backup_basic.json
+  - ebb_02_prefer_primary_attacker.json
+  - ebb_03_no_benchable_only_mega_skip.json
+  - ebb_04_bench_occupied_no_emergency.json
+  - ebb_05_mega_excluded_basic_chosen.json
+  - adp_01_search_pivot_backup_when_bench_empty.json
+  - adp_02_search_pivot_prefers_primary.json
+  - pbd_01_discard_preserves_backup_basic.json
+  - pbd_02_discard_basic_when_forced.json

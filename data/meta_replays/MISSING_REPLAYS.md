@@ -36,3 +36,13 @@ Place raw replay JSONs under `data/meta_replays/raw/` with these names:
    `python scripts/extract_replay_decks.py`.
 
 (Do NOT commit official card CSV/PDF data; raw replay JSONs are fine.)
+
+## Pass 22 missing input — no-bench Kyogre loss
+- `80594000.json` — **ABSENT** from `data/meta_replays/raw/`. User-identified
+  no-Pokémon-in-play loss (final active **Kyogre** KO'd with an empty bench).
+  Needed to corroborate the empty-bench / emergency-backup analysis alongside the
+  present `80592831.json` (final active **Snover** KO'd, empty bench). Recorded
+  honestly; **not fabricated**. Pass 22 proceeds with the available replays.
+- How to export: open episode 80594000 on the `pokemon-tcg-ai-battle` page,
+  download its replay JSON, save as `data/meta_replays/raw/80594000.json`, then
+  re-run `python scripts/analyze_no_pokemon_loss.py`.

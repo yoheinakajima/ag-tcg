@@ -1,2 +1,4 @@
 - [H2H variance floor](h2h-variance-floor.md) — a small-sample head-to-head "loss" can be within noise and flip sign across samples; verify reproducibility before treating a mechanistic delta as a real regression.
 - [Kaggle probe ops](kaggle-probe-ops.md) — CLI absent (use Python API), smoke needs absolute --out, submission events bypass ag_strategy_event, live scores drift.
+- [cabt select encoding](cabt-select-encoding.md) — ctx0=Main; option type 7=play-from-hand(by hand index), 8=attach, 13=attack; detect bench-a-basic via type7 + hand[index] role.
+- [core-pilot context wiring](core-pilot-context-wiring.md) — only wire cross-source-confirmed contexts; broad ctx0 stays delegated (narrow sub-actions OK); runtime_contexts = base + only this pass's hooks, or scope silently drifts.

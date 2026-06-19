@@ -1,0 +1,24 @@
+{
+  "id": "pbd_01_discard_preserves_backup_basic",
+  "kind": "discard",
+  "hard": true,
+  "source": "replay_window:80506042",
+  "description": "Must discard one card to pay a cost; an excess basic energy and a backup Snover are eligible. Preserve the backup basic, discard the energy.",
+  "competency": "preserve_backup_basic_on_discard",
+  "board": {
+    "active": {"card_id": 721, "hp": 200},
+    "bench": [],
+    "bench_max": 5,
+    "hand": [3, 722],
+    "deck_count": 20,
+    "discard": [],
+    "prize_count": 3,
+    "discard_count": 1
+  },
+  "options": [
+    {"card_id": 3},
+    {"card_id": 722}
+  ],
+  "expect": {"chosen_card_ids_exclude": [722]},
+  "notes": "Real loss mode: self_discarded_backup_basic. Count committed by the base is unchanged; only WHICH card is trashed changes."
+}

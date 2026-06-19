@@ -1,0 +1,82 @@
+# ActiveGraph Pass 22 — Water Anti-Disruption + Emergency Backup Bench candidate.
+#
+# ONE candidate (league_water_anti_disruption_pivot_v1). Identical roles + deck to
+# the proven water core (pass17_water_core_reference / core_pilot_water_v2_runtime);
+# the ONLY change is three narrow, flag-gated runtime hooks layered on top of the
+# proven deck-safe base via the compiler override. No invented ids. No deck change.
+#
+# Benchable basics (by ROLE, never by id guesswork):
+#   * primary_basic_attacker: Kyogre (721)
+#   * setup_basic:            Snover (722)
+# Mega Abomasnow ex (723) is evolution_payoff -> NOT benchable (played onto Snover).
+
+deck_id: league_water_anti_disruption_pivot_v1
+based_on: core_pilot_water_v2_runtime
+schema: activegraph.playbook.core_pilot/v1
+
+cards:
+  3: Basic {W} Energy
+  721: Kyogre
+  722: Snover
+  723: Mega Abomasnow ex
+  1092: Secret Box
+  1121: Ultra Ball
+  1145: Mega Signal
+  1163: Powerglass
+  1219: Team Rocket's Petrel
+  1227: Lillie's Determination
+  1262: Surfing Beach
+
+roles:
+  basic_energy: [3]
+  primary_basic_attacker: [721]
+  setup_basic: [722]
+  evolution_payoff: [723]
+  search: [1121, 1145]
+  high_risk_search: [1092]
+  tool: [1163]
+  draw: [1219, 1227, 1262]
+  stadium: [1262]
+
+plan:
+  primary_plan: kyogre_tempo
+  secondary_plan: abomasnow_evolution
+  avoid_plans: [passive_draw_loop, deckout]
+
+role_weights:
+  active_prefers: [primary_basic_attacker]
+  bench_prefers: [primary_basic_attacker, setup_basic]
+  attach_prefers: [active_attacker, next_attacker]
+  search_prefers: missing_plan_piece
+  discard_prefers: [basic_energy]
+  preserve_only:
+    - setup_basic
+    - primary_basic_attacker
+    - evolution_payoff_when_setup_exists
+
+deckout_guard_thresholds:
+  penalize: 8
+  heavy: 4
+  critical: 2
+
+# Pass-22 narrow runtime hooks. Each is OFF unless its flag is true AND its cabt
+# context is in the emitted runtime_contexts. Each only refines WHICH option is
+# chosen (never whether/how-many), and bails to the proven base on any mismatch.
+flags:
+  emergency_backup_bench: true        # Main/ctx0: bench a backup basic when bench empty (never over an attack)
+  anti_disruption_search_pivot: true  # ctx7: fetch a backup basic while bench empty
+  preserve_backup_basic_on_discard: true  # ctx8: keep the last backup basic
+
+deck_specific_constraints:
+  - Keep at least one Snover (setup_basic) so Mega Abomasnow ex is never orphaned.
+  - Decline Mega Signal search when no Snover is in play.
+  - Emergency backup bench fires only when the bench is literally empty.
+
+unsafe_or_deferred:
+  - Secret Box discard is advisory only (not deterministically gradeable).
+  - Broad Main remains delegated to the base policy; only the narrow emergency
+    backup-bench sub-action is refined at ctx0, and never over an attack.
+
+notes:
+  - Faithful to the v2 reference roles; adds Pass-22 board-safety hooks at ctx 0/7/8.
+  - All upload/push disabled; local-only candidate.

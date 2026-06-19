@@ -1,0 +1,23 @@
+{
+  "id": "ebb_02_prefer_primary_attacker",
+  "kind": "emergency_backup_bench",
+  "hard": true,
+  "source": "replay_window:80503804",
+  "description": "Bench empty with both a Kyogre (primary_basic_attacker) and a Snover (setup_basic) playable. Prefer the primary attacker.",
+  "competency": "emergency_backup_bench",
+  "board": {
+    "active": {"card_id": 721, "hp": 200},
+    "bench": [],
+    "bench_max": 5,
+    "hand": [721, 722, 3],
+    "deck_count": 28,
+    "discard": [],
+    "prize_count": 3
+  },
+  "options": [
+    {"card_id": 722},
+    {"card_id": 721}
+  ],
+  "expect": {"chosen_card_id": 721},
+  "notes": "When both backups are available, the primary attacker is the stronger board-width restore."
+}

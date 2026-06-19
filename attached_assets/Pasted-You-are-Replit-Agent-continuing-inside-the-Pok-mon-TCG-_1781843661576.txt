@@ -1,0 +1,588 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not generate broad deck-search candidates.
+- Do not generate chaos candidates.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Raw replay JSON files must remain gitignored.
+- Keep all candidate tarballs top-level main.py + deck.csv only.
+- This is a Water board-safety / anti-disruption implementation pass only.
+- No Kaggle upload.
+
+Read before acting:
+- docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md
+- docs/NEXT_AGENT_README.md
+- docs/CORE_PILOT_ARCHITECTURE.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/pass20_final_report.md
+- data/reports/pass21_final_report.md
+- data/reports/pass21_water_reference_replay_analysis_report.md
+- data/fixtures/pass21_planned_water_fixtures.yaml
+
+Current authoritative state:
+- league_water_core_reference is the current best valid live control.
+- Pass 21 live public score: league_water_core_reference @ 420.8.
+- It beats prior combo_full_safety_v3_fixed @ 391.1, and combo also fails the entrypoint validator.
+- Pass 21 replay analysis found:
+  - clear live improvement,
+  - but recurring loss modes:
+    1. energy denial / Crushing Hammer-style disruption with no backup plan,
+    2. no-bench / no-Pokémon-in-play loss,
+    3. over-reliance on a single Kyogre line,
+    4. failure to pivot into backup Basic / Snover line when board is thin.
+- User identified at least two no-Pokémon-in-play losses:
+  - 80592831: final active Snover KO’d with empty bench.
+  - 80594000: final active Kyogre KO’d with empty bench.
+- Check whether 80594000.json is present in data/meta_replays/raw/. If missing, record it in MISSING_REPLAYS / pass22_missing_inputs and continue using available replays.
+- Critical distinction:
+  - Mega Abomasnow ex in hand is NOT benchable.
+  - Benchable Basic available means Kyogre or Snover in hand / searchable.
+- Broad Main context is dangerous; only add narrow, provable sub-action hooks.
+
+Goal:
+Run Pass 22: Water Anti-Disruption + Emergency Backup Bench.
+
+Objectives:
+1. Analyze no-Pokémon-in-play / empty-bench losses precisely from replay state.
+2. Build fixtures from real failure windows.
+3. Implement a narrow Water board-safety runtime hook:
+   - play backup Basic from hand when board is dangerously thin,
+   - preserve/search backup Basic under disruption,
+   - avoid discarding last backup Basic.
+4. Build one candidate:
+   - water_anti_disruption_pivot_v1
+5. Validate, smoke, and run local/surrogate evaluation.
+6. Produce a dry-run recommendation only.
+7. No Kaggle upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Replay availability and safety
+
+Check raw replay inputs:
+
+find data/meta_replays/raw -maxdepth 1 -type f -name "*.json" | sort
+git check-ignore -v data/meta_replays/raw/*.json || true
+
+Required:
+- All new raw replay JSONs must be gitignored.
+- 80374966_self_mirror.json may be pre-existing/tracked from an earlier approved pass; record that separately if still true.
+- Do not stage raw replay JSON files.
+
+Check specifically:
+- data/meta_replays/raw/80592831.json
+- data/meta_replays/raw/80594000.json
+
+If 80594000 is absent:
+- record missing input honestly,
+- do not fabricate it,
+- include it in data/meta_replays/MISSING_REPLAYS.md or a Pass 22 missing-input artifact.
+
+Output:
+- data/experiments/pass22_replay_input_status.json
+- data/experiments/pass22_replay_input_status.md
+
+Part C — No-Pokémon-in-play / empty-bench analyzer
+
+Create:
+
+scripts/analyze_no_pokemon_loss.py
+
+Inputs:
+- data/meta_replays/raw/*.json
+- data/meta_replays/replay_registry.json
+- card DB if available
+
+Outputs:
+- data/experiments/pass22_no_pokemon_loss_analysis.json
+- data/experiments/pass22_no_pokemon_loss_analysis.md
+- data/experiments/pass22_no_pokemon_loss_windows.jsonl
+
+For every replay involving our Water candidate, detect:
+- loss_condition:
+  - no_pokemon_in_play
+  - prizes
+  - deckout
+  - timeout
+  - unknown
+- final active count
+- final bench count
+- final active card id/name
+- final bench empty yes/no
+- last KO if detectable
+- whether the last active was Kyogre/Snover/Mega Abomasnow
+- whether hand/deck/prizes were still non-empty
+- whether bench was empty for multiple turns
+- turns_with_empty_bench
+- turns_with_single_pokemon_in_play
+- turns_with_bench_empty_after_turn_2
+- benchable_basic_in_hand_while_bench_empty
+- searchable_basic_available_while_bench_empty
+- failed_to_play_available_backup_basic
+- failed_to_search_backup_when_available
+- discarded_backup_basic_or_line_piece
+- no_pokemon_loss_root_cause
+- evidence step numbers
+
+Important:
+- Benchable Basic for this deck = Kyogre (721) or Snover (722).
+- Mega Abomasnow ex (723) is not benchable; classify it as evolution_payoff_available, not backup_basic_available.
+- If evidence is incomplete, mark unknown rather than guessing.
+
+Expected tags:
+- no_pokemon_in_play_loss
+- final_active_ko_empty_bench
+- failed_to_play_available_backup_basic
+- failed_to_search_backup_when_available
+- no_backup_plan_after_energy_denial
+- active_alone_too_long
+
+Part D — Energy-denial / disruption analyzer
+
+Create or extend:
+
+scripts/analyze_water_anti_disruption.py
+
+Outputs:
+- data/experiments/pass22_energy_denial_analysis.json
+- data/experiments/pass22_energy_denial_analysis.md
+
+Detect:
+- opponent energy-removal cards / logs where possible
+- Crushing Hammer / analogous card IDs if present
+- Kyogre energy removed
+- Kyogre unable to attack after energy removal
+- repeated zero-energy / underpowered attacker states
+- active Kyogre with no backup attacker
+- pivot opportunities:
+  - Snover in hand/deck/search
+  - Mega Abomasnow ex in hand/deck/search
+  - Kyogre backup in hand/deck/search
+- whether search picked backup/pivot or non-pivot
+- whether discard lost pivot pieces
+- whether Secret Box / Ultra Ball / Mega Signal was used productively under disruption
+
+Output should distinguish:
+- deck list issue
+- pilot search issue
+- pilot discard issue
+- board-safety issue
+- matchup weakness
+
+Part E — Planned fixture suite from real failures
+
+Create:
+
+data/fixtures/pass22_water_board_safety/
+
+with index:
+
+data/fixtures/pass22_water_board_safety/index.yaml
+
+Add 8–10 fixtures grounded in Pass 21 / Pass 22 replay windows.
+
+Minimum fixtures:
+
+1. main_play_backup_basic_when_active_alone
+- Context: Main.
+- Board: active Kyogre alone, bench empty or dangerously thin.
+- Hand: playable Snover/Kyogre + optional tool/support/end.
+- Expected: choose Play backup Basic, not End/Attach/tool/support.
+- Hard.
+
+2. main_play_backup_basic_before_optional_tool
+- Hand: backup Basic + Powerglass / Stadium / Supporter.
+- Expected: bench backup first when active is alone.
+- Hard.
+
+3. main_play_backup_basic_before_optional_search
+- Hand: backup Basic + Ultra Ball / Secret Box.
+- Expected: play backup Basic if already available before optional search.
+- Hard.
+
+4. search_backup_when_bench_empty
+- Context: ToHand/search.
+- Board: active alone, bench empty.
+- Search options include Kyogre/Snover and lower-impact cards.
+- Expected: choose Kyogre/Snover backup.
+- Hard.
+
+5. search_evolution_pivot_after_energy_denial
+- Board: Kyogre energy-starved or energy denial tag true.
+- Search options include Snover/Mega Abomasnow or Kyogre-only line.
+- Expected: choose pivot piece based on current board.
+- Hard/advisory depending evidence.
+
+6. discard_preserve_last_benchable_basic
+- Context: Discard.
+- Bench empty/thin.
+- Hand has one Snover/Kyogre plus Energy/other discardable cards.
+- Expected: do not discard the last benchable Basic unless forced.
+- Hard.
+
+7. discard_preserve_evolution_pivot_when_kyogre_denied
+- Context: Discard.
+- Kyogre denied.
+- Hand has Snover/Mega and discardable Energy.
+- Expected: preserve pivot line.
+- Hard/advisory depending evidence.
+
+8. no_backup_plan_after_energy_denial_replay_window
+- Use a reduced-model fixture from the Latitu / energy-denial replay window.
+- Expected: search/bench backup instead of continuing all-in Kyogre line.
+- Hard.
+
+9. emergency_backup_not_triggered_when_bench_healthy
+- Bench already has sufficient backup.
+- Expected: delegate / no over-benching.
+- Advisory.
+
+10. no_broad_main_override_when_unresolved
+- Main context with ambiguous Play option that cannot resolve to a Basic.
+- Expected: delegate to base agent.
+- Hard.
+
+Every fixture must include:
+- source_episode if replay-derived
+- evidence_confidence
+- hard/advisory
+- expected selected IDs or action semantics
+- no invented IDs
+
+Part F — Implement narrow runtime hook
+
+Build exactly one runtime/playbook variant:
+
+candidate_id: water_anti_disruption_pivot_v1
+
+Base:
+- league_water_core_reference candidate
+- same deck unless a separate explicit deck diff is justified; default should be runtime/playbook-only.
+- same robust deck-selection and last-callable invariant.
+- preserve existing effect-safety / ctx7 / ctx8 behavior.
+
+Add opt-in playbook flags:
+
+runtime_hooks:
+  emergency_backup_bench: true
+  anti_disruption_search_pivot: true
+  preserve_backup_basic_on_discard: true
+
+Hook 1 — emergency_backup_bench in Main context
+
+Wire only if all conditions are true:
+- context == 0 / Main
+- board has active Pokémon but bench is empty or bench count <= 1 and active is exposed
+- option type resolves to Play
+- option's hand card resolves cleanly
+- hand card is a Basic Pokémon in the playbook:
+  - Kyogre 721
+  - Snover 722
+- play option is legal
+- maxCount/minCount can be satisfied
+- no uncertainty about option shape
+
+Then:
+- choose Play backup Basic over End / optional tool / optional support / optional search.
+- prioritize Kyogre if no attacker backup exists.
+- prioritize Snover if pivot/evolution plan is needed or energy denial is detected.
+- if uncertain, delegate.
+
+Do NOT wire broad Main generally.
+Do NOT override attach/ability/attack in this hook.
+Do NOT play Mega Abomasnow ex as if it were a Basic.
+
+Hook 2 — anti_disruption_search_pivot in ctx7 ToHand/search
+
+If board thin or energy-denial tag is present:
+- if no bench backup, prioritize Kyogre or Snover.
+- if Kyogre energy-starved and Snover exists on board, prioritize Mega Abomasnow ex.
+- if no Snover line exists, prioritize Snover before orphan Mega.
+- otherwise delegate to existing search logic.
+
+Hook 3 — preserve_backup_basic_on_discard in ctx8 Discard
+
+If bench empty/thin:
+- never discard the last Kyogre or Snover if there are legal discard alternatives.
+- prefer discarding excess Basic Water Energy.
+- preserve Mega Abomasnow only if Snover/pivot line exists or energy-denial tag is present.
+- forced-all discard remains legal; do not invent alternatives.
+
+Energy denial signal:
+- Use only observable facts.
+- Start simple:
+  - active Kyogre has zero or insufficient energy in midgame,
+  - opponent has demonstrated energy-removal log if detectable,
+  - or replay-derived fixture flag in reduced model.
+- In live runtime, if energy-denial detection is uncertain, rely on board-thin emergency backup rather than guessing.
+
+Part G — Candidate build
+
+Create:
+- playbooks/pass22_water_anti_disruption_pivot.yaml
+- experiments/runs_pass22/water_anti_disruption_pivot_v1/
+- data/submissions/candidates_pass22/water_anti_disruption_pivot_v1.tar.gz
+
+Tarball must contain exactly:
+- main.py
+- deck.csv
+
+Do not mutate old tarballs.
+Do not mutate root files.
+
+Part H — Validation gates
+
+Run:
+
+python scripts/validate_candidate_tarball.py data/submissions/candidates_pass22/water_anti_disruption_pivot_v1.tar.gz
+python scripts/validate_candidate_entrypoint.py data/submissions/candidates_pass22/water_anti_disruption_pivot_v1.tar.gz
+
+Run gates:
+- existing core competency gate
+- new pass22 water board-safety gate
+
+Run live smoke:
+- candidate self-play, both seats if feasible
+- candidate vs league_water_core_reference, both seats
+- candidate vs a control/energy-denial surrogate if available
+
+Required:
+- DONE statuses
+- no INVALID
+- no ERROR
+- no TIMEOUT
+- finite rewards
+
+Output:
+- data/experiments/pass22_candidate_validation.json
+- data/experiments/pass22_candidate_validation.md
+- data/experiments/pass22_live_smoke.json
+- data/experiments/pass22_live_smoke.md
+
+Part I — Local focused evaluation
+
+Evaluate only validator-passing artifacts.
+
+Candidates:
+1. league_water_core_reference current live control
+2. water_anti_disruption_pivot_v1
+3. core_pilot_water_v2_runtime as historical reference if available
+4. optionally Dragapult parent/search-only only as unrelated context, not promotion target
+
+Opponent pools:
+A. replay-derived control/disruption:
+- grass_crustle_energy_denial_control
+- grass_fire_crustle_typhlosion_control
+- grass_water_dipplin_toolbox
+
+B. sanity meta:
+- fighting_lucario_hariyama_ex
+- Pass 13/21 refined subfamilies if available
+
+Budget:
+- 10 games per seat per key matchup if feasible
+- minimum 5 games per seat
+- seat-swapped
+- watchdog/subprocess-isolated runner
+- use Replit workflow if needed
+- no upload
+
+Outputs:
+- data/experiments/pass22_focused_eval.json
+- data/experiments/pass22_focused_eval.md
+- data/experiments/pass22_matchup_matrix.csv
+- data/experiments/pass22_ranking.json
+- data/experiments/pass22_ranking.md
+
+Metrics:
+- weighted win rate
+- per-archetype win rate
+- energy-denial matchup score
+- no_pokemon_in_play_loss rate
+- empty-bench-at-loss rate
+- backup_basic_play_rate
+- backup_basic_available_but_unplayed count
+- search_backup_when_empty count
+- discard_last_basic count
+- Kyogre energy-starved turns
+- Mega Abomasnow pivot rate
+- crashes/timeouts/invalid returns
+- Wilson 80/95 CI
+
+Part J — Replay counterfactual / decision replay
+
+Create:
+
+scripts/replay_pass22_decisions.py
+
+For key replay windows:
+- 80592831 no-bench loss
+- 80594000 no-bench loss if available
+- 80591511 energy-denial loss
+- any Pass 21 replay window where backup Basic was available
+
+Compare:
+- league_water_core_reference decision
+- water_anti_disruption_pivot_v1 decision
+
+Output:
+- data/experiments/pass22_decision_replay.json
+- data/experiments/pass22_decision_replay.md
+
+Show:
+- exact observation/fixture window
+- old selected action
+- new selected action
+- whether new action benches/searches/preserves backup
+- whether change is legal
+- whether change is narrow and explainable
+
+Part K — ActiveGraph events
+
+Emit:
+- StrategyIterationCreated
+- StrategyFixtureAdded for each pass22 fixture
+- StrategyIterationEvaluated
+- ReplayAnalyzed / ReplayWindowTagged for no-bench windows
+- StrategyDecisionRecorded
+- ReportSiteGenerated
+
+Include:
+- parent candidate: league_water_core_reference
+- new candidate: water_anti_disruption_pivot_v1
+- hypothesis: prevent board-collapse / energy-denial losses by maintaining backup and pivot line
+- no_upload: true
+
+Part L — Reports and docs
+
+Update:
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- data/reports/pass22_water_anti_disruption_report.md
+
+Include:
+- score state from Pass 21
+- no-Pokémon-in-play analysis
+- anti-disruption root cause
+- new fixtures
+- runtime hook description
+- decision replay before/after
+- focused eval result
+- upload guidance
+- no-upload note
+
+Part M — Tests
+
+Add/update tests for:
+- no_pokemon_loss analyzer identifies 80592831 if replay present
+- no_pokemon_loss analyzer handles missing 80594000 honestly
+- benchable Basic excludes Mega Abomasnow ex
+- pass22 fixtures reference real episode IDs
+- main emergency backup hook plays Kyogre/Snover before optional End/tool/search
+- hook does not fire when Play option cannot resolve to Basic
+- search pivot chooses backup when bench empty
+- discard preservation keeps last Kyogre/Snover when alternatives exist
+- forced-all discard remains legal
+- broad Main remains delegated outside emergency backup hook
+- candidate tarball top-level only
+- entrypoint validator passes
+- no upload flag remains false
+- root files unchanged
+- report includes replay-derived evidence caveat
+
+Run targeted tests, then broader suite if feasible.
+
+Part N — Final report
+
+Report exactly:
+
+ActiveGraph Pass 22 Water Anti-Disruption Pivot Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Replay failure analysis
+- no-pokemon-loss analyzer:
+- episodes analyzed:
+- 80592831 status:
+- 80594000 status:
+- no_pokemon_in_play losses:
+- backup-basic availability:
+- energy-denial findings:
+
+3. Fixture suite
+- fixture path:
+- fixtures created:
+- hard/advisory:
+- replay-grounded fixtures:
+- highest-priority fixture:
+
+4. Runtime hook
+- candidate:
+- hooks enabled:
+- Main emergency backup:
+- ToHand search pivot:
+- Discard preservation:
+- broad Main policy:
+- no invented IDs:
+
+5. Candidate validation
+- tarball:
+- tarball validator:
+- entrypoint validator:
+- core gate:
+- pass22 gate:
+- live smoke:
+- invalid/crash/timeout:
+
+6. Decision replay
+- windows tested:
+- old behavior:
+- new behavior:
+- legal/narrow:
+- caveats:
+
+7. Focused eval
+- candidates:
+- opponents:
+- games per seat:
+- energy-denial matchup:
+- no-bench-loss rate:
+- weighted score:
+- best candidate:
+- Wilson intervals:
+- invalid/crash/timeout:
+
+8. Strategy decision
+- decision:
+- promote/live control change:
+- queue/upload:
+- reason:
+
+9. Report site / ActiveGraph
+- site path:
+- markdown report:
+- events emitted:
+- event store:
+
+10. Next recommendation
+- one sentence only.

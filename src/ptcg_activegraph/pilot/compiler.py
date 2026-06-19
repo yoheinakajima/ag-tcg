@@ -153,9 +153,40 @@ def _cp_embedded(obs):
         # not a safety decline).
         if not (isinstance(base, list) and len(base) >= 1):
             return base
+        # Emergency backup bench (Pass 22): at the Main action context, when the
+        # bench is EMPTY and a backup benchable Basic can be played (a type-7
+        # play-from-hand option whose hand card is a setup/primary basic), bench
+        # it instead of passing/drawing/attaching -- but NEVER instead of an
+        # attack. Still exactly ONE Main option selected; bails to base on any
+        # mismatch, and only fires when the embedded playbook sets the flag.
+        if ctx == 0 and 0 in _CP_RUNTIME_CONTEXTS and mn == 1 and mx == 1 and len(base) == 1:
+            base_i = base[0]
+            chosen = options[base_i] if 0 <= base_i < len(options) else None
+            chosen_type = chosen.get("type") if isinstance(chosen, dict) else None
+            if chosen_type != 13:  # never override an attack option
+                board = build_board(obs)
+                hand = board.get("hand") or [] if isinstance(board, dict) else []
+                built = []
+                for o in options:
+                    cid = None
+                    if isinstance(o, dict) and o.get("type") == 7:
+                        ix = o.get("index")
+                        if isinstance(ix, int) and not isinstance(ix, bool) and 0 <= ix < len(hand):
+                            cid = card_id(hand[ix])
+                    built.append({{"card_id": cid}})
+                res = core_pilot_decide("emergency_backup_bench", board, built)
+                cid = res.get("chosen_card_id")
+                if cid is not None:
+                    base_cid = built[base_i].get("card_id") if 0 <= base_i < len(built) else None
+                    if base_cid != cid:
+                        idxs = _cp_indices_for_ids(built, [cid])
+                        if idxs:
+                            refined = _validate_action(idxs, len(options), mn, mx)
+                            if refined and len(refined) == 1:
+                                return refined
         # Refine WHICH basic becomes the active Pokemon at setup (count is fixed
         # at exactly 1 by the engine -- only the choice changes; Kyogre > Snover).
-        if ctx == 1 and 1 in _CP_RUNTIME_CONTEXTS and mn == 1 and mx == 1 and len(base) == 1:
+        elif ctx == 1 and 1 in _CP_RUNTIME_CONTEXTS and mn == 1 and mx == 1 and len(base) == 1:
             built = [{{"card_id": resolve_option_card(obs, o)}} for o in options]
             board = build_board(obs)
             res = core_pilot_decide("setup_active", board, built)
