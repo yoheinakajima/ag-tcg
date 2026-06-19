@@ -1,0 +1,21 @@
+id,mechanic,supported_by_current_core_pilot,role_taxonomy_support,runtime_context_observable,fixture_exists,evidence_decks,failure_evidence_count,confidence,deck_agnostic,next_action
+1,setup active choice,yes,yes,yes,plan,all 6 league decks reach turn 1; Durant fails at init,0,high,yes,no_action
+2,setup bench,yes,yes,yes,plan,all (bench populated; place_card stream),0,high,yes,no_action
+3,backup maintenance,yes,partial,partial,yes,water (anti-disruption pivot); all keep bench,0,medium,yes,no_action
+4,color-matched energy attachment,yes,yes,yes,plan,ALL — every attach is a deck-plan color (0 off-plan across all decks),0,high,yes,no_action
+5,attack pressure,yes,yes,yes,plan,ALL — attack taken every available turn (0 attack-available-not-taken across all decks),0,high,yes,no_action
+6,attack-target selection,partial,no,no,no,"all (attack options expose only attackId, no target)",0,low,yes,gather_replays
+7,spread / bench damage targeting,no,no,no,no,dragapult (attacks frequently; targets not surfaced),0,low,no,gather_replays
+8,evolution sequencing,partial,partial,partial,no,"charizard (first attack median step 6 / min 4 — on tempo in most games, long tail of stalled Mega-line games)",1,medium,partial,gather_replays
+9,rare-candy evolution,partial,no,no,no,charizard/venusaur (play_from_hand identity not resolved),0,unknown,partial,gather_replays
+10,search target planning,partial,no,no,no,all (Ultra Ball/Nest seen as place_card; choice not surfaced),0,unknown,yes,gather_replays
+11,discard safety,partial,no,no,no,none directly observable,0,unknown,yes,gather_replays
+12,engine supporter play,partial,partial,no,no,raging_bolt (Crispin not resolvable in play_from_hand),0,unknown,no,gather_replays
+13,Pokémon ability use,partial,partial,partial,no,venusaur (ability/effect LOOP ~2013 iters); gardevoir (ramp ability under-used),2013,medium,no,deck_specific_playbook
+14,ramp sequencing,partial,partial,partial,no,gardevoir (only 13 attaches; ramp barely used),1,medium,no,deck_specific_playbook
+15,deck conservation,partial,no,partial,no,deck_count tracked in board snapshots; no policy observed,0,low,yes,gather_replays
+16,retreat/switch,partial,partial,no,no,in_play_action present but switch choice not surfaced,0,low,yes,gather_replays
+17,prize-race awareness,no,no,partial,no,prize_count in board snapshots; no policy observed,0,low,yes,gather_replays
+18,lethal counting / all-in attack timing,no,no,no,no,raging_bolt/charizard (energy-discard all-in not surfaced),0,low,no,special_pilot_required
+19,recursion/recovery,partial,no,partial,no,raging_bolt (Night Stretcher placed); choice not surfaced,0,low,yes,gather_replays
+20,mill/deckout win condition,no,no,no,no,durant (INVALID at init; never reaches a playable turn),4,high,no,special_pilot_required

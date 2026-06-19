@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph — Pass 27 Multi-Archetype Portfolio</title>
+<title>ActiveGraph — Pass 28 Cross-Deck Forensic Trace</title>
 <link rel="stylesheet" href="style.css">
 <style>
  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;max-width:880px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
@@ -9,40 +9,46 @@
  th,td{border:1px solid #ddd;padding:.4rem .6rem;text-align:left;font-size:.92rem}
  th{background:#f4f4f6} .caveat{background:#fff7e6;border:1px solid #f0c36d;padding:.7rem;border-radius:6px;font-size:.9rem}
  .tag{display:inline-block;background:#eef;border-radius:4px;padding:0 .4rem;font-size:.75rem;margin-left:.3rem}
- code{background:#f4f4f6;padding:.1rem .3rem;border-radius:3px}
+ code{background:#f4f4f6;padding:.1rem .3rem;border-radius:3px} s{color:#a00}
 </style></head><body>
-<h1>ActiveGraph — Pass 27: Multi-Archetype Core Gameplay Portfolio</h1>
-<p class="caveat">The internal league is a LOCAL surrogate (our own decks, one generic core pilot, subprocess-isolated, seat-swapped). It is NOT the Kaggle leaderboard and is NOT a promotion signal.</p>
+<h1>ActiveGraph — Pass 28: Cross-Deck Forensic Trace</h1>
+<p class="caveat">The cross-deck forensic trace is a LOCAL diagnostic: both seats are OUR portfolio decks driven by the SAME generic core pilot, run subprocess-isolated and seat-swapped. It measures what ACTIONS the pilot takes — it is NOT the Kaggle leaderboard and is NOT a promotion signal.</p>
 <h2>Live reference (Kaggle)</h2>
 <p>live_score_leader: <code>league_water_anti_disruption_pivot_v1.tar.gz</code>
- @ 376.5 &middot; water_family_current_best:
- <code>league_water_anti_disruption_pivot_v1.tar.gz</code> @ 376.5</p>
-<h2>Internal league (surrogate, NOT Kaggle)</h2>
-<table><thead><tr><th>rank</th><th>deck</th><th>adj win rate</th><th>record</th></tr></thead>
+ @ 376.5 &middot; portfolio_reference:
+ <code>league_water_core_reference.tar.gz</code> @ 222.3</p>
+<h2>Per-deck action-trace diagnosis (forensic, NOT Kaggle)</h2>
+<table><thead><tr><th>deck</th><th>decisions</th><th>attacks</th><th>first attack</th><th>classification</th></tr></thead>
 <tbody>
-      <tr><td>1</td><td>league_water_core_reference</td><td>0.8286</td><td>29-6-1</td></tr>
-      <tr><td>2</td><td>core_pilot_water_v2_runtime</td><td>0.7429</td><td>26-9-1</td></tr>
-      <tr><td>3</td><td>league_dragapult_spread</td><td>0.7059</td><td>24-10-2</td></tr>
-      <tr><td>4</td><td>league_mega_charizard_x_burst</td><td>0.5312</td><td>17-15-4</td></tr>
-      <tr><td>5</td><td>league_mega_venusaur_tank</td><td>0.5</td><td>13-13-10</td></tr>
-      <tr><td>6</td><td>league_mega_gardevoir_psychic_ramp</td><td>0.1944</td><td>7-29-0</td></tr>
-      <tr><td>7</td><td>league_raging_bolt_ogerpon</td><td>0.0</td><td>0-34-2</td></tr>
+      <tr><td>water</td><td>588</td><td>211</td><td>median step 8</td><td>?</td></tr>
+      <tr><td>dragapult</td><td>474</td><td>113</td><td>median step 14</td><td>?</td></tr>
+      <tr><td>raging_bolt</td><td>346</td><td>104</td><td>median step 6</td><td>deck_skeleton / structural_bad_matchup</td></tr>
+      <tr><td>gardevoir</td><td>357</td><td>234</td><td>median step 5</td><td>ramp sequencing (ramp engine under-used) — NOT attack timing (it attacks early and often); secondary deck_skeleton</td></tr>
+      <tr><td>charizard</td><td>782</td><td>72</td><td>median step 6</td><td>high-variance combo setup vs generic pilot — typically attacks early (median step 6) but a long tail of stalled games where the Mega line never comes online; generic pilot does not accelerate the combo (partial support, not a clean uniform-slow failure)</td></tr>
+      <tr><td>venusaur</td><td>5957</td><td>18</td><td>median step 7</td><td>unsupported_mechanic — effect-loop termination: the generic pilot cannot exit a repeated forced/optional effect (contexts 33+21), so it rarely reaches an attack; deck-specific</td></tr>
+      <tr><td>durant</td><td>?</td><td>?</td><td>median step ?</td><td>simulator_legality_issue + deck_structural_problem</td></tr>
 </tbody></table>
-<h2>Highest-priority deck-agnostic gap</h2>
-<p><b>color-matched energy attachment</b></p>
+<h2>Top proven gap</h2>
+<p><b>effect_loop_termination</b> &middot; 20-row coverage matrix:
+ 5 supported / 11 partial /
+ 4 unsupported</p>
 <h2>Open core-pilot gaps</h2>
 <ul>
-      <li><b>color-matched energy attachment</b> <span class=tag>highest</span> <span class=tag>deck-agnostic</span></li>
-      <li><b>spread/bench target planning</b> <span class=tag>high</span> <span class=tag>deck-specific</span></li>
-      <li><b>combo/ramp sequencing</b> <span class=tag>high</span> <span class=tag>deck-agnostic</span></li>
-      <li><b>lethal counting / all-in attack timing</b> <span class=tag>high</span> <span class=tag>deck-agnostic</span></li>
-      <li><b>prize-race awareness</b> <span class=tag>medium</span> <span class=tag>deck-specific</span></li>
-      <li><b>mill/deckout win condition</b> <span class=tag>medium</span> <span class=tag>deck-specific</span></li>
-      <li><b>recovery/recursion</b> <span class=tag>low</span> <span class=tag>deck-specific</span></li>
+      <li><b>effect_loop_termination</b> <span class=tag>high</span></li>
+      <li><b>mill_deckout_unsupported</b> <span class=tag>high (failure) / unknown (whether a legal line exists)</span></li>
+      <li><b>ramp_sequencing</b> <span class=tag>medium</span></li>
+      <li><b>evolution_sequencing_speed</b> <span class=tag>medium</span></li>
+      <li><b>spread_target_selection_observability</b> <span class=tag>unknown -> need_more_diagnostics</span></li>
+      <li><b>engine_card_play_observability</b> <span class=tag>unknown -> need_more_diagnostics</span></li>
+</ul>
+<h2>Refuted hypotheses (proven wrong by trace)</h2>
+<ul>
+      <li><s>color_match_attach</s> — 0 off-deck-plan attaches across ALL decks; raging_bolt attaches only L/F/G (its plan) and Bellowing Thunder discards F+L from across the board, so F/L on Ogerpon still feeds the plan</li>
+      <li><s>attack_pressure</s> — 0 attack-available-not-taken across ALL decks; raging_bolt attacks 104x from step 6</li>
 </ul>
 <h2>Decision</h2>
-<p><b>build_aggro_core_rules_next</b> &middot; next:
- color-matched energy attachment &middot; keep Water control:
- yes</p>
-<p>Full report: <code>data/reports/pass27_multi_archetype_portfolio_report.md</code></p>
+<p><b>gather_more_traces</b> &middot; focus:
+ action-trace OBSERVABILITY for attack-target / spread-target / search-target / supporter-card selection (resolve play_from_hand + attack sub-target identity) &middot; validation deck:
+ league_mega_venusaur_tank</p>
+<p>Full report: <code>data/reports/pass28_cross_deck_forensic_report.md</code></p>
 </body></html>

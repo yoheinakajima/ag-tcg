@@ -1,0 +1,631 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not generate new candidates in this pass.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Raw replay JSON files must remain gitignored.
+- Keep all existing candidate tarballs immutable.
+- This is a diagnostic / forensic / planning pass only.
+- No Kaggle upload.
+- Do not assume a deck's low win rate proves a specific pilot bug. Prove causality from action traces.
+
+Read before acting:
+- docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md
+- docs/NEXT_AGENT_README.md
+- docs/CORE_PILOT_ARCHITECTURE.md
+- docs/CORE_PILOT_ROLE_TAXONOMY.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/pass17_internal_deck_league_report.md
+- data/reports/pass18_* if present
+- data/reports/pass21_final_report.md
+- data/reports/pass24_anti_disruption_pivot_replay_report.md
+- data/reports/pass25_water_live_control_hardening_report.md
+- data/reports/pass26_action_opportunity_mining_report.md
+- data/reports/pass27_multi_archetype_portfolio_report.md
+- experiments/pass27_portfolio_decks.yaml
+- data/experiments/pass27_core_gameplay_gap_analysis.json
+- data/experiments/pass27_portfolio_league.json
+- data/experiments/pass27_portfolio_rankings.json
+- data/activegraph/lab_events.jsonl
+
+Current state:
+- Pass 27 was a multi-archetype portfolio pass.
+- It built or validated 7 deck families and ran a local internal league.
+- The league is NOT Kaggle and NOT a promotion signal.
+- Key Pass 27 findings:
+  - Water reference remained strongest locally.
+  - Dragapult looked viable.
+  - Charizard/Venusaur were middling.
+  - Gardevoir was weak.
+  - Raging Bolt/Ogerpon went 0-34.
+  - Durant/deckout remained invalid/unpilotable.
+- Replit recommended build_aggro_core_rules_next, citing color-matched energy attachment.
+- That conclusion is too early unless action traces prove the cause.
+- There is a prior caution from earlier Raging Bolt diagnosis: low win rate may be structural or engine/play sequencing, not necessarily simple color attachment.
+- Therefore this pass must determine WHY each deck fails.
+
+Goal:
+Run Pass 28: Cross-Deck Forensic Trace + Core Mechanics Backlog.
+
+Core question:
+Across the portfolio decks, what specific gameplay mechanics are missing from the generic core pilot, and which ones are proven by action-level evidence rather than inferred from win rate?
+
+Objectives:
+1. Preserve root safety.
+2. Re-read live score status read-only only.
+3. Use existing Pass 27 candidates and league artifacts.
+4. Rerun small targeted traces if needed.
+5. Build an action-level forensic dataset across deck families.
+6. Attribute each failure to one of:
+   - confirmed_action_error
+   - unsupported_mechanic
+   - deck_structural_problem
+   - simulator_legality_issue
+   - sample_variance
+   - unknown
+7. Produce a prioritized mechanics backlog.
+8. Decide what to implement next, but do not implement it in this pass.
+9. No upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Read-only live score status
+
+Run read-only Kaggle status if possible:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass28.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass28.csv || true
+
+If kaggle is not on PATH, use the Python kaggle.cli/API method used in prior passes.
+
+Rules:
+- no submit
+- no upload
+- status listing only
+- publicScore may be string; coerce safely to float
+- preserve distinct fields:
+  - live_score_leader
+  - water_family_current_best
+  - portfolio_reference
+
+Output:
+- data/experiments/pass28_live_score_status.json
+- data/experiments/pass28_live_score_status.md
+
+Part C — Inventory existing portfolio artifacts
+
+Create:
+
+data/experiments/pass28_portfolio_inventory.json
+data/experiments/pass28_portfolio_inventory.md
+
+Inventory:
+- all Pass 27 candidate tarballs
+- playbooks
+- decklists
+- validation results
+- smoke results
+- league results
+- rankings
+- matrix
+- blocked decks
+- fixture plans
+- role taxonomy
+
+Do not rebuild candidates.
+Do not mutate tarballs.
+
+For each deck:
+- candidate_id
+- family_id
+- deck archetype
+- tarball path
+- playbook path
+- validation status
+- smoke status
+- league eligibility
+- league performance
+- known warnings
+
+Part D — Targeted trace run, only if needed
+
+If Pass 27 already saved per-game traces with action-level decisions, reuse them.
+
+If not, run a small targeted diagnostic trace with existing candidates:
+
+Participants:
+- league_water_core_reference
+- league_water_anti_disruption_pivot_v1 if available
+- core_pilot_water_v2_runtime if available
+- league_dragapult_spread
+- league_raging_bolt_ogerpon
+- league_mega_gardevoir_psychic_ramp
+- league_mega_charizard_x_burst
+- league_mega_venusaur_tank
+- league_durant_deckout_carousel only for smoke/failure diagnosis, not league
+
+Pairings:
+1. raging_bolt vs water reference
+2. raging_bolt self
+3. raging_bolt vs dragapult
+4. gardevoir vs water reference
+5. gardevoir self
+6. charizard vs water reference
+7. charizard self
+8. venusaur vs water reference
+9. dragapult vs water reference
+10. dragapult self
+11. durant self-smoke / failure diagnosis only
+
+Budget:
+- 2 games per seat per diagnostic pairing
+- subprocess isolated
+- timeout per game / batch
+- use Replit workflow if needed
+- no upload
+
+Output:
+- data/experiments/pass28_diagnostic_trace.json
+- data/experiments/pass28_diagnostic_trace.jsonl
+- data/experiments/pass28_diagnostic_trace.md
+
+Part E — Action trace schema
+
+Create a normalized action-trace dataset:
+
+data/experiments/pass28_action_trace.jsonl
+data/experiments/pass28_action_trace_summary.json
+data/experiments/pass28_action_trace_summary.md
+
+For every our-seat decision in the diagnostic traces:
+- run_id
+- game_id
+- candidate_id
+- family_id
+- opponent_id
+- seat
+- step
+- turn
+- result
+- select.context
+- select.type
+- minCount/maxCount
+- selected indices
+- all legal options
+- resolved selected action class:
+  - attack
+  - attach
+  - play_basic
+  - play_supporter
+  - play_item
+  - play_tool
+  - play_stadium
+  - evolve
+  - ability
+  - end
+  - discard
+  - search_to_hand
+  - draw_count
+  - unknown
+- resolved selected card id/name if any
+- resolved selected role if playbook maps it
+- option resolution confidence
+- active Pokémon id/name
+- bench ids/names
+- hand ids/names if visible
+- deckCount
+- discard ids/names if visible
+- active energy ids/types
+- bench energy ids/types
+- energyAttached flag
+- attack options present yes/no
+- attach options present yes/no
+- playable Basic present yes/no
+- playable engine card present yes/no
+- evolution option present yes/no
+- selected attackId if any
+- damage/KO logs if visible
+- prize count if visible
+- loss condition if final
+
+Do not infer hidden opponent cards.
+Do not infer card effects beyond observable logs and metadata.
+If unresolved, mark unknown.
+
+Part F — Per-deck forensic analysis
+
+Create:
+
+data/experiments/pass28_deck_forensics.json
+data/experiments/pass28_deck_forensics.md
+
+For each family:
+
+1. Water
+- board safety
+- backup maintenance
+- search/discard behavior
+- attack pressure
+- remaining weaknesses
+
+2. Dragapult
+- setup line completion
+- attack frequency
+- spread attacker use
+- bench target selection observability
+- whether spread targeting is actually missing or just unmeasured
+- whether it wins by raw attacks despite no targeting
+
+3. Raging Bolt / Ogerpon
+Do NOT assume color-matching is the cause. Prove or refute:
+- first attack turn
+- attacks per game
+- attack available but not taken
+- had Lightning/Fighting energy in hand but attached wrong target/color
+- attached correct colors but still lost
+- Ogerpon benched yes/no
+- Crispin played yes/no
+- Teal Dance / Ogerpon engine used if observable
+- Bellowing Thunder / relevant attack used if observable
+- energy discard attack used
+- loss condition
+- whether deck had enough correct energy
+- whether issue is:
+  - color_match_attach
+  - attack_pressure
+  - engine_card_play
+  - deck_skeleton
+  - unsupported_effect
+  - structural_bad_matchup
+  - unknown
+
+4. Gardevoir
+- went wide on bench yes/no
+- evolved line yes/no
+- ramp/energy engine used yes/no
+- attack used yes/no
+- attached Psychic to correct plan yes/no
+- whether issue is ramp sequencing, evolution, attack timing, or deck skeleton
+
+5. Charizard
+- Charmander/Charmeleon/Mega line progression
+- Rare Candy use if present
+- Firebreather use
+- Oricorio engine use
+- Fire energy accumulation
+- attack availability and usage
+- all-in attack timing if observable
+- whether issue is unsupported combo engine vs generic pilot
+
+6. Venusaur
+- evolution progression
+- stadium engine use
+- tank attack usage
+- energy attachment
+- whether generic pilot supports the line enough
+
+7. Durant / Chaos
+- exact INVALID cause
+- deck-selection ok?
+- first invalid action step
+- selected option
+- why invalid if detectable
+- whether deckout plan is unsupported
+- whether any legal mill line exists
+- whether a special pilot is required
+
+Part G — Mechanics coverage matrix
+
+Create:
+
+data/experiments/pass28_mechanics_coverage_matrix.json
+data/experiments/pass28_mechanics_coverage_matrix.md
+data/experiments/pass28_mechanics_coverage_matrix.csv
+
+Rows = core mechanics:
+1. setup active choice
+2. setup bench
+3. backup maintenance
+4. color-matched energy attachment
+5. attack pressure
+6. attack-target selection
+7. spread / bench damage targeting
+8. evolution sequencing
+9. rare-candy evolution
+10. search target planning
+11. discard safety
+12. engine supporter play
+13. Pokémon ability use
+14. ramp sequencing
+15. deck conservation
+16. retreat/switch
+17. prize-race awareness
+18. lethal counting / all-in attack timing
+19. recursion/recovery
+20. mill/deckout win condition
+
+Columns:
+- supported_by_current_core_pilot yes/no/partial
+- role_taxonomy_support yes/no/partial
+- runtime_context_observable yes/no/partial
+- fixture_exists yes/no/plan
+- evidence_decks
+- failure_evidence_count
+- confidence
+- deck_agnostic yes/no
+- next_action:
+  - implement_core_rule
+  - create_fixtures
+  - gather_replays
+  - deck_specific_playbook
+  - special_pilot_required
+  - no_action
+
+Part H — Causal ranking, evidence-gated
+
+Create:
+
+data/experiments/pass28_core_gap_priority.json
+data/experiments/pass28_core_gap_priority.md
+
+Rank only by evidence, not by intuition.
+
+For each candidate gap:
+- gap_id
+- claimed_issue
+- evidence_for
+- evidence_against
+- decks affected
+- action trace count
+- loss/win impact
+- implementation risk
+- generality
+- whether a legal alternative was observed
+- whether positive controls exist
+- confidence:
+  - high
+  - medium
+  - low
+  - unknown
+
+Important:
+- Color-matched energy can rank #1 only if trace proves wrong/poor energy attachment caused losses across at least one deck.
+- If Raging Bolt attaches correctly but still loses, do NOT label color matching as the top gap.
+- If it fails to play engine cards like Crispin/Ogerpon, classify as engine_card_play or unsupported_effect.
+- If it attacks but loses, classify as deck_skeleton or matchup weakness unless another action error is observed.
+- If evidence is ambiguous, label need_more_diagnostics.
+
+Part I — Fixture backlog
+
+Create:
+
+data/fixtures/pass28_core_gameplay_backlog.yaml
+data/fixtures/pass28_core_gameplay_backlog.md
+
+For each high/medium confidence gap:
+- fixture_id
+- candidate source deck
+- source run/replay/step if available
+- reduced model
+- expected behavior
+- required resolver support
+- executable now yes/no
+- why blocked if not executable
+- priority
+- deck-agnostic or deck-specific
+
+Do not create executable fixtures unless the reduced model can faithfully represent the issue.
+
+Part J — Implementation roadmap
+
+Create:
+
+docs/CORE_GAMEPLAY_BACKLOG.md
+data/experiments/pass28_implementation_roadmap.json
+data/experiments/pass28_implementation_roadmap.md
+
+Roadmap categories:
+
+A. Immediate core rules, if evidence supports:
+- color-matched energy attachment
+- attack pressure
+- evolution sequencing
+- search target planning
+- discard safety
+
+B. Requires more observability:
+- spread targeting
+- retreat/switch
+- prize race
+- lethal counting
+
+C. Requires deck-specific/special pilot:
+- Raging Bolt all-in energy discard attack if not generic
+- Charizard all-in energy discard attack
+- Gardevoir ramp
+- Durant deckout/chaos
+
+For each roadmap item:
+- evidence
+- implementation scope
+- risk
+- tests needed
+- candidate deck to validate it
+- no-upload default
+
+Part K — Strategy decision
+
+Create:
+
+data/experiments/pass28_strategy_decision.json
+data/experiments/pass28_strategy_decision.md
+
+Decision labels:
+- build_color_energy_rules_next
+- build_attack_pressure_rules_next
+- build_engine_card_play_rules_next
+- build_evolution_sequencing_rules_next
+- build_search_planning_rules_next
+- build_spread_targeting_next
+- build_ramp_special_pilot_next
+- build_chaos_special_pilot_next
+- gather_more_traces
+- expand_portfolio_first
+- no_action
+
+Rules:
+- Decision must be evidence-gated.
+- Do not choose build_color_energy_rules_next unless confirmed by trace.
+- Do not choose build_aggro_core_rules_next as a vague bucket.
+- Prefer a specific mechanic:
+  - color energy
+  - attack pressure
+  - engine card play
+  - all-in attack timing
+- If no high-confidence generic gap exists, choose gather_more_traces or expand_portfolio_first.
+- No upload.
+
+Part L — ActiveGraph events
+
+Emit:
+- StrategyIterationEvaluated for each deck family diagnostic
+- LocalEvaluationFinished for trace/league if run
+- StrategyHypothesisLogged for each core gap
+- StrategyFixtureAdded for fixture backlog items
+- StrategyDecisionRecorded
+- ReportSiteGenerated
+
+All events:
+- no_upload: true
+- pass28 tags
+- evidence paths
+- no candidate build unless explicitly none
+
+Part M — Reports and docs
+
+Update:
+- docs/PTCG_STRATEGY_CANVAS.md
+- docs/CORE_GAMEPLAY_BACKLOG.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- data/reports/pass28_cross_deck_forensic_report.md
+
+Include:
+- Pass 27 summary
+- forensic trace results
+- Raging Bolt causal diagnosis
+- Gardevoir/Charizard/Venusaur diagnosis
+- Dragapult diagnosis
+- Durant invalid diagnosis
+- mechanics coverage matrix
+- evidence-gated priority
+- implementation roadmap
+- strategy decision
+- no-upload note
+- internal league caveat
+
+Part N — Tests
+
+Add/update tests for:
+- action trace schema has required fields
+- no invented IDs
+- root files unchanged
+- raw replays gitignored
+- Raging Bolt diagnosis is not inferred from winrate alone
+- color energy gap requires trace evidence
+- engine_card_play gap distinct from color energy gap
+- mechanics coverage matrix includes 20 rows
+- Durant invalid cause recorded
+- fixture backlog items reference evidence or explain no source
+- decision is evidence-gated
+- no upload flag remains false / no_upload true
+- report includes internal/surrogate caveat
+- reports distinguish live score from internal league
+
+Run targeted tests.
+Run broader tests if feasible.
+
+Part O — Final report
+
+Report exactly:
+
+ActiveGraph Pass 28 Cross-Deck Forensic Trace Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Portfolio evidence
+- decks analyzed:
+- traces run/reused:
+- decisions traced:
+- candidates built:
+- internal/Kaggle caveat:
+
+3. Raging Bolt diagnosis
+- first attack turn:
+- attack availability:
+- color energy attachments:
+- Ogerpon/Crispin/engine use:
+- confirmed root cause:
+- confidence:
+
+4. Other deck diagnoses
+- Dragapult:
+- Gardevoir:
+- Charizard:
+- Venusaur:
+- Durant:
+
+5. Mechanics coverage matrix
+- mechanics rows:
+- supported:
+- partial:
+- unsupported:
+- highest-evidence gaps:
+
+6. Causal priority
+- top gap:
+- evidence:
+- gaps rejected:
+- need-more-data items:
+
+7. Fixture backlog
+- fixtures planned:
+- executable now:
+- blocked:
+- highest-priority fixture:
+
+8. Roadmap / strategy decision
+- decision:
+- next implementation:
+- next validation deck:
+- keep Water reference:
+- reason:
+
+9. Report site / ActiveGraph
+- site path:
+- markdown report:
+- events emitted:
+- event store:
+
+10. Next recommendation
+- one sentence only.

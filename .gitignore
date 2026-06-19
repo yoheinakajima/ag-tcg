@@ -60,6 +60,9 @@ data/submissions/candidates/*.tar.gz
 # Generated replay/smoke render dumps (each up to ~17MB)
 experiments/runs*/**/*.html
 
+# Pass 28 raw per-decision forensic action trace (large; aggregates are committed)
+data/experiments/pass28_action_trace.jsonl
+
 # OS
 .DS_Store
 
