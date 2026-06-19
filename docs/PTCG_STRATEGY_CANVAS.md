@@ -49,3 +49,14 @@ We hardened and ranked OUR existing portfolio to pick the next human-approved pr
 ## Next move
 
 `Queue league_dragapult_v1_search_only as the single HELD dry-run probe candidate, pending human approval. No upload/submit performed.` Stop building Raging Bolt decklists — its next move is a PILOT/policy change. Keep Water as the always-on benchmark.
+
+## Pass 31 — human-approved single Kaggle calibration probe
+
+> Calibration probe, NOT a promotion. Human-approved single upload. No GitHub push. No second upload. No backup candidate.
+
+- Uploaded exactly once: `league_dragapult_v1_search_only.tar.gz` (the Pass-30 held dry-run candidate).
+- All pre-upload gates PASS; root main.py/deck.csv byte-identical before AND after.
+- Pending guard: no pending submission before upload; live leader before upload `submission.tar.gz` @ 363.0.
+- Result: status **pending** — wait, no conclusion; do not resubmit this pass.
+
+See `data/reports/pass31_dragapult_search_only_kaggle_probe_report.md` for the full 10-section report.

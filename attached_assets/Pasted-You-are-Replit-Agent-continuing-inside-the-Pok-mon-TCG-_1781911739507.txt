@@ -1,0 +1,210 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+This is a HUMAN-APPROVED single Kaggle calibration probe.
+
+Important:
+- Do not push to GitHub.
+- Do not modify root main.py or root deck.csv.
+- Do not build new candidates.
+- Do not change the candidate deck or main.py.
+- Do not submit more than once.
+- Do not submit any backup candidate unless explicitly instructed in a later prompt.
+- Do not treat this as a promotion claim.
+- This is a live calibration probe for the strongest non-Water candidate from Pass 30.
+
+Candidate to submit:
+- candidate_id: league_dragapult_v1_search_only
+- expected tarball: data/submissions/candidates_pass19/league_dragapult_v1_search_only.tar.gz
+- if the tarball is not there, search only in existing candidate directories for the exact candidate_id tarball and report the path found.
+- do not rebuild unless the exact tarball is missing and a prior build script can reproduce it byte-for-byte from existing pass artifacts; if that happens, stop and ask in the final report rather than uploading.
+
+Kaggle message:
+league_dragapult_v1_search_only: non-Water Dragapult calibration probe; Pass30 top meta sanity + held dry-run candidate; validators+smoke required; not a promotion claim
+
+Required pre-upload gates:
+
+1. Root safety
+Run:
+python scripts/package_submission.py --verify-only
+cmp main.py data/baselines/v1_kaggle_349_8/main.py
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv
+
+Root main.py and root deck.csv must remain byte-identical to the v1 baseline before and after the upload.
+
+2. Candidate tarball inspection
+Inspect the exact candidate tarball.
+It must contain exactly:
+- main.py
+- deck.csv
+
+No nested directories.
+No extra files.
+Deck must be exactly 60 rows.
+All rows must be integer card IDs.
+Do not print secrets.
+
+3. Candidate validators
+Run:
+python scripts/validate_candidate_tarball.py <candidate_tarball>
+python scripts/validate_candidate_entrypoint.py <candidate_tarball>
+
+Both must pass.
+The entrypoint validator must confirm the last callable / deck-selection behavior is safe.
+
+4. Static runtime checks
+Confirm candidate main.py has no forbidden imports:
+- no src.ptcg_activegraph runtime import
+- no requests
+- no openai
+- no network dependency
+- stdlib-only runtime
+
+5. Live smoke
+Run a live cabt smoke on the extracted candidate tarball's own main.py, not root main.py.
+Minimum:
+- candidate self-play or candidate vs a known valid control
+- both seats if feasible
+- no INVALID
+- no ERROR
+- no TIMEOUT
+- finite rewards or DONE status
+If the cabt import/runtime exceeds the sandbox wall, report that honestly; do not treat it as a pass unless a prior same-tarball smoke artifact from Pass 30 exists and is cited in the report.
+
+6. Kaggle auth and pending guard
+Use the existing Kaggle env secrets.
+Do not print credentials.
+
+Fetch read-only status before upload:
+kaggle competitions submissions pokemon-tcg-ai-battle -v
+
+If kaggle CLI is not on PATH, use the Python Kaggle CLI/API method used in prior passes.
+
+Before upload, confirm:
+- competition reachable
+- no currently pending submission
+- latest submission is not pending
+- candidate was not already submitted successfully in the latest listing
+
+If there is a pending submission, stop. Do not upload.
+
+7. Upload exactly once
+If and only if every gate above passes, submit exactly once:
+kaggle competitions submit -c pokemon-tcg-ai-battle -f <candidate_tarball> -m "league_dragapult_v1_search_only: non-Water Dragapult calibration probe; Pass30 top meta sanity + held dry-run candidate; validators+smoke required; not a promotion claim"
+
+If using Python API, perform exactly one equivalent competition_submit call.
+
+No retry.
+No second upload.
+No backup upload.
+
+8. Post-upload status
+After upload, fetch status once:
+kaggle competitions submissions pokemon-tcg-ai-battle -v
+
+Record:
+- latest fileName
+- date
+- description
+- status
+- publicScore if available
+- error if any
+- logs paths
+
+If status is pending, report pending and stop.
+If complete, compare to current live leader only as a calibration point.
+If error, classify the error and stop.
+
+9. ActiveGraph events
+Emit:
+- StrategyPromotionDecision with promotion_claimed=false, human_approved=true, calibration_probe=true, no_upload=false only for the upload event
+- SubmissionQueued
+- SubmissionUploaded if upload succeeds
+- KaggleScoreUpdated only if a score is actually present; do not emit a scored event for pending
+- ReportSiteGenerated
+
+The event payload must include:
+- candidate_id
+- tarball path
+- pass30 source evidence
+- upload_mode: human_approved_single_calibration_probe
+- promotion_claimed: false
+- no_auto_submit: true
+- no_github_push: true
+
+10. Reports
+Create/update:
+- data/reports/pass31_dragapult_search_only_kaggle_probe_report.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- docs/PTCG_STRATEGY_CANVAS.md if appropriate
+
+Final report must include exactly:
+
+Pass 31 Dragapult Search-Only Kaggle Calibration Probe Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Candidate
+- candidate_id:
+- tarball:
+- tarball contents:
+- deck rows:
+- unique card IDs:
+- source pass:
+- why this candidate:
+
+3. Pre-upload gates
+- tarball validator:
+- entrypoint validator:
+- static runtime checks:
+- live smoke:
+- blockers:
+
+4. Kaggle auth/status
+- auth/listing:
+- pending submission before upload:
+- current live scores if refreshed:
+- active control/live leader:
+- stale caveat:
+
+5. Upload
+- attempted:
+- exactly once:
+- upload log:
+- raw result:
+- Kaggle message:
+
+6. Submission status
+- latest fileName:
+- status:
+- publicScore:
+- error:
+- replay/episode if available:
+- status logs:
+
+7. ActiveGraph
+- events emitted:
+- event store:
+- submission lineage:
+
+8. Interpretation
+- if pending: wait, no conclusion
+- if complete above current live leader: candidate may be considered for live-control discussion in a later pass
+- if complete below current live leader: keep current control and ingest replay
+- if error: classify and harden gate
+- do not resubmit this pass
+
+9. Manual git notes
+- files to review:
+- files not to commit:
+- generated/ignored files:
+
+10. Next recommendation
+- one sentence only
+
+Reminder:
+This is a calibration probe, not a promotion. No GitHub push. No second upload. No backup candidate. Stop after status check.

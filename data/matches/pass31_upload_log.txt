@@ -1,0 +1,3 @@
+Warning: Looks like you're using an outdated API Version, please consider updating (server 2.2.2 / client 1.6.17)
+  0%|          | 0.00/16.5k [00:00<?, ?B/s]100%|██████████| 16.5k/16.5k [00:00<00:00, 74.3kB/s]
+Successfully submitted to The Pokémon Company - PTCG AI Battle Challenge Simulation
