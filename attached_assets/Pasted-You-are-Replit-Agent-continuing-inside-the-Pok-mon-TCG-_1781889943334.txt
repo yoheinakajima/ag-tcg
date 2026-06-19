@@ -1,0 +1,674 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Raw replay JSON files must remain gitignored.
+- Keep all candidate tarballs top-level main.py + deck.csv only.
+- This is a large LOCAL portfolio / core-gameplay generalization pass.
+- No Kaggle upload.
+- Do not optimize one Water deck in this pass.
+- The purpose is to expose core-pilot gaps across multiple archetypes.
+
+Read before acting:
+- docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md
+- docs/NEXT_AGENT_README.md
+- docs/CORE_PILOT_ARCHITECTURE.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- docs/STRATEGY_PORTFOLIO_LOOP.md if present
+- data/reports/pass17_internal_deck_league_report.md
+- data/reports/pass21_final_report.md
+- data/reports/pass24_anti_disruption_pivot_replay_report.md
+- data/reports/pass25_water_live_control_hardening_report.md
+- data/reports/pass26_action_opportunity_mining_report.md
+- experiments/strategy_families.yaml if present
+- data/activegraph/lab_events.jsonl
+
+Current authoritative state:
+- Pass 26 found that building hooks before mining legal alternatives creates inert policies.
+- Current Water strategy-family best is league_water_anti_disruption_pivot_v1.
+- Fresh Pass 26 score showed the Water pivot as live_score_leader and water_family_current_best at 376.5.
+- Pass 26 found no hook-worthy Water opportunity class:
+  - 1533 decisions mined
+  - 17,662 legal options
+  - no safe_now hook class
+  - no candidates built
+- Therefore do NOT keep over-refining Water until we collect more evidence.
+- User wants more decks to make sure core gameplay is locked in.
+- Pass 17 internal league showed:
+  - Water reference was compatible with generic pilot
+  - Dragapult was promising
+  - Raging Bolt/Ogerpon played legally but went 0-30, exposing aggro/color-energy/attack-priority gaps
+  - Durant/mill was incompatible / invalid
+- The next pass should create a portfolio benchmark across archetypes, not a Kaggle probe.
+
+Goal:
+Run Pass 27: Multi-Archetype Core Gameplay Portfolio.
+
+Core question:
+Which fundamental gameplay competencies still fail when the same core pilot is applied to different deck archetypes?
+
+Objectives:
+1. Refresh live score read-only, but do not upload.
+2. Build a deck/pilot portfolio across multiple archetype families.
+3. Validate all card IDs and deck legality.
+4. Build playbooks that tag roles consistently across archetypes.
+5. Build candidates only when deck + playbook + validators pass.
+6. Run internal league / smoke / competency tests across the portfolio.
+7. Identify core-pilot gaps that are not Water-specific.
+8. Update strategy-family registry and ActiveGraph lineage.
+9. Produce a roadmap of which core competencies to implement next.
+10. No Kaggle upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Read-only live score refresh
+
+Run read-only status:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass27.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass27.csv || true
+
+If kaggle is not on PATH, use the Python kaggle.cli/API method used in prior passes.
+
+Rebuild/update:
+
+data/kaggle_uploads/live_score_registry.json
+data/kaggle_uploads/live_score_registry.md
+
+Rules:
+- no submit command
+- no upload
+- publicScore may be string; coerce safely to float
+- preserve both fields:
+  - live_score_leader
+  - water_family_current_best
+- do not treat this pass as a promotion decision
+
+Output:
+- data/experiments/pass27_live_score_status.json
+- data/experiments/pass27_live_score_status.md
+
+Part C — Portfolio deck registry
+
+Create or update:
+
+experiments/pass27_portfolio_decks.yaml
+data/experiments/pass27_portfolio_registry.json
+data/experiments/pass27_portfolio_registry.md
+
+Use confirmed card IDs from data/cards/EN_Card_Data.csv only.
+
+Start with these archetype families. Build only if all IDs validate and the deck can be made legal 60 cards.
+
+Portfolio Family 1 — Water live-control benchmark
+candidate_id: portfolio_water_pivot_reference
+Source:
+- league_water_anti_disruption_pivot_v1 if tarball exists
+Purpose:
+- incumbent Water benchmark
+- tests board safety, Kyogre pressure, energy-denial resilience
+Status:
+- reference only; do not mutate
+
+Portfolio Family 2 — Dragapult spread/control
+candidate_id: portfolio_dragapult_spread_v1
+Source:
+- pass17/pass18 Dragapult deck if present
+Core cards:
+- Dreepy 119
+- Drakloak 120
+- Dragapult ex 121
+- optional Duskull 131 / Dusknoir 133 if already validated
+Purpose:
+- tests evolution sequencing
+- tests multi-target/spread planning
+- tests whether generic pilot can attack but not optimize bench damage
+Expected:
+- likely playable
+- likely needs future spread-targeting rules
+
+Portfolio Family 3 — Raging Bolt / Ogerpon fast aggro
+candidate_id: portfolio_raging_bolt_ogerpon_v1
+Core cards from user idea:
+- Raging Bolt ex 63
+- Teal Mask Ogerpon ex 96
+- Crispin 1198
+- Fighting Energy id from card DB
+- Lightning Energy id from card DB
+- Grass Energy id from card DB
+Purpose:
+- tests color-matched energy attachment
+- tests attack-first bias
+- tests Basic-aggro sequencing
+Expected:
+- previous generic pilot went 0-30, so this is a diagnostic deck
+- build an aggro playbook, but do not overfit blindly
+
+Portfolio Family 4 — Mega Gardevoir / Psychic ramp
+candidate_id: portfolio_mega_gardevoir_ramp_v1
+Core cards from user idea:
+- Ralts 745
+- Kirlia 746
+- Mega Gardevoir ex 747
+- Psychic Energy id from card DB
+- supporting Psychic basics only if validated
+Purpose:
+- tests bench-wide setup
+- tests energy ramp / scaling attack logic
+- tests evolution sequencing
+Expected:
+- may need special energy-allocation/ramp rules
+- build only if deck validates
+
+Portfolio Family 5 — Mega Charizard X / Fire energy burst
+candidate_id: portfolio_charizard_x_burst_v1
+Core cards from user idea:
+- Charmander 788
+- Charmeleon 789
+- Mega Charizard X ex 790
+- Oricorio ex 795
+- Firebreather 1232
+- Rare Candy 1079
+- Fire Energy id from card DB
+Purpose:
+- tests energy accumulation
+- tests lethal-counting before all-in discard attack
+- tests combo/ramp sequencing
+Expected:
+- complex; likely diagnostic more than competitive
+- build only if card IDs and deck legality validate
+
+Portfolio Family 6 — Venusaur / Grass tank
+candidate_id: portfolio_mega_venusaur_tank_v1
+Core cards from user idea:
+- Bulbasaur 650
+- Ivysaur 651
+- Mega Venusaur ex 652
+- Forest of Vitality 1261
+- Grass Energy id from card DB
+Purpose:
+- tests bulky evolution strategy
+- tests same-turn evolution/stadium reliance if simulator exposes it
+- tests long-game value
+Expected:
+- build if legal; mark complex mechanics unknown if effects cannot be piloted
+
+Portfolio Family 7 — Durant deckout / chaos-control
+candidate_id: portfolio_durant_deckout_carousel_v1
+Core cards from user idea:
+- Durant ex 198
+- Deino 227
+- Zweilous 228
+- Neutralization Zone 1247
+- Slowpoke 162
+- Iron Leaves 27
+- Whimsicott 815
+- Lacey 1199
+- Acerola's Mischief 1228
+- Judge 1213
+- Boss's Orders 1182
+- Darkness Energy id from card DB
+Purpose:
+- tests non-prize win condition
+- tests mill/deckout logic
+- tests stadium/wall/recursion control
+Expected:
+- probably blocked or invalid without a specialized chaos pilot
+- include as diagnostic, but block honestly if smoke/legality fails
+
+Rules:
+- Every deck must be exactly 60 cards.
+- Basic Energy may exceed 4 copies.
+- Non-energy cards must obey 4-copy cap.
+- If a skeleton count is not exactly 60, adjust conservatively and document every change.
+- If an ID is missing or effect unverified, block that deck honestly.
+- Do not invent replacement cards.
+
+Part D — Role taxonomy normalization
+
+Create/update:
+
+docs/CORE_PILOT_ROLE_TAXONOMY.md
+data/experiments/pass27_role_taxonomy.json
+data/experiments/pass27_role_taxonomy.md
+
+Define a cross-deck role vocabulary:
+
+Core Pokémon roles:
+- setup_basic
+- backup_basic
+- primary_basic_attacker
+- primary_evolution_attacker
+- secondary_attacker
+- evolution_mid
+- evolution_payoff
+- ramp_engine
+- draw_engine_pokemon
+- utility_pokemon
+- wall
+- mill_attacker
+- spread_attacker
+- finisher
+
+Trainer / effect roles:
+- search_cards
+- draw_support
+- disruption
+- gust
+- recovery
+- rare_candy
+- stadium_engine
+- tool_damage
+- tool_defense
+- energy_search
+- energy_acceleration
+- switch_or_retreat
+- deck_conservation
+- recursion
+- chaos_payoff
+
+Energy roles:
+- primary_energy
+- secondary_energy
+- splash_energy
+- discard_fuel
+- ramp_fuel
+
+For each deck family, map cards to roles.
+Also record unsupported roles / missing runtime support.
+
+Part E — Playbooks
+
+Create playbooks:
+
+playbooks/pass27_water_pivot_reference.yaml
+playbooks/pass27_dragapult_spread.yaml
+playbooks/pass27_raging_bolt_ogerpon.yaml
+playbooks/pass27_mega_gardevoir_ramp.yaml
+playbooks/pass27_charizard_x_burst.yaml
+playbooks/pass27_mega_venusaur_tank.yaml
+playbooks/pass27_durant_deckout_carousel.yaml
+
+Only write playbooks for decks whose card IDs validate.
+
+Each playbook must include:
+- candidate_id
+- family_id
+- parent if applicable
+- role tags
+- plan priorities
+- search priorities
+- discard safety
+- attach priorities
+- attack priorities
+- supported runtime hooks
+- unsupported mechanics
+- expected generic-pilot risk
+- no_upload: true
+
+Part F — Candidate generation
+
+Build candidates only for decks that validate.
+
+Use the existing compiler pattern:
+- robust deck-selection
+- last-callable entrypoint invariant
+- stdlib-only runtime
+- no root mutation
+- top-level main.py + deck.csv only
+
+Output:
+- experiments/runs_pass27/<candidate_id>/
+- data/submissions/candidates_pass27/<candidate_id>.tar.gz
+- data/experiments/pass27_candidate_manifest.json
+- data/experiments/pass27_candidate_manifest.md
+
+If a deck is blocked:
+- record candidate_id
+- reason
+- missing ids / illegal counts / unsupported pilot / invalid smoke
+- no tarball
+
+Part G — Validation gates and smoke
+
+For every built candidate:
+
+python scripts/validate_candidate_tarball.py <tarball>
+python scripts/validate_candidate_entrypoint.py <tarball>
+
+Run:
+- core competency gate
+- deck-specific fixture gates if available
+- live cabt self-smoke
+- basic head-to-head smoke vs water pivot reference if feasible
+
+Required:
+- no INVALID
+- no ERROR
+- no TIMEOUT
+- finite rewards
+- robust deck-selection
+- top-level tarball only
+
+Output:
+- data/experiments/pass27_candidate_validation.json
+- data/experiments/pass27_candidate_validation.md
+- data/experiments/pass27_live_smoke.json
+- data/experiments/pass27_live_smoke.md
+
+Part H — Deck-specific mini fixture suites
+
+Create fixture plans first; executable reduced fixtures when cheap.
+
+Output:
+- data/fixtures/pass27_portfolio_core/index.yaml
+- data/fixtures/pass27_portfolio_core/*.json or plans
+
+Required fixture families:
+
+1. Aggro / Raging Bolt:
+- attach_color_to_attack_cost
+- prefer_attack_when_lethal_or_pressure
+- do_not_attach_wrong_energy_when_attack_needs_specific_colors
+- bench_ogerpon_as_engine_if_safe
+- do_not_overdraw_when_attack_available
+
+2. Dragapult:
+- prioritize_stage_line_completion
+- attack_with_spread_attacker
+- prefer_spread_target_on_damaged_bench if target resolution exists
+- preserve_dragapult_line_on_discard
+
+3. Gardevoir:
+- bench_wide_before_ramp
+- prefer_ramp_engine_before_big_attack
+- attach_psychic_to_scaling_plan
+- preserve_stage_line
+
+4. Charizard:
+- assemble_basic_stage_mega
+- preserve_energy_engine
+- do_not_fire_all_in_attack_without_lethal if attack damage/effect is observable
+- fire_energy_to_engine_target
+
+5. Venusaur:
+- preserve_tank_line
+- prefer_stadium_engine_if beneficial and supported
+- avoid discarding evolution payoff
+
+6. Durant / chaos:
+- keep_wall_active
+- do_not_evolve_Zweilous_away if deckout plan
+- prioritize_mill_attack_over_prize_attack
+- preserve_stadium_wall
+- recursion_for_mill_piece
+- Mark as plans if runtime cannot support them.
+
+Part I — Internal portfolio league
+
+Run an internal league with all smoke-valid candidates plus references.
+
+Participants:
+- water_family_current_best / league_water_anti_disruption_pivot_v1
+- portfolio_water_pivot_reference if separate
+- portfolio_dragapult_spread_v1 if valid
+- portfolio_raging_bolt_ogerpon_v1 if valid
+- portfolio_mega_gardevoir_ramp_v1 if valid
+- portfolio_charizard_x_burst_v1 if valid
+- portfolio_mega_venusaur_tank_v1 if valid
+- portfolio_durant_deckout_carousel_v1 only if smoke-valid
+- optionally core_pilot_water_v2_runtime as historical anchor
+
+Budget:
+- 3 games/seat for broad league initially
+- 5 games/seat for top pairings if time allows
+- seat-swapped
+- subprocess isolated
+- Replit workflow if needed
+- no upload
+
+Outputs:
+- data/experiments/pass27_portfolio_league.json
+- data/experiments/pass27_portfolio_league.md
+- data/experiments/pass27_portfolio_matrix.csv
+- data/experiments/pass27_portfolio_rankings.json
+- data/experiments/pass27_portfolio_rankings.md
+
+Metrics:
+- win/loss/draw
+- adjusted win rate
+- Wilson CI
+- invalid/crash/timeout
+- average steps
+- deckout losses
+- no-pokemon losses
+- first attack turn if measurable
+- attack rate
+- attach rate
+- evolution rate
+- bench development
+- deck/pilot compatibility label
+
+Labels:
+- compatible
+- promising_but_needs_rules
+- legal_but_poor
+- invalid_or_unpilotable
+- high_complexity_blocked
+- chaos_requires_special_pilot
+
+Part J — Core gameplay gap analysis
+
+Create:
+
+data/experiments/pass27_core_gameplay_gap_analysis.json
+data/experiments/pass27_core_gameplay_gap_analysis.md
+
+Analyze across decks:
+
+Core competencies:
+1. setup active choice
+2. bench development
+3. color-matched energy attachment
+4. attack pressure / avoid passivity
+5. evolution sequencing
+6. search target planning
+7. discard safety
+8. deck conservation
+9. prize-race awareness
+10. retreat/switch awareness
+11. recovery/recursion
+12. spread/bench target planning
+13. mill/deckout win condition
+14. combo/ramp sequencing
+15. lethal counting / all-in attack timing
+
+For each:
+- which deck exposed it
+- evidence from fixtures / league / smoke
+- whether current core pilot supports it
+- whether role taxonomy supports it
+- whether runtime hook exists
+- recommended implementation priority
+- whether it is deck-agnostic or deck-specific
+
+Part K — Strategy decision
+
+Create:
+- data/experiments/pass27_strategy_decision.json
+- data/experiments/pass27_strategy_decision.md
+
+Decision labels:
+- keep_water_control
+- build_aggro_core_rules_next
+- build_spread_targeting_next
+- build_ramp_core_rules_next
+- build_chaos_special_pilot_next
+- expand_deck_portfolio
+- run_larger_league
+- future_kaggle_probe_candidate
+- no_action
+
+Rules:
+- No upload.
+- Do not recommend Kaggle probe unless a candidate is smoke-valid, validator-passing, and clearly useful as a calibration point.
+- Since the user wants more decks before refining one, likely decision should be one of:
+  - build_aggro_core_rules_next
+  - expand_deck_portfolio
+  - build_spread_targeting_next
+  - build_chaos_special_pilot_next
+- Keep Water as current live reference unless evidence strongly contradicts it.
+
+Part L — ActiveGraph events
+
+Emit:
+- StrategyFamilyRegistered for each family
+- StrategyHypothesisLogged for each deck family
+- StrategyIterationCreated for each built candidate
+- StrategyFixtureAdded for fixture families/plans
+- LocalEvaluationFinished for league
+- StrategyIterationEvaluated for each participant
+- StrategyDecisionRecorded
+- ReportSiteGenerated
+
+All events:
+- no_upload: true
+- source pass27
+- candidate_id/family_id
+- parent_id where relevant
+- deck diff / role diff / hook diff
+- validation status
+- league status
+
+Part M — Reports and docs
+
+Update:
+- docs/PTCG_STRATEGY_CANVAS.md
+- docs/CORE_PILOT_ROLE_TAXONOMY.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- data/reports/pass27_multi_archetype_portfolio_report.md
+
+Include:
+- live score state
+- deck portfolio
+- blocked decks
+- role taxonomy
+- candidate validation
+- internal league
+- core gameplay gap analysis
+- strategy decision
+- no-upload note
+- explicit caveat: internal league is not Kaggle and not a promotion signal
+
+Part N — Tests
+
+Add/update tests for:
+- all deck IDs validate against EN_Card_Data.csv
+- no invented IDs
+- 60-card deck legality / copy caps
+- Basic Energy unlimited
+- role taxonomy required fields
+- playbooks use normalized role names
+- candidate tarballs top-level only
+- entrypoint validator passes for built eligible candidates
+- blocked decks do not enter league
+- Durant/chaos is blocked unless smoke-valid
+- internal league has is_kaggle_leaderboard false
+- no upload flag remains false / no_upload true
+- root files unchanged
+- reports include internal/surrogate caveat
+- Raging Bolt exposes color-matching or aggro gap if still poor
+- Dragapult exposes spread-targeting gap if spread metrics missing
+- chaos deck cannot be promoted without special pilot
+
+Run targeted tests.
+Run broader tests if feasible.
+
+Part O — Final report
+
+Report exactly:
+
+ActiveGraph Pass 27 Multi-Archetype Core Gameplay Portfolio Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Live score state
+- live_score_leader:
+- water_family_current_best:
+- score drift:
+- conclusion:
+
+3. Portfolio registry
+- families registered:
+- decks valid:
+- decks blocked:
+- no invented IDs:
+- role taxonomy path:
+
+4. Candidates
+- candidates built:
+- candidates blocked:
+- tarballs:
+- runtime hooks:
+- deck diffs:
+
+5. Validation / smoke
+- tarball validators:
+- entrypoint validators:
+- smoke-valid:
+- invalid/crash/timeout:
+- blocked from league:
+
+6. Internal league
+- participants:
+- games per seat:
+- top deck:
+- worst deck:
+- compatibility labels:
+- caveat:
+
+7. Core gameplay gaps
+- aggro/color-energy:
+- spread targeting:
+- evolution sequencing:
+- ramp/combo:
+- deckout/chaos:
+- deck conservation:
+- highest-priority generic gap:
+
+8. Strategy decision
+- decision:
+- next core rule family:
+- next deck family:
+- keep Water control:
+- reason:
+
+9. Report site / ActiveGraph
+- site path:
+- markdown report:
+- events emitted:
+- event store:
+
+10. Next recommendation
+- one sentence only.

@@ -1,0 +1,25 @@
+{
+  "family": "durant_chaos",
+  "deck": "league_durant_deckout_carousel",
+  "pass": "27",
+  "no_upload": true,
+  "blocked_from_league": true,
+  "assertions": [
+    {"id": "keep_wall_active", "executable": false, "status": "plan",
+     "expect": "keep a wall (Zweilous/Slowpoke) active to stall while milling",
+     "blocked_by": "no stall/wall-maintenance objective; pilot trades into KOs"},
+    {"id": "do_not_evolve_Zweilous_away_if_deckout_plan", "executable": false, "status": "plan",
+     "expect": "keep Zweilous as wall rather than evolving it away when the plan is deckout",
+     "blocked_by": "no deckout-plan awareness"},
+    {"id": "prioritize_mill_attack_over_prize_attack", "executable": false, "status": "plan",
+     "expect": "use Durant ex mill attack instead of racing prizes",
+     "blocked_by": "NO mill/deckout win condition; pilot races prizes (smoke = INVALID)"},
+    {"id": "preserve_stadium_wall", "executable": false, "status": "plan",
+     "expect": "keep Neutralization Zone in play as the control piece",
+     "blocked_by": "no stadium-lock objective"},
+    {"id": "recursion_for_mill_piece", "executable": false, "status": "plan",
+     "expect": "recur mill/control pieces (Acerola's Mischief) to sustain the loop",
+     "blocked_by": "no recursion-loop planning"}
+  ],
+  "league_evidence": "EXCLUDED from league; Part-G smoke = INVALID. Confirms deckout/chaos needs a SPECIAL pilot."
+}

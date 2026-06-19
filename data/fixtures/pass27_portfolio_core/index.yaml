@@ -1,0 +1,51 @@
+# ActiveGraph Pass 27 (Part H) — portfolio core fixture suites. LOCAL ONLY.
+#
+# These fixtures encode the per-archetype competencies the SAME generic core
+# pilot must demonstrate. Most are recorded as PLANS rather than executable
+# assertions: the current runtime exposes legal-action selection but NOT the
+# fine-grained observation hooks (bench-damage targets, energy-colour planning,
+# lethal counting, deckout state) these behaviours require. A fixture is marked
+# `executable: true` only when it can be checked cheaply against the deck
+# registry / role taxonomy without those missing hooks; otherwise it is a
+# `plan` documenting the assertion and WHY it cannot run yet.
+#
+# No upload, no Kaggle, no root edits. Status feeds the Part-J gap analysis.
+
+schema: activegraph.pass27.portfolio_fixtures/v1
+pass: "27"
+upload_performed: false
+no_upload: true
+
+runtime_support_note: >
+  The generic core pilot chooses among legal actions but lacks runtime hooks for:
+  spread/bench target resolution, colour-matched energy planning, energy-ramp
+  accumulation, lethal counting / all-in timing, and deckout/mill win conditions.
+  Fixtures that depend on those hooks are PLANS until the hooks exist.
+
+families:
+  - id: aggro_raging_bolt
+    deck: league_raging_bolt_ogerpon
+    file: aggro_raging_bolt.json
+    competencies: [color_matched_energy_attachment, attack_pressure,
+                   basic_aggro_sequencing, discard_safety]
+  - id: dragapult_spread
+    deck: league_dragapult_spread
+    file: dragapult_spread.json
+    competencies: [evolution_sequencing, spread_target_planning, discard_safety]
+  - id: gardevoir_ramp
+    deck: league_mega_gardevoir_psychic_ramp
+    file: gardevoir_ramp.json
+    competencies: [bench_development, ramp_sequencing, evolution_sequencing]
+  - id: charizard_burst
+    deck: league_mega_charizard_x_burst
+    file: charizard_burst.json
+    competencies: [combo_ramp_sequencing, lethal_counting, energy_engine_preservation]
+  - id: venusaur_tank
+    deck: league_mega_venusaur_tank
+    file: venusaur_tank.json
+    competencies: [evolution_sequencing, stadium_engine, discard_safety]
+  - id: durant_chaos
+    deck: league_durant_deckout_carousel
+    file: durant_chaos.json
+    blocked_from_league: true
+    competencies: [mill_deckout_win_condition, stadium_wall, recursion]

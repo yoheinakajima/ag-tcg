@@ -1,357 +1,39 @@
-# ActiveGraph — Pokémon TCG Strategy Canvas (Pass 18 → 24)
+# PTCG Strategy Canvas
 
-> **CURRENT AUTHORITATIVE STATE (Pass 24).** READ-ONLY post-mortem of the Pass-23
-> probe. A fresh read-only Kaggle status refresh shows the candidate
-> `league_water_anti_disruption_pivot_v1` is now the **highest live score @ 520.8**
-> (+157.8 over the prior control `submission.tar.gz` @ 363.0; `league_water_core_reference`
-> drifted 298.7 → 268.2). Ingested 3 new replays (80623232, 80622745, 80622626; raw
-> replays stay gitignored). **The targeted empty-board / no-Pokémon failure mode did NOT
-> recur in any game:** 80623232 lost with active=1 + bench=1 present (Mega Abomasnow ex
-> KO'd for a 3-prize swing vs **Fighting Mega Lucario ex / Hariyama**), and the 80622626
-> mirror loser **decked out at turn ~42 with a healthy bench=4**; 80622745 was a **win** vs
-> **Psychic Alakazam / Dudunsparce**. Grok's result/turn/archetype claims were correct
-> (3/3 each) but its **empty-board claims were WRONG in all 3** — trust replay, not Grok.
-> Hook-effectiveness (inferred from board trajectory): no illegal Mega-723-from-hand
-> benching; board developed in every game. **Decision: keep the pivot as live control**
-> (highest score AND fixed failure did not recur); new seams to investigate next pass are
-> anti-Fighting-ex tempo and grindy-mirror deckout. **No Kaggle upload/submit; no GitHub
-> push; no new candidates; root `main.py`/`deck.csv` byte-identical to baseline.** See
-> `data/reports/pass24_anti_disruption_pivot_replay_report.md`.
+> Living strategy canvas. Updated through Pass 27.
 
-> **CURRENT AUTHORITATIVE STATE (Pass 23).** Single **human-approved live Kaggle
-> calibration probe** of the Pass-22 candidate `league_water_anti_disruption_pivot_v1`,
-> submitted **exactly once** after all gates passed (root immutability; preflight 11/11;
-> tarball + entrypoint validators; default core gate 13 pass/1 advisory/0 hard-fail;
-> pass22 board-safety 9/9; live cabt smoke DONE — INVALID/ERROR/TIMEOUT 0). Upload result:
-> "Successfully submitted…"; status **pending** (no score yet). **NOT a promotion claim** —
-> one calibration point only. **Stale-score caveat:** fresh listing shows no 420.8 entry;
-> actual highest complete is `submission.tar.gz` @ 363.0 — recompute control each pass.
-> No second upload regardless of outcome; no GitHub push; root files byte-identical to
-> baseline. See `data/reports/pass23_water_anti_disruption_kaggle_probe_report.md`.
+_The internal league is a LOCAL surrogate (our own decks, one generic core pilot, subprocess-isolated, seat-swapped). It is NOT the Kaggle leaderboard and is NOT a promotion signal._
 
-> **CURRENT AUTHORITATIVE STATE (Pass 22).** Built **one** narrow candidate
-> `league_water_anti_disruption_pivot_v1` to address the Pass-21 seam (lack of an
-> anti-disruption pivot). Forensics on 16 of our seat's episodes: **8 of 9 losses are
-> `no_pokemon_in_play`**; the dominant root cause (5/8) is **`held_backup_basic_but_never_benched`**
-> — a benchable Kyogre/Snover sat in hand while the bench was empty. Required loss 80592831 is
-> present; **80594000 is ABSENT (recorded missing, not fabricated)**. Three narrow, flag-gated
-> hooks added on the **byte-identical** v2 deck: ctx0 `emergency_backup_bench` (never over an
-> attack, never the non-benchable Mega 723), ctx7 `anti_disruption_search_pivot`, ctx8
-> `preserve_backup_basic_on_discard`. **9/9** board-safety fixtures PASS; tarball+entrypoint+live
-> smoke PASS; default core gate 13 pass/1 advisory/0 hard-fail. Decision replay on the **real**
-> loss windows: **75** empty-bench windows, **5** legal corrections where the reference orphaned
-> the active, every choice a single legal index. Surrogate focused eval is **directional only**
-> (0.74 candidate vs 0.5 reference, tiny sample) and **does not** measure the hooks' intended benefit, so the
-> decision is **do NOT promote / do NOT upload**; live control stays `league_water_core_reference`
-> @ 420.8. **No Kaggle upload/submit; no GitHub push; root `main.py`/`deck.csv` unchanged.** See
-> `data/reports/pass22_water_anti_disruption_report.md`.
+## Current live reference (Kaggle)
 
-> **CURRENT AUTHORITATIVE STATE (Pass 21).** Five new ladder replays ingested (9 → 14); the
-> `league_water_core_reference` seat post-mortemed. The Pass-20 probe **resolved from `pending`
-> to `complete` @ public 420.8**, making the Water reference the **new live active control**
-> (above `combo_full_safety_v3_fixed` @ 391.1, which fails the entrypoint validator). New-replay
-> record (excl. self-mirror) **1W/3L**: win vs Roman Tamrazov (fighting Mega Lucario/Hariyama ex);
-> losses to Latitu (grass Crustle **+ Crushing Hammer** energy denial), Leopard Jaguar (no-bench
-> fast loss), Kazato (Dipplin toolbox grind). Main failure = **lack of anti-disruption pivot**;
-> stuck-on-basic-Snover is correlated but **not decisive** (won while stuck; lost after evolving).
-> Decision = **`build_water_anti_disruption`** (no auto-promote; Water stays live control).
-> **No Kaggle upload/submit; no GitHub push; root `main.py`/`deck.csv` unchanged; no new candidate
-> built.** Replay evidence is trusted over Grok summaries. See
-> `data/reports/pass21_water_reference_replay_analysis_report.md`.
+- live_score_leader: `league_water_anti_disruption_pivot_v1.tar.gz` @ 376.5
+- water_family_current_best: `league_water_anti_disruption_pivot_v1.tar.gz` @ 376.5
+- distinction preserved: True
 
-> **CURRENT AUTHORITATIVE STATE (Pass 20).** A single **HUMAN-APPROVED live calibration
-> probe** of `league_water_core_reference` (clean Water reference; Pass-17 internal-league
-> top, 23-7-0 adj 0.767) was submitted to Kaggle **exactly once** after every gate passed
-> (root immutability, tarball+entrypoint validators, preflight, core-competency gate, live
-> cabt smoke). This is **NOT a promotion claim**; post-upload status is **pending**. Live
-> active control = `combo_full_safety_v3_fixed` @ **391.1** (recomputed from the live
-> listing). No GitHub push; root `main.py`/`deck.csv` unchanged. See
-> `data/reports/pass20_water_reference_kaggle_probe_report.md`.
+## Pass 27 — multi-archetype portfolio
 
-> **CURRENT AUTHORITATIVE STATE (Pass 19).** Dragapult decision = `needs_more_h2h`;
-> `current_best` stays the **parent** `league_dragapult_spread` (v1 strictly better than
-> parent = **false**); the parent H2H is **unstable** across samples; **no upload, no
-> submit**. The Pass-18 sections below are retained as history — see the "Pass 19" part at
-> the bottom for the resolved analysis.
+The generic core pilot was applied unchanged across 7 archetypes to find where it breaks. Internal league standings (surrogate, not Kaggle):
 
-> **LOCAL ONLY.** Nothing in this pass is uploaded to Kaggle or pushed to GitHub.
-> The internal deck league is **not** a Kaggle leaderboard and its win rates do
-> **not** predict Kaggle results — opponents are our own decks piloted by the same
-> generic core pilot. The meta sanity check is **surrogate-based and directional
-> only**: replay-derived opponents are deck lists piloted by a generic surrogate,
-> not real opponent policies. Card ids are validated against
-> `data/cards/EN_Card_Data.csv` (gitignored, never committed). No invented ids.
-
-## 1. Purpose
-
-Pass 18 turns the loose collection of decks from Pass 17 into a **formal strategy
-family registry** with explicit iteration tracking, and runs one **targeted
-playbook iteration** end to end (Dragapult spread `v1`). The question this pass
-answers is process-level: *can we register a family, form a hypothesis, build a
-minimally-refined candidate, gate it, league it, sanity-check it against the
-replay meta, and record an honest decision — without overbuilding and without
-touching the immutable root agent?*
-
-## 2. The pilot model (unchanged from Pass 17)
-
-- **Generic core pilot.** One brain. Generic competence comes from
-  mechanics/score evaluation in the base agent, not hand-tuned per-card logic.
-- **Playbooks add roles, not rules.** A playbook tags each card and expresses
-  light preferences (what to put active, what to search, what to discard). It
-  never hard-codes a scripted line.
-- **Runtime contexts** decide which decision seams the pilot refines. The
-  Dragapult `v1` refinement only adds *role recognition* (`search_cards`,
-  `draw_support`) at existing seams; it adds no new override and no aggro hook.
-- **Broad Main stays delegated** to the base policy.
-
-## 3. Strategy family registry
-
-Five families are registered in `experiments/strategy_families.yaml` (source of
-truth → `data/experiments/pass18_strategy_family_registry.{json,md}`):
-
-| Family | Status (after Pass 18) | Current best | League |
+| rank | deck | adj win rate | record |
 |---|---|---|---|
-| `water_kyogre_abomasnow` | active_reference | `league_water_core_reference` | ✅ benchmark |
-| `dragapult_spread` | promising_research | `league_dragapult_spread_v1` | ✅ candidate |
-| `raging_bolt_ogerpon` | backlog | `league_raging_bolt_ogerpon` | ✅ carried unchanged |
-| `durant_deckout_carousel` | chaos_research_blocked | — | ⛔ excluded (chaos-research-only) |
-| `future_high_ceiling_evolution` | backlog | — | not evaluated |
+| 1 | league_water_core_reference | 0.8286 | 29-6-1 |
+| 2 | core_pilot_water_v2_runtime | 0.7429 | 26-9-1 |
+| 3 | league_dragapult_spread | 0.7059 | 24-10-2 |
+| 4 | league_mega_charizard_x_burst | 0.5312 | 17-15-4 |
+| 5 | league_mega_venusaur_tank | 0.5 | 13-13-10 |
+| 6 | league_mega_gardevoir_psychic_ramp | 0.1944 | 7-29-0 |
+| 7 | league_raging_bolt_ogerpon | 0.0 | 0-34-2 |
 
-> Note on `current_best`: the columns above reflect the **post-decision** state
-> (Part M promoted `v1`). The registry JSON was generated in Part B *before* the
-> iteration existed, so its stored `current_best` for `dragapult_spread` still
-> points at the parent — an intentional registration-time snapshot, not a contradiction.
+## Open core-pilot gaps (priority order)
 
-## 4. The Pass-18 iteration: `dragapult_spread_v1`
+- **color-matched energy attachment** (deck-agnostic, highest)
+- **spread/bench target planning** (deck-specific, high)
+- **combo/ramp sequencing** (deck-agnostic, high)
+- **lethal counting / all-in attack timing** (deck-agnostic, high)
+- **prize-race awareness** (deck-specific, medium)
+- **mill/deckout win condition** (deck-specific, medium)
+- **recovery/recursion** (deck-specific, low)
 
-- **Hypothesis.** The Dragapult Stage-2 spread/control shell is compatible with
-  the generic pilot for setup/search/draw but under-uses its search and draw
-  support. Light role tags should *hold or modestly improve* its internal result
-  without modelling spread-damage placement.
-- **Change.** `playbooks/pass18_dragapult_spread_v1.yaml` adds `search_cards` /
-  `draw_support` role recognition only. Deck list is unchanged from the parent;
-  no invented ids.
-- **Fixtures.** `data/fixtures/pass18_dragapult_spread/` (5 targeted fixtures),
-  all passing, on top of the shared `core_competency` set.
+## Next move
 
-## 5. Eligibility gate (Part J)
-
-The core-competency fixture `06_evolve_when_line_ready` is a **hard failure for
-both `v1` and its parent** (it wants a Water-line card `723` that the Dragapult
-playbook legitimately does not tag). Eligibility therefore uses a
-**no-regression-vs-parent** rule on the core set plus an **absolute pass** on the
-targeted set:
-
-- core fixtures: `v1` 12/14 **==** parent 12/14 (no regression) ✅
-- targeted fixtures: 5/5 ✅
-- tarball + entrypoint validators ✅, live smoke clean ✅
-
-→ `league_dragapult_spread_v1` is **league-eligible**.
-
-## 6. Internal league (Part K)
-
-Round-robin, 5 games/seat (seat-swapped), Durant excluded. Engine isolation via a
-batched subprocess worker (memory isolation + real timeouts).
-
-| # | deck | role | W-L-D | adj win rate |
-|---|---|---|---|---|
-| 1 | `league_dragapult_spread_v1` | pass18_candidate | 28-12-0 | 0.700 |
-| 2 | `league_dragapult_spread` | parent_for_comparison | 27-13-0 | 0.675 |
-| 3 | `league_water_core_reference` | stable_benchmark | 25-15-0 | 0.625 |
-| 4 | `core_pilot_water_v2_runtime` | historical_reference | 19-21-0 | 0.475 |
-| 5 | `league_raging_bolt_ogerpon` | carried_unchanged | 1-39-0 | 0.025 |
-
-**Critical nuance:** `v1` ranks #1 on aggregate but **loses the direct
-head-to-head vs its parent (0.3 for `v1`)**. Its aggregate edge comes from beating
-the weaker field harder, not from beating the parent.
-
-## 7. Meta sanity check (Part L)
-
-Our decks vs the Pass-13 replay-derived subfamilies, each piloted by the generic
-surrogate. Directional only.
-
-- `league_dragapult_spread_v1` weighted meta score **0.747**, no collapse against
-  any subfamily.
-- `league_water_core_reference` weighted **0.580**.
-- Sanity verdict: **passed** (no collapse < 10%, candidate does not trail Water).
-
-## 8. Decisions (Part M)
-
-- **Dragapult:** promote `v1` to **local research lead** — with the explicit
-  caveat about the parent head-to-head loss. **Dry-run only; no upload.**
-- **Water:** keep as the stable benchmark, unchanged.
-- **Raging Bolt:** defer rescue. The league confirms the Part-D diagnosis — the
-  0-for failure is **deck/structural**, not an energy-color or attack-first pilot
-  gap (correct energy is attached and attacks are taken). Revisit only via
-  deck-strength changes or supporter sequencing.
-- **Durant:** chaos-research-only, excluded from the league (INVALID smoke).
-- **Future high-ceiling evolution:** backlog, not evaluated.
-
-## 9. Honest limits
-
-The league is local only and not a Kaggle leaderboard; the meta check is
-surrogate and directional. Neither equals a Kaggle result and neither is
-sufficient to upload or submit. The Dragapult `v1` lead is an **internal research
-lead**, not a competitive-strength or leaderboard claim.
-
-## 10. Guardrails honored
-
-No Kaggle upload/submit; no GitHub push; root `main.py`/`deck.csv` byte-identical
-to v1; no invented card ids; tarballs are top-level `main.py` + `deck.csv` only;
-Durant excluded from the league; all no-upload flags `false`.
-
----
-
-# Pass 19 — Dragapult Parent/Child Forensics + Portfolio Loop
-
-> Same LOCAL-ONLY guardrails as above. The internal league is **not** a Kaggle
-> leaderboard; the meta sanity check is **surrogate and directional only**.
-
-## P19.1 The question
-Pass 18 left a paradox: the child `league_dragapult_spread_v1` **won the aggregate
-league (0.700)** yet **lost the direct head-to-head vs its parent (~0.3)**. Pass 19
-asks *why* — mechanistically — and whether that justifies any refinement.
-
-## P19.2 The entire parent/child delta
-Deck **byte-identical**. The two `main.py` files differ only by the override comment
-and **two added role aliases**: `search_cards = [1121, 1086]` and
-`draw_support = [1224, 1231]` (ids already tagged `search`/`draw`). They wake two
-dormant scoring branches:
-- `score_search_target` **+5** for `search_cards` — mild over-search bias, **inert**
-  in the replay (changed no decision);
-- `score_discard_candidate` **+10** for `draw_support` — the **active** culprit: the
-  child discards its own draw engine more readily.
-
-## P19.3 Forensic trace (Part D)
-20 games (10/seat, seat-swapped): parent **13–7** (child 0.35), 0 invalid/timeout,
-avg 107.5 steps. Decision-replay over 9 shared contexts: **2 diverged, both on the
-probe contexts; 0 control divergences** — the child differs from the parent *only*
-where the two aliases fire.
-
-## P19.4 Justified diagnostic builds (Part F)
-- `league_dragapult_v1_search_only` — **targeted revert**: drops `draw_support`
-  (matches the parent: keeps the draw engine).
-- `league_dragapult_v1_draw_only` — **diagnostic**: keeps only `draw_support`
-  (matches the child: discards the draw engine).
-The redundant H2H-guard variant was **not** built (it duplicates `search_only`).
-
-## P19.5 Fixtures + validation (Parts G–H)
-Key discriminator `dp19_04_preserve_draw_engine_in_discard`: **parent & search_only
-PASS**, **child & draw_only FAIL**. Both candidates pass tarball + entrypoint
-validators and live smoke; every Dragapult-family deck scores 12/14 (1 hard fail) on
-the generic core gate, so candidates are judged for **no regression vs the parent
-baseline** — which both satisfy.
-
-## P19.6 Mini-league (Part I) — the pivotal finding
-300 games, 6 participants (Durant excluded), 0 invalid/timeout. `search_only` ranks
-**#1 aggregate (0.556)**, parent #3 (0.526), child #4 (0.495). But the child-vs-parent
-H2H **flips sign between samples** (trace 0.35 → league 0.588) and **all aggregate CIs
-overlap the parent's**. The mechanistic delta is real but **below the variance floor**
-at 20 games/side: the original "H2H loss" does not reproduce.
-
-## P19.7 Meta sanity (Part J — surrogate, directional)
-Parent/child/search_only/Water vs Pass-13 subfamilies, 3/seat: **no collapses**.
-Weighted: search_only 0.827, parent 0.767, Water 0.700, child 0.687. Directional only.
-
-## P19.8 Decision (Part K)
-**`needs_more_h2h`** (secondary `candidate_for_deeper_confirmation`). `current_best`
-stays the **parent**; `v1 strictly better: false`. `search_only` is the deeper-
-confirmation candidate. **No upload, no submission.** Next: a large fixed-seed
-parent-vs-{child, search_only} H2H (≥200 games/side, one worker).
-
-## P19.9 Honest limits
-Internal league ≠ Kaggle leaderboard; meta sanity is surrogate/directional. Neither
-equals a Kaggle result or justifies an upload.
-
-## P19.10 Guardrails honored
-No Kaggle upload/submit; no GitHub push; root `main.py`/`deck.csv` byte-identical to
-v1; no invented card ids; tarballs are top-level `main.py` + `deck.csv` only; Durant
-excluded; all no-upload flags `false`.
-
----
-
-# Pass 25 — Water live-control hardening
-
-## P25.0 Drift finding (Part B)
-Read-only Kaggle refresh: the Pass-24 pivot reading of **520.8 settled to 358.7**
-(−162.1) — the +157 "lead" was an **early-episode artifact**. Live best is
-`submission.tar.gz` @ **363.0**; pivot Δ −4.3 (within noise). The family is
-statistically tied, so the sprint is well-motivated but the bar for a live-control
-change is **raised**, not lowered.
-
-## P25.1 Loss seams (Part C)
-Two evidence-grounded seams from 3 attributed replays: **80623232** Fighting/Mega-
-Lucario **prize-liability tempo loss** (Mega KO → multi-prize swing, healthy board,
-we took 0 prizes) and **80622626** mirror **grind-deckout** (deck=0, bench=4 full
-board, 16 forced searches). **80622745** is the positive-control **win** (opp
-deckout). Proven: ctx7 low-deck search is forced (`min==max==1`, no legal decline);
-**ctx38 appears ~1×/game → a draw-count clamp has no replay grounding**.
-
-## P25.2 Fixtures (Part D)
-10 fixtures: prize-liability `plv_01–04`, deckout `dko_01–05`, positive-control
-`pc_01`. No invented IDs. **Honest caveat: `plv_02/03/04` PASS on the control too —
-only `plv_01` is a genuine delta** (the base already fetches the 1-prize attacker).
-
-## P25.3 Candidates (Parts E/F)
-Three single-delta candidates over the byte-identical proven Water v2 base (deck=60):
-`deckout_guard_v1` (ctx38 clamp), `prize_liability_guard_v1` (flag-gated ctx7 pivot),
-`hybrid_guard_v1` (both). A **recovery** angle (real IDs 1097/1129) **validated but
-BLOCKED pre-build** — no runtime play hook → deck dilution.
-
-## P25.4 Validation + smoke (Part G)
-All three **ELIGIBLE**: validators PASS (60-card, callable `core_pilot_agent`); core
-gate 13/0/1; board-safety 9/0/0; new hardening gate 0 applicable hard-fails; live
-smoke clean self/control/fighting/mirror (no INVALID/ERROR/TIMEOUT).
-
-## P25.5 Decision replay (Part H) — the pivotal finding
-**262 analysed-seat decisions across 3 episodes; ALL candidates: changed=0, on_seam=0,
-misfires=0, illegal=0, positive-control preserved.** The deckout clamp had **zero
-applicable ctx38 decisions** on our seat; the prize pivot's fire-condition was **never
-met**. The hooks are provably safe & narrow but **inert on the real seams**.
-
-## P25.6 Focused eval (Part I — surrogate, directional)
-All games clean. **No candidate clears the bar.** H2H-vs-control: deckout 0.50, prize
-0.65, hybrid 0.40 — all Wilson intervals straddle 0.5. Seam agg: control **0.75**;
-deckout 0.65 (−0.10), prize 0.60 (−0.15), hybrid 0.65 (−0.10) — **no material gain**.
-Deep board metrics **NOT_MEASURED** (opaque cabt blob). Directional only.
-
-## P25.7 Decision (Part J)
-**`keep_current_control`** for all three (secondary `inert_no_measurable_effect_on_
-real_seams`). `current_best` stays `league_water_anti_disruption_pivot_v1`. No
-candidate clears `future_kaggle_probe` (needs eligible + pos-ctrl + non-negative H2H +
-**material seam gain ≥ +0.08 backed by an on-seam behaviour delta**). **No upload, no
-submit, no push.**
-
-## P25.8 Honest limits
-Surrogate eval ≠ Kaggle; deep board metrics unmeasurable from the opaque board blob;
-the decision rests on the **behavioural replay**, not the surrogate win-rates. Neither
-justifies an upload.
-
-## P25.9 Guardrails honored
-No Kaggle upload/submit; no GitHub push; root `main.py`/`deck.csv` byte-identical; no
-invented card ids; tarballs top-level `main.py`+`deck.csv` only; all Pass-25
-build/eval/decision event `no_upload` flags true (the shared read-only Part-B
-score-refresh events perform no upload by construction).
-
----
-
-## Pass 26 — Replay Action Opportunity Mining (read-only, local-only)
-
-> **CURRENT STATE (Pass 26).** Read-only mining of the real Water replay corpus.
-> No Kaggle upload/submit, no GitHub push, root immutable, no invented ids.
-
-- **Live score distinction (preserved):** `live_score_leader` and
-  `water_family_current_best` both resolve to
-  `league_water_anti_disruption_pivot_v1` @ 376.5 this refresh, but remain
-  distinct fields with distinct rules (the Water pivot drifted up and overtook
-  the previous leader; never auto-overwritten).
-- **Mining:** 1533 our-seat decisions, 17662 options, unresolved 2.72%.
-  Resolver fix: option `index` = hand position; type7=play, type8=attach,
-  type14=end, attackId=attack. Mega Abomasnow ex (723) never a Basic.
-- **Pass-25 inert-hook lesson:** guards were inert by **predicate-fail /
-  hidden-target**, not absence (deckout clamp bites at deck ≤ 8 but ctx38 fires
-  at deck = 47; search targets hidden in deck; discard-preserve never violated).
-- **8 opportunity classes → none pass the Part-G trigger gate.** No fixtures, no
-  candidates, no tarballs.
-- **Decision: `no_build_no_trigger`** — keep the current Water control; build,
-  upload, push, and future-probe all declined honestly.
+`build_aggro_core_rules_next` — color-matched energy attachment; then `expand_deck_portfolio`. Keep Water as the live reference.

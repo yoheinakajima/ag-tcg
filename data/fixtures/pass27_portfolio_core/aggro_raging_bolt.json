@@ -1,0 +1,24 @@
+{
+  "family": "aggro_raging_bolt",
+  "deck": "league_raging_bolt_ogerpon",
+  "pass": "27",
+  "no_upload": true,
+  "assertions": [
+    {"id": "attach_color_to_attack_cost", "executable": false, "status": "plan",
+     "expect": "attach the energy colour the active's attack actually requires (F/L/G) before ending turn",
+     "blocked_by": "no runtime hook exposing per-attack colour requirements"},
+    {"id": "prefer_attack_when_lethal_or_pressure", "executable": false, "status": "plan",
+     "expect": "if an attack is available and applies pressure/lethal, attack rather than pass",
+     "blocked_by": "no lethal/pressure observation; pilot cannot rank attack vs pass by value"},
+    {"id": "do_not_attach_wrong_energy_when_attack_needs_specific_colors", "executable": false, "status": "plan",
+     "expect": "never attach off-colour energy when a colour-specific cost is unmet",
+     "blocked_by": "no colour-matching planner; attaches greedily"},
+    {"id": "bench_ogerpon_as_engine_if_safe", "executable": false, "status": "plan",
+     "expect": "develop Teal Mask Ogerpon ex on bench as an engine when it is safe",
+     "blocked_by": "no role-aware bench-development planning"},
+    {"id": "do_not_overdraw_when_attack_available", "executable": false, "status": "plan",
+     "expect": "avoid burning draw supporters when a value attack is already available",
+     "blocked_by": "no attack-vs-draw value comparison"}
+  ],
+  "league_evidence": "0-34-2 (adj win rate 0.0) — confirms basic-aggro/colour-energy gap is live."
+}

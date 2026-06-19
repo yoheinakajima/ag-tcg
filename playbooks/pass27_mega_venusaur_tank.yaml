@@ -1,0 +1,75 @@
+# ActiveGraph Pass 27 — Mega Venusaur ex bulky Grass tank (Stage 2 evolution tank).
+#
+# Evolution tank deck: Bulbasaur -> Ivysaur -> Mega Venusaur ex with Rare Candy
+# acceleration, a Forest of Vitality stadium and a heavy Grass energy base. Tests
+# the generic pilot's evolution sequencing AND a sustain/tank tempo (surviving to
+# out-value the opponent rather than racing). All ids confirmed in
+# data/cards/EN_Card_Data.csv (gitignored, never committed). No invented ids.
+
+deck_id: league_mega_venusaur_tank
+based_on: generic_core_pilot
+schema: activegraph.playbook.core_pilot/v1
+
+cards:
+  650: Bulbasaur
+  651: Ivysaur
+  652: Mega Venusaur ex
+  1261: Forest of Vitality
+  1079: Rare Candy
+  1121: Ultra Ball
+  1086: Buddy-Buddy Poffin
+  1182: Boss's Orders
+  1097: Night Stretcher
+  1231: Dawn
+  1224: Cheren
+  1199: Lacey
+  1: Basic {G} Energy
+
+roles:
+  basic_energy: [1]
+  setup_basic: [650]
+  evolution_mid: [651]
+  evolution_payoff: [652]
+  evolution_accel: [1079]
+  stadium: [1261]
+  search: [1121, 1086]
+  draw: [1231, 1224, 1199]
+  energy: [1]
+  disruption: [1182]
+  recovery: [1097]
+
+plan:
+  primary_plan: mega_venusaur_tank
+  secondary_plan: grass_sustain_tempo
+  avoid_plans: [deckout, orphan_evolution, overextend_bench]
+
+role_weights:
+  active_prefers: [evolution_payoff, setup_basic]
+  bench_prefers: [setup_basic, evolution_mid, evolution_payoff]
+  attach_prefers: [active_attacker, next_attacker]
+  search_prefers: missing_evolution_piece
+  discard_prefers: [surplus_basic_energy]
+  preserve_only:
+    - setup_basic
+    - evolution_mid
+    - evolution_payoff_when_setup_exists
+
+deckout_guard_thresholds:
+  penalize: 8
+  heavy: 4
+  critical: 2
+
+deck_specific_constraints:
+  - Keep at least one Bulbasaur (setup_basic) so Mega Venusaur ex is never orphaned.
+  - Prefer Rare Candy onto Bulbasaur to jump to Mega Venusaur ex once the basic is established.
+  - Keep Forest of Vitality down to support the sustain plan; do not overextend the bench.
+
+unsafe_or_deferred:
+  - SUSTAIN/tank tempo (when to heal/retreat vs commit) is NOT modeled by the
+    generic pilot (compatibility gap); damage management is left to the base policy.
+  - Rare Candy timing is advisory only.
+  - Broad Main remains delegated to the base policy.
+
+notes:
+  - Roles only; generic competence (mechanics/score) drives play.
+  - Runtime contexts (1, 2, 7, 8, 38) let the pilot express evolution + tank preferences.

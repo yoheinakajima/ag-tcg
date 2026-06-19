@@ -1,0 +1,230 @@
+# ActiveGraph Pass 27 — Multi-Archetype Core Gameplay Portfolio deck registry.
+#
+# LOCAL ONLY. No Kaggle upload, no GitHub push. Every card id below is confirmed
+# present in data/cards/EN_Card_Data.csv (that CSV is gitignored and never
+# committed). NO invented ids. `cards` is the FINAL 60-card composition; the
+# validator (scripts/validate_pass27_decks.py) checks id existence, legality
+# (<=4 copies of any non-basic-energy card), basic-energy resolution, and the
+# 60-card total.
+#
+# Purpose: run the SAME generic core pilot across SEVEN deck archetypes to
+# surface which fundamental gameplay competencies still fail when the deck (not
+# the pilot) changes. Four families carry forward from Pass 17 (the proven Water
+# reference, Raging Bolt aggro, Dragapult evolution control, and the chaos Durant
+# mill which stays BLOCKED from the league); three NEW high-ceiling Mega
+# evolution families are added this pass (Gardevoir Psychic ramp, Charizard X
+# Fire burst, Venusaur bulky Grass tank).
+
+schema: activegraph.pass27.portfolio_decks/v1
+pass: "27"
+upload_performed: false
+
+# Basic Energy card ids (stage/type "Basic Energy" in EN_Card_Data.csv).
+basic_energy_ids: [1, 2, 3, 4, 5, 6, 7, 8]
+
+decks:
+
+  # ---- Carried-forward families (Pass 17 lineage) -------------------------
+
+  # A. Proven Water reference — the stable benchmark the whole lab measures
+  #    against. Deck.csv copied byte-for-byte from the v2 runtime tarball.
+  water_core_reference:
+    name: Water core reference (Kyogre / Snover / Mega Abomasnow ex)
+    family: water_kyogre_abomasnow
+    archetype: evolution_tempo_reference
+    candidate_id: league_water_core_reference
+    buildable: true
+    role: reference
+    deck_source: core_pilot_water_v2_runtime
+    playbook: playbooks/pass17_water_core_reference.yaml
+    runtime_contexts: [7, 8]
+    cards:
+      3: 29        # Basic {W} Energy
+      721: 4       # Kyogre (primary basic attacker)
+      722: 4       # Snover (setup basic)
+      723: 4       # Mega Abomasnow ex (evolution payoff)
+      1092: 1      # Secret Box (high-risk search)
+      1121: 4      # Ultra Ball (search)
+      1145: 2      # Mega Signal (search)
+      1163: 2      # Powerglass (tool)
+      1219: 4      # Team Rocket's Petrel (draw)
+      1227: 4      # Lillie's Determination (draw)
+      1262: 2      # Surfing Beach (stadium)
+    filler: "None — uses the proven v2 60-card list verbatim."
+
+  # B. Fast basic aggro — low evolution burden; tests early attach + attack.
+  raging_bolt_ogerpon_basic_aggro:
+    name: Raging Bolt ex + Teal Mask Ogerpon ex basic aggro
+    family: raging_bolt_ogerpon
+    archetype: basic_aggro
+    candidate_id: league_raging_bolt_ogerpon
+    buildable: true
+    role: aggro
+    playbook: playbooks/pass17_raging_bolt_ogerpon.yaml
+    runtime_contexts: [1, 2, 7, 8, 38]
+    cards:
+      63: 4        # Raging Bolt ex
+      96: 4        # Teal Mask Ogerpon ex
+      1198: 4      # Crispin
+      1231: 4      # Dawn
+      1224: 4      # Cheren
+      1121: 4      # Ultra Ball
+      1086: 4      # Buddy-Buddy Poffin
+      1182: 4      # Boss's Orders
+      1097: 4      # Night Stretcher
+      6: 13        # Basic {F} Energy
+      4: 8         # Basic {L} Energy
+      1: 3         # Basic {G} Energy
+
+  # C. Evolution power deck — Dragapult ex spread / control (Stage 2 line).
+  dragapult_spread_control:
+    name: Dragapult ex spread / control
+    family: dragapult_spread
+    archetype: evolution_control
+    candidate_id: league_dragapult_spread
+    buildable: true
+    role: evolution_control
+    playbook: playbooks/pass17_dragapult_spread.yaml
+    runtime_contexts: [1, 2, 7, 8, 38]
+    cards:
+      119: 4       # Dreepy
+      120: 3       # Drakloak
+      121: 4       # Dragapult ex
+      131: 2       # Duskull
+      133: 2       # Dusknoir
+      1079: 4      # Rare Candy
+      1231: 4      # Dawn
+      1224: 4      # Cheren
+      1121: 4      # Ultra Ball
+      1086: 4      # Buddy-Buddy Poffin
+      1182: 4      # Boss's Orders
+      1097: 4      # Night Stretcher
+      5: 11        # Basic {P} Energy
+      2: 6         # Basic {R} Energy
+
+  # D. Chaos / control — Durant ex deck-out carousel. Needs a SPECIAL
+  #    deckout/mill win condition the generic pilot does not implement; built +
+  #    validated but BLOCKED from the league (would race prizes incorrectly).
+  durant_deckout_carousel:
+    name: Durant ex deck-out carousel
+    family: durant_deckout_carousel
+    archetype: chaos_mill_control
+    candidate_id: league_durant_deckout_carousel
+    buildable: true
+    blocked_from_league: true
+    block_reason: >
+      Deckout/mill is the win condition and requires special triggers the current
+      generic core pilot does not implement (keep Durant ex off active until late
+      Vengeful Crush, prefer Deino/Zweilous active, prioritize Neutralization Zone,
+      do NOT race prizes, recycle/mill loop). Piloted generically it would chase KOs
+      and misplay the carousel, so it is scout-only and excluded from the league
+      unless a smoke-safe deckout playbook exists.
+    role: chaos_control
+    playbook: playbooks/pass17_durant_deckout_carousel.yaml
+    runtime_contexts: [1, 2, 7, 8, 38]
+    cards:
+      198: 4       # Durant ex
+      227: 4       # Deino
+      228: 4       # Zweilous
+      1247: 4      # Neutralization Zone
+      162: 4       # Slowpoke
+      27: 2        # Iron Leaves
+      815: 4       # Whimsicott
+      1199: 4      # Lacey
+      1228: 2      # Acerola's Mischief
+      1213: 4      # Judge
+      1182: 4      # Boss's Orders
+      1231: 4      # Dawn
+      1121: 4      # Ultra Ball
+      1086: 4      # Buddy-Buddy Poffin
+      7: 8         # Basic {D} Energy
+
+  # ---- NEW high-ceiling Mega evolution families (Pass 27) -----------------
+
+  # E. Mega Gardevoir ex — Psychic ramp Stage 2 (Ralts -> Kirlia -> Mega
+  #    Gardevoir ex) with Rare Candy acceleration and a heavy Psychic energy
+  #    base. Tests evolution sequencing + energy-ramp accumulation.
+  mega_gardevoir_psychic_ramp:
+    name: Mega Gardevoir ex Psychic ramp
+    family: mega_gardevoir_ramp
+    archetype: evolution_ramp
+    candidate_id: league_mega_gardevoir_psychic_ramp
+    buildable: true
+    role: evolution_ramp
+    playbook: playbooks/pass27_mega_gardevoir_psychic_ramp.yaml
+    runtime_contexts: [1, 2, 7, 8, 38]
+    cards:
+      745: 4       # Ralts (setup basic)
+      746: 4       # Kirlia (evolution mid)
+      747: 3       # Mega Gardevoir ex (evolution payoff)
+      1079: 4      # Rare Candy (evolution accel)
+      1121: 4      # Ultra Ball (search)
+      1086: 4      # Buddy-Buddy Poffin (search)
+      1182: 3      # Boss's Orders (disruption)
+      1097: 2      # Night Stretcher (recovery)
+      1231: 4      # Dawn (draw)
+      1224: 4      # Cheren (draw)
+      1199: 2      # Lacey (draw)
+      1213: 2      # Judge (draw/disruption)
+      5: 20        # Basic {P} Energy
+
+  # F. Mega Charizard X ex — Fire burst / energy dump Stage 2 (Charmander ->
+  #    Charmeleon -> Mega Charizard X ex) with Crispin / Firebreather energy
+  #    acceleration and Oricorio ex support. Tests evolution + energy-dump burst.
+  mega_charizard_x_burst:
+    name: Mega Charizard X ex Fire burst
+    family: mega_charizard_x_burst
+    archetype: evolution_burst
+    candidate_id: league_mega_charizard_x_burst
+    buildable: true
+    role: evolution_burst
+    playbook: playbooks/pass27_mega_charizard_x_burst.yaml
+    runtime_contexts: [1, 2, 7, 8, 38]
+    cards:
+      788: 4       # Charmander (setup basic)
+      789: 3       # Charmeleon (evolution mid)
+      790: 3       # Mega Charizard X ex (evolution payoff)
+      795: 2       # Oricorio ex (support basic)
+      1232: 3      # Firebreather (energy accel)
+      1198: 3      # Crispin (energy accel)
+      1079: 4      # Rare Candy (evolution accel)
+      1121: 4      # Ultra Ball (search)
+      1086: 4      # Buddy-Buddy Poffin (search)
+      1182: 3      # Boss's Orders (disruption)
+      1097: 2      # Night Stretcher (recovery)
+      1231: 4      # Dawn (draw)
+      1224: 3      # Cheren (draw)
+      2: 18        # Basic {R} Energy
+
+  # G. Mega Venusaur ex — bulky Grass sustain / tank Stage 2 (Bulbasaur ->
+  #    Ivysaur -> Mega Venusaur ex) with Forest of Vitality stadium and a heavy
+  #    Grass energy base. Tests evolution sequencing + sustain/tank tempo.
+  mega_venusaur_tank:
+    name: Mega Venusaur ex bulky Grass tank
+    family: mega_venusaur_tank
+    archetype: evolution_tank
+    candidate_id: league_mega_venusaur_tank
+    buildable: true
+    role: evolution_tank
+    playbook: playbooks/pass27_mega_venusaur_tank.yaml
+    runtime_contexts: [1, 2, 7, 8, 38]
+    cards:
+      650: 4       # Bulbasaur (setup basic)
+      651: 3       # Ivysaur (evolution mid)
+      652: 3       # Mega Venusaur ex (evolution payoff)
+      1261: 2      # Forest of Vitality (stadium)
+      1079: 4      # Rare Candy (evolution accel)
+      1121: 4      # Ultra Ball (search)
+      1086: 4      # Buddy-Buddy Poffin (search)
+      1182: 3      # Boss's Orders (disruption)
+      1097: 2      # Night Stretcher (recovery)
+      1231: 4      # Dawn (draw)
+      1224: 4      # Cheren (draw)
+      1199: 2      # Lacey (draw)
+      1: 21        # Basic {G} Energy
+
+# Recorded only; not built this pass:
+later_branches:
+  - Internal tournament expansion (more rounds / Swiss / larger N)
+  - Deck-specific playbook compiler (per-archetype rule packs)
+  - Real Kaggle probe — only after a clean local candidate clears human review

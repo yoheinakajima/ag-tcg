@@ -1,0 +1,21 @@
+{
+  "family": "charizard_burst",
+  "deck": "league_mega_charizard_x_burst",
+  "pass": "27",
+  "no_upload": true,
+  "assertions": [
+    {"id": "assemble_basic_stage_mega", "executable": false, "status": "plan",
+     "expect": "assemble Charmander -> Charmeleon -> Mega Charizard X ex (Rare Candy allowed)",
+     "blocked_by": "no explicit stage-assembly planner"},
+    {"id": "preserve_energy_engine", "executable": false, "status": "plan",
+     "expect": "keep Firebreather/Crispin acceleration pieces available; do not discard the engine",
+     "blocked_by": "discard safety is generic, not engine-aware"},
+    {"id": "do_not_fire_all_in_attack_without_lethal", "executable": false, "status": "plan",
+     "expect": "do not commit the all-in discard attack unless it is lethal / clearly worth it",
+     "blocked_by": "NO lethal-counting / all-in timing hook"},
+    {"id": "fire_energy_to_engine_target", "executable": false, "status": "plan",
+     "expect": "route accelerated Fire energy onto the intended attacker",
+     "blocked_by": "no energy-routing/target hook"}
+  ],
+  "league_evidence": "17-15-4 (adj 0.531) — middling; can attack but lethal/all-in timing unverified."
+}

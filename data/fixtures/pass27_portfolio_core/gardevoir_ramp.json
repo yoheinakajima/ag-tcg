@@ -1,0 +1,21 @@
+{
+  "family": "gardevoir_ramp",
+  "deck": "league_mega_gardevoir_psychic_ramp",
+  "pass": "27",
+  "no_upload": true,
+  "assertions": [
+    {"id": "bench_wide_before_ramp", "executable": false, "status": "plan",
+     "expect": "develop a wide bench (Ralts/Kirlia) before committing to the big attacker",
+     "blocked_by": "no role-aware bench-width planning"},
+    {"id": "prefer_ramp_engine_before_big_attack", "executable": false, "status": "plan",
+     "expect": "build the energy-ramp engine (Kirlia) before attempting Mega Gardevoir's scaling attack",
+     "blocked_by": "NO energy-ramp accumulation plan; pilot attaches greedily"},
+    {"id": "attach_psychic_to_scaling_plan", "executable": false, "status": "plan",
+     "expect": "concentrate Psychic energy toward the scaling attacker",
+     "blocked_by": "no scaling/ramp energy-allocation hook"},
+    {"id": "preserve_stage_line", "executable": false, "status": "plan",
+     "expect": "never discard Ralts/Kirlia/Mega Gardevoir pieces needed for the line",
+     "blocked_by": "discard safety is generic, not line-aware"}
+  ],
+  "league_evidence": "7-29-0 (adj 0.194) — ramp/combo sequencing gap confirmed: pilot cannot accumulate the scaling plan."
+}

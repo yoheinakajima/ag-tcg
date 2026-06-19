@@ -1,0 +1,18 @@
+{
+  "family": "venusaur_tank",
+  "deck": "league_mega_venusaur_tank",
+  "pass": "27",
+  "no_upload": true,
+  "assertions": [
+    {"id": "preserve_tank_line", "executable": false, "status": "plan",
+     "expect": "never discard Bulbasaur/Ivysaur/Mega Venusaur pieces needed for the line",
+     "blocked_by": "discard safety is generic, not line-aware"},
+    {"id": "prefer_stadium_engine_if_beneficial", "executable": false, "status": "plan",
+     "expect": "play Forest of Vitality when it advances the sustain/tank plan",
+     "blocked_by": "no stadium value-evaluation hook"},
+    {"id": "avoid_discarding_evolution_payoff", "executable": false, "status": "plan",
+     "expect": "protect Mega Venusaur ex from being discarded as fuel",
+     "blocked_by": "discard safety is generic, not payoff-aware"}
+  ],
+  "league_evidence": "13-13-10 (adj 0.500) — note 10 DRAWS: the tank survives but never closes; no win-condition/lethal plan."
+}

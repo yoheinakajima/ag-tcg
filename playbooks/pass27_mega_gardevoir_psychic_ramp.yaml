@@ -1,0 +1,74 @@
+# ActiveGraph Pass 27 — Mega Gardevoir ex Psychic ramp (Stage 2 evolution ramp).
+#
+# Evolution ramp deck: Ralts -> Kirlia -> Mega Gardevoir ex with Rare Candy
+# acceleration and a heavy Psychic energy base. Tests the generic pilot's
+# evolution sequencing AND energy-ramp accumulation (parking energy to fund a
+# big payoff turn). All ids confirmed in data/cards/EN_Card_Data.csv (gitignored,
+# never committed). No invented ids.
+
+deck_id: league_mega_gardevoir_psychic_ramp
+based_on: generic_core_pilot
+schema: activegraph.playbook.core_pilot/v1
+
+cards:
+  745: Ralts
+  746: Kirlia
+  747: Mega Gardevoir ex
+  1079: Rare Candy
+  1121: Ultra Ball
+  1086: Buddy-Buddy Poffin
+  1182: Boss's Orders
+  1097: Night Stretcher
+  1231: Dawn
+  1224: Cheren
+  1199: Lacey
+  1213: Judge
+  5: Basic {P} Energy
+
+roles:
+  basic_energy: [5]
+  setup_basic: [745]
+  evolution_mid: [746]
+  evolution_payoff: [747]
+  evolution_accel: [1079]
+  search: [1121, 1086]
+  draw: [1231, 1224, 1199]
+  energy: [5]
+  disruption: [1182, 1213]
+  recovery: [1097]
+
+plan:
+  primary_plan: mega_gardevoir_psychic_ramp
+  secondary_plan: psychic_energy_accumulation
+  avoid_plans: [deckout, orphan_evolution, premature_attack]
+
+role_weights:
+  active_prefers: [evolution_payoff, setup_basic]
+  bench_prefers: [setup_basic, evolution_mid, evolution_payoff]
+  attach_prefers: [active_attacker, next_attacker]
+  search_prefers: missing_evolution_piece
+  discard_prefers: [surplus_basic_energy]
+  preserve_only:
+    - setup_basic
+    - evolution_mid
+    - evolution_payoff_when_setup_exists
+
+deckout_guard_thresholds:
+  penalize: 8
+  heavy: 4
+  critical: 2
+
+deck_specific_constraints:
+  - Keep at least one Ralts (setup_basic) so Mega Gardevoir ex is never orphaned.
+  - Prefer Rare Candy onto Ralts to jump to Mega Gardevoir ex once the basic is established.
+  - Avoid searching Mega Gardevoir ex with no corresponding Ralts/Kirlia in play.
+
+unsafe_or_deferred:
+  - Energy-RAMP timing (when to hold energy back vs commit) is NOT modeled by the
+    generic pilot (compatibility gap); attach pacing is left to the base policy.
+  - Rare Candy timing is advisory only.
+  - Broad Main remains delegated to the base policy.
+
+notes:
+  - Roles only; generic competence (mechanics/score) drives play.
+  - Runtime contexts (1, 2, 7, 8, 38) let the pilot express evolution + ramp preferences.

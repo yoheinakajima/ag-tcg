@@ -1,0 +1,21 @@
+{
+  "family": "dragapult_spread",
+  "deck": "league_dragapult_spread",
+  "pass": "27",
+  "no_upload": true,
+  "assertions": [
+    {"id": "prioritize_stage_line_completion", "executable": false, "status": "plan",
+     "expect": "complete Dreepy -> Drakloak -> Dragapult ex (or via Rare Candy) before committing",
+     "blocked_by": "no explicit stage-line completion planner (evolution happens opportunistically)"},
+    {"id": "attack_with_spread_attacker", "executable": false, "status": "plan",
+     "expect": "use Dragapult ex's spread attack when set up",
+     "blocked_by": "attack selection is generic; no spread-vs-single value model"},
+    {"id": "prefer_spread_target_on_damaged_bench", "executable": false, "status": "plan",
+     "expect": "place spread damage to set up multi-KO on already-damaged bench",
+     "blocked_by": "NO bench-damage target resolution hook in runtime"},
+    {"id": "preserve_dragapult_line_on_discard", "executable": false, "status": "plan",
+     "expect": "never discard Dreepy/Drakloak/Dragapult pieces needed for the line",
+     "blocked_by": "discard safety is generic; not line-aware"}
+  ],
+  "league_evidence": "24-10-2 (adj 0.706) — pilot attacks competently but spread targeting is unverified/missing."
+}
