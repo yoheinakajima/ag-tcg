@@ -1,4 +1,15 @@
-# ActiveGraph — Pokémon TCG Strategy Canvas (Pass 18 → 22)
+# ActiveGraph — Pokémon TCG Strategy Canvas (Pass 18 → 23)
+
+> **CURRENT AUTHORITATIVE STATE (Pass 23).** Single **human-approved live Kaggle
+> calibration probe** of the Pass-22 candidate `league_water_anti_disruption_pivot_v1`,
+> submitted **exactly once** after all gates passed (root immutability; preflight 11/11;
+> tarball + entrypoint validators; default core gate 13 pass/1 advisory/0 hard-fail;
+> pass22 board-safety 9/9; live cabt smoke DONE — INVALID/ERROR/TIMEOUT 0). Upload result:
+> "Successfully submitted…"; status **pending** (no score yet). **NOT a promotion claim** —
+> one calibration point only. **Stale-score caveat:** fresh listing shows no 420.8 entry;
+> actual highest complete is `submission.tar.gz` @ 363.0 — recompute control each pass.
+> No second upload regardless of outcome; no GitHub push; root files byte-identical to
+> baseline. See `data/reports/pass23_water_anti_disruption_kaggle_probe_report.md`.
 
 > **CURRENT AUTHORITATIVE STATE (Pass 22).** Built **one** narrow candidate
 > `league_water_anti_disruption_pivot_v1` to address the Pass-21 seam (lack of an

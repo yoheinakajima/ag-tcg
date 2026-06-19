@@ -1,0 +1,370 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+This is a human-approved single Kaggle calibration probe.
+
+Important:
+- Submit at most one candidate, exactly once, only if every gate passes.
+- Candidate to submit: league_water_anti_disruption_pivot_v1.
+- Do not push to GitHub.
+- Do not modify root main.py or root deck.csv.
+- Do not generate new candidates.
+- Do not upload any other candidate.
+- Do not submit Dragapult, Raging Bolt, Durant, or any other deck in this pass.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Keep all candidate tarballs top-level main.py + deck.csv only.
+- If any gate fails, stop and report. Do not upload.
+- If a Kaggle submission is already pending, stop and report. Do not upload.
+- If Kaggle auth/listing fails, stop and report. Do not upload.
+
+Read before acting:
+- docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md
+- docs/NEXT_AGENT_README.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/pass21_final_report.md
+- data/reports/pass22_water_anti_disruption_report.md
+
+Current state:
+- Current live control: league_water_core_reference @ 420.8.
+- Pass 22 built league_water_anti_disruption_pivot_v1.
+- Pass 22 candidate passed:
+  - tarball validator
+  - entrypoint validator
+  - default core competency gate
+  - pass22 board-safety gate, 9/9
+  - live cabt smoke
+- Pass 22 decision was no-upload because local surrogate eval cannot prove live benefit.
+- User now explicitly authorizes one overnight Kaggle calibration probe of this candidate.
+- This is not a promotion claim.
+- This is a live calibration probe against the real ladder.
+
+Candidate:
+candidate_id: league_water_anti_disruption_pivot_v1
+tarball: data/submissions/candidates_pass22/league_water_anti_disruption_pivot_v1.tar.gz
+
+Goal:
+Run Pass 23: Single Kaggle Probe — Water Anti-Disruption Pivot.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Kaggle status / pending guard
+
+Check read-only Kaggle status before upload:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass23_water_pivot_probe.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass23_water_pivot_probe.csv || true
+
+If kaggle is not on PATH, use the Python kaggle.cli method used in prior passes.
+
+Required before upload:
+- auth works
+- competition is reachable
+- submissions listing is readable
+- latest submission is not pending
+- no current upload in progress
+
+If any required condition fails, stop and report.
+
+Part C — Candidate artifact preflight
+
+Verify:
+
+data/submissions/candidates_pass22/league_water_anti_disruption_pivot_v1.tar.gz
+
+Required:
+- tarball exists
+- tarball members are exactly:
+  - main.py
+  - deck.csv
+- no nested paths
+- no extra files
+- deck.csv has exactly 60 integer rows
+- no forbidden imports
+- card IDs are validated against card DB / prior manifest
+- deck matches the Pass 22 candidate, not root deck by accident
+- runtime_contexts include only the intended narrow hooks:
+  - ctx0 emergency backup bench
+  - ctx7 search pivot
+  - ctx8 discard preservation
+- broad Main remains delegated outside emergency backup hook
+
+Write:
+
+data/experiments/pass23_candidate_preflight.json
+data/experiments/pass23_candidate_preflight.md
+
+Part D — Mandatory validators
+
+Run:
+
+python scripts/validate_candidate_tarball.py data/submissions/candidates_pass22/league_water_anti_disruption_pivot_v1.tar.gz
+python scripts/validate_candidate_entrypoint.py data/submissions/candidates_pass22/league_water_anti_disruption_pivot_v1.tar.gz
+
+Required:
+- both rc=0
+- returns a 60-card deck for deck-selection observation shapes
+- final top-level callable is entrypoint-safe
+- gameplay observations return legal indices
+- stdlib-only submitted runtime
+
+If either validator fails, stop and report. Do not upload.
+
+Part E — Gate/smoke confirmation
+
+Run the relevant existing gates if available:
+
+python scripts/run_core_competency_gate.py --candidate data/submissions/candidates_pass22/league_water_anti_disruption_pivot_v1.tar.gz --fixtures data/fixtures/core_competency || true
+python scripts/run_core_competency_gate.py --candidate data/submissions/candidates_pass22/league_water_anti_disruption_pivot_v1.tar.gz --fixtures data/fixtures/pass22_water_board_safety || true
+
+Run a short live cabt smoke:
+- candidate self-play, at least 1 game
+- candidate vs league_water_core_reference if feasible, at least 1 game
+
+Required:
+- DONE status
+- no INVALID
+- no ERROR
+- no TIMEOUT
+- finite rewards
+
+Write:
+
+data/experiments/pass23_live_smoke.json
+data/experiments/pass23_live_smoke.md
+
+If smoke fails, stop and report. Do not upload.
+
+Part F — Archive exact pre-upload artifact
+
+Archive:
+
+data/submissions/archive/pass23_water_anti_disruption_pivot_probe.tar.gz
+data/submissions/archive/pass23_water_anti_disruption_pivot_main.py
+data/submissions/archive/pass23_water_anti_disruption_pivot_deck.csv
+data/submissions/archive/pass23_water_anti_disruption_pivot.md
+
+Archive note should include:
+- source tarball
+- candidate_id
+- validation results
+- smoke results
+- exact upload message planned
+- no root mutation
+- no promotion claim
+
+Part G — ActiveGraph pre-upload events
+
+Emit to data/activegraph/lab_events.jsonl:
+
+StrategyPromotionDecision:
+- candidate_id: league_water_anti_disruption_pivot_v1
+- decision: human_approved_single_kaggle_probe
+- promotion_claimed: false
+- human_approved: true
+- reason: Pass 22 candidate directly targets replay-derived no-bench / energy-denial failures; validators and smoke passed
+- caveat: local/surrogate results are not Kaggle proof
+- no_upload: false only for this approved submit event
+
+SubmissionQueued:
+- candidate_id
+- tarball
+- upload_performed: false
+- require_manual_approval_for_submit: true
+- human_approved: true
+
+Part H — Final pre-submit pending guard
+
+Immediately before upload, re-run read-only submission listing.
+
+If latest submission is pending, stop and report.
+If latest submission is complete or error, continue.
+
+Part I — Submit exactly once
+
+Submit exactly once:
+
+data/submissions/candidates_pass22/league_water_anti_disruption_pivot_v1.tar.gz
+
+Suggested Kaggle message:
+
+water_anti_disruption_pivot_v1: replay-derived board-safety probe; prevents empty-bench/backup-basic failures; validators+smoke PASS; calibration only
+
+Capture:
+
+data/kaggle_uploads/submit_pass23_water_anti_disruption_pivot.log
+
+Rules:
+- exactly one submit command
+- no retry if Kaggle returns success
+- if upload returns success, do not submit again
+- if upload returns pending, stop and report pending
+- if upload returns error, fetch status/logs and report
+- no second upload this pass
+
+Part J — Post-upload status
+
+After submit, run:
+
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_after_pass23_water_pivot_probe.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_after_pass23_water_pivot_probe.csv || true
+
+If kaggle is not on PATH, use Python kaggle.cli.
+
+Record:
+- latest fileName
+- date
+- description
+- status
+- publicScore if available
+- error if available
+- replay/episode id if available
+
+If pending:
+- do not resubmit
+- report pending and exact command to check later
+
+If complete:
+- compare against current live control:
+  - league_water_core_reference @ latest live score
+- if below, do not panic; this is one calibration point
+- if above, mark as possible new live control, but only report, do not submit again
+
+If error:
+- classify error
+- record logs
+- do not resubmit
+
+Part K — ActiveGraph post-upload event
+
+If submit succeeded, emit:
+
+SubmissionUploaded:
+- candidate_id
+- tarball
+- upload_mode: human_approved_single_probe
+- kaggle_status: pending/complete/error
+- upload_log_path
+- validator pass/fail
+- smoke pass/fail
+- no second upload
+
+If status complete, emit:
+
+KaggleScoreUpdated:
+- candidate_id
+- publicScore
+- comparison baseline
+- status
+
+Part L — Reports
+
+Update:
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/pass23_water_anti_disruption_kaggle_probe_report.md
+
+Do not rewrite historical facts.
+Add an authoritative Pass 23 current-state section.
+
+Include:
+- candidate probed
+- why this candidate
+- all gates
+- upload status
+- public score if available
+- no further upload note
+- interpretation rules
+
+Part M — Tests / sanity
+
+Run targeted tests:
+- entrypoint validator tests
+- pass22 tests if cheap
+- root unchanged test
+- upload-log/no-secret tests if available
+- report no-second-upload invariant if available
+
+Do not waste time on unrelated slow tests.
+
+Part N — Final report
+
+Report exactly:
+
+ActiveGraph Pass 23 Water Anti-Disruption Kaggle Probe Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Candidate
+- candidate_id:
+- tarball:
+- tarball contents:
+- deck rows:
+- hooks:
+- why this candidate:
+
+3. Pre-upload gates
+- tarball validator:
+- entrypoint validator:
+- core gate:
+- pass22 board-safety gate:
+- live smoke:
+- blockers:
+
+4. Kaggle auth/status
+- auth/listing:
+- pending submission before upload:
+- current live scores if refreshed:
+- active control:
+- stale caveat:
+
+5. Upload
+- attempted:
+- exactly once:
+- upload log:
+- raw result:
+- Kaggle message:
+
+6. Submission status
+- latest fileName:
+- status:
+- publicScore:
+- error:
+- replay/episode if available:
+- status logs:
+
+7. ActiveGraph
+- events emitted:
+- event store:
+- submission lineage:
+
+8. Interpretation
+- if pending: wait; no conclusion
+- if complete and above current live control: candidate may become new live control
+- if complete and below current live control: keep current control and ingest replay
+- if error: classify and fix gate
+- no local/internal result is treated as Kaggle proof
+
+9. Manual git notes
+- files to review:
+- files not to commit:
+- generated/ignored files:
+
+10. Next recommendation
+- one sentence only.

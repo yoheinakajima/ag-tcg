@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph Strategy Lab — Pass 22</title>
+<title>ActiveGraph Strategy Lab — Pass 23</title>
 <style>
   :root { --bg:#0f1420; --panel:#171f2e; --ink:#e6edf6; --muted:#9bb0c9;
           --accent:#4cc4ff; --warn:#ffcf5c; --ok:#6ee7a0; --bad:#ff7b7b;
@@ -35,12 +35,25 @@
 <header>
   <div class="wrap" style="padding-bottom:0">
     <h1>ActiveGraph Strategy Lab</h1>
-    <div class="sub">Pass 22 — Water anti-disruption + emergency backup bench (local-only candidate)</div>
+    <div class="sub">Pass 23 — Water anti-disruption Kaggle calibration probe (single human-approved upload, pending)</div>
   </div>
 </header>
 <div class="wrap">
 
   <div class="note" style="border-left-color:var(--ok)">
+    <strong>PASS 23 — WATER ANTI-DISRUPTION KAGGLE CALIBRATION PROBE (HUMAN-APPROVED, SINGLE UPLOAD).</strong>
+    The Pass-22 candidate <code>league_water_anti_disruption_pivot_v1</code> was submitted to Kaggle
+    <strong>exactly once</strong> after every gate passed (root immutability; preflight 11/11; tarball +
+    entrypoint validators; default core gate <strong>13 pass / 1 advisory / 0 hard-fail</strong>; pass22
+    board-safety <strong>9/9</strong>; live cabt smoke DONE — INVALID/ERROR/TIMEOUT 0). Result:
+    "Successfully submitted…"; status <strong>pending</strong> (Kaggle scoring is async, no score yet).
+    This is a <strong>calibration probe, NOT a promotion claim</strong>. <strong>Stale-score caveat:</strong>
+    the fresh listing shows <strong>no</strong> 420.8 entry — actual highest complete is
+    <code>submission.tar.gz</code> @ <strong>363.0</strong>; recompute the live control from a fresh listing
+    each pass. <strong>No second upload regardless of outcome; no GitHub push; root files unchanged.</strong>
+  </div>
+
+  <div class="note">
     <strong>PASS 22 — WATER ANTI-DISRUPTION + EMERGENCY BACKUP BENCH (LOCAL-ONLY).</strong> Built
     <strong>one</strong> narrow candidate <code>league_water_anti_disruption_pivot_v1</code> on the
     <strong>byte-identical</strong> v2 Water deck to close the Pass-21 seam (lack of an anti-disruption
@@ -62,7 +75,7 @@
     <div class="card"><div class="sub">Pass 22 candidate</div><div class="big">league_water_anti_disruption_pivot_v1</div></div>
     <div class="card"><div class="sub">Board-safety fixtures</div><div class="big ok">9/9 PASS</div></div>
     <div class="card"><div class="sub">Decision replay</div><div class="big">75 windows · 5 legal fixes</div></div>
-    <div class="card"><div class="sub">Candidates uploaded (Pass 22)</div><div class="big ok">0</div></div>
+    <div class="card"><div class="sub">Candidates uploaded (Pass 23)</div><div class="big ok">1 (pending)</div></div>
   </div>
 
   <div class="note" style="border-left-color:var(--ok)">
