@@ -1,0 +1,84 @@
+# ActiveGraph Pass 17 — Durant ex deck-out carousel (chaos / control).
+#
+# SCOUT-ONLY. This deck's win condition is milling the opponent's deck, which
+# needs SPECIAL triggers the current generic core pilot does NOT implement. It is
+# validated and given roles, but BLOCKED from the league (see block_reason in
+# experiments/deck_ideas.yaml): piloted generically it would race prizes and
+# misplay the carousel. All ids confirmed in data/cards/EN_Card_Data.csv
+# (gitignored, never committed). No invented ids.
+
+deck_id: league_durant_deckout_carousel
+based_on: generic_core_pilot
+schema: activegraph.playbook.core_pilot/v1
+status: scout_only_blocked
+
+cards:
+  198: Durant ex
+  227: Deino
+  228: Zweilous
+  1247: Neutralization Zone
+  162: Slowpoke
+  27: Iron Leaves
+  815: Whimsicott
+  1199: Lacey
+  1228: Acerola's Mischief
+  1213: Judge
+  1182: Boss's Orders
+  1231: Dawn
+  1121: Ultra Ball
+  1086: Buddy-Buddy Poffin
+  7: Basic {D} Energy
+
+roles:
+  basic_energy: [7]
+  primary_basic_attacker: [227, 228]      # Deino/Zweilous take hits up front
+  special_payoff: [198]                   # Durant ex — milling engine, kept off active
+  deckout_or_mill: [198, 1247]
+  stadium: [1247]
+  setup_basic: [227, 162, 27]
+  secondary_attacker: [815, 27]
+  search: [1121, 1086]
+  draw: [1231, 1213]
+  energy: [7]
+  disruption: [1182, 1213, 1199, 1228]
+  recovery: [1228]
+
+plan:
+  primary_plan: deckout_mill
+  secondary_plan: disruption_stall
+  avoid_plans: [prize_race]
+
+role_weights:
+  active_prefers: [primary_basic_attacker]      # NOT special_payoff
+  bench_prefers: [special_payoff, setup_basic, secondary_attacker]
+  attach_prefers: [special_payoff]
+  search_prefers: missing_mill_piece
+  discard_prefers: [surplus_basic_energy]
+  preserve_only:
+    - special_payoff
+    - stadium
+
+deckout_guard_thresholds:
+  penalize: 8
+  heavy: 4
+  critical: 2
+
+special_triggers_required_but_unimplemented:
+  - Keep Durant ex on the bench until its mill attack is set up; do not let it take prizes' worth of KOs.
+  - Prefer Deino/Zweilous as the active damage sponge.
+  - Prioritize Neutralization Zone stadium to suppress opposing abilities.
+  - Recycle/loop the mill engine (Acerola's Mischief) instead of trading prizes.
+  - WIN BY OPPONENT DECKOUT, never by racing the prize trade.
+
+block_reason: >
+  The generic core pilot has no deckout/mill win-condition logic and will chase KOs
+  with Durant ex, inverting this deck's plan. Until per-archetype deckout triggers
+  exist, this candidate is scout-only and excluded from the internal league.
+
+unsafe_or_deferred:
+  - Entire mill win-condition is unimplemented in the generic pilot (the reason for the block).
+  - Broad Main remains delegated to the base policy.
+
+notes:
+  - Built + validated for legality only; NOT a league participant this pass.
+  - Runtime contexts (1, 2, 7, 8, 38) are wired for completeness but do not add mill logic.

@@ -1,0 +1,70 @@
+# ActiveGraph Pass 17 — Raging Bolt ex + Teal Mask Ogerpon ex basic aggro.
+#
+# Fast basic-attacker deck: low evolution burden, tests early energy attach +
+# attack under the generic core pilot. All ids confirmed in
+# data/cards/EN_Card_Data.csv (gitignored, never committed). No invented ids.
+
+deck_id: league_raging_bolt_ogerpon
+based_on: generic_core_pilot
+schema: activegraph.playbook.core_pilot/v1
+
+cards:
+  63: Raging Bolt ex
+  96: Teal Mask Ogerpon ex
+  1198: Crispin
+  1231: Dawn
+  1224: Cheren
+  1121: Ultra Ball
+  1086: Buddy-Buddy Poffin
+  1182: Boss's Orders
+  1097: Night Stretcher
+  6: Basic {F} Energy
+  4: Basic {L} Energy
+  1: Basic {G} Energy
+
+roles:
+  basic_energy: [6, 4, 1]
+  primary_basic_attacker: [63]
+  secondary_attacker: [96]
+  setup_basic: [63, 96]
+  search: [1121, 1086, 1198]
+  draw: [1224, 1231]
+  energy: [6, 4, 1]
+  energy_search: [1198]
+  disruption: [1182]
+  recovery: [1097]
+
+plan:
+  primary_plan: raging_bolt_aggro
+  secondary_plan: ogerpon_pressure
+  avoid_plans: [deckout, passive_draw_loop]
+
+role_weights:
+  active_prefers: [primary_basic_attacker, secondary_attacker]
+  bench_prefers: [primary_basic_attacker, secondary_attacker]
+  attach_prefers: [active_attacker, next_attacker]
+  search_prefers: missing_plan_piece
+  discard_prefers: [surplus_basic_energy]
+  preserve_only:
+    - primary_basic_attacker
+    - secondary_attacker
+
+deckout_guard_thresholds:
+  penalize: 8
+  heavy: 4
+  critical: 2
+
+deck_specific_constraints:
+  - Prefer Raging Bolt ex active once energy is available; keep Ogerpon as backup pressure.
+  - Attach {F}/{L} energy onto the intended attacker (generic pilot does not color-match —
+    see compatibility notes).
+  - Use Crispin/Night Stretcher to recover energy/attackers rather than over-drawing.
+
+unsafe_or_deferred:
+  - Exact energy-color matching is NOT enforced by the generic pilot (compatibility gap).
+  - Boss's Orders gust target selection is advisory only.
+  - Broad Main remains delegated to the base policy.
+
+notes:
+  - Roles only; generic competence (mechanics/score) drives play.
+  - Runtime contexts (1, 2, 7, 8, 38) let setup/search/discard/draw express these roles.

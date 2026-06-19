@@ -1,0 +1,73 @@
+# ActiveGraph Pass 17 (Part I) — planned fixtures for deeper compatibility study.
+#
+# LOCAL ONLY, PLAN ONLY. This file records CHEAP-to-build fixture intents for a
+# future pass; it does NOT generate or store any expensive replays here. Each
+# fixture is a small, hand-describable board state aimed at a specific
+# compatibility gap surfaced by the Part G league + Part H analysis. No card CSV,
+# raw replays, or credentials are committed.
+
+schema: activegraph.fixtures.plan/v1
+pass: "17"
+status: planned_only
+notes:
+  - Generated fixtures (if any) must stay cheap and local; gitignore raw replays.
+  - Drives future per-archetype playbook triggers, not this pass's league.
+
+planned_fixtures:
+
+  - id: ragingbolt_early_attach_attack
+    deck: league_raging_bolt_ogerpon
+    targets_gap: "No early attach+attack aggression; no energy color matching"
+    why: >
+      The aggro deck went 0-30. A minimal fixture with Raging Bolt ex active and
+      a {F}/{L} energy in hand should verify whether the pilot attaches the right
+      color and chooses to attack rather than draw/pass.
+    cheap_setup:
+      active: Raging Bolt ex (63)
+      hand: [Basic {L} Energy (4), Basic {F} Energy (6), Cheren (1224)]
+      expectation: attach to active attacker, then attack as soon as cost is met
+    cost: cheap (single-decision probe)
+
+  - id: ragingbolt_discard_scaling
+    deck: league_raging_bolt_ogerpon
+    targets_gap: "Raging Bolt ex discard-Basic-Energy damage scaling unused"
+    why: >
+      Bellowing Thunder scales with discarded Basic Energy. A fixture with several
+      Basic Energy attached should check whether the pilot ever discards to scale
+      damage, or always attacks for the minimum.
+    cheap_setup:
+      active: Raging Bolt ex (63) with 3x Basic {F} Energy attached
+      expectation: pilot considers discarding energy to increase damage
+    cost: cheap (single-decision probe)
+
+  - id: dragapult_evolution_sequencing
+    deck: league_dragapult_spread
+    targets_gap: "Spread-damage placement not modeled"
+    why: >
+      Dragapult won 63% but does not optimize Phantom Dive spread. A fixture with
+      Dragapult ex active and multiple benched opponents should check damage
+      distribution choices.
+    cheap_setup:
+      active: Dragapult ex (121)
+      opponent_bench: [two low-HP basics]
+      expectation: spread damage to set up multi-prize turns
+    cost: cheap (single-decision probe)
+
+  - id: durant_keep_back_and_mill
+    deck: league_durant_deckout_carousel
+    targets_gap: "Entire mill win-condition unimplemented; live smoke INVALID"
+    why: >
+      Durant is blocked. A fixture with Durant ex benched and Deino active should,
+      under a FUTURE mill-aware pilot, prefer the mill line over racing prizes and
+      avoid the illegal play that currently makes the live smoke INVALID.
+    cheap_setup:
+      active: Deino (227)
+      bench: Durant ex (198)
+      stadium: Neutralization Zone (1247)
+      expectation: (future) mill via Durant ex, never race prizes
+    cost: cheap (single-decision probe)
+
+deferred_to_later_pass:
+  - Per-archetype playbook trigger packs (aggro aggression bias, energy color
+    matching, mill win-condition).
+  - Larger fixture batteries with scored expected actions.

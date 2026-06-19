@@ -1,0 +1,517 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Keep all candidate tarballs top-level main.py + deck.csv only.
+- Read docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md, docs/NEXT_AGENT_README.md, docs/CORE_PILOT_ARCHITECTURE.md, data/reports/pass14_final_report.md, data/reports/pass15_final_report.md, and data/reports/pass16_final_report.md before making changes.
+- This is an internal deck league + deck/playbook validation pass only.
+- No Kaggle upload.
+
+Current state:
+- Pass 16 completed.
+- core_pilot_water_v2_runtime remains the clean Water reference.
+- core_pilot_water_v3_context is safe but locally worse than v2 and should NOT be promoted.
+- Active historical Kaggle control is combo_full_safety_v3_fixed, but it fails the new entrypoint validator and is anchor-only.
+- Broad Main context must remain delegated unless a subaction is resolved with high confidence.
+- The next goal is to test deck/pilot compatibility, not to claim Kaggle readiness.
+
+Goal:
+Run Pass 17: Internal Deck League + Strategy Canvas.
+
+Objectives:
+1. Create a durable strategy/deck canvas from the current candidate ideas.
+2. Validate proposed deck skeleton card IDs and legality from EN_Card_Data.csv.
+3. Build a small set of deck candidates with the general pilot architecture.
+4. Add minimal deck-specific role tags/playbooks.
+5. Run an internal deck league: our decks vs our decks under our pilot.
+6. Identify which archetypes are pilotable, which need custom rules, and which are too complex.
+7. Produce a ranked report and next-action recommendation.
+8. No upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Strategy canvas
+
+Create:
+
+docs/PTCG_STRATEGY_CANVAS.md
+experiments/deck_ideas.yaml
+
+Capture the strategic branches:
+
+1. Current Water reference
+- core_pilot_water_v2_runtime
+- Kyogre / Snover / Mega Abomasnow shell
+- safe ToHand/search + discard runtime
+- keep as current clean reference
+
+2. Fast basic aggro
+- Raging Bolt ex + Teal Mask Ogerpon ex
+- low evolution burden
+- tests generic pilot's ability to attach energy and attack early
+
+3. Evolution power deck
+Choose one or two:
+- Dragapult ex spread/control
+- Mega Charizard X ex high-ceiling energy dump
+- Mega Gardevoir ex Psychic ramp
+- Mega Venusaur ex bulky Grass sustain
+
+4. Chaos/control
+- Durant ex deck-out carousel
+- special playbook required
+- do not race prizes
+- mill / wall / recycle / late Vengeful Crush
+
+5. Later branches
+- internal tournament expansion
+- chaos scout
+- deck-specific playbook compiler
+- real Kaggle probe after clean local candidate
+
+Part C — Validate card IDs and skeletons
+
+Use data/cards/EN_Card_Data.csv if available.
+
+Create:
+
+scripts/validate_deck_ideas.py
+
+Input:
+experiments/deck_ideas.yaml
+
+Output:
+data/experiments/pass17_deck_idea_validation.json
+data/experiments/pass17_deck_idea_validation.md
+
+For every proposed deck:
+- verify every explicit card ID exists
+- resolve card name
+- category / stage / type if available
+- verify counts are nonnegative
+- flag >4 copies for non-basic-energy cards
+- verify energy placeholders resolve to actual Basic Energy card IDs
+- verify 60-card total or report skeleton shortfall
+- no invented card IDs
+- blocked if any required ID missing
+
+Deck ideas to validate initially:
+
+A. water_core_reference
+Use current core_pilot_water_v2_runtime deck.
+
+B. raging_bolt_ogerpon_basic_aggro
+Key cards:
+- Raging Bolt ex: 63
+- Teal Mask Ogerpon ex: 96
+- Crispin: 1198
+- Dawn: 1231
+- Cheren: 1224
+- Ultra Ball: 1121
+- Buddy-Buddy Poffin: 1086
+- Boss's Orders: 1182
+- Night Stretcher: 1097
+- Basic Fighting Energy: 6
+- Basic Lightning Energy: 4
+- Basic Grass Energy: 1
+
+Starting skeleton:
+63 x3
+96 x2
+1198 x3
+1231 x2
+1224 x3
+1121 x4
+1086 x4
+1182 x2
+1097 x2
+Basic Fighting Energy 6 x7
+Basic Lightning Energy 4 x6
+Basic Grass Energy 1 x3
+Fill to 60 only with validated consistency cards or energy; document exact filler.
+
+C. dragapult_spread_control
+Key cards:
+- Dreepy: 119
+- Drakloak: 120
+- Dragapult ex: 121
+- Duskull: 131
+- Dusknoir: 133
+- Rare Candy: 1079
+- Dawn: 1231
+- Cheren: 1224
+- Ultra Ball: 1121
+- Buddy-Buddy Poffin: 1086
+- Boss's Orders: 1182
+- Night Stretcher: 1097
+- Basic Psychic Energy: 5
+- Basic Fire Energy: 2
+
+Starting skeleton:
+119 x4
+120 x1
+121 x3
+131 x2
+133 x2
+1079 x4
+1231 x3
+1224 x3
+1121 x4
+1086 x4
+1182 x3
+1097 x2
+Basic Psychic Energy 5 x6
+Basic Fire Energy 2 x4
+Fill to 60 only with validated consistency cards or energy; document exact filler.
+
+D. durant_deckout_carousel
+Key cards:
+- Durant ex: 198
+- Deino: 227
+- Zweilous: 228
+- Neutralization Zone: 1247
+- Slowpoke: 162
+- Iron Leaves: 27
+- Whimsicott: 815
+- Lacey: 1199
+- Acerola's Mischief: 1228
+- Judge: 1213
+- Boss's Orders: 1182
+- Dawn: 1231
+- Ultra Ball: 1121
+- Buddy-Buddy Poffin: 1086
+- Basic Darkness Energy: 7
+
+Starting skeleton:
+198 x4
+227 x4
+228 x3
+1247 x3
+162 x2
+27 x1
+815 x2
+1199 x2
+1228 x1
+1213 x2
+1182 x2
+1231 x3
+1121 x4
+1086 x4
+Basic Darkness Energy 7 x7
+Fill to 60 only with validated consistency cards, recovery, or energy; document exact filler.
+
+Optional validation only, no build unless cheap:
+- Charizard X / Oricorio / Firebreather
+- Mega Venusaur
+- Mega Gardevoir
+
+Part D — Build minimal playbooks
+
+Create playbooks for buildable decks:
+
+playbooks/pass17_water_core_reference.yaml
+playbooks/pass17_raging_bolt_ogerpon.yaml
+playbooks/pass17_dragapult_spread.yaml
+playbooks/pass17_durant_deckout_carousel.yaml
+
+Each playbook must include:
+- card IDs
+- role tags
+- plan summary
+- generic pilot weights
+- deck-specific constraints
+- unsafe/deferred behaviors
+
+Role categories:
+- primary_basic_attacker
+- secondary_attacker
+- setup_basic
+- evolution_payoff
+- energy
+- search
+- draw
+- disruption
+- stadium
+- tool
+- recovery
+- deckout_or_mill
+- special_payoff
+
+Deck-specific notes:
+
+Raging Bolt:
+- prefer Raging Bolt active
+- bench Ogerpon
+- attach correct energy to Raging Bolt
+- attack early
+- do not overcomplicate
+
+Dragapult:
+- prioritize Dreepy line
+- use Rare Candy/Dawn to reach Dragapult
+- bench safely
+- spread damage logic is mostly deferred unless attack target metadata is reliable
+
+Durant:
+- special playbook, not generic-only
+- prefer Deino/Zweilous active
+- bench Durant ex for Sudden Shearing if effect triggers are observable
+- keep Durant ex off active unless late Vengeful Crush is live
+- prioritize Neutralization Zone if legal and safe
+- do not race prizes
+- mill/deckout is primary plan
+- chaos candidate is scout-only unless special triggers are measurable
+
+Part E — Build candidate decks
+
+Build candidates only if IDs validate and 60-card legal lists can be produced.
+
+Output run dirs:
+experiments/runs_pass17/<candidate_id>/
+
+Candidate IDs:
+1. league_water_core_reference
+2. league_raging_bolt_ogerpon
+3. league_dragapult_spread
+4. league_durant_deckout_carousel
+
+Tarballs:
+data/submissions/candidates_pass17/<candidate_id>.tar.gz
+
+Use the current clean core-pilot compiler and entrypoint-safe runtime.
+
+Important:
+- For Raging Bolt and Dragapult, generic pilot + roles is acceptable.
+- For Durant, if special deckout/mill triggers are not implemented, build as "scout only" and label clearly.
+- If Durant cannot be piloted meaningfully yet, create the deck/playbook but block it from eval, with reason.
+
+Part F — Validation gates
+
+Every built candidate must pass:
+
+python scripts/validate_candidate_tarball.py <tarball>
+python scripts/validate_candidate_entrypoint.py <tarball>
+
+Run live cabt smoke for each:
+- self-play 1 game per seat if feasible
+- vs water reference 1 game per seat if feasible
+
+Required:
+- DONE status
+- no INVALID
+- no ERROR
+- no TIMEOUT
+- finite rewards
+
+Output:
+data/experiments/pass17_candidate_validation.json
+data/experiments/pass17_candidate_validation.md
+
+Part G — Internal deck league
+
+Run internal round-robin among validator-passing candidates.
+
+League participants:
+- league_water_core_reference
+- league_raging_bolt_ogerpon
+- league_dragapult_spread
+- league_durant_deckout_carousel if not blocked
+- core_pilot_water_v2_runtime as historical reference if separate
+
+Format:
+- every deck vs every other deck
+- seat-swapped
+- 5 games per seat per pairing
+- if runtime is high, use 3 games per seat and report reduced fidelity
+- watchdog enabled
+- no upload
+
+Output:
+data/experiments/pass17_internal_league.json
+data/experiments/pass17_internal_league.md
+data/experiments/pass17_league_matrix.csv
+data/experiments/pass17_league_rankings.json
+data/experiments/pass17_league_rankings.md
+
+Metrics:
+- wins/losses/draws
+- adjusted win rate
+- seat split
+- invalid/crash/timeout
+- average game length
+- deckout wins/losses if detectable
+- first meaningful attack step
+- first KO step
+- setup success rate
+- no-bench loss rate
+- stuck_on_basic rate
+- low-deck draw/search count
+- role-specific success:
+  - Raging Bolt attack online
+  - Dragapult evolved/attacking
+  - Durant mill active / deckout pressure
+  - Water Kyogre active/search/discard quality
+
+Part H — Deck/pilot compatibility analysis
+
+Create:
+
+data/experiments/pass17_deck_pilot_compatibility.md
+data/experiments/pass17_deck_pilot_compatibility.json
+
+For each deck:
+- generic pilot suitability: high/medium/low
+- deck-specific playbook need: low/medium/high
+- complexity rating
+- failure modes
+- fixtures needed before upload
+- whether it should be a future Kaggle candidate
+- whether it should remain research-only
+
+Expected classifications:
+- Raging Bolt likely high generic-pilot suitability.
+- Dragapult likely medium; needs evolution/spread planning.
+- Durant likely low generic-pilot suitability; high playbook need.
+- Water known baseline/reference.
+
+Part I — Optional targeted fixtures
+
+If a deck exposes obvious failures, create fixture plans only:
+
+data/fixtures/pass17_planned_fixtures.yaml
+
+Do not build a large fixture suite unless cheap.
+
+Possible fixture plans:
+- Raging Bolt: attach correct mixed energy and attack early.
+- Dragapult: search/evolve line, spread payoff.
+- Durant: keep Zweilous active, bench/recycle Durant, do not take prize race path, play Neutralization Zone.
+
+Part J — Strategy canvas update
+
+Update:
+
+docs/PTCG_STRATEGY_CANVAS.md
+
+Include:
+- validated deck ideas
+- blocked ideas
+- internal league results
+- recommended next archetype
+- chaos readiness
+- Kaggle probe readiness
+
+Part K — Report site
+
+Update:
+- data/site/index.html
+- data/reports/activegraph_strategy_report.md
+- data/reports/pass17_internal_deck_league_report.md
+
+Include:
+- deck validation table
+- playbook table
+- validation/smoke table
+- league matrix
+- deck/pilot compatibility analysis
+- no-upload note
+- next recommendation
+
+Part L — Tests
+
+Add/update tests for:
+- deck idea validator catches missing IDs
+- deck idea validator catches >4 non-energy copies
+- all generated deck lists are 60 integer IDs
+- all generated tarballs are top-level main.py + deck.csv only
+- entrypoint validator passes for built candidates
+- blocked Durant cannot enter league if special triggers are missing
+- league matrix excludes validator-failing candidates
+- raw replay/card CSV remains gitignored
+- root files unchanged
+- no upload flag remains false
+- report includes internal-league-not-Kaggle disclaimer
+
+Run targeted tests, then broader suite if feasible.
+
+Part M — Final report
+
+Report exactly:
+
+ActiveGraph Pass 17 Internal Deck League Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Strategy canvas
+- canvas path:
+- deck ideas recorded:
+- buildable ideas:
+- blocked ideas:
+
+3. Deck validation
+- validation path:
+- IDs checked:
+- missing IDs:
+- illegal counts:
+- legal 60-card decks:
+
+4. Candidate generation
+- candidates built:
+- candidates blocked:
+- tarballs:
+- playbooks:
+- no invented IDs:
+
+5. Validation / smoke
+- tarball validator:
+- entrypoint validator:
+- live smoke:
+- invalid/crash/timeout:
+
+6. Internal league
+- participants:
+- games per pairing:
+- league matrix:
+- top deck:
+- worst deck:
+- notable matchups:
+
+7. Deck/pilot compatibility
+- best generic-pilot deck:
+- highest special-playbook need:
+- best chaos/control prospect:
+- best next Kaggle-probe prospect:
+- main failure modes:
+
+8. Queue/upload guidance
+- candidates queued:
+- upload performed: no
+- submit next: yes/no:
+- reason:
+
+9. Report site / docs
+- site path:
+- markdown report:
+- key lesson:
+
+10. Next recommendation
+- one sentence only.

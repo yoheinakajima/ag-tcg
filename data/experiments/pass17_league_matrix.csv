@@ -1,0 +1,5 @@
+deck \ opponent (a_win_rate),league_water_core_reference,league_raging_bolt_ogerpon,league_dragapult_spread,core_pilot_water_v2_runtime
+league_water_core_reference,—,1.0,0.7,0.6
+league_raging_bolt_ogerpon,0.0,—,0.0,0.0
+league_dragapult_spread,0.3,1.0,—,0.6
+core_pilot_water_v2_runtime,0.4,1.0,0.4,—

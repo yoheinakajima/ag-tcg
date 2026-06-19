@@ -1,0 +1,190 @@
+# ActiveGraph Pass 17 — deck idea registry (internal deck league).
+#
+# LOCAL ONLY. No Kaggle upload. Every card id below is confirmed present in
+# data/cards/EN_Card_Data.csv (that CSV is gitignored and never committed). No
+# invented ids. `cards` are the FINAL 60-card composition (skeleton + documented
+# filler); the validator (scripts/validate_deck_ideas.py) checks id existence,
+# legality (<=4 non-basic-energy), basic-energy resolution, and the 60-card total.
+#
+# Role: this file is both the validation input (Part C) and the build input
+# (Part E). `buildable` decks become league candidates; `blocked` decks are
+# validated + given a playbook but kept out of the league with a reason.
+
+schema: activegraph.deck_ideas/v1
+pass: "17"
+
+# Basic Energy card ids (category "Basic Energy" in EN_Card_Data.csv).
+basic_energy_ids: [1, 2, 3, 4, 5, 6]
+
+decks:
+
+  # A. Current clean Water reference — the proven core_pilot_water_v2_runtime deck.
+  water_core_reference:
+    name: Water core reference (Kyogre / Snover / Mega Abomasnow ex)
+    candidate_id: league_water_core_reference
+    buildable: true
+    role: reference
+    deck_source: core_pilot_water_v2_runtime    # deck.csv copied byte-for-byte from this tarball
+    playbook: playbooks/pass17_water_core_reference.yaml
+    runtime_contexts: [7, 8]                     # faithful to the v2 reference
+    cards:
+      3: 29        # Basic {W} Energy
+      721: 4       # Kyogre (primary basic attacker)
+      722: 4       # Snover (setup basic)
+      723: 4       # Mega Abomasnow ex (evolution payoff)
+      1092: 1      # Secret Box (high-risk search)
+      1121: 4      # Ultra Ball (search)
+      1145: 2      # Mega Signal (search)
+      1163: 2      # Powerglass (tool)
+      1219: 4      # Team Rocket's Petrel (draw)
+      1227: 4      # Lillie's Determination (draw)
+      1262: 2      # Surfing Beach (stadium)
+    filler: "None — uses the proven v2 60-card list verbatim."
+
+  # B. Fast basic aggro — low evolution burden, tests early attach + attack.
+  raging_bolt_ogerpon_basic_aggro:
+    name: Raging Bolt ex + Teal Mask Ogerpon ex basic aggro
+    candidate_id: league_raging_bolt_ogerpon
+    buildable: true
+    role: aggro
+    playbook: playbooks/pass17_raging_bolt_ogerpon.yaml
+    runtime_contexts: [1, 2, 7, 8, 38]
+    skeleton:
+      63: 3       # Raging Bolt ex
+      96: 2       # Teal Mask Ogerpon ex
+      1198: 3     # Crispin
+      1231: 2     # Dawn
+      1224: 3     # Cheren
+      1121: 4     # Ultra Ball
+      1086: 4     # Buddy-Buddy Poffin
+      1182: 2     # Boss's Orders
+      1097: 2     # Night Stretcher
+      6: 7        # Basic {F} Energy
+      4: 6        # Basic {L} Energy
+      1: 3        # Basic {G} Energy
+    cards:        # final 60 = skeleton + filler
+      63: 4
+      96: 4
+      1198: 4
+      1231: 4
+      1224: 4
+      1121: 4
+      1086: 4
+      1182: 4
+      1097: 4
+      6: 13       # Basic {F} Energy
+      4: 8        # Basic {L} Energy
+      1: 3        # Basic {G} Energy
+    filler: >
+      +19 over skeleton, validated ids only: +1 Raging Bolt ex (63), +2 Teal Mask
+      Ogerpon ex (96), +1 Crispin (1198), +2 Dawn (1231), +1 Cheren (1224), +2
+      Boss's Orders (1182), +2 Night Stretcher (1097) — all consistency, each <=4;
+      remaining +6 as Basic {F} Energy and +2 as Basic {L} Energy to make 60.
+
+  # C. Evolution power deck — Dragapult ex spread/control (Stage 2 line).
+  dragapult_spread_control:
+    name: Dragapult ex spread / control
+    candidate_id: league_dragapult_spread
+    buildable: true
+    role: evolution_control
+    playbook: playbooks/pass17_dragapult_spread.yaml
+    runtime_contexts: [1, 2, 7, 8, 38]
+    skeleton:
+      119: 4      # Dreepy
+      120: 1      # Drakloak
+      121: 3      # Dragapult ex
+      131: 2      # Duskull
+      133: 2      # Dusknoir
+      1079: 4     # Rare Candy
+      1231: 3     # Dawn
+      1224: 3     # Cheren
+      1121: 4     # Ultra Ball
+      1086: 4     # Buddy-Buddy Poffin
+      1182: 3     # Boss's Orders
+      1097: 2     # Night Stretcher
+      5: 6        # Basic {P} Energy
+      2: 4        # Basic {R} Energy
+    cards:        # final 60 = skeleton + filler
+      119: 4
+      120: 3
+      121: 4
+      131: 2
+      133: 2
+      1079: 4
+      1231: 4
+      1224: 4
+      1121: 4
+      1086: 4
+      1182: 4
+      1097: 4
+      5: 11       # Basic {P} Energy
+      2: 6        # Basic {R} Energy
+    filler: >
+      +15 over skeleton, validated ids only: +2 Drakloak (120), +1 Dragapult ex
+      (121), +1 Dawn (1231), +1 Cheren (1224), +1 Boss's Orders (1182), +2 Night
+      Stretcher (1097) — all consistency, each <=4; remaining +5 Basic {P} Energy
+      and +2 Basic {R} Energy to make 60.
+
+  # D. Chaos/control — Durant ex deck-out carousel. Needs a SPECIAL deckout/mill
+  # playbook the generic pilot does not implement; built + validated but BLOCKED
+  # from the league (would race prizes incorrectly). Scout-only.
+  durant_deckout_carousel:
+    name: Durant ex deck-out carousel
+    candidate_id: league_durant_deckout_carousel
+    buildable: true
+    blocked_from_league: true
+    block_reason: >
+      Deckout/mill is the win condition and requires special triggers the current
+      generic core pilot does not implement (keep Durant ex off active until late
+      Vengeful Crush, prefer Deino/Zweilous active, prioritize Neutralization Zone,
+      do NOT race prizes, recycle/mill loop). Piloted generically it would chase KOs
+      and misplay the carousel, so it is scout-only and excluded from the league.
+    role: chaos_control
+    playbook: playbooks/pass17_durant_deckout_carousel.yaml
+    runtime_contexts: [1, 2, 7, 8, 38]
+    skeleton:
+      198: 4      # Durant ex
+      227: 4      # Deino
+      228: 3      # Zweilous
+      1247: 3     # Neutralization Zone
+      162: 2      # Slowpoke
+      27: 1       # Iron Leaves
+      815: 2      # Whimsicott
+      1199: 2     # Lacey
+      1228: 1     # Acerola's Mischief
+      1213: 2     # Judge
+      1182: 2     # Boss's Orders
+      1231: 3     # Dawn
+      1121: 4     # Ultra Ball
+      1086: 4     # Buddy-Buddy Poffin
+      7: 7        # Basic {D} Energy
+    cards:        # final 60 = skeleton + filler
+      198: 4
+      227: 4
+      228: 4
+      1247: 4
+      162: 4
+      27: 2
+      815: 4
+      1199: 4
+      1228: 2
+      1213: 4
+      1182: 4
+      1231: 4
+      1121: 4
+      1086: 4
+      7: 8        # Basic {D} Energy
+    filler: >
+      +16 over skeleton, validated ids only: +1 Zweilous (228), +1 Neutralization
+      Zone (1247), +2 Slowpoke (162), +1 Iron Leaves (27), +2 Whimsicott (815), +2
+      Lacey (1199), +1 Acerola's Mischief (1228), +2 Judge (1213), +2 Boss's Orders
+      (1182), +1 Dawn (1231) — all <=4; remaining +1 Basic {D} Energy to make 60.
+
+# Later branches (recorded only; not built this pass):
+later_branches:
+  - Mega Charizard X ex high-ceiling energy dump (optional validate-only)
+  - Mega Gardevoir ex Psychic ramp (optional validate-only)
+  - Mega Venusaur ex bulky Grass sustain (optional validate-only)
+  - Internal tournament expansion (more rounds / Swiss)
+  - Deck-specific playbook compiler (per-archetype rule packs)
+  - Real Kaggle probe — only after a clean local candidate clears human review

@@ -1,2 +1,2 @@
-- [Core-pilot context wiring](core-pilot-context-wiring.md) — only wire cabt contexts confirmed cross-source (replay shape AND live trace); broad Main (ctx 0) stays delegated; entrypoint = fresh-named callable LAST.
-- [Surrogate eval is directional](surrogate-eval-directional.md) — local surrogate-opponent eval never substitutes for live Kaggle; never auto-promote/upload on it; expansion can score worse than baseline.
+- [Sandbox kills background processes](sandbox-kills-background-procs.md) — `nohup ... &` detached procs are reaped when the bash call returns; run long evals foreground in bounded chunks.
+- [Long-running jobs (>120s)](long-running-jobs.md) — use a temporary console workflow + sentinel file polled from short bash calls; bash caps at 120s.

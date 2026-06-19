@@ -1,0 +1,66 @@
+# ActiveGraph Pass 17 — Water core reference playbook (league_water_core_reference).
+#
+# Mirrors the proven core_pilot_water_v2_runtime roles so this league entry is a
+# faithful clean reference. All ids confirmed in data/cards/EN_Card_Data.csv
+# (gitignored, never committed). No invented ids.
+
+deck_id: league_water_core_reference
+based_on: v2_kyogre_abomasnow_core_pilot
+schema: activegraph.playbook.core_pilot/v1
+
+cards:
+  3: Basic {W} Energy
+  721: Kyogre
+  722: Snover
+  723: Mega Abomasnow ex
+  1092: Secret Box
+  1121: Ultra Ball
+  1145: Mega Signal
+  1163: Powerglass
+  1219: Team Rocket's Petrel
+  1227: Lillie's Determination
+  1262: Surfing Beach
+
+roles:
+  basic_energy: [3]
+  primary_basic_attacker: [721]
+  setup_basic: [722]
+  evolution_payoff: [723]
+  search: [1121, 1145]
+  high_risk_search: [1092]
+  tool: [1163]
+  draw: [1219, 1227, 1262]
+  stadium: [1262]
+
+plan:
+  primary_plan: kyogre_tempo
+  secondary_plan: abomasnow_evolution
+  avoid_plans: [passive_draw_loop, deckout]
+
+role_weights:
+  active_prefers: [primary_basic_attacker]
+  bench_prefers: [primary_basic_attacker, setup_basic]
+  attach_prefers: [active_attacker, next_attacker]
+  search_prefers: missing_plan_piece
+  discard_prefers: [basic_energy]
+  preserve_only:
+    - setup_basic
+    - primary_basic_attacker
+    - evolution_payoff_when_setup_exists
+
+deckout_guard_thresholds:
+  penalize: 8
+  heavy: 4
+  critical: 2
+
+deck_specific_constraints:
+  - Keep at least one Snover (setup_basic) so Mega Abomasnow ex is never orphaned.
+  - Decline Mega Signal search when no Snover is in play.
+
+unsafe_or_deferred:
+  - Secret Box discard is advisory only (not deterministically gradeable).
+  - Broad Main remains delegated to the base policy.
+
+notes:
+  - Generic competence is mechanics/score based; this file only supplies card roles.
+  - Faithful to the v2 reference; runtime contexts (7, 8) only.

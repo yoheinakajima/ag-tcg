@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph Strategy Lab — Pass 16</title>
+<title>ActiveGraph Strategy Lab — Pass 17</title>
 <style>
   :root { --bg:#0f1420; --panel:#171f2e; --ink:#e6edf6; --muted:#9bb0c9;
           --accent:#4cc4ff; --warn:#ffcf5c; --ok:#6ee7a0; --bad:#ff7b7b;
@@ -11,8 +11,7 @@
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--ink);
          font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
-  header { padding:32px 24px 18px; border-bottom:1px solid var(--line);
-           background:#121a2a; }
+  header { padding:32px 24px 18px; border-bottom:1px solid var(--line); background:#121a2a; }
   h1 { margin:0 0 6px; font-size:24px; }
   h2 { font-size:18px; margin:26px 0 10px; color:var(--accent); }
   .wrap { max-width:980px; margin:0 auto; padding:0 24px 64px; }
@@ -36,78 +35,44 @@
 <header>
   <div class="wrap" style="padding-bottom:0">
     <h1>ActiveGraph Strategy Lab</h1>
-    <div class="sub">Pass 16 — Empirical context map + runtime coverage v3 + real-sample focused eval</div>
+    <div class="sub">Pass 17 — Internal deck league + deck/pilot compatibility</div>
   </div>
 </header>
 <div class="wrap">
 
   <div class="note">
-    <strong>LOCAL-ONLY, DIRECTIONAL.</strong> Opponent subfamilies are piloted by a generic
-    surrogate policy, not the real Kaggle opponent policy. These results never equal Kaggle
-    results and are not sufficient to promote or upload any candidate. No Kaggle upload, no
-    GitHub push; root <code>main.py</code>/<code>deck.csv</code> immutable.
+    <strong>INTERNAL LEAGUE — NOT A KAGGLE LEADERBOARD.</strong> INTERNAL LEAGUE -- NOT A KAGGLE LEADERBOARD. All participants are our own decks piloted by the same generic core pilot; opponents are not real Kaggle policies. Win rates measure internal deck/pilot compatibility only and do not predict Kaggle results. No candidate is uploaded or submitted.
   </div>
 
   <div class="grid">
-    <div class="card"><div class="sub">Context sources</div><div class="big">9 replays + 14 live</div></div>
-    <div class="card"><div class="sub">Confirmed contexts</div><div class="big">10</div></div>
-    <div class="card"><div class="sub">Newly wired (v3)</div><div class="big">1, 2, 38</div></div>
-    <div class="card"><div class="sub">Candidates queued</div><div class="big ok">0</div></div>
+    <div class="card"><div class="sub">Decks in study</div><div class="big">4</div></div>
+    <div class="card"><div class="sub">League-eligible</div><div class="big ok">3</div></div>
+    <div class="card"><div class="sub">Top internal deck</div><div class="big">league_water_core_reference</div></div>
+    <div class="card"><div class="sub">Candidates uploaded</div><div class="big ok">0</div></div>
   </div>
 
-  <h2>Safe / deferred context decisions</h2>
-  <table>
-    <tr><th>ctx</th><th>label</th><th>confidence</th><th>decision</th></tr>
-    <tr><td>0</td><td>main_action_broad</td><td>confirmed cross-source</td><td class="warn">defer (broad Main)</td></tr>
-    <tr><td>1</td><td>setup_place_active</td><td>confirmed cross-source</td><td class="ok">wire</td></tr>
-    <tr><td>2</td><td>setup_place_bench</td><td>confirmed cross-source</td><td class="ok">wire</td></tr>
-    <tr><td>7</td><td>search_to_hand</td><td>confirmed cross-source</td><td class="ok">keep wired</td></tr>
-    <tr><td>8</td><td>discard</td><td>confirmed cross-source</td><td class="ok">keep wired</td></tr>
-    <tr><td>38</td><td>number_drawcount</td><td>confirmed cross-source</td><td class="ok">wire</td></tr>
-    <tr><td>3, 4, 22, 41</td><td>ambiguous semantics</td><td>confirmed cross-source</td><td class="warn">defer</td></tr>
-    <tr><td>5, 26, 30, 34</td><td>single-source</td><td>replay-only / live-only</td><td class="warn">defer</td></tr>
-  </table>
+  <h2>Deck validation</h2>
+  <table><tr><th>deck</th><th>cards</th><th>errors</th><th>legality</th><th>league</th></tr><tr><td><code>league_water_core_reference</code></td><td>60</td><td>0</td><td class='ok'>valid</td><td>✅</td></tr><tr><td><code>league_raging_bolt_ogerpon</code></td><td>60</td><td>0</td><td class='ok'>valid</td><td>✅</td></tr><tr><td><code>league_dragapult_spread</code></td><td>60</td><td>0</td><td class='ok'>valid</td><td>✅</td></tr><tr><td><code>league_durant_deckout_carousel</code></td><td>60</td><td>0</td><td class='ok'>valid</td><td>⛔ blocked</td></tr></table>
 
-  <h2>v2 vs v3 runtime coverage</h2>
-  <table>
-    <tr><th>candidate</th><th>wired contexts</th><th>tarball</th><th>entrypoint</th><th>core gate</th></tr>
-    <tr><td>core_pilot_water_v2_runtime</td><td>7, 8</td><td class="ok">PASS</td><td class="ok">PASS</td><td class="ok">PASS (0 hard)</td></tr>
-    <tr><td>core_pilot_water_v3_context</td><td>1, 2, 7, 8, 38</td><td class="ok">PASS</td><td class="ok">PASS</td><td class="ok">PASS (0 hard)</td></tr>
-    <tr><td>anchor clone (entrypoint-safe)</td><td>—</td><td class="ok">PASS</td><td class="ok">PASS</td><td class="sub">N/A (combo)</td></tr>
-    <tr><td>combo_full_safety_v3_fixed (live AC)</td><td>—</td><td class="sub">deck PASS</td><td class="bad">FAIL → INVALID</td><td class="sub">N/A (combo)</td></tr>
-  </table>
+  <h2>Validation / live smoke</h2>
+  <table><tr><th>candidate</th><th>tarball</th><th>entrypoint</th><th>self smoke</th><th>league</th></tr><tr><td><code>league_water_core_reference</code></td><td class='ok'>pass</td><td class='ok'>pass</td><td class='ok'>clean</td><td class='ok'>eligible</td></tr><tr><td><code>league_raging_bolt_ogerpon</code></td><td class='ok'>pass</td><td class='ok'>pass</td><td class='ok'>clean</td><td class='ok'>eligible</td></tr><tr><td><code>league_dragapult_spread</code></td><td class='ok'>pass</td><td class='ok'>pass</td><td class='ok'>clean</td><td class='ok'>eligible</td></tr><tr><td><code>league_durant_deckout_carousel</code></td><td class='ok'>pass</td><td class='ok'>pass</td><td class='bad'>INVALID</td><td class='bad'>excluded</td></tr></table>
 
-  <h2>Live smoke</h2>
-  <p class="sub">All matchups completed — <span class="ok">0 crashes / 0 timeouts / 0 errors</span>.</p>
+  <h2>Internal league standings</h2>
+  <table><tr><th>#</th><th>deck</th><th>role</th><th>W-L-D</th><th>adj win rate</th></tr><tr><td>1</td><td><code>league_water_core_reference</code></td><td>league_candidate</td><td>23-7-0</td><td>0.7667</td></tr><tr><td>2</td><td><code>league_dragapult_spread</code></td><td>league_candidate</td><td>19-11-0</td><td>0.6333</td></tr><tr><td>3</td><td><code>core_pilot_water_v2_runtime</code></td><td>historical_reference</td><td>18-12-0</td><td>0.6</td></tr><tr><td>4</td><td><code>league_raging_bolt_ogerpon</code></td><td>league_candidate</td><td>0-30-0</td><td>0.0</td></tr></table>
 
-  <h2>Real-sample focused eval (6 Pass-13 subfamilies, seat-swapped, 10 games/seat)</h2>
-  <table>
-    <tr><th>candidate</th><th>weighted meta</th><th>vs anchor</th><th>vs anchor 95% CI</th></tr>
-    <tr><td>core_pilot_water_v2_runtime</td><td class="ok"><strong>0.678</strong></td><td>0.55</td><td class="sub">[0.342, 0.742]</td></tr>
-    <tr><td>core_pilot_water_v3_context</td><td>0.620</td><td>0.35</td><td class="sub">[0.181, 0.567]</td></tr>
-  </table>
-  <p class="sub"><strong>Finding:</strong> v3's added setup/draw-count coverage did NOT improve
-  directional performance — it scored below v2 in both weighted meta and vs the anchor. Intervals
-  overlap (no confident regression), but there is no case to promote.</p>
+  <h2>League matrix (row deck's win rate vs column)</h2>
+  <table><tr><th>deck \ opp</th><th>league_water_core_reference</th><th>league_raging_bolt_ogerpon</th><th>league_dragapult_spread</th><th>core_pilot_water_v2_runtime</th></tr><tr><td><code>league_water_core_reference</code></td><td>—</td><td>1.0</td><td>0.7</td><td>0.6</td></tr><tr><td><code>league_raging_bolt_ogerpon</code></td><td>0.0</td><td>—</td><td>0.0</td><td>0.0</td></tr><tr><td><code>league_dragapult_spread</code></td><td>0.3</td><td>1.0</td><td>—</td><td>0.6</td></tr><tr><td><code>core_pilot_water_v2_runtime</code></td><td>0.4</td><td>1.0</td><td>0.4</td><td>—</td></tr></table>
 
-  <h2>Dry-run recommendation</h2>
-  <ul>
-    <li><strong>upload_performed: false</strong> — candidates queued: <strong>0</strong>.</li>
-    <li>v3 does not beat its v2 reference; nothing is promoted. The live active control is unchanged.</li>
-    <li><code>auto_submit_enabled=false</code>, <code>require_manual_approval_for_submit=true</code>, <code>human_review_required=true</code>.</li>
-  </ul>
+  <h2>Deck / pilot compatibility</h2>
+  <table><tr><th>deck</th><th>archetype</th><th>rating</th><th>adj win rate</th><th>record</th></tr><tr><td><code>league_water_core_reference</code></td><td>tempo + evolution payoff</td><td class='ok'>good</td><td>0.7667</td><td>23-7-0</td></tr><tr><td><code>league_dragapult_spread</code></td><td>Stage-2 evolution control</td><td class='ok'>good</td><td>0.6333</td><td>19-11-0</td></tr><tr><td><code>league_raging_bolt_ogerpon</code></td><td>fast basic aggro</td><td class='bad'>poor</td><td>0.0</td><td>0-30-0</td></tr><tr><td><code>league_durant_deckout_carousel</code></td><td>deck-out / mill chaos</td><td class='bad'>incompatible</td><td>None</td><td>None</td></tr></table>
 
   <h2>Reports</h2>
   <ul>
-    <li><a href="../reports/pass16_context_map_and_runtime_eval_report.md">Pass 16 context map + runtime eval report</a></li>
-    <li><a href="../reports/activegraph_strategy_report.md">ActiveGraph strategy report (full)</a></li>
-    <li><a href="../experiments/pass16_context_map.md">Context map (detail)</a> ·
-        <a href="../experiments/pass16_matchup_matrix.csv">matchup matrix CSV</a></li>
+    <li><code>data/reports/pass17_internal_deck_league_report.md</code> — 10-section league report</li>
+    <li><code>data/reports/activegraph_strategy_report.md</code> — strategy narrative</li>
+    <li><code>docs/PTCG_STRATEGY_CANVAS.md</code> — strategy canvas</li>
   </ul>
-
 </div>
-<footer>
-  ActiveGraph Strategy Lab · Pass 16 · LOCAL-ONLY directional evaluation · no upload performed.
-</footer>
+<footer>ActiveGraph — local-only lab. No Kaggle upload, no GitHub push. Root main.py / deck.csv immutable.</footer>
 </body>
 </html>
