@@ -1,0 +1,61 @@
+{
+  "pass": 20,
+  "part": "C",
+  "local_only_note": "Internal league is NOT a Kaggle leaderboard. This preflight verifies the artifact only; it does not predict the Kaggle score.",
+  "candidate_id": "league_water_core_reference",
+  "tarball": "data/submissions/candidates_pass17/league_water_core_reference.tar.gz",
+  "tarball_exists": true,
+  "tarball_members": ["main.py", "deck.csv"],
+  "nested_paths": false,
+  "extra_files": false,
+  "is_root_repackaged": false,
+  "deck": {
+    "rows": 60,
+    "all_integer_rows": true,
+    "unique_card_ids": 11,
+    "composition": {
+      "3": 29,
+      "721": 4,
+      "722": 4,
+      "723": 4,
+      "1092": 1,
+      "1121": 4,
+      "1145": 2,
+      "1163": 2,
+      "1219": 4,
+      "1227": 4,
+      "1262": 2
+    },
+    "basic_energy_ids": [3],
+    "non_energy_counts_legal": true,
+    "non_energy_max_count": 4,
+    "card_ids_all_in_card_db": true,
+    "card_ids_match_pass17_manifest": true,
+    "manifest": "playbooks/pass17_water_core_reference.yaml"
+  },
+  "card_names": {
+    "3": "Basic {W} Energy",
+    "721": "Kyogre",
+    "722": "Snover",
+    "723": "Mega Abomasnow ex",
+    "1092": "Secret Box",
+    "1121": "Ultra Ball",
+    "1145": "Mega Signal",
+    "1163": "Powerglass",
+    "1219": "Team Rocket's Petrel",
+    "1227": "Lillie's Determination",
+    "1262": "Surfing Beach"
+  },
+  "validators": {
+    "tarball_validator_rc": 0,
+    "entrypoint_validator_rc": 0,
+    "entrypoint_last_callable": "core_pilot_agent"
+  },
+  "root_safety": {
+    "package_verify_only_passed": true,
+    "root_main_unchanged_vs_v1": true,
+    "root_deck_unchanged_vs_v1": true
+  },
+  "preflight_passed": true,
+  "blockers": []
+}

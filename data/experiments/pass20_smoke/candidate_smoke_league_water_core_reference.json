@@ -1,0 +1,11 @@
+{
+  "tarball": "data/submissions/candidates_pass17/league_water_core_reference.tar.gz",
+  "status": "PASS",
+  "steps": 176,
+  "bad_statuses": [],
+  "final_statuses": [
+    "DONE",
+    "DONE"
+  ],
+  "deck_size": 60
+}

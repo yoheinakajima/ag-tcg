@@ -1,0 +1,348 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- This is a human-approved single Kaggle probe pass.
+- Submit at most one candidate, exactly once, only if every gate passes.
+- Do not push to GitHub.
+- Do not modify root main.py or root deck.csv.
+- Do not generate new deck-search candidates.
+- Do not generate chaos candidates.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Keep all candidate tarballs top-level main.py + deck.csv only.
+- If any gate fails, stop and report. Do not upload.
+- If a Kaggle submission is already pending, stop and report. Do not upload.
+- If Kaggle auth/listing fails, stop and report. Do not upload.
+- Read docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md, docs/NEXT_AGENT_README.md, docs/PTCG_STRATEGY_CANVAS.md, data/reports/pass17_internal_deck_league_report.md, data/reports/pass18_strategy_family_iteration_report.md, and data/reports/pass19_final_report.md before acting.
+
+Current state:
+- Pass 19 completed.
+- Dragapult search_only is interesting but not ready:
+  - aggregate internal result promising,
+  - direct H2H vs parent unstable,
+  - decision = needs_more_h2h,
+  - no upload.
+- Raging Bolt remains poor fit / structural failure.
+- Durant remains blocked / INVALID smoke.
+- Water is the stable reference family.
+- Pass 17 internal league showed league_water_core_reference as the top internal candidate:
+  - 23-7-0
+  - adj win rate 0.767
+  - validator/entrypoint/smoke clean per Pass 17
+- This pass should probe the clean Water reference on Kaggle to get real ladder signal.
+- This is not a promotion claim. It is a live calibration probe.
+
+Goal:
+Run Pass 20: Single Kaggle Probe — Water Reference.
+
+Candidate to probe:
+candidate_id: league_water_core_reference
+expected tarball: data/submissions/candidates_pass17/league_water_core_reference.tar.gz
+
+Do NOT fall back to another candidate without explicit human approval.
+If this tarball is missing, try to rebuild the exact same Pass 17 candidate from its recorded playbook/deck manifest. If exact rebuild is not possible, stop and report.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Kaggle status / auth precheck
+
+Check read-only Kaggle status before upload:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass20_water_probe.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass20_water_probe.csv || true
+
+If `kaggle` is not on PATH, try the already-installed Python package / kaggle.cli entrypoint used in earlier passes.
+
+Required before upload:
+- auth works
+- competition is reachable
+- submissions listing is readable
+- no latest submission is pending
+- no current upload is in progress
+
+If any required condition fails, stop and report.
+
+Part C — Candidate artifact verification
+
+Locate:
+
+data/submissions/candidates_pass17/league_water_core_reference.tar.gz
+
+Verify:
+- exists
+- tarball members are exactly:
+  - main.py
+  - deck.csv
+- no nested paths
+- no extra files
+- deck.csv has exactly 60 integer rows
+- non-energy card counts legal
+- card IDs are from validated card data / Pass 17 manifest
+- candidate is not root main.py/deck.csv accidentally repackaged unless that is explicitly documented
+
+Write:
+
+data/experiments/pass20_candidate_preflight.json
+data/experiments/pass20_candidate_preflight.md
+
+Part D — Mandatory validators
+
+Run:
+
+python scripts/validate_candidate_tarball.py data/submissions/candidates_pass17/league_water_core_reference.tar.gz
+python scripts/validate_candidate_entrypoint.py data/submissions/candidates_pass17/league_water_core_reference.tar.gz
+
+The candidate must:
+- return a 60-card deck for all deck-selection observation shapes
+- have the safe final top-level callable
+- produce legal action indices for gameplay observations
+- have no forbidden imports
+- remain stdlib-only in submitted runtime
+
+If either validator fails, stop and report. Do not upload.
+
+Part E — Competency / live smoke gates
+
+Run relevant gates:
+
+python scripts/run_core_competency_gate.py --candidate data/submissions/candidates_pass17/league_water_core_reference.tar.gz --fixtures data/fixtures/core_competency || true
+
+Run live cabt smoke:
+- candidate self-play, both seats if feasible
+- candidate vs current local Water reference / active anchor, both seats if feasible
+
+Required:
+- DONE statuses
+- no INVALID
+- no ERROR
+- no TIMEOUT
+- finite rewards
+
+Write:
+
+data/experiments/pass20_live_smoke.json
+data/experiments/pass20_live_smoke.md
+
+If live smoke fails, stop and report. Do not upload.
+
+Part F — Archive pre-upload artifact
+
+Archive the exact tarball and main/deck snapshot:
+
+data/submissions/archive/pass20_league_water_core_reference_probe.tar.gz
+data/submissions/archive/pass20_league_water_core_reference_main.py
+data/submissions/archive/pass20_league_water_core_reference_deck.csv
+data/submissions/archive/pass20_league_water_core_reference.md
+
+The archive note should include:
+- source tarball
+- candidate_id
+- validation results
+- smoke results
+- exact upload message planned
+- no root mutation
+
+Part G — ActiveGraph event before upload
+
+Emit events to data/activegraph/lab_events.jsonl:
+- StrategyPromotionDecision
+  - candidate_id: league_water_core_reference
+  - decision: human_approved_single_kaggle_probe
+  - reason: stable Water reference, internal league winner, validator/entrypoint/smoke gated
+  - caveat: internal league is not Kaggle leaderboard
+- SubmissionQueued
+  - upload_performed: false at queue time
+  - require_manual_approval_for_submit: true
+  - human_approved: true
+
+Part H — Submit exactly once
+
+Only after Parts A–G pass:
+
+Submit exactly once:
+
+Candidate file:
+data/submissions/candidates_pass17/league_water_core_reference.tar.gz
+
+Suggested Kaggle message, keep under Kaggle limit:
+
+league_water_core_reference: clean Water reference probe; Pass17 internal league top candidate; tarball+entrypoint+smoke PASS; live calibration only
+
+Use the installed Kaggle CLI/package method that works in this repo.
+
+Capture logs:
+
+data/kaggle_uploads/submit_pass20_league_water_core_reference.log
+
+Rules:
+- exactly one submit command
+- do not retry same submit unless the command clearly did not reach Kaggle
+- if upload returns success, do not submit again
+- if upload returns pending, stop and report pending
+- if upload returns error, fetch status/logs and report
+
+Part I — Fetch post-upload status
+
+After submit, run:
+
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_after_pass20_water_probe.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_after_pass20_water_probe.csv || true
+
+If CLI unavailable, use the Python kaggle.cli method.
+
+Record:
+- latest fileName
+- date
+- description
+- status
+- publicScore if available
+- error if available
+- episode/replay id if available
+
+If pending:
+- do not resubmit
+- report pending and exact command to check later
+
+If complete:
+- compare against:
+  - combo_full_safety_v3_fixed last-known 376.6
+  - v1 363.0
+  - deck_energy_trim_light 355.2
+  - any refreshed live scores available from Kaggle status
+
+If error:
+- classify error
+- download/record logs if available
+- do not resubmit
+
+Part J — ActiveGraph event after upload
+
+If submit succeeded:
+Emit:
+- SubmissionUploaded
+  - candidate_id
+  - tarball
+  - upload_mode: human_approved_single_probe
+  - kaggle_status: pending/complete/error
+  - upload_log_path
+  - preflight paths
+  - validator pass/fail
+  - smoke pass/fail
+
+If status later completes:
+Emit:
+- KaggleScoreUpdated
+  - candidate_id
+  - publicScore
+  - comparison baseline
+  - status
+
+Part K — Report site / docs
+
+Update:
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- data/reports/pass20_water_reference_kaggle_probe_report.md
+
+Do not rewrite historical results inaccurately.
+
+Include:
+- candidate probed
+- why this candidate
+- all gates
+- upload status
+- score if available
+- no further upload note
+- next action depends on result
+
+Part L — Tests / sanity
+
+Run targeted tests:
+- entrypoint validator tests
+- pass17 tests if cheap
+- pass18/pass19 strategy event tests if cheap
+- root unchanged test
+- any upload-log/no-secret tests
+
+Do not spend excessive time on unrelated slow tests unless cheap.
+
+Part M — Final report
+
+Report exactly:
+
+ActiveGraph Pass 20 Water Reference Kaggle Probe Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Candidate
+- candidate_id:
+- tarball:
+- tarball contents:
+- deck rows:
+- card IDs validated:
+- why this candidate:
+
+3. Pre-upload gates
+- tarball validator:
+- entrypoint validator:
+- core competency gate:
+- live smoke:
+- forbidden imports:
+- blockers:
+
+4. Kaggle auth/status
+- auth/listing:
+- pending submission before upload:
+- current live scores if refreshed:
+- stale caveat:
+
+5. Upload
+- attempted:
+- exactly once:
+- upload log:
+- raw result:
+- Kaggle message:
+
+6. Submission status
+- latest fileName:
+- status:
+- publicScore:
+- error:
+- replay/episode if available:
+- status logs:
+
+7. ActiveGraph
+- events emitted:
+- event store:
+- submission lineage:
+
+8. Interpretation
+- if pending: wait; no conclusion
+- if complete and above current best: promote candidate to new live control
+- if complete and below current best: keep current control and ingest replay
+- if error: classify and fix gate
+- no local/internal result is treated as Kaggle proof
+
+9. Manual git notes
+- files to review:
+- files not to commit:
+- generated/ignored files:
+
+10. Next recommendation
+- one sentence only.

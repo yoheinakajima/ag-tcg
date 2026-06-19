@@ -1,0 +1,31 @@
+{
+  "pass": 20,
+  "part": "E",
+  "candidate_id": "league_water_core_reference",
+  "tarball": "data/submissions/candidates_pass17/league_water_core_reference.tar.gz",
+  "local_only_note": "Real cabt smoke + core-competency gate. LOCAL ONLY; does not predict the Kaggle leaderboard score.",
+  "core_competency_gate": {
+    "rc": 0,
+    "verdict": "PASS",
+    "total": 14,
+    "pass": 13,
+    "fail": 0,
+    "advisory": 1,
+    "hard_failures": 0,
+    "report_json": "data/reports/pass14_core_gate.json",
+    "report_md": "data/reports/pass14_core_gate.md"
+  },
+  "live_smoke_selfplay": {
+    "status": "PASS",
+    "steps": 176,
+    "bad_statuses": [],
+    "final_statuses": ["DONE", "DONE"],
+    "deck_size": 60,
+    "both_seats_exercised": true,
+    "note": "candidate runs as both seat 0 and seat 1 in real kaggle_environments.make('cabt'); no INVALID/ERROR/TIMEOUT",
+    "artifact": "data/experiments/pass20_smoke/candidate_smoke_league_water_core_reference.json"
+  },
+  "vs_anchor_note": "Candidate league_water_core_reference IS the clean Water reference; self-play both-seats already exercises the Water-reference matchup. No separate distinct local anchor available without a deck change (disallowed).",
+  "all_gates_passed": true,
+  "blockers": []
+}

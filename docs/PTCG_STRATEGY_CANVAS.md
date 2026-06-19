@@ -1,4 +1,13 @@
-# ActiveGraph — Pokémon TCG Strategy Canvas (Pass 18 → 19)
+# ActiveGraph — Pokémon TCG Strategy Canvas (Pass 18 → 20)
+
+> **CURRENT AUTHORITATIVE STATE (Pass 20).** A single **HUMAN-APPROVED live calibration
+> probe** of `league_water_core_reference` (clean Water reference; Pass-17 internal-league
+> top, 23-7-0 adj 0.767) was submitted to Kaggle **exactly once** after every gate passed
+> (root immutability, tarball+entrypoint validators, preflight, core-competency gate, live
+> cabt smoke). This is **NOT a promotion claim**; post-upload status is **pending**. Live
+> active control = `combo_full_safety_v3_fixed` @ **391.1** (recomputed from the live
+> listing). No GitHub push; root `main.py`/`deck.csv` unchanged. See
+> `data/reports/pass20_water_reference_kaggle_probe_report.md`.
 
 > **CURRENT AUTHORITATIVE STATE (Pass 19).** Dragapult decision = `needs_more_h2h`;
 > `current_best` stays the **parent** `league_dragapult_spread` (v1 strictly better than

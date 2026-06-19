@@ -1,0 +1,6 @@
+fileName,date,description,status,publicScore,privateScore
+combo_full_safety_v3_fixed.tar.gz,2026-06-18 16:46:38,combo_full_safety_v3_fixed: fixes deck-selection return for key-absent Kaggle obs; same effect-safety candidate; validator PASS,complete,391.1,
+combo_full_safety_v3.tar.gz,2026-06-18 15:15:52,"combo_full_safety_v3: effect-resolution safety combo; 80-game local vs v2 0.62 WR, Wilson95 [0.52,0.72]",error,,
+deck_energy_trim_light.tar.gz,2026-06-17 22:11:51,deck_energy_trim_light: -4 Water +2 Kyogre +2 Ultra Ball,complete,288.4,
+submission.tar.gz,2026-06-17 19:37:48,v1 deck-loader fix (kaggle agent path fallback),complete,363.0,
+submission.tar.gz,2026-06-17 19:19:56,v0 smoke-passing baseline,error,,

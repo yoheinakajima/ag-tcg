@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph Strategy Lab — Pass 19</title>
+<title>ActiveGraph Strategy Lab — Pass 20</title>
 <style>
   :root { --bg:#0f1420; --panel:#171f2e; --ink:#e6edf6; --muted:#9bb0c9;
           --accent:#4cc4ff; --warn:#ffcf5c; --ok:#6ee7a0; --bad:#ff7b7b;
@@ -35,10 +35,22 @@
 <header>
   <div class="wrap" style="padding-bottom:0">
     <h1>ActiveGraph Strategy Lab</h1>
-    <div class="sub">Pass 19 — Dragapult parent/child H2H forensics + strategy portfolio loop</div>
+    <div class="sub">Pass 20 — Water reference live calibration probe (human-approved)</div>
   </div>
 </header>
 <div class="wrap">
+
+  <div class="note">
+    <strong>PASS 20 — HUMAN-APPROVED LIVE CALIBRATION PROBE.</strong> A single
+    candidate <code>league_water_core_reference</code> (clean Water reference; Pass-17
+    internal-league top, 23-7-0 adj 0.767) was submitted to Kaggle <strong>exactly
+    once</strong> after every gate passed. This is <strong>not a promotion claim</strong>
+    and not "strictly better" — it is one authorized data point to calibrate internal
+    signal against the real leaderboard. Post-upload status is <strong>pending</strong>
+    (scoring is asynchronous). Live active control = <code>combo_full_safety_v3_fixed</code>
+    @ <strong>391.1</strong> (recomputed from the live listing). No GitHub push; root
+    <code>main.py</code>/<code>deck.csv</code> unchanged.
+  </div>
 
   <div class="note">
     <strong>INTERNAL LEAGUE — NOT A KAGGLE LEADERBOARD.</strong> All league
@@ -46,14 +58,14 @@
     opponents are not real Kaggle policies. The meta sanity check is
     surrogate-based and <strong>directional only</strong>. Win rates measure
     internal deck/pilot compatibility, not competitive strength, and do not
-    predict Kaggle results. No candidate is uploaded or submitted.
+    predict Kaggle results.
   </div>
 
   <div class="grid">
-    <div class="card"><div class="sub">Decision</div><div class="big warn">needs_more_h2h</div></div>
-    <div class="card"><div class="sub">current_best (kept)</div><div class="big">league_dragapult_spread</div></div>
-    <div class="card"><div class="sub">Top aggregate deck</div><div class="big ok">v1_search_only</div></div>
-    <div class="card"><div class="sub">Candidates uploaded</div><div class="big ok">0</div></div>
+    <div class="card"><div class="sub">Pass 20 probe</div><div class="big warn">pending</div></div>
+    <div class="card"><div class="sub">Probed candidate</div><div class="big">league_water_core_reference</div></div>
+    <div class="card"><div class="sub">Live active control</div><div class="big ok">combo_full_safety_v3_fixed @ 391.1</div></div>
+    <div class="card"><div class="sub">Candidates uploaded (Pass 20)</div><div class="big ok">1</div></div>
   </div>
 
   <div class="note"><strong>The paradox, resolved.</strong> In Pass 18 the child
@@ -131,6 +143,8 @@
 
   <h2>Reports</h2>
   <ul>
+    <li><code>data/reports/pass20_water_reference_kaggle_probe_report.md</code> — Pass 20 live calibration probe report</li>
+    <li><code>data/reports/pass20_final_report.md</code> — Pass 20 10-section final report</li>
     <li><code>data/reports/pass19_final_report.md</code> — 10-section final report</li>
     <li><code>data/reports/pass19_dragapult_parent_child_report.md</code> — parent/child forensics deep-dive</li>
     <li><code>data/reports/activegraph_strategy_report.md</code> — strategy narrative (through Pass 19)</li>
@@ -140,6 +154,6 @@
     <li><code>data/experiments/pass19_dragapult_mini_league.md</code> · <code>pass19_meta_sanity.md</code> · <code>pass19_candidate_validation.md</code></li>
   </ul>
 </div>
-<footer>ActiveGraph — local-only lab. No Kaggle upload, no GitHub push. Root main.py / deck.csv immutable.</footer>
+<footer>ActiveGraph — local lab. Pass 20: ONE human-approved live calibration probe (no GitHub push). Root main.py / deck.csv immutable.</footer>
 </body>
 </html>
