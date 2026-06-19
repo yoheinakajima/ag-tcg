@@ -1,0 +1,53 @@
+pass: '29'
+part: I
+note: observability / fixture backlog; honestly split by what is executable now vs
+  blocked on more observability
+feasibility_gate_passed: true
+summary:
+  executable_now: 2
+  one_capture_away: 1
+  needs_more_observability: 3
+  total: 6
+fixtures:
+- fixture_id: effect_loop_exit_guard
+  observability: fully_observable
+  executable_now: true
+  status: BUILT_AND_VALIDATED
+  candidate: effect_loop_exit_guard_v1
+  evidence: exit option observable 1958/1958 at ctx0; eval verdict effect_loop_exit_candidate_built
+  priority: P0
+- fixture_id: search_target_ctx7
+  observability: observable
+  executable_now: true
+  status: ready_to_build
+  evidence: search-to-hand (ctx7) target identity resolvable from select.deck / candidate
+    resolver
+  priority: P1
+- fixture_id: single_target_attack
+  observability: one_capture_ratchet_away
+  executable_now: false
+  status: blocked_on_cheap_capture
+  evidence: "attackId observable 1.0; defender active identity captured as null in\
+    \ trace (0.0) \u2014 exists in raw obs, add opponent_active to the snapshot"
+  priority: P1
+- fixture_id: spread_bench_target
+  observability: needs_more_observability
+  executable_now: false
+  status: needs_more_observability
+  evidence: opponent bench identity and per-target damage are wholly unobserved; spread
+    cannot be attributed to a bench slot
+  priority: P2
+- fixture_id: supporter_effect_sequencing
+  observability: needs_more_observability
+  executable_now: false
+  status: needs_more_observability
+  evidence: supporter/Trainer effect OUTCOMES are not linked to the play event; play_from_hand
+    identity 0.0
+  priority: P2
+- fixture_id: in_play_action_source
+  observability: needs_more_observability
+  executable_now: false
+  status: needs_more_observability
+  evidence: in_play_action source Pokemon identity rarely resolvable (0.031); this
+    is the very loop-head action the guard now fences
+  priority: P3

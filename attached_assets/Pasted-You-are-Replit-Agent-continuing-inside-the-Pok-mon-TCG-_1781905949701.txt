@@ -1,0 +1,612 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Raw replay JSON files must remain gitignored.
+- Keep all existing candidate tarballs immutable.
+- This is an observability + feasibility pass.
+- Do not build a runtime candidate unless the trigger/observability gate explicitly passes.
+- No Kaggle upload.
+
+Read before acting:
+- docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md
+- docs/NEXT_AGENT_README.md
+- docs/CORE_PILOT_ARCHITECTURE.md
+- docs/CORE_PILOT_ROLE_TAXONOMY.md
+- docs/CORE_GAMEPLAY_BACKLOG.md if present
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/pass27_multi_archetype_portfolio_report.md
+- data/reports/pass28_cross_deck_forensic_report.md
+- data/experiments/pass28_deck_forensics.json
+- data/experiments/pass28_mechanics_coverage_matrix.json
+- data/experiments/pass28_core_gap_priority.json
+- data/experiments/pass28_action_trace.jsonl
+- data/activegraph/lab_events.jsonl
+
+Current authoritative state:
+- Pass 28 was diagnostic only.
+- It refuted the naive Raging Bolt hypotheses:
+  - color_match_attach: REFUTED
+  - attack_pressure: REFUTED
+- Raging Bolt attached only deck-plan colors and attacked when available.
+- Therefore do NOT build color-matched energy rules next.
+- Top evidence-backed gap: effect_loop_termination.
+- Main concrete failure: Mega Venusaur / context 33+21 repeated effect loop.
+- Remaining suspected gaps are mostly unobservable:
+  - attack-target / spread-target identity
+  - search/supporter-card selection identity
+  - play_from_hand card identity
+  - effect-loop exit options
+  - ability/effect target identity
+- The next implementation must improve observability first.
+- If effect-loop termination proves safely actionable, build at most one micro-candidate.
+- If not, block candidate generation and report why.
+
+Goal:
+Run Pass 29: Observability Ratchet + Effect-Loop Feasibility.
+
+Core question:
+Can we reliably decode enough cabt action/target/effect information to turn the remaining suspected gaps into executable fixtures or safe runtime hooks?
+
+Objectives:
+1. Preserve root safety.
+2. Refresh live score read-only only.
+3. Build a stronger action resolver from replay state/logs.
+4. Validate resolver accuracy with before/after state transitions.
+5. Analyze the Venusaur effect-loop failure in detail.
+6. Determine whether effect-loop termination is safely actionable.
+7. Improve observability for attack/spread/search/supporter/ability target identity.
+8. Build at most one micro-candidate only if a legal, narrow, replay-proven effect-loop exit exists.
+9. No upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Read-only live score status
+
+Run read-only Kaggle status if possible:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass29.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass29.csv || true
+
+If kaggle is not on PATH, use the Python kaggle.cli/API method used in prior passes.
+
+Rules:
+- no submit
+- no upload
+- status listing only
+- publicScore may be string; coerce safely to float
+- preserve distinct fields:
+  - live_score_leader
+  - water_family_current_best
+  - portfolio_reference
+- do not make a promotion decision
+
+Output:
+- data/experiments/pass29_live_score_status.json
+- data/experiments/pass29_live_score_status.md
+
+Part C — Action resolver v2
+
+Create or update:
+
+src/ptcg_activegraph/analysis/action_resolver.py
+scripts/build_pass29_action_resolution_dataset.py
+
+Outputs:
+- data/experiments/pass29_action_resolution_dataset.jsonl
+- data/experiments/pass29_action_resolution_summary.json
+- data/experiments/pass29_action_resolution_summary.md
+
+The resolver must decode, with confidence levels:
+
+1. Main / context 0 options
+- Attach:
+  - resolve hand card from option.index / area=2
+  - resolve target from inPlayArea + inPlayIndex
+  - verify with subsequent logs where possible
+- Play:
+  - resolve hand card from option.index when possible
+  - verify with following Play / MoveCard logs
+- Evolve:
+  - resolve evolution card and target when possible
+- Ability:
+  - resolve source card / target if possible
+  - if not possible, mark unresolved
+- Attack:
+  - resolve attackId
+  - resolve attacking card from board
+  - attempt to infer target from damage logs
+  - mark target unresolved if not provable
+- End:
+  - resolve as End
+
+2. Search / ToHand / context 7
+- Resolve option area/index against select.deck when present.
+- Resolve discard/search-from-discard when area=6 if discard list is available.
+- Record hidden-target limitation if deck/zone list is absent.
+
+3. Discard / context 8
+- Resolve option area/index against hand.
+- Verify with following MoveCard logs.
+
+4. Draw-count / context 38
+- Resolve numeric option.
+- Record min/max and legal range.
+
+5. Setup contexts
+- Resolve setup active / setup bench basics.
+- Preserve distinction between Basic and evolution cards.
+- Mega Abomasnow ex is NOT a Basic.
+
+6. Effect-loop contexts
+- Capture context ids, option types, selected actions, repeated signatures, logs, and whether any option looks like Stop / Decline / Done / End / No.
+
+For every resolved option:
+- confidence:
+  - direct_option
+  - verified_by_following_log
+  - inferred_from_state_delta
+  - unresolved
+- reason
+- source episode
+- source step
+- candidate/deck family if known
+
+Part D — Resolver validation via state transitions
+
+Create:
+
+scripts/validate_pass29_action_resolution.py
+
+Outputs:
+- data/experiments/pass29_action_resolution_validation.json
+- data/experiments/pass29_action_resolution_validation.md
+
+Validate at least these:
+- Attach resolution:
+  - chosen option maps to a hand energy/tool and target receives it in logs or next state
+- Play resolution:
+  - chosen option maps to a hand card and following log shows Play / MoveCard
+- Search resolution:
+  - selected deck option maps to card moved to hand, if visible
+- Discard resolution:
+  - selected hand option maps to discarded card
+- Attack resolution:
+  - attackId maps to attack log
+  - target identity only if damage log proves it
+- Ability resolution:
+  - source/target only if logs or board deltas prove it
+- Effect-loop resolution:
+  - repeated context signatures can be detected
+  - stop/exit option detection is explicit, not guessed
+
+Report:
+- total resolved options
+- unresolved rate by action class
+- false/uncertain cases
+- examples for each confidence level
+
+Part E — Venusaur effect-loop anatomy
+
+Create:
+
+scripts/analyze_pass29_effect_loops.py
+
+Outputs:
+- data/experiments/pass29_effect_loop_analysis.json
+- data/experiments/pass29_effect_loop_analysis.md
+- data/experiments/pass29_effect_loop_windows.jsonl
+
+Focus:
+- league_mega_venusaur_tank
+- contexts 33 and 21
+- any other repeated context loop discovered
+
+For each loop:
+- run_id
+- game_id
+- candidate_id
+- context sequence
+- repeated signature
+- number of repeats
+- board state at start/end
+- hand/deck/bench/discard state
+- selected actions each repeat
+- legal options each repeat
+- whether an End/Stop/No/Decline option exists
+- whether taking that option would be legal
+- whether the current pilot repeatedly chooses a non-exiting option
+- whether the loop makes progress:
+  - energy moved?
+  - card drawn?
+  - card moved?
+  - board changed?
+  - damage/attack happened?
+- whether the game eventually exits naturally
+- whether the loop consumes the run budget / delays attack
+
+Classify each loop:
+- forced_engine_loop
+- optional_loop_with_exit
+- beneficial_repeat
+- harmful_repeat
+- unknown
+
+Part F — Effect-loop feasibility gate
+
+Create:
+
+data/experiments/pass29_effect_loop_feasibility.json
+data/experiments/pass29_effect_loop_feasibility.md
+
+A runtime hook is buildable only if:
+- at least 3 high-confidence harmful repeated-loop windows exist OR 1 severe repeated-loop window appears in multiple games
+- the legal exit option is directly observable
+- the exit option is legal under min/max
+- exiting does not obviously break a required effect
+- positive-control loops exist where we should NOT exit
+- the hook can be expressed narrowly by context + option shape, not broad Main
+- the hook can be fixture-tested
+- behavior delta can be proven in decision replay
+
+If the legal exit option is not observable:
+- build no candidate
+- record "needs_more_observability"
+
+If the hook requires stateful memory:
+- prefer lab-only feasibility unless safe per-game reset is proven
+- if stateful runtime is proposed, add tests for cross-game memory reset and no leakage
+
+Part G — Attack / spread / target observability
+
+Create:
+
+scripts/analyze_pass29_target_observability.py
+
+Outputs:
+- data/experiments/pass29_target_observability.json
+- data/experiments/pass29_target_observability.md
+
+Analyze:
+- Dragapult spread deck
+- Water/Kyogre attacks
+- Charizard if attack logs exist
+- any attack with damage-counter / bench damage behavior
+
+For every attack:
+- attackId
+- attacking card id/name
+- selected option index
+- damage logs following attack
+- target serial/card if visible
+- whether active target can be inferred
+- whether bench/spread target can be inferred
+- whether multiple damage recipients exist
+- whether bench target choice was agent-selected or effect-determined
+- whether target selection is observable enough for fixtures
+
+Classify:
+- target_observable
+- target_inferred_active_only
+- spread_target_unobservable
+- effect_auto_targets
+- unknown
+
+Important:
+- Do not claim spread targeting is missing if target choice is not exposed.
+- Keep distinction between "unsupported" and "unobservable."
+
+Part H — Search / supporter / engine-card observability
+
+Create:
+
+scripts/analyze_pass29_engine_card_observability.py
+
+Outputs:
+- data/experiments/pass29_engine_card_observability.json
+- data/experiments/pass29_engine_card_observability.md
+
+Analyze:
+- Raging Bolt / Ogerpon:
+  - Crispin, Ogerpon, Teal Dance if resolvable
+- Charizard:
+  - Firebreather, Oricorio, Rare Candy if resolvable
+- Gardevoir:
+  - ramp/support cards if resolvable
+- Water:
+  - Ultra Ball, Secret Box, Mega Signal, Lillie
+
+For each engine card:
+- card id/name
+- appears in hand/deck/discard?
+- Play option resolvable?
+- selected / not selected?
+- effect context following play?
+- search target resolvable?
+- action class supported?
+- evidence level:
+  - observed_played
+  - observed_available_not_played
+  - hidden_unobservable
+  - absent
+  - unknown
+
+Output:
+- which engine cards are observable enough for future rules
+- which are not
+
+Part I — Fixture backlog from observability
+
+Create:
+
+data/fixtures/pass29_observability_backlog.yaml
+data/fixtures/pass29_observability_backlog.md
+
+Fixture plan categories:
+1. effect_loop_exit
+2. effect_loop_do_not_exit_positive_control
+3. attach_resolution
+4. play_from_hand_resolution
+5. attack_target_resolution
+6. spread_target_observability
+7. engine_card_play_resolution
+8. search_target_resolution
+9. supporter_effect_resolution
+
+For each fixture:
+- executable now yes/no
+- source episode/run/step
+- required resolver support
+- expected behavior
+- why blocked if blocked
+
+Do not create executable fixtures unless the reduced model can faithfully represent the issue.
+
+Part J — Optional candidate build
+
+Build at most one candidate, only if Part F passes.
+
+candidate_id: effect_loop_exit_guard_v1
+
+Runtime:
+- parent: relevant portfolio candidate, likely league_mega_venusaur_tank
+- narrow context-only hook
+- no broad Main override
+- exits only if:
+  - context is confirmed loop context
+  - loop signature is harmful
+  - legal exit option exists
+  - positive-control guard does not block
+- if uncertain, delegate
+- if stateful, prove per-game reset and no cross-game leakage
+
+Outputs if built:
+- playbooks/pass29_effect_loop_exit_guard.yaml
+- experiments/runs_pass29/effect_loop_exit_guard_v1/
+- data/submissions/candidates_pass29/effect_loop_exit_guard_v1.tar.gz
+- data/experiments/pass29_candidate_manifest.json
+- data/experiments/pass29_candidate_manifest.md
+
+If not built:
+- data/experiments/pass29_blocked_candidates.json
+- data/experiments/pass29_blocked_candidates.md
+
+Part K — Validation and decision replay
+
+If candidate built:
+
+Run:
+
+python scripts/validate_candidate_tarball.py <tarball>
+python scripts/validate_candidate_entrypoint.py <tarball>
+
+Run:
+- core competency gate
+- portfolio fixture gate if available
+- effect-loop fixture gate
+- live smoke:
+  - candidate self
+  - candidate vs parent
+  - candidate vs Water reference if relevant
+
+Create:
+
+data/experiments/pass29_candidate_validation.json
+data/experiments/pass29_candidate_validation.md
+data/experiments/pass29_decision_replay.json
+data/experiments/pass29_decision_replay.md
+
+Decision replay must prove:
+- nonzero behavior delta on intended loop windows
+- zero illegal actions
+- positive controls preserved
+- no broad Main changes
+
+If no candidate:
+- record validation/eval skipped honestly.
+
+Part L — Focused eval, only if candidate is non-inert
+
+If candidate built and decision replay shows nonzero intended deltas:
+- run small focused eval:
+  - parent vs candidate
+  - candidate vs self
+  - candidate vs portfolio references
+- 5 games/seat if feasible
+- subprocess isolated
+- Replit workflow if needed
+- no upload
+
+Outputs:
+- data/experiments/pass29_focused_eval.json
+- data/experiments/pass29_focused_eval.md
+- data/experiments/pass29_matchup_matrix.csv
+- data/experiments/pass29_rankings.json
+- data/experiments/pass29_rankings.md
+
+If no candidate or inert:
+- skip eval honestly.
+
+Part M — Strategy decision
+
+Create:
+
+data/experiments/pass29_strategy_decision.json
+data/experiments/pass29_strategy_decision.md
+
+Decision labels:
+- needs_more_observability
+- build_effect_loop_exit_next
+- effect_loop_exit_candidate_built
+- effect_loop_exit_rejected
+- keep_portfolio_reference
+- expand_trace_coverage
+- no_action
+
+Rules:
+- No upload.
+- No future Kaggle probe label.
+- If observability improves but no safe hook exists, choose needs_more_observability or build_effect_loop_exit_next.
+- If candidate built but local-only, mark for internal continuation only.
+
+Part N — ActiveGraph events
+
+Emit:
+- StrategyHypothesisLogged for observability hypotheses
+- ReplayWindowTagged for loop/target/engine windows
+- StrategyFixtureAdded for backlog fixtures
+- StrategyIterationCreated only if candidate built
+- StrategyIterationEvaluated if candidate evaluated
+- StrategyDecisionRecorded
+- ReportSiteGenerated
+
+All events:
+- no_upload: true
+- pass29 tags
+- evidence paths
+- root unchanged
+
+Part O — Reports and docs
+
+Update:
+- docs/PTCG_STRATEGY_CANVAS.md
+- docs/CORE_GAMEPLAY_BACKLOG.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- data/reports/pass29_observability_and_effect_loop_report.md
+
+Include:
+- Pass 28 summary
+- resolver v2 coverage
+- effect-loop anatomy
+- effect-loop feasibility decision
+- target observability
+- engine-card observability
+- fixture backlog
+- candidate built/blocked
+- no-upload note
+- caveat: internal diagnostics only, not Kaggle signal
+
+Part P — Tests
+
+Add/update tests for:
+- action resolver maps Main Attach to hand card + target
+- action resolver maps Main Play to hand card when logs confirm
+- resolver does not overclaim hidden targets
+- search target resolution works when select.deck is present
+- discard target resolution works from hand
+- attack target is marked unobservable unless damage logs prove it
+- spread target remains unobservable unless multiple recipients can be linked
+- effect-loop detector finds repeated contexts 33/21 if present
+- effect-loop feasibility blocks candidate when no legal exit option exists
+- candidate build requires feasibility pass
+- no candidate built when gate fails
+- no upload flag remains false / no_upload true
+- root files unchanged
+- report includes internal diagnostic caveat
+
+Run targeted tests.
+Run broader tests if feasible.
+
+Part Q — Final report
+
+Report exactly:
+
+ActiveGraph Pass 29 Observability + Effect-Loop Feasibility Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Score/control state
+- live_score_leader:
+- water_family_current_best:
+- portfolio_reference:
+- conclusion:
+
+3. Action resolver v2
+- decisions processed:
+- option classes resolved:
+- unresolved rate:
+- confidence levels:
+- key improvements:
+
+4. Effect-loop analysis
+- contexts analyzed:
+- loops found:
+- harmful loops:
+- legal exit observed:
+- feasibility result:
+
+5. Target observability
+- attacks analyzed:
+- target observable:
+- spread target observable:
+- unobservable cases:
+- conclusion:
+
+6. Engine-card observability
+- cards analyzed:
+- observable plays:
+- hidden/unobservable:
+- future rule candidates:
+
+7. Fixtures / candidate decision
+- fixture backlog:
+- candidate built:
+- candidate blocked:
+- reason:
+- no invented IDs:
+
+8. Validation / eval
+- validators:
+- decision replay:
+- focused eval:
+- skipped reasons:
+
+9. Strategy decision / ActiveGraph
+- decision:
+- next action:
+- events emitted:
+- report site:
+
+10. Next recommendation
+- one sentence only.

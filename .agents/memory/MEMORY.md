@@ -4,3 +4,4 @@
 - [Replay post-mortem pitfalls](replay-postmortem-pitfalls.md) — trust replay board state over Grok prose; 723 bench is legit evolution; resolver "end" is ONLY raw type==14; engine-forced needs num_options<=min_count, not just min==max.
 - [Forensic metric canonicalization](forensic-metric-canonicalization.md) — derived metrics flow from the forensics layer (median+min+semantics), not raw per-deck diagnostics; guard with a cross-artifact test that blocks stale-outlier phrasing variants.
 - [Board-wide discard refutes color mismatch](board-wide-discard-color-match.md) — for whole-board-cost attacks (Bellowing Thunder), per-Pokémon energy color-match is NOT a misplay signal; prove causality from the trace.
+- [Effect-loop head diagnosis](effect-loop-head-diagnosis.md) — classify a cabt effect-loop by its HEAD context (Venusaur ctx0 offers end+in_play_action, declines end 1958/1958 = optional_loop_with_exit), not the inner ctx33/21 churn that looks falsely "forced".

@@ -1,0 +1,20 @@
+{
+  "candidate_id": "effect_loop_exit_guard_v1",
+  "pass": "29",
+  "part": "J",
+  "kind": "runtime_pilot_hook",
+  "built_because": "Part F feasibility gate passed (optional_loop_with_exit; exit observable + selectable; pilot declines it)",
+  "base_candidate": "league_mega_venusaur_tank",
+  "deck_unchanged_vs_base": true,
+  "entrypoint": "effect_loop_exit_guard_agent",
+  "guard_threshold": 12,
+  "fires_only_on": "repeating non-progressing board signature at ctx0 while base re-activates a non-attack in_play action and an end option is offered",
+  "non_inert_only_on_loop": true,
+  "no_upload": true,
+  "local_only": true,
+  "modifies_root_files": false,
+  "modifies_existing_tarballs": false,
+  "tarball": "data/submissions/candidates_pass29/effect_loop_exit_guard_v1.tar.gz",
+  "tarball_sha256": "529042cef649a90ab506ef40916c72e1652a8feb2797fdb6400e1e55cd1c7ed0",
+  "main_sha256": "07d3562bb745b57c8ea7e43a4f433ea3a0e9a573e4bf620e210033d1410408e3"
+}
