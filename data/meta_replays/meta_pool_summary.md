@@ -1,7 +1,7 @@
 # Meta pool summary (Pass 11B)
 
 - coverage status: **usable**
-- active control (live): **league_water_anti_disruption_pivot_v1** @ 520.8 (complete)
+- active control (live): **league_water_anti_disruption_pivot_v1** @ 376.5 (complete)
 - confirmed opponent archetypes: metal_ex_zacian_ramp, water_kyogre_abomasnow_maxbelt
 - provisional archetypes: unknown_ex_tempo
 - blocked archetypes: none

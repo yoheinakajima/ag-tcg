@@ -1,0 +1,659 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Raw replay JSON files must remain gitignored.
+- Keep all candidate tarballs top-level main.py + deck.csv only.
+- This is a replay-mining + trigger-gated strategy design pass.
+- No Kaggle upload.
+- Build candidates only if replay evidence proves the hook would actually fire.
+- If no real replay window supports a hook, block it honestly.
+
+Read before acting:
+- docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md
+- docs/NEXT_AGENT_README.md
+- docs/CORE_PILOT_ARCHITECTURE.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/pass21_final_report.md
+- data/reports/pass22_water_anti_disruption_report.md if present
+- data/reports/pass24_anti_disruption_pivot_replay_report.md
+- data/reports/pass25_water_live_control_hardening_report.md
+- data/fixtures/pass21_planned_water_fixtures.yaml
+- data/fixtures/pass22_water_board_safety/index.yaml if present
+- data/fixtures/pass25_water_hardening/index.yaml
+- data/activegraph/lab_events.jsonl
+
+Current authoritative state:
+- Pass 25 was LOCAL ONLY.
+- Fresh live listing in Pass 25:
+  - submission.tar.gz @ 363.0 = highest live public score by raw score rule
+  - league_water_anti_disruption_pivot_v1 @ 358.7 = Water strategy-family current reference / best Water lineage
+  - combo_full_safety_v3_fixed @ 353.5
+  - league_water_core_reference @ 268.2
+  - deck_energy_trim_light @ 288.4
+- Important distinction:
+  - live_score_leader = highest complete publicScore in Kaggle listing.
+  - water_family_current_best = league_water_anti_disruption_pivot_v1 unless a Water candidate beats it with evidence.
+  - Do not conflate these two controls.
+- Pass 25 built three variants:
+  - deckout_guard_v1
+  - prize_liability_guard_v1
+  - hybrid_guard_v1
+- All were valid and safe, but replay decision analysis found:
+  - 262 decisions examined
+  - 0 behavior deltas
+  - 0 on-seam changes
+  - 0 misfires
+  - 0 illegal actions
+- This means the hooks were too inert / predicates did not match real replay windows.
+- Therefore the next pass must first mine actual decision opportunities before building new hooks.
+
+Goal:
+Run Pass 26: Replay Action Opportunity Mining + Trigger-Gated Candidate Design.
+
+Core question:
+Across our real Water replays, what legal alternatives were actually available at important decision points, and which opportunities are frequent enough to justify a runtime hook?
+
+Objectives:
+1. Refresh status read-only and preserve both live_score_leader and water_family_current_best.
+2. Build a replay decision-opportunity miner over all Water-family replays.
+3. Produce an action-availability dataset for each relevant decision.
+4. Diagnose why Pass 25 hooks were inert.
+5. Identify true triggerable seams from real legal options.
+6. Create fixtures only from proven replay windows.
+7. Build at most 1–2 micro-candidates only if trigger coverage is nonzero and meaningful.
+8. Run validation + smoke + local eval only for built candidates.
+9. Produce a strategy decision.
+10. No upload.
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify root files unchanged:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Read-only live score refresh
+
+Run read-only status:
+
+mkdir -p data/kaggle_uploads
+kaggle competitions submissions pokemon-tcg-ai-battle 2>&1 | tee data/kaggle_uploads/status_before_pass26.log || true
+kaggle competitions submissions pokemon-tcg-ai-battle -v 2>&1 | tee data/kaggle_uploads/status_before_pass26.csv || true
+
+If kaggle is not on PATH, use the Python kaggle.cli/API method used in prior passes.
+
+Rebuild/update:
+
+data/kaggle_uploads/live_score_registry.json
+data/kaggle_uploads/live_score_registry.md
+
+Rules:
+- no submit command
+- no upload
+- publicScore may be a string; coerce safely to float
+- recompute live_score_leader from fresh listing
+- keep a separate water_family_current_best based on strategy lineage
+- record score drift from Pass 25
+- never silently overwrite strategy-family current_best just because the global live-score leader changes
+
+Output:
+- data/experiments/pass26_live_score_status.json
+- data/experiments/pass26_live_score_status.md
+
+Part C — Replay corpus refresh
+
+Run:
+
+python scripts/ingest_replay_inbox.py
+python scripts/extract_replay_decks.py
+python scripts/extract_meta_archetypes.py
+python scripts/analyze_kaggle_replays.py
+python scripts/update_meta_pool_from_replays.py
+
+Verify:
+- raw replay JSON files remain gitignored
+- no raw replays staged
+- no failed parses
+- registry count
+- all Water-family / Yohei episodes preserved
+
+Output:
+- data/experiments/pass26_replay_corpus_status.json
+- data/experiments/pass26_replay_corpus_status.md
+
+Part D — Action opportunity miner
+
+Create:
+
+scripts/mine_pass26_action_opportunities.py
+
+Inputs:
+- data/meta_replays/raw/*.json
+- data/meta_replays/replay_registry.json
+- data/kaggle_uploads/live_score_registry.json
+- local card DB if available
+
+Outputs:
+- data/experiments/pass26_action_opportunities.json
+- data/experiments/pass26_action_opportunities.md
+- data/experiments/pass26_action_opportunities.jsonl
+
+For every Water-family replay involving Yohei / our known deck fingerprints:
+- identify our seat
+- identify candidate attribution if possible:
+  - league_water_anti_disruption_pivot_v1
+  - league_water_core_reference
+  - mirror / old deck
+  - unknown
+- iterate every decision where our agent acted
+- capture:
+  - episode_id
+  - step
+  - turn
+  - our seat
+  - result
+  - select.context numeric and/or string
+  - select.type
+  - minCount/maxCount
+  - selected action indices
+  - selected option types
+  - all legal options
+  - for each option:
+    - option index
+    - option type
+    - area/index/inPlayArea/inPlayIndex/playerIndex
+    - resolved card id/name if possible
+    - resolved action class:
+      - attack
+      - attach
+      - play_basic
+      - play_trainer
+      - play_tool
+      - play_stadium
+      - play_supporter
+      - evolve
+      - ability
+      - end
+      - discard
+      - search_to_hand
+      - draw_count
+      - unknown
+  - board state:
+    - active card id/name
+    - bench card ids/names
+    - bench count
+    - hand ids/names if visible
+    - deckCount
+    - discard ids/names
+    - prize remaining count if available
+    - energies on active/bench
+  - opponent board summary if visible
+  - hazard tags:
+    - low_deck
+    - very_low_deck
+    - board_thin
+    - active_alone
+    - bench_empty
+    - opponent_high_damage_threat
+    - prize_pressure
+    - behind_on_prizes
+    - energy_denial_seen
+    - mirror_grind
+    - positive_control_pressure
+  - whether decision belongs to a known seam:
+    - no_pokemon_loss
+    - energy_denial
+    - fighting_tempo
+    - mirror_deckout
+    - psychic_positive_control
+    - unknown
+
+Important:
+- Do not infer card effects beyond logs/metadata.
+- If option cannot resolve to a card/action class, mark unknown.
+- Do not assume Mega Abomasnow ex is a Basic.
+- Do not treat face-down opponent cards as known.
+
+Part E — Pass 25 inert-hook diagnosis
+
+Create:
+
+scripts/diagnose_pass25_inert_hooks.py
+
+Inputs:
+- data/experiments/pass26_action_opportunities.jsonl
+- data/experiments/pass25_decision_replay.json if present
+- data/fixtures/pass25_water_hardening/index.yaml
+
+Outputs:
+- data/experiments/pass26_pass25_inert_hook_diagnosis.json
+- data/experiments/pass26_pass25_inert_hook_diagnosis.md
+
+For each Pass 25 hook:
+1. deckout_guard_v1
+2. prize_liability_guard_v1
+3. hybrid_guard_v1
+
+Diagnose:
+- did its trigger condition occur in replay?
+- if not, which predicate failed?
+- if yes, was there a legal alternative?
+- did the hook require a context that was absent or rare?
+- did minCount/maxCount prevent any useful change?
+- was the legal option unavailable?
+- did the hook's target option class fail to resolve?
+- did replay show a different, better seam?
+
+Expected from Pass 25:
+- ctx38 was rare / not responsible for deckout
+- ctx7 search low-deck often min=max=1, so no decline was legal
+- actual deckout lever may be optional Main-phase play of draw/search trainer
+- prize-liability predicate was too narrow and never fired
+
+Part F — True opportunity classification
+
+Create:
+
+data/experiments/pass26_true_opportunity_classes.json
+data/experiments/pass26_true_opportunity_classes.md
+
+Classify actual opportunities into buckets:
+
+1. optional_main_draw_search_low_deck
+- Main context
+- Play option resolves to draw/search trainer
+- deckCount low or mirror_grind
+- End/Attack/Attach alternative exists
+- selected Play consumed optional draw/search
+- candidate hook could decline or choose different non-draw option
+
+2. search_target_misprioritized
+- ctx7 ToHand/search
+- selected target differs from plausible pivot
+- legal alternatives include better target
+- must be grounded in board state
+
+3. bench_backup_available_unplayed
+- Main context
+- bench thin
+- playable Kyogre/Snover option exists
+- selected something else
+
+4. discard_preserve_line_failure
+- ctx8 Discard
+- selected Kyogre/Snover/Mega/pivot piece
+- alternatives existed
+
+5. attach_target_misprioritized
+- Main attach options exist to active/bench
+- selected target seems inconsistent with plan
+- only classify if target resolution is reliable
+
+6. attack_available_but_not_taken
+- Attack option exists
+- selected non-attack
+- only classify if attacking was legal and likely meaningful
+
+7. evolution_available_but_not_taken
+- Play/evolve option exists
+- selected other action
+- only classify if evolution card + target resolve
+
+8. retreat_or_switch_available_but_not_used
+- only if retreat/switch option class is reliably resolved
+
+For each class:
+- count
+- source episodes
+- examples
+- confidence
+- hook feasibility:
+  - safe_now
+  - needs_more_context
+  - unsafe_broad_main
+  - not_actionable
+- expected value
+- risk of tempo regression
+
+Part G — Trigger coverage gate
+
+Create:
+
+data/experiments/pass26_trigger_coverage.json
+data/experiments/pass26_trigger_coverage.md
+
+Before any candidate is built, require:
+
+A hook is buildable only if:
+- at least 3 replay windows OR 2 high-confidence loss windows support it
+- legal alternative is observed
+- option resolution is reliable
+- change is narrow
+- positive-control windows exist to prevent overfitting
+- it does not require broad Main override
+- it can be fixture-tested
+
+For every proposed hook:
+- coverage_count
+- loss_window_count
+- legal_alternative_count
+- positive_control_count
+- risk_level
+- build_allowed true/false
+- reason
+
+If no hook passes this gate:
+- build no candidates
+- proceed to reports/tests only
+
+Part H — Fixture generation from real windows
+
+If at least one hook passes Part G, create fixture plans and executable fixtures.
+
+Output:
+- data/fixtures/pass26_action_opportunity/
+- data/fixtures/pass26_action_opportunity/index.yaml
+
+Fixture families:
+1. optional_main_draw_search_low_deck_decline
+2. optional_main_draw_search_low_deck_attack_instead
+3. search_target_pivot_when_board_state_requires
+4. bench_backup_when_available_in_main
+5. preserve_pivot_piece_in_discard
+6. positive_control_do_not_suppress_pressure
+7. positive_control_do_not_block_emergency_backup
+8. positive_control_do_not_block_attack
+
+Each fixture:
+- source_episode
+- source_step
+- reduced model
+- selected old action
+- expected new action
+- hard/advisory
+- evidence confidence
+
+Part I — Candidate design, only if trigger coverage passes
+
+Build at most 2 micro-candidates.
+
+Candidate A:
+candidate_id: water_action_opportunity_guard_v1
+Build only if a single highest-confidence opportunity class passes the trigger gate.
+Runtime:
+- narrow hook only for that class
+- no broad Main override
+- delegate everywhere else
+- positive-control guard included
+
+Candidate B:
+candidate_id: water_action_opportunity_guard_combo_v1
+Build only if two opportunity classes independently pass trigger gate and do not conflict.
+Runtime:
+- combine the two hooks
+- conflict priority:
+  1. legal action
+  2. avoid no-pokemon loss
+  3. take winning/meaningful attack
+  4. preserve deck under low deck
+  5. preserve pivot line
+  6. delegate if uncertain
+
+If no hook passes:
+- block both candidates honestly
+- write blocked manifest
+- do not build tarballs
+
+Outputs if built:
+- playbooks/pass26_*.yaml
+- experiments/runs_pass26/<candidate_id>/
+- data/submissions/candidates_pass26/<candidate_id>.tar.gz
+- data/experiments/pass26_candidate_manifest.json
+- data/experiments/pass26_candidate_manifest.md
+
+Part J — Validation and live smoke
+
+For every built candidate:
+
+python scripts/validate_candidate_tarball.py <tarball>
+python scripts/validate_candidate_entrypoint.py <tarball>
+
+Run:
+- core competency gate
+- pass22 board-safety gate
+- pass25 hardening gate if relevant
+- pass26 action-opportunity gate
+
+Run live smoke:
+- self-play
+- vs water_family_current_best
+- vs relevant surrogate
+- positive-control smoke if possible
+
+Outputs:
+- data/experiments/pass26_candidate_validation.json
+- data/experiments/pass26_candidate_validation.md
+- data/experiments/pass26_live_smoke.json
+- data/experiments/pass26_live_smoke.md
+
+Part K — Decision replay / counterfactual replay
+
+For every built candidate, compare old vs new on replay windows.
+
+Output:
+- data/experiments/pass26_decision_replay.json
+- data/experiments/pass26_decision_replay.md
+
+Metrics:
+- windows tested
+- behavior changes
+- on-seam changes
+- positive-control changes
+- illegal actions
+- misfires
+- delegate rate
+- trigger precision
+- trigger recall over labelled windows
+
+Required to pass:
+- behavior delta > 0 on intended seam
+- zero illegal actions
+- positive controls preserved
+- no broad unexpected changes
+
+If behavior delta = 0 again, block candidate from eval and record "inert_hook".
+
+Part L — Focused eval only for non-inert valid candidates
+
+If a candidate passes K:
+- run local focused eval.
+If no candidate passes K:
+- skip eval honestly.
+
+Participants:
+- water_family_current_best
+- built non-inert candidate(s)
+- historical live_score_leader if locally available
+
+Opponents:
+- replay-derived seams where hook applies
+- positive-control archetypes
+- mirror if relevant
+
+Budget:
+- 10 games/seat direct H2H if feasible
+- 5 games/seat seam eval if feasible
+- subprocess isolated
+- Replit workflow if needed
+
+Outputs:
+- data/experiments/pass26_focused_eval.json
+- data/experiments/pass26_focused_eval.md
+- data/experiments/pass26_matchup_matrix.csv
+- data/experiments/pass26_rankings.json
+- data/experiments/pass26_rankings.md
+
+Part M — Strategy decision
+
+Create:
+- data/experiments/pass26_strategy_decision.json
+- data/experiments/pass26_strategy_decision.md
+
+Decision labels:
+- no_build_no_trigger
+- block_inert_hook
+- keep_current_best
+- candidate_for_deeper_confirmation
+- future_kaggle_probe_candidate
+- need_more_replays
+- build_specific_hook_next
+- no_action
+
+Rules:
+- No upload.
+- No future probe label unless:
+  - hook passed trigger coverage,
+  - candidate built and validated,
+  - decision replay produced nonzero on-seam behavior deltas,
+  - positive controls preserved,
+  - smoke clean,
+  - focused eval non-negative,
+  - no major regression.
+
+Part N — ActiveGraph events
+
+Emit:
+- ReplayAnalyzed / ReplayWindowTagged for mined windows
+- StrategyHypothesisLogged for each opportunity class
+- StrategyFixtureAdded for each fixture
+- StrategyIterationCreated for built candidates
+- StrategyIterationEvaluated
+- StrategyDecisionRecorded
+- ReportSiteGenerated
+
+All events:
+- no_upload: true
+- pass26 tags
+- source paths
+- evidence windows
+
+Part O — Reports and docs
+
+Update:
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- data/reports/pass26_action_opportunity_mining_report.md
+
+Include:
+- live score distinction:
+  - live_score_leader
+  - water_family_current_best
+- Pass 25 inert-hook lesson
+- true opportunity classes
+- trigger coverage
+- fixtures
+- built/blocked candidates
+- decision replay result
+- eval if run
+- strategy decision
+- no-upload note
+
+Part P — Tests
+
+Add/update tests for:
+- action opportunity miner resolves selected action and legal options
+- Mega Abomasnow is not treated as Basic
+- live_score_leader and water_family_current_best are distinct fields
+- Pass 25 hooks diagnose as inert using predicate failure counts
+- trigger coverage blocks hooks with zero legal replay windows
+- no candidates built if no trigger passes
+- candidate build requires trigger coverage
+- decision replay requires nonzero behavior delta before eval
+- positive controls preserved
+- no upload flag remains false / no_upload true
+- raw replays gitignored
+- root files unchanged
+- report includes local/surrogate caveat and inert-hook lesson
+
+Run targeted tests.
+Run broader tests if feasible.
+
+Part Q — Final report
+
+Report exactly:
+
+ActiveGraph Pass 26 Action Opportunity Mining Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Score/control state
+- live_score_leader:
+- water_family_current_best:
+- score drift:
+- distinction preserved:
+
+3. Replay opportunity mining
+- replays analyzed:
+- decisions mined:
+- contexts covered:
+- action classes resolved:
+- unresolved option rate:
+
+4. Pass 25 inert-hook diagnosis
+- deckout guard:
+- prize-liability guard:
+- hybrid guard:
+- why hooks were inert:
+- lesson:
+
+5. True opportunity classes
+- classes found:
+- highest-confidence class:
+- counts:
+- source episodes:
+- safe/unsafe:
+
+6. Trigger coverage
+- hooks allowed:
+- hooks blocked:
+- reason:
+- candidate build decision:
+
+7. Fixtures / candidates
+- fixtures created:
+- candidates built:
+- candidates blocked:
+- tarballs:
+- no invented IDs:
+
+8. Decision replay / eval
+- behavior deltas:
+- positive controls:
+- eval run:
+- best candidate if any:
+- caveats:
+
+9. Strategy decision / ActiveGraph
+- decision:
+- next action:
+- events emitted:
+- report site:
+
+10. Next recommendation
+- one sentence only.

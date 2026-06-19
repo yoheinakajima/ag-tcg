@@ -67,6 +67,8 @@ class EventType(str, Enum):
     # --- Pass 4: Kaggle replay ingestion ----------------------------------
     ReplayImported = "ReplayImported"
     ReplayAnalyzed = "ReplayAnalyzed"
+    # --- Pass 26: replay action-opportunity mining ------------------------
+    ReplayWindowTagged = "ReplayWindowTagged"
 
     # --- Pass 9: playbook architecture + confirmation ---------------------
     ArchitectureDecisionRecorded = "ArchitectureDecisionRecorded"

@@ -1,0 +1,34 @@
+{
+  "schema": "activegraph.pass26.candidate_manifest/v1",
+  "pass": 26,
+  "decision": "no_build_no_trigger",
+  "any_trigger_coverage_passed": false,
+  "candidates_built": [],
+  "candidates_blocked": [
+    "water_action_opportunity_guard_v1",
+    "water_action_opportunity_guard_v2"
+  ],
+  "tarballs": [],
+  "no_tarballs_reason": "No opportunity class cleared the Part-G trigger-coverage gate, so no runtime hook is justified by replay evidence. Building a candidate would mean shipping a guard that provably never fires (or fires only in broad-Main, which must stay delegated).",
+  "blocked_candidate_detail": [
+    {
+      "candidate_id": "water_action_opportunity_guard_v1",
+      "intended_hook": "discard_preserve_line_failure",
+      "intended_context": 8,
+      "blocked_reason": "discard_preserve_line_failure has only 1 high-confidence + 1 medium loss window (< the 2-high-confidence-loss-window bar); the medium window discarded a Mega with no Snover line in play (uncastable), so preserving it would not have helped."
+    },
+    {
+      "candidate_id": "water_action_opportunity_guard_v2",
+      "intended_hook": "bench_backup_available_unplayed",
+      "intended_context": 0,
+      "blocked_reason": "bench_backup_available_unplayed has 75 windows but lives in broad-Main (ctx0), which must stay delegated, and is already covered by the proven base hook `emergency_backup_bench`. Not narrow / not fixture-isolable as a NEW lever."
+    }
+  ],
+  "no_invented_ids": true,
+  "root_main_py_untouched": true,
+  "root_deck_csv_untouched": true,
+  "upload_performed": false,
+  "github_push_performed": false,
+  "no_upload": true,
+  "source": "data/experiments/pass26_trigger_coverage.json"
+}

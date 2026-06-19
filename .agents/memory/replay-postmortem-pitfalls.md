@@ -33,3 +33,21 @@ to `unknown/null` even though the registry knew the real control. **Why:** downs
 read meta_pool for the control and would be misled. **How to apply:** when wiring the live
 registry into meta-pool, accept both key spellings and synthesize `status:"complete"` when a
 score is present.
+
+## Option-level action-class resolver: "end" is ONLY raw option type==14
+When resolving cabt legal-option records to action classes, tag `end` **strictly** on
+`type == 14`. A tempting fallback like `(index is None and area is None) -> end` is WRONG: it
+swallows ctx38 draw-count options (type 0) and ctx41 yes/no options (type 1/2), which also
+carry no index/area, inflating the `end` count and corrupting every downstream class
+distribution. **Why:** those contexts have no card and no zone, so they look like "end" but
+are not. **How to apply:** route by context after the type==14 check — ctx38→draw_count,
+ctx41→unknown(binary), ctx7→search_to_hand, ctx8→discard, else classify from card type_line.
+
+## "Engine-forced" means no legal alternative, not just min==max
+A decision is only engine-FORCED (agent had no real choice) when
+`min_count>0 AND min_count==max_count AND num_options <= min_count`. Using `min==max` alone
+massively overstates forced-ness — a "pick exactly 1" with 5 options is a free choice, not
+forced. This matters in inert-hook diagnosis: the looser test reported 56/141 ctx7 windows as
+forced when the correct count was 0. **Why:** overstating forced-ness fabricates a
+"no-alternative" excuse that hides genuinely steerable decisions. **How to apply:** always
+include the option-count clause; prefer deriving from the mined ledger's `num_options`.

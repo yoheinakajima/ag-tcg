@@ -17,7 +17,7 @@ controls:
   active_control:
     candidate_id: league_water_anti_disruption_pivot_v1
     submission_file: league_water_anti_disruption_pivot_v1.tar.gz
-    live_public_score: 520.8
+    live_public_score: 376.5
     status: complete
     selection_rule: highest publicScore among complete non-error submissions
     note: Dynamic active control from the live score registry. Promoted from Pass-10

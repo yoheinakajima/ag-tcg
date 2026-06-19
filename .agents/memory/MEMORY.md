@@ -1,3 +1,4 @@
 - [Kaggle leaderboard early-episode variance](kaggle-leaderboard-early-variance.md) — a fresh submission's publicScore can read very high early then settle down as episodes accrue; never bank a strategy on an early lead.
 - [Water pilot ctx7 search-pivot ordering](water-pilot-ctx7-pivot-ordering.md) — the bench-empty anti-disruption pivot runs BEFORE the prize-liability pivot in choose_to_hand and masks it; test/ground later ctx7 levers with a non-empty bench.
 - [ActiveGraph live-control eval limits](activegraph-eval-limits.md) — surrogate eval ≠ Kaggle and deep board metrics are unmeasurable from the opaque cabt board blob; decision-replay behaviour deltas are the trustworthy evidence.
+- [Replay post-mortem pitfalls](replay-postmortem-pitfalls.md) — trust replay board state over Grok prose; 723 bench is legit evolution; resolver "end" is ONLY raw type==14; engine-forced needs num_options<=min_count, not just min==max.

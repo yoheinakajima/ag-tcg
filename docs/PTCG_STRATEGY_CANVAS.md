@@ -332,3 +332,26 @@ No Kaggle upload/submit; no GitHub push; root `main.py`/`deck.csv` byte-identica
 invented card ids; tarballs top-level `main.py`+`deck.csv` only; all Pass-25
 build/eval/decision event `no_upload` flags true (the shared read-only Part-B
 score-refresh events perform no upload by construction).
+
+---
+
+## Pass 26 — Replay Action Opportunity Mining (read-only, local-only)
+
+> **CURRENT STATE (Pass 26).** Read-only mining of the real Water replay corpus.
+> No Kaggle upload/submit, no GitHub push, root immutable, no invented ids.
+
+- **Live score distinction (preserved):** `live_score_leader` and
+  `water_family_current_best` both resolve to
+  `league_water_anti_disruption_pivot_v1` @ 376.5 this refresh, but remain
+  distinct fields with distinct rules (the Water pivot drifted up and overtook
+  the previous leader; never auto-overwritten).
+- **Mining:** 1533 our-seat decisions, 17662 options, unresolved 2.72%.
+  Resolver fix: option `index` = hand position; type7=play, type8=attach,
+  type14=end, attackId=attack. Mega Abomasnow ex (723) never a Basic.
+- **Pass-25 inert-hook lesson:** guards were inert by **predicate-fail /
+  hidden-target**, not absence (deckout clamp bites at deck ≤ 8 but ctx38 fires
+  at deck = 47; search targets hidden in deck; discard-preserve never violated).
+- **8 opportunity classes → none pass the Part-G trigger gate.** No fixtures, no
+  candidates, no tarballs.
+- **Decision: `no_build_no_trigger`** — keep the current Water control; build,
+  upload, push, and future-probe all declined honestly.
