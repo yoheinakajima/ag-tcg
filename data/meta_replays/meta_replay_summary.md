@@ -1,6 +1,6 @@
 # Meta replay summary (Pass 10)
 
-- raw replays analyzed: **19**
+- raw replays analyzed: **22**
 - missing external replays: **metal_ex_zacian_ramp, water_kyogre_abomasnow_maxbelt**
 
 ## Episode 80374966
@@ -154,6 +154,30 @@
 - steps: 110, rewards: [1, -1], winner seat: 0
   - **seat 0** (ﾖﾈｸﾗ ﾃﾝｾｲne251225): won=True, first_attack_turn=3, evolved_mega_abomasnow=False, stuck_on_basic_snover=False, max_bench=5, decked_out=False (min_deck=7)
   - **seat 1** (Yohei Nakajima): won=False, first_attack_turn=None, evolved_mega_abomasnow=True, stuck_on_basic_snover=False, max_bench=2, decked_out=False (min_deck=32)
+
+## Episode 80760752
+- source: `data/meta_replays/raw/80760752.json`
+- agents: ['Yohei Nakajima', 'Yohei Nakajima']
+- self-mirror: **True**
+- steps: 57, rewards: [1, -1], winner seat: 0
+  - **seat 0** (Yohei Nakajima): won=True, first_attack_turn=5, evolved_mega_abomasnow=False, stuck_on_basic_snover=False, max_bench=4, decked_out=False (min_deck=36)
+  - **seat 1** (Yohei Nakajima): won=False, first_attack_turn=4, evolved_mega_abomasnow=False, stuck_on_basic_snover=False, max_bench=0, decked_out=False (min_deck=41)
+
+## Episode 80760852
+- source: `data/meta_replays/raw/80760852.json`
+- agents: ['Yohei Nakajima', 'Trevor Bernhard']
+- self-mirror: **False**
+- steps: 75, rewards: [-1, 1], winner seat: 1
+  - **seat 0** (Yohei Nakajima): won=False, first_attack_turn=5, evolved_mega_abomasnow=False, stuck_on_basic_snover=False, max_bench=2, decked_out=False (min_deck=29)
+  - **seat 1** (Trevor Bernhard): won=True, first_attack_turn=4, evolved_mega_abomasnow=True, stuck_on_basic_snover=False, max_bench=2, decked_out=False (min_deck=21)
+
+## Episode 80761535
+- source: `data/meta_replays/raw/80761535.json`
+- agents: ['Yohei Nakajima', 'Benedek Brandschott']
+- self-mirror: **False**
+- steps: 63, rewards: [-1, 1], winner seat: 1
+  - **seat 0** (Yohei Nakajima): won=False, first_attack_turn=9, evolved_mega_abomasnow=False, stuck_on_basic_snover=False, max_bench=1, decked_out=False (min_deck=39)
+  - **seat 1** (Benedek Brandschott): won=True, first_attack_turn=6, evolved_mega_abomasnow=False, stuck_on_basic_snover=False, max_bench=5, decked_out=False (min_deck=29)
 
 ## Tempo failure signals (from real replay)
 - episode 80374966 seat 0: stuck on basic Snover (never evolved Mega Abomasnow ex)

@@ -20,7 +20,10 @@
     "80595014",
     "80622626",
     "80622745",
-    "80623232"
+    "80623232",
+    "80760752",
+    "80760852",
+    "80761535"
   ],
   "processed_file_sha256": [
     "09e66f24e9a2bb9ad3747bc4a6769e4ad15e27fa489947517e6d111ecf8862f6",
@@ -29,11 +32,14 @@
     "3edbc701638028027a4f59f24a165b15d6a60594ff1bd4d9a977e7940a6e9b40",
     "4cdeb3499ece3c80c9a82f088d0ce580b47f2dd9397a3fbac38475116546ff70",
     "533a9e934953f906d28ad8ad4c8672e3c4147af33bdc1450c5f0b007cb63fa08",
+    "545f8418e8218a7f1f4af7a30efb8fcf8548d0b7254dde67640445dc1abf1543",
     "678b139d5bcff31c257972b97a9dbd993df382bf1cfb8786db405bd0835001f1",
+    "7567b99bd291acec69560e6f9aba70026320c38e07bfd869d2ff9f56fa7e47ec",
     "7ebd6047ff2efc951217e2792652cd271068b37fb07478e62217e4deb9368e02",
     "7f61ae195d433484584040f21331d4662584914ed6114add510401d99f8eef95",
     "a06fc291d98b11f7bd9a95424ffdb7ece42e4a6ef300c4611c2df7a9c1f35d60",
     "a23386d1297a5aab1a6d53b33a8c65df75b6db8d248003b67d73864c28a9e659",
+    "a6c87cbab93d41ed60dd69f5bf42d7e968e72f1569cb9bb4d0d202ed01cec5c2",
     "b9bfb7c675a74af170f8e9727b5091e42b6b73ef467c78bf69307b96e2478615",
     "c63e5fa9a3cf00718713f18a6e8293d49f29d6b212a68c4cbff4f2c2148eee27",
     "d56ebe9c21be209c766823a9e6d720c609b568d060b898cdd8216fa2d7fbb1d4",
@@ -81,11 +87,17 @@
     "data/meta_replays/decks/80622745_p0_deck.csv",
     "data/meta_replays/decks/80622745_p1_deck.csv",
     "data/meta_replays/decks/80623232_p0_deck.csv",
-    "data/meta_replays/decks/80623232_p1_deck.csv"
+    "data/meta_replays/decks/80623232_p1_deck.csv",
+    "data/meta_replays/decks/80760752_p0_deck.csv",
+    "data/meta_replays/decks/80760752_p1_deck.csv",
+    "data/meta_replays/decks/80760852_p0_deck.csv",
+    "data/meta_replays/decks/80760852_p1_deck.csv",
+    "data/meta_replays/decks/80761535_p0_deck.csv",
+    "data/meta_replays/decks/80761535_p1_deck.csv"
   ],
   "counts": {
-    "in_inbox": 19,
-    "registered": 19,
+    "in_inbox": 22,
+    "registered": 22,
     "duplicates": 0,
     "errors": 0
   }

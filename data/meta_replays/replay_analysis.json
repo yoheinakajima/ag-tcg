@@ -1,12 +1,12 @@
 {
   "schema": "activegraph.meta_replays.replay_analysis/v1",
   "pass": "11b",
-  "replays_analyzed": 19,
+  "replays_analyzed": 22,
   "record": {
     "wins": 5,
-    "losses": 10,
+    "losses": 12,
     "draws": 0,
-    "self_mirrors": 4,
+    "self_mirrors": 5,
     "opponent_only_or_unknown": 0
   },
   "fast_losses": [
@@ -25,13 +25,13 @@
   ],
   "recurring_failure_tags": {
     "stuck_on_basic_snover": 10,
-    "loss_no_specific_tempo_tag": 4,
+    "loss_no_specific_tempo_tag": 6,
     "fast_loss": 3
   },
   "opponent_archetype_counts": {
     "unknown_ex_tempo": 7,
-    "unknown": 4,
-    "water_kyogre_abomasnow_maxbelt": 3,
+    "unknown": 5,
+    "water_kyogre_abomasnow_maxbelt": 4,
     "metal_ex_zacian_ramp": 1
   },
   "thresholds": {
@@ -302,6 +302,49 @@
       "our_seat": 1,
       "num_steps": 110,
       "opponent_archetype": "unknown_ex_tempo",
+      "our_decked_out": false,
+      "stuck_on_basic_snover": false,
+      "fast_loss": false,
+      "long_game": false,
+      "failure_tags": [
+        "loss_no_specific_tempo_tag"
+      ]
+    },
+    {
+      "episode": 80760752,
+      "perspective": "self_mirror",
+      "our_seat": [
+        0,
+        1
+      ],
+      "num_steps": 57,
+      "opponent_archetype": null,
+      "our_decked_out": false,
+      "stuck_on_basic_snover": false,
+      "fast_loss": false,
+      "long_game": false,
+      "failure_tags": []
+    },
+    {
+      "episode": 80760852,
+      "perspective": "our_loss",
+      "our_seat": 0,
+      "num_steps": 75,
+      "opponent_archetype": "water_kyogre_abomasnow_maxbelt",
+      "our_decked_out": false,
+      "stuck_on_basic_snover": false,
+      "fast_loss": false,
+      "long_game": false,
+      "failure_tags": [
+        "loss_no_specific_tempo_tag"
+      ]
+    },
+    {
+      "episode": 80761535,
+      "perspective": "our_loss",
+      "our_seat": 0,
+      "num_steps": 63,
+      "opponent_archetype": "unknown",
       "our_decked_out": false,
       "stuck_on_basic_snover": false,
       "fast_loss": false,

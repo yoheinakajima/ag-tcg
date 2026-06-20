@@ -8,9 +8,9 @@
 | archetype | confidence | ours | episodes | evidence ids |
 |---|---|---|---|---|
 | metal_ex_zacian_ramp | confirmed | no | 80503804 | 8, 336, 547, 695, 988 |
-| unknown | unknown | no | 80591511, 80592831, 80593320, 80622745 | - |
-| unknown_ex_tempo | provisional | no | 80504942, 80505567, 80506042, 80515553, 80516161, 80592173, 80623232 | 121, 269, 678, 756 |
-| water_kyogre_abomasnow_maxbelt | confirmed | no | 80504288, 80594489, 80595014 | 721, 722, 723, 1205, 1235 |
+| unknown | unknown | no | 80591511, 80592831, 80593320, 80622745, 80761535 | - |
+| unknown_ex_tempo | provisional | yes | 80504942, 80505567, 80506042, 80515553, 80516161, 80592173, 80623232, 80760752, 80760852, 80761535 | 121, 269, 678, 756 |
+| water_kyogre_abomasnow_maxbelt | confirmed | no | 80504288, 80594489, 80595014, 80760852 | 721, 722, 723, 1205, 1235 |
 | water_kyogre_abomasnow_passive_mirror | confirmed | yes | 80374966, 80503687, 80503804, 80504288, 80504942, 80505567, 80506042, 80515553, 80516161, 80590776, 80591511, 80592173, 80592831, 80593320, 80594489, 80595014, 80622626, 80622745, 80623232 | 721, 722, 723 |
 
 ## metal_ex_zacian_ramp (confirmed)
@@ -19,17 +19,17 @@
 
 ## unknown (unknown)
 - evidence cards: —
-- seats: 80591511:p0, 80592831:p1, 80593320:p1, 80622745:p0
+- seats: 80591511:p0, 80592831:p1, 80593320:p1, 80622745:p0, 80761535:p1
 - note: no confirmed archetype signature matched
 
 ## unknown_ex_tempo (provisional)
 - evidence cards: Dragapult ex, Iono’s Bellibolt ex, Mega Kangaskhan ex, Mega Lucario ex
-- seats: 80504942:p0, 80505567:p0, 80506042:p0, 80515553:p0, 80516161:p0, 80592173:p1, 80623232:p0
+- seats: 80504942:p0, 80505567:p0, 80506042:p0, 80515553:p0, 80516161:p0, 80592173:p1, 80623232:p0, 80760752:p0, 80760752:p1, 80760852:p0, 80761535:p0
 - note: contains a confirmed ex attacker but does not match a named archetype signature; bucketed as generic ex tempo
 
 ## water_kyogre_abomasnow_maxbelt (confirmed)
 - evidence cards: Cyrano, Kyogre, Mega Abomasnow ex, Snover, Waitress
-- seats: 80504288:p0, 80594489:p0, 80595014:p0
+- seats: 80504288:p0, 80594489:p0, 80595014:p0, 80760852:p1
 
 ## water_kyogre_abomasnow_passive_mirror (confirmed)
 - evidence cards: Kyogre, Mega Abomasnow ex, Snover

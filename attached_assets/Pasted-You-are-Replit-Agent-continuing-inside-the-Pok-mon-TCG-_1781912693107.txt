@@ -1,0 +1,434 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+This is Pass 32: Dragapult Kaggle Result + Replay Postmortem.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not build new candidates.
+- Do not modify root main.py or root deck.csv.
+- Do not mutate existing candidate tarballs.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Raw replay JSON files must remain gitignored.
+- This is READ-ONLY with respect to Kaggle: status/listing only.
+- No second upload, no backup upload, no auto-submit.
+- Treat league_dragapult_v1_search_only as a calibration probe, not a promotion claim.
+
+Read before acting:
+- docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md
+- docs/NEXT_AGENT_README.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/pass30_existing_portfolio_hardening_report.md
+- data/reports/pass31_dragapult_search_only_kaggle_probe_report.md
+- data/experiments/pass30_strategy_decision.json
+- data/submission_queue.json
+- data/meta_replays/replay_registry.json
+- data/activegraph/lab_events.jsonl
+
+Current context:
+- Pass 31 submitted exactly one candidate:
+  candidate_id: league_dragapult_v1_search_only
+  tarball: league_dragapult_v1_search_only.tar.gz
+- It was pending at the end of Pass 31.
+- The user has now uploaded several new replay JSONs into data/meta_replays/raw/.
+- This pass must ingest those replays, attribute them to the correct submitted candidate/deck, and analyze them.
+- No new candidate should be built in this pass.
+- No Kaggle submit should occur in this pass.
+
+Goal:
+Resolve the Dragapult calibration probe and postmortem the new replays.
+
+Core questions:
+1. Did league_dragapult_v1_search_only complete, error, or remain pending?
+2. If complete, what is its publicScore and how does it compare to the current live leader?
+3. Which candidate/deck does each newly uploaded replay belong to?
+4. Did Dragapult transfer to live Kaggle at all?
+5. If it failed, why?
+6. What should the next work item be: keep Water, promote Dragapult for more confirmation, build Dragapult-specific rules, or return to portfolio hardening?
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Raw replay safety
+
+Check data/meta_replays/raw/.
+
+Identify newly uploaded raw replay JSON files since the last registry state.
+
+Verify:
+- all new raw replay JSON files are gitignored
+- do not stage or commit them
+- no duplicate filename conflict
+- each has a valid EpisodeId
+- each has valid statuses/rewards/steps structure
+- if one pre-existing self-mirror replay is tracked from old passes, report it as pre-existing only; do not modify it
+
+Output:
+- data/experiments/pass32_raw_replay_safety.json
+- data/experiments/pass32_raw_replay_safety.md
+
+Part C — Read-only Kaggle status refresh
+
+Run read-only Kaggle status:
+
+kaggle competitions submissions pokemon-tcg-ai-battle -v
+
+If kaggle CLI is not on PATH, use the Python Kaggle CLI/API path used in prior passes.
+
+Rules:
+- no submit
+- no upload
+- no retry-submit
+- publicScore may be a string; coerce safely to float
+- preserve status logs
+
+Save:
+- data/kaggle_uploads/status_before_pass32_dragapult_probe.log
+- data/kaggle_uploads/status_before_pass32_dragapult_probe.csv
+
+Then rebuild or update:
+- data/kaggle_uploads/live_score_registry.json
+- data/kaggle_uploads/live_score_registry.md
+
+Report:
+- latest status of league_dragapult_v1_search_only.tar.gz
+- complete/error/pending
+- publicScore if present
+- current live_score_leader
+- current water_family_current_best
+- current dragapult_family_best
+- score drift vs Pass 31 and Pass 30
+- no upload performed
+
+Output:
+- data/experiments/pass32_kaggle_status.json
+- data/experiments/pass32_kaggle_status.md
+
+If league_dragapult_v1_search_only is still pending:
+- still ingest/analyze replays
+- do not draw score conclusions
+
+If it errors:
+- classify the error
+- do not resubmit
+
+If it completes:
+- compare against live_score_leader and water_family_current_best
+- treat as one calibration point only
+
+Part D — Ingest new replays
+
+Run the existing replay pipeline:
+
+python scripts/ingest_replay_inbox.py
+python scripts/extract_replay_decks.py
+python scripts/extract_meta_archetypes.py
+python scripts/analyze_kaggle_replays.py
+python scripts/update_meta_pool_from_replays.py
+
+If any script name differs, use the current canonical pipeline.
+
+Outputs should include updated:
+- data/meta_replays/replay_registry.json
+- data/meta_replays/replay_registry.md
+- data/meta_replays/replay_processing_state.json
+- data/meta_replays/replay_inbox_errors.json
+- data/meta_replays/decks/*.csv
+- data/meta_replays/replay_analysis.json
+- data/meta_replays/replay_analysis.md
+- data/meta_replays/archetypes.yaml
+- experiments/meta_pool.yaml
+
+Also create:
+- data/experiments/pass32_replay_ingestion.json
+- data/experiments/pass32_replay_ingestion.md
+
+Report:
+- raw replay count before/after
+- new EpisodeIds
+- duplicates
+- failed parses
+- deck files extracted
+- new archetypes, if any
+- no fabricated card IDs
+
+Part E — Attribute new replays to submitted candidate/deck
+
+Create or reuse an attribution script.
+
+Output:
+- data/experiments/pass32_replay_attribution.json
+- data/experiments/pass32_replay_attribution.md
+
+For each new replay:
+- episode_id
+- file path
+- players / agent names
+- our seat(s)
+- whether self-mirror
+- rewards
+- result from our candidate perspective
+- deck fingerprint for each seat
+- exact candidate/deck match:
+  - league_dragapult_v1_search_only
+  - league_water_anti_disruption_pivot_v1
+  - league_water_core_reference
+  - core_pilot_water_v2_runtime
+  - unknown_ours
+  - opponent
+- attribution confidence:
+  - exact_deck_fingerprint
+  - name_only
+  - unknown
+- whether the replay belongs to the Pass 31 Dragapult probe
+
+Important:
+- If the replay is not Dragapult, do not force it.
+- If multiple of our decks share a fingerprint, report ambiguity honestly.
+
+Part F — Dragapult live postmortem
+
+If any new replay belongs to league_dragapult_v1_search_only, analyze those games.
+
+Create:
+- data/experiments/pass32_dragapult_postmortem.json
+- data/experiments/pass32_dragapult_postmortem.md
+- data/experiments/pass32_dragapult_windows.jsonl
+
+For each Dragapult replay:
+- episode_id
+- opponent
+- opponent archetype
+- result
+- turn/step length
+- final loss condition:
+  - prizes
+  - no_pokemon_in_play
+  - deckout
+  - timeout
+  - invalid
+  - unknown
+- whether Dragapult evolved
+- whether Dragapult attacked
+- first attack step
+- attackIds used
+- whether Phantom Dive / spread attack used if resolvable
+- bench-damage target observability
+- whether Dusknoir line was used if present
+- whether Boss/gust effect was used if resolvable
+- bench development
+- energy attachment
+- deckout/no-pokemon risk
+- repeated effect loops
+- invalid actions
+- key tactical failure windows
+
+Classify each loss:
+- setup_failure
+- energy_failure
+- no_pokemon_loss
+- prize_race_loss
+- spread_targeting_unknown
+- spread_targeting_misplay_if_proven
+- evolution_failure
+- attack_pressure_failure
+- deck_skeleton_issue
+- pilot_rule_gap
+- opponent_outpaced
+- unknown
+
+Do not claim spread-targeting misplay unless target identity is observable.
+
+Part G — Cross-candidate replay comparison
+
+Create:
+- data/experiments/pass32_live_probe_comparison.json
+- data/experiments/pass32_live_probe_comparison.md
+
+Compare latest live probes:
+- league_water_anti_disruption_pivot_v1
+- league_water_core_reference
+- league_dragapult_v1_search_only
+- combo_full_safety_v3_fixed
+- submission.tar.gz if relevant
+
+Metrics:
+- current publicScore
+- score drift
+- replay result count
+- win/loss/draw in available replays
+- error status
+- entrypoint validator status if artifact available
+- observed failure modes
+- whether current evidence supports:
+  - keep_as_control
+  - calibration_only
+  - needs_more_replays
+  - reject_for_now
+  - build_targeted_variant
+  - future_probe_candidate
+
+Part H — Strategy decision
+
+Create:
+- data/experiments/pass32_strategy_decision.json
+- data/experiments/pass32_strategy_decision.md
+- data/submission_queue.json
+
+Decision labels:
+- wait_for_score
+- keep_water_control
+- dragapult_needs_more_replays
+- dragapult_candidate_for_deeper_confirmation
+- dragapult_reject_for_now
+- build_dragapult_targeted_variant_next
+- build_water_basic_density_variant_next
+- return_to_portfolio_hardening
+- no_action
+
+Rules:
+- No upload.
+- Dry-run queue max 1.
+- Only queue a future candidate if:
+  - league_dragapult_v1_search_only completed with a competitive score OR replay evidence is very strong
+  - no error
+  - no obvious live collapse
+  - validators are known pass
+- If pending, decision must be wait_for_score.
+- If complete but below current control, keep Water/live control and analyze why.
+- If complete and above current control, mark dragapult_candidate_for_deeper_confirmation, not automatic promotion.
+- If Dragapult replay shows a clear fixable gap, choose build_dragapult_targeted_variant_next.
+- If new Water replays still show no-pokemon due to low Basic density, choose build_water_basic_density_variant_next.
+- No auto-submit.
+
+Part I — ActiveGraph events
+
+Emit:
+- KaggleScoreUpdated if status/score changed or pending resolved
+- ReplayImported for each new replay
+- ReplayAnalyzed for each new replay
+- StrategyIterationEvaluated for Dragapult live result if scored
+- StrategyDecisionRecorded
+- ReportSiteGenerated
+- SubmissionQueued only if dry-run queue has one future candidate
+
+All events:
+- pass32 tag
+- no_upload: true except do not emit upload event because no upload occurs
+- evidence path links
+- candidate_id when applicable
+- episode_id when applicable
+
+Part J — Reports and docs
+
+Update:
+- data/reports/pass32_dragapult_kaggle_result_and_replay_report.md
+- data/reports/activegraph_strategy_report.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/site/index.html
+
+Include:
+- Pass 31 pending result resolved or still pending
+- new replay ingestion
+- replay attribution
+- Dragapult postmortem if applicable
+- score comparison
+- strategy decision
+- no-upload note
+- caveat: one Kaggle probe is a calibration point, not proof
+
+Part K — Tests
+
+Add/update tests for:
+- new raw replays gitignored
+- replay registry includes new EpisodeIds
+- duplicate handling
+- replay attribution uses deck fingerprint, not name only
+- Dragapult postmortem does not claim spread-targeting if unobservable
+- score registry handles publicScore string
+- pending score does not emit fake score
+- no upload flag remains false / no_upload true
+- root files unchanged
+- dry-run queue max 1
+- report includes calibration caveat
+- active control / water family / dragapult family fields remain distinct
+
+Run targeted tests.
+Run broader pass31/pass32-related tests if feasible.
+
+Part L — Final report
+
+Report exactly:
+
+ActiveGraph Pass 32 Dragapult Probe Result + Replay Postmortem Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Kaggle status
+- dragapult status:
+- dragapult publicScore:
+- live_score_leader:
+- water_family_current_best:
+- dragapult_family_best:
+- stale/drift caveat:
+
+3. Replay ingestion
+- raw replays before/after:
+- new episodes:
+- duplicates:
+- failed parses:
+- deck attribution:
+
+4. Dragapult replay postmortem
+- Dragapult replays found:
+- wins/losses/draws:
+- primary loss modes:
+- spread targeting observability:
+- setup/attack/energy findings:
+
+5. Other new replay findings
+- Water replays:
+- self-mirrors:
+- new archetypes:
+- no-pokemon/deckout/energy denial signals:
+
+6. Score comparison
+- Dragapult vs live leader:
+- Dragapult vs Water:
+- interpretation:
+- confidence:
+
+7. Strategy decision
+- decision:
+- dry-run queue:
+- next candidate family:
+- reason:
+
+8. ActiveGraph / reports
+- events emitted:
+- event store:
+- report path:
+- site path:
+
+9. Manual git notes
+- files to review:
+- files not to commit:
+- generated/ignored files:
+
+10. Next recommendation
+- one sentence only.

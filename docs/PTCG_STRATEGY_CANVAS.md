@@ -60,3 +60,15 @@ We hardened and ranked OUR existing portfolio to pick the next human-approved pr
 - Result: status **pending** — wait, no conclusion; do not resubmit this pass.
 
 See `data/reports/pass31_dragapult_search_only_kaggle_probe_report.md` for the full 10-section report.
+
+## Pass 32 — Dragapult Kaggle result + replay postmortem
+
+> READ-ONLY wrt Kaggle. NO upload, NO second submission. No new candidates. Root files byte-identical.
+
+- Dragapult probe resolved: **complete @ 309.2** (was pending) — clean transfer, but BELOW Water control (340.0) and live leader `submission.tar.gz` (363.0).
+- 3 new replays (gitignored): self-mirror win (80760752), loss vs water_kyogre_abomasnow_maxbelt (80760852), loss vs unknown (80761535) — all `league_dragapult_v1_search_only` on our p0. vs real opponents: 0-2.
+- Loss modes: prize_race_loss (attacked 4×, 0 prizes converted) + no_pokemon_loss (very late first attack, ran out of Pokémon). Spread target NOT observable from numeric attackIds — no misplay claimed.
+
+## Next move (Pass 32)
+
+`keep_water_control` — Dragapult @ 309.2 is below the Water control; nothing queued (dry-run 0/1). The next Dragapult move is a PILOT/pacing change, not a new decklist; no upload this pass.

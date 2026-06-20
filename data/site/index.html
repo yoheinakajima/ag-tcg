@@ -63,4 +63,14 @@
  &middot; live leader before upload: <code>submission.tar.gz</code> @ 363.0</p>
 <p>status: <b>pending</b> (no publicScore yet) &middot; interpretation: wait, no conclusion; do not resubmit this pass</p>
 <p>Full report: <code>data/reports/pass31_dragapult_search_only_kaggle_probe_report.md</code></p>
+<h2>Pass 32 — Dragapult result + replay postmortem</h2>
+<p class="caveat">READ-ONLY wrt Kaggle: status/listing only, NO upload, NO second submission. No GitHub push. No new candidates. Root main.py/deck.csv byte-identical. Existing tarballs untouched. No invented card IDs.</p>
+<p>Dragapult probe resolved: <code>league_dragapult_v1_search_only.tar.gz</code> &middot; status: <b>complete @ 309.2</b> (was pending)
+ &middot; live_score_leader: <code>submission.tar.gz</code> @ 363.0
+ &middot; water_family_current_best: <code>league_water_anti_disruption_pivot_v1.tar.gz</code> @ 340.0
+ &middot; dragapult_family_best: <code>league_dragapult_v1_search_only.tar.gz</code> @ 309.2 (BELOW control)</p>
+<p>new replays (gitignored): 80760752 (self-mirror, p0 win), 80760852 (loss vs water_kyogre_abomasnow_maxbelt), 80761535 (loss vs unknown) &middot; all <code>league_dragapult_v1_search_only</code> on our p0 &middot; vs real opponents: <b>0-2</b></p>
+<p>loss modes: prize_race_loss (attacked 4&times;, 0 prizes converted) + no_pokemon_loss (very late first attack, ran out of Pok&eacute;mon) &middot; spread target NOT observable from numeric attackIds &mdash; no misplay claimed</p>
+<p><b>Decision: keep_water_control</b> &middot; dry-run queue: 0 (max 1, nothing queued) &middot; upload performed: no &middot; pass32 events emitted: 10 (no upload event)</p>
+<p>Full report: <code>data/reports/pass32_dragapult_result_and_replay_postmortem_report.md</code></p>
 </body></html>

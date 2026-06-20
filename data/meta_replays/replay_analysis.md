@@ -1,19 +1,19 @@
 # Replay analysis (Pass 11B)
 
-- replays analyzed: **19**
-- record (by our seat): **5W / 10L / 0D**, self-mirrors: 4, other: 0
+- replays analyzed: **22**
+- record (by our seat): **5W / 12L / 0D**, self-mirrors: 5, other: 0
 - fast losses (≤60 steps): 80503804, 80505567, 80592831
 - long/deckout games: 80374966, 80504942, 80506042, 80516161, 80590776, 80592173, 80622626
 
 ## Recurring failure tags
 - stuck_on_basic_snover: 10
-- loss_no_specific_tempo_tag: 4
+- loss_no_specific_tempo_tag: 6
 - fast_loss: 3
 
 ## Opponent archetype patterns
 - unknown_ex_tempo: 7
-- unknown: 4
-- water_kyogre_abomasnow_maxbelt: 3
+- unknown: 5
+- water_kyogre_abomasnow_maxbelt: 4
 - metal_ex_zacian_ramp: 1
 
 ## Per-replay
@@ -38,3 +38,6 @@
 | 80622626 | self_mirror | 126 | - | - |
 | 80622745 | our_win | 110 | unknown | - |
 | 80623232 | our_loss | 110 | unknown_ex_tempo | loss_no_specific_tempo_tag |
+| 80760752 | self_mirror | 57 | - | - |
+| 80760852 | our_loss | 75 | water_kyogre_abomasnow_maxbelt | loss_no_specific_tempo_tag |
+| 80761535 | our_loss | 63 | unknown | loss_no_specific_tempo_tag |

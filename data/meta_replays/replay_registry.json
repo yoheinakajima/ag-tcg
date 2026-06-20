@@ -1,8 +1,8 @@
 {
   "schema": "activegraph.replays.registry/v1",
   "pass": "11b",
-  "replays_total": 19,
-  "replays_registered": 19,
+  "replays_total": 22,
+  "replays_registered": 22,
   "duplicates_skipped": [],
   "errors": [],
   "known_own_decks": [
@@ -2090,6 +2090,329 @@
       ],
       "perspective": "our_loss",
       "our_seat": 1,
+      "our_reward": -1
+    },
+    {
+      "episode_id": 80760752,
+      "filename": "80760752.json",
+      "file_sha256": "a6c87cbab93d41ed60dd69f5bf42d7e968e72f1569cb9bb4d0d202ed01cec5c2",
+      "status": "parsed",
+      "module_version": "1.30.1",
+      "agents": [
+        "Yohei Nakajima",
+        "Yohei Nakajima"
+      ],
+      "rewards": [
+        1,
+        -1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "num_steps": 57,
+      "warnings": [],
+      "seats": [
+        {
+          "seat": 0,
+          "agent": "Yohei Nakajima",
+          "is_ours": true,
+          "deck_label": "unknown_own_deck",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 14,
+            "ordered_deck_sha256": "49eb2b8e156392586ad74aa0a38e6ae17dd4085223843112e065606e8789612c",
+            "multiset_deck_sha256": "49eb2b8e156392586ad74aa0a38e6ae17dd4085223843112e065606e8789612c",
+            "card_counts": {
+              "2": 6,
+              "5": 11,
+              "119": 4,
+              "120": 3,
+              "121": 4,
+              "131": 2,
+              "133": 2,
+              "1079": 4,
+              "1086": 4,
+              "1097": 4,
+              "1121": 4,
+              "1182": 4,
+              "1224": 4,
+              "1231": 4
+            }
+          },
+          "archetype": {
+            "archetype_id": "unknown_ex_tempo",
+            "confidence": "provisional",
+            "evidence_card_ids": [
+              121
+            ],
+            "evidence_card_names": [
+              "Dragapult ex"
+            ],
+            "notes": [
+              "contains a confirmed ex attacker but does not match a named archetype signature; bucketed as generic ex tempo"
+            ]
+          }
+        },
+        {
+          "seat": 1,
+          "agent": "Yohei Nakajima",
+          "is_ours": true,
+          "deck_label": "unknown_own_deck",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 14,
+            "ordered_deck_sha256": "49eb2b8e156392586ad74aa0a38e6ae17dd4085223843112e065606e8789612c",
+            "multiset_deck_sha256": "49eb2b8e156392586ad74aa0a38e6ae17dd4085223843112e065606e8789612c",
+            "card_counts": {
+              "2": 6,
+              "5": 11,
+              "119": 4,
+              "120": 3,
+              "121": 4,
+              "131": 2,
+              "133": 2,
+              "1079": 4,
+              "1086": 4,
+              "1097": 4,
+              "1121": 4,
+              "1182": 4,
+              "1224": 4,
+              "1231": 4
+            }
+          },
+          "archetype": {
+            "archetype_id": "unknown_ex_tempo",
+            "confidence": "provisional",
+            "evidence_card_ids": [
+              121
+            ],
+            "evidence_card_names": [
+              "Dragapult ex"
+            ],
+            "notes": [
+              "contains a confirmed ex attacker but does not match a named archetype signature; bucketed as generic ex tempo"
+            ]
+          }
+        }
+      ],
+      "perspective": "self_mirror",
+      "our_seat": [
+        0,
+        1
+      ],
+      "our_reward": null
+    },
+    {
+      "episode_id": 80760852,
+      "filename": "80760852.json",
+      "file_sha256": "7567b99bd291acec69560e6f9aba70026320c38e07bfd869d2ff9f56fa7e47ec",
+      "status": "parsed",
+      "module_version": "1.30.1",
+      "agents": [
+        "Yohei Nakajima",
+        "Trevor Bernhard"
+      ],
+      "rewards": [
+        -1,
+        1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "num_steps": 75,
+      "warnings": [],
+      "seats": [
+        {
+          "seat": 0,
+          "agent": "Yohei Nakajima",
+          "is_ours": true,
+          "deck_label": "unknown_own_deck",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 14,
+            "ordered_deck_sha256": "49eb2b8e156392586ad74aa0a38e6ae17dd4085223843112e065606e8789612c",
+            "multiset_deck_sha256": "49eb2b8e156392586ad74aa0a38e6ae17dd4085223843112e065606e8789612c",
+            "card_counts": {
+              "2": 6,
+              "5": 11,
+              "119": 4,
+              "120": 3,
+              "121": 4,
+              "131": 2,
+              "133": 2,
+              "1079": 4,
+              "1086": 4,
+              "1097": 4,
+              "1121": 4,
+              "1182": 4,
+              "1224": 4,
+              "1231": 4
+            }
+          },
+          "archetype": {
+            "archetype_id": "unknown_ex_tempo",
+            "confidence": "provisional",
+            "evidence_card_ids": [
+              121
+            ],
+            "evidence_card_names": [
+              "Dragapult ex"
+            ],
+            "notes": [
+              "contains a confirmed ex attacker but does not match a named archetype signature; bucketed as generic ex tempo"
+            ]
+          }
+        },
+        {
+          "seat": 1,
+          "agent": "Trevor Bernhard",
+          "is_ours": false,
+          "deck_label": "opponent_unknown",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 9,
+            "ordered_deck_sha256": "13ccdfcc44db89d6656fcc2b1ba03f06fb7cedaaefb6aea5e3b2508f30ce48bc",
+            "multiset_deck_sha256": "b702e251e3b56104f84b60fddff309b0e5d4fae865e4dbb57311d4b0d45ec17e",
+            "card_counts": {
+              "3": 35,
+              "721": 2,
+              "722": 4,
+              "723": 4,
+              "1145": 4,
+              "1158": 1,
+              "1205": 2,
+              "1227": 4,
+              "1235": 4
+            }
+          },
+          "archetype": {
+            "archetype_id": "water_kyogre_abomasnow_maxbelt",
+            "confidence": "confirmed",
+            "evidence_card_ids": [
+              721,
+              722,
+              723,
+              1205,
+              1235
+            ],
+            "evidence_card_names": [
+              "Kyogre",
+              "Snover",
+              "Mega Abomasnow ex",
+              "Cyrano",
+              "Waitress"
+            ],
+            "notes": []
+          }
+        }
+      ],
+      "perspective": "our_loss",
+      "our_seat": 0,
+      "our_reward": -1
+    },
+    {
+      "episode_id": 80761535,
+      "filename": "80761535.json",
+      "file_sha256": "545f8418e8218a7f1f4af7a30efb8fcf8548d0b7254dde67640445dc1abf1543",
+      "status": "parsed",
+      "module_version": "1.30.1",
+      "agents": [
+        "Yohei Nakajima",
+        "Benedek Brandschott"
+      ],
+      "rewards": [
+        -1,
+        1
+      ],
+      "statuses": [
+        "DONE",
+        "DONE"
+      ],
+      "num_steps": 63,
+      "warnings": [],
+      "seats": [
+        {
+          "seat": 0,
+          "agent": "Yohei Nakajima",
+          "is_ours": true,
+          "deck_label": "unknown_own_deck",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 14,
+            "ordered_deck_sha256": "49eb2b8e156392586ad74aa0a38e6ae17dd4085223843112e065606e8789612c",
+            "multiset_deck_sha256": "49eb2b8e156392586ad74aa0a38e6ae17dd4085223843112e065606e8789612c",
+            "card_counts": {
+              "2": 6,
+              "5": 11,
+              "119": 4,
+              "120": 3,
+              "121": 4,
+              "131": 2,
+              "133": 2,
+              "1079": 4,
+              "1086": 4,
+              "1097": 4,
+              "1121": 4,
+              "1182": 4,
+              "1224": 4,
+              "1231": 4
+            }
+          },
+          "archetype": {
+            "archetype_id": "unknown_ex_tempo",
+            "confidence": "provisional",
+            "evidence_card_ids": [
+              121
+            ],
+            "evidence_card_names": [
+              "Dragapult ex"
+            ],
+            "notes": [
+              "contains a confirmed ex attacker but does not match a named archetype signature; bucketed as generic ex tempo"
+            ]
+          }
+        },
+        {
+          "seat": 1,
+          "agent": "Benedek Brandschott",
+          "is_ours": false,
+          "deck_label": "opponent_unknown",
+          "fingerprint": {
+            "card_count": 60,
+            "unique_card_count": 13,
+            "ordered_deck_sha256": "fa6b014c16b2f394f948dd573fcfa97c5738d2f9a10a38a40ac97cb39cba6f20",
+            "multiset_deck_sha256": "5087a9d5885c18efe85c7336276f6bdc251c7e366599b60df707d3d7b7451b17",
+            "card_counts": {
+              "6": 20,
+              "176": 4,
+              "249": 4,
+              "531": 3,
+              "979": 4,
+              "1077": 4,
+              "1121": 3,
+              "1123": 2,
+              "1126": 1,
+              "1182": 3,
+              "1199": 4,
+              "1216": 4,
+              "1227": 4
+            }
+          },
+          "archetype": {
+            "archetype_id": "unknown",
+            "confidence": "unknown",
+            "evidence_card_ids": [],
+            "evidence_card_names": [],
+            "notes": [
+              "no confirmed archetype signature matched"
+            ]
+          }
+        }
+      ],
+      "perspective": "our_loss",
+      "our_seat": 0,
       "our_reward": -1
     }
   ]

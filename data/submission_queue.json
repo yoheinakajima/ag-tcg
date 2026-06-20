@@ -1,41 +1,15 @@
 {
   "schema": "ptcg_dry_run_submission_queue_v1",
-  "generated_at": 1781910876.7361689,
-  "run_id": "run_pass30_existing_portfolio_20260619_231436",
-  "stage": "pass30_existing_portfolio_hardening",
+  "generated_at": 1781913742.2309742,
+  "run_id": "run_pass32_dragapult_postmortem_20260620_000222",
+  "stage": "pass32_dragapult_result_and_replay_postmortem",
   "auto_submit_enabled": false,
   "require_manual_approval_for_submit": true,
   "upload_performed": false,
   "no_more_submissions_today": true,
   "max_queue_size": 1,
-  "active_control": "league_water_core_reference",
-  "queue": [
-    {
-      "candidate_id": "league_dragapult_v1_search_only",
-      "tarball_path": "data/submissions/candidates_pass30/league_dragapult_v1_search_only.tar.gz",
-      "tarball_contents": [
-        "deck.csv",
-        "main.py"
-      ],
-      "reason": "Part-J recommended probe and best next human-approved candidate among OUR existing decks: top non-water deck in the Stage-1 internal tournament (adj win_rate 0.7246, Wilson95 [0.6095, 0.8161]), #1 in replay-derived meta sanity (weighted 0.8509 > water 0.6403), 0 crash/timeout/invalid, clean parent/child relationship vs the spread parent. Reused verbatim from an earlier pass \u2014 NOT a clone of any opponent and no invented card ids.",
-      "local_adjusted_win_rate_stage1": 0.7246,
-      "local_adjusted_win_rate_stage2_focused": 0.5333,
-      "wilson_95_ci_stage1": [
-        0.6095,
-        0.8161
-      ],
-      "weighted_meta_score": 0.8509,
-      "tarball_valid": true,
-      "entrypoint_valid": true,
-      "deck_legal": true,
-      "smoke_status": "PASS",
-      "is_clone_or_replay_deck": false,
-      "recommended_kaggle_message": "league_dragapult_v1_search_only: Dragapult spread refinement (search-only child). LOCAL internal tournament + replay-derived meta sanity lead among our decks; surrogate numbers only. Human review required before any submission.",
-      "upload_performed": false,
-      "auto_submit_enabled": false,
-      "require_manual_approval_for_submit": true
-    }
-  ],
-  "queued_candidate_count": 1,
-  "selection_reason": "Pass 30 existing-portfolio hardening: one dry-run recommendation queued (league_dragapult_v1_search_only). auto_submit_enabled=false and require_manual_approval_for_submit=true \u2014 this is a HELD dry-run entry; NO upload is performed and a human must approve before any submission."
+  "active_control": "league_water_anti_disruption_pivot_v1",
+  "decision": "keep_water_control",
+  "queue": [],
+  "note": "Dry-run queue intentionally EMPTY: Dragapult completed below the Water control (309.2 < 340.0); no candidate is queued. No upload."
 }
