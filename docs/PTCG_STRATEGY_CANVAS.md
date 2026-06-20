@@ -37,3 +37,13 @@ _Honesty mandate: attack damage/effect, lethal, KO target, spread placement, Bos
 ## Next move
 
 `Keep water_basic_density_v1 as the single HELD dry-run probe (carried, unchanged). The Pass-35 typed board-aware layer is adopted as SAFE (0 illegal refinements, always falls back, ~2.5% live firing) and meta-sane (0 collapses), but NO typed child clearly beats its untyped parent once calibrated against the self-mirror noise floor, so none is promoted to the queue. No upload/submit performed.` Keep `water_basic_density_v1` as the single held dry-run probe; adopt the typed layer as SAFE infrastructure but DO NOT submit. Run a larger confirmation batch before any human submit. Toxic + Durant stay special-pilot-only.
+
+## Pass 36 — Standing tournament engine v0 (internal diagnostics, NOT Kaggle)
+
+The deprecated per-pass one-off tournaments are replaced by a reusable **event-first, resumable, bounded-tick** engine (`src/ptcg_activegraph/tournament/`). The event ledger is the source of truth; all projections rebuild from it. **NO upload, NO auto-submit, no new candidates.**
+
+- Smoke: 2 ticks, 5 cabt games (all ok), resume proven (no duplicate game ids; next queue 0 overlap).
+- Root `main.py`/`deck.csv` untouched; held probe `water_basic_density_v1` still held; Toxic/Durant special-pilot-only (never scheduled).
+- Internal standings are NOT a Kaggle leaderboard and NOT a promotion/upload signal.
+
+See `data/reports/pass36_standing_tournament_engine_report.md`, `docs/TOURNAMENT_ENGINE_PLAN.md`, `docs/PERSISTENT_TOURNAMENT_DAEMON.md`.

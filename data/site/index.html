@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph — Pass 35 Typed Board-Aware Strategy Layer</title>
+<title>ActiveGraph — Pass 36 Standing Tournament Engine (internal diagnostics)</title>
 <style>
  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
  h1{font-size:1.5rem} table{border-collapse:collapse;width:100%;margin:1rem 0}
@@ -9,7 +9,21 @@
  th{background:#f4f4f6} .caveat{background:#fff7e6;border:1px solid #f0c36d;padding:.7rem;border-radius:6px;font-size:.9rem;margin:.5rem 0}
  code{background:#f4f4f6;padding:.1rem .3rem;border-radius:3px}
 </style></head><body>
-<h1>ActiveGraph — Pass 35: Typed Board-Aware Strategy Layer + Portfolio Tournament</h1>
+<h1>ActiveGraph — Pass 36: Standing Tournament Engine v0</h1>
+<p class="caveat"><b>Internal self-play diagnostics only — NOT a Kaggle leaderboard</b> and not predictive of leaderboard placement. The engine performs <b>NO upload, NO auto-submit</b>, and creates <b>no new candidates</b> in v0.</p>
+<h2>Standing tournament engine v0</h2>
+<p>The deprecated per-pass one-off tournaments are replaced by a reusable, <b>event-first, resumable, bounded-tick</b> engine
+ (<code>src/ptcg_activegraph/tournament/</code>). The event ledger
+ (<code>data/tournament/events.jsonl</code>) is the source of truth; every projection is a pure, idempotent fold over it.</p>
+<ul>
+ <li>Root <code>main.py</code>/<code>deck.csv</code> byte-identical to <code>v1_kaggle_349_8</code> &middot; ledger refuses to emit any upload event &middot; <b>0</b> upload events.</li>
+ <li>Smoke (real cabt): 2 bounded ticks, 5 games (5 ok / 0 invalid / 0 timeout). <b>Resume proven</b> — all game ids unique across ticks, next queue 0 overlap with finished.</li>
+ <li>Held probe <code>water_basic_density_v1</code> still held &middot; Toxic + Durant <code>special_pilot_only</code> (registered, never scheduled).</li>
+ <li>Honesty: typed-lite children evaluated but not claimed as gains; spread/attack UNSUPPORTED; zstd unavailable → gzip sidecar fallback (recorded honestly).</li>
+</ul>
+<p>Report: <code>data/reports/pass36_standing_tournament_engine_report.md</code> &middot; Ops: <code>docs/PERSISTENT_TOURNAMENT_DAEMON.md</code> &middot; Design: <code>docs/TOURNAMENT_ENGINE_PLAN.md</code>.</p>
+<hr>
+<h1>Pass 35: Typed Board-Aware Strategy Layer + Portfolio Tournament (prior pass)</h1>
 <p class="caveat">The internal tournament, parent/child H2H confirmations, and the replay-derived meta sanity are LOCAL diagnostics: every seat is OUR own portfolio deck driven by the SAME deck-agnostic base pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal.</p>
 <p class="caveat">Honesty mandate: attack damage/effect, lethal, KO target, spread placement, Boss/gust are UNSUPPORTED by the option schema (numeric attackId only); the typed layer refuses to fabricate them. Raging Bolt gets NO fake color-match fix (Pass 28 refuted it).</p>
 <h2>Lane &amp; safety</h2>

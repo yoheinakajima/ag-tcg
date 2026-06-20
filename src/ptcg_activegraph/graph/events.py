@@ -92,6 +92,22 @@ class EventType(str, Enum):
     ParentChildComparisonStarted = "ParentChildComparisonStarted"
     ParentChildComparisonFinished = "ParentChildComparisonFinished"
 
+    # --- Pass 36: standing tournament engine v0 ---------------------------
+    TournamentEngineInitialized = "TournamentEngineInitialized"
+    TournamentTickStarted = "TournamentTickStarted"
+    TournamentTickFinished = "TournamentTickFinished"
+    TournamentParticipantRegistered = "TournamentParticipantRegistered"
+    GameScheduled = "GameScheduled"
+    GameStarted = "GameStarted"
+    GameFinished = "GameFinished"
+    MatchupFinished = "MatchupFinished"
+    TournamentRankingUpdated = "TournamentRankingUpdated"
+    CandidatePoolUpdated = "CandidatePoolUpdated"
+    CandidateStatusChanged = "CandidateStatusChanged"
+    CandidateNonInertnessMeasured = "CandidateNonInertnessMeasured"
+    TournamentProjectionUpdated = "TournamentProjectionUpdated"
+    TournamentReportGenerated = "TournamentReportGenerated"
+
 
 @dataclass
 class Event:

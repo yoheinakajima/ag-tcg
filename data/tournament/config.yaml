@@ -1,0 +1,26 @@
+# Pass 36 — Standing ActiveGraph Tournament Engine v0 config.
+# Internal diagnostics only. NOT a Kaggle leaderboard. NO upload, NO auto-submit.
+tournament_id: ptcg_standing_tournament_v0
+
+# --- bounded tick budgets ---
+tick_max_games: 50
+tick_max_seconds: 900
+per_game_timeout_seconds: 90
+
+# --- pool caps / lifecycle ---
+active_soft_cap: 16
+active_hard_cap: 24
+min_placement_games_per_candidate: 20
+min_parent_child_games_per_seat: 10
+top_bracket_size: 6
+exploration_ratio: 0.25
+
+# --- safety contract (do not flip without an explicit human pass) ---
+auto_submit: false
+max_dry_run_queue: 1
+
+# --- artifact storage ---
+# zstd is preferred for game sidecars; if zstandard is unavailable in the lab
+# environment the engine falls back to stdlib gzip and records the fallback.
+sidecar_codec_preferred: zstd
+sidecar_codec_fallback: gzip

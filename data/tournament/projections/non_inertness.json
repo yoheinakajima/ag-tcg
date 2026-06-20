@@ -1,0 +1,73 @@
+{
+  "generated_at": "2026-06-20T18:46:52Z",
+  "no_upload": true,
+  "note": "Evidence sufficiency only. Pass 35 calibration: typed children are NOT a proven win-rate gain. No improvement is claimed here.",
+  "candidates": [
+    {
+      "child": "league_dragapult_v1_search_only",
+      "parent": "league_dragapult_spread",
+      "child_games": 1,
+      "parent_games": 0,
+      "child_adj_wr": 1.0,
+      "parent_adj_wr": 0.0,
+      "delta": 1.0,
+      "evidence": "insufficient_evidence",
+      "improvement_claimed": false
+    },
+    {
+      "child": "league_water_anti_disruption_pivot_v1",
+      "parent": "league_water_core_reference",
+      "child_games": 0,
+      "parent_games": 0,
+      "child_adj_wr": 0.0,
+      "parent_adj_wr": 0.0,
+      "delta": 0.0,
+      "evidence": "insufficient_evidence",
+      "improvement_claimed": false
+    },
+    {
+      "child": "mega_charizard_x_burst_typed35",
+      "parent": "league_mega_charizard_x_burst",
+      "child_games": 0,
+      "parent_games": 1,
+      "child_adj_wr": 0.0,
+      "parent_adj_wr": 1.0,
+      "delta": -1.0,
+      "evidence": "insufficient_evidence",
+      "improvement_claimed": false
+    },
+    {
+      "child": "mega_gardevoir_psychic_ramp_typed35",
+      "parent": "league_mega_gardevoir_psychic_ramp",
+      "child_games": 0,
+      "parent_games": 1,
+      "child_adj_wr": 0.0,
+      "parent_adj_wr": 0.0,
+      "delta": 0.0,
+      "evidence": "insufficient_evidence",
+      "improvement_claimed": false
+    },
+    {
+      "child": "mega_venusaur_tank_typed35",
+      "parent": "league_mega_venusaur_tank",
+      "child_games": 0,
+      "parent_games": 1,
+      "child_adj_wr": 0.0,
+      "parent_adj_wr": 0.0,
+      "delta": 0.0,
+      "evidence": "insufficient_evidence",
+      "improvement_claimed": false
+    },
+    {
+      "child": "water_basic_density_v1",
+      "parent": "league_water_core_reference",
+      "child_games": 0,
+      "parent_games": 0,
+      "child_adj_wr": 0.0,
+      "parent_adj_wr": 0.0,
+      "delta": 0.0,
+      "evidence": "insufficient_evidence",
+      "improvement_claimed": false
+    }
+  ]
+}

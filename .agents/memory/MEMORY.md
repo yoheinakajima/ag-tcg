@@ -1,4 +1,5 @@
 - [cabt replay schema](cabt-replay-schema.md) — decode replay step/option type codes + prize/bench loss conditions honestly; numeric attackId only (no spread claims); dedupe Kaggle submission history by best-complete row.
+- [tournament engine v0](pass36-tournament-engine.md) — reusable event-first resumable bounded-tick engine; run as repeated synchronous ticks (nohup dies at tool boundary); projections rebuild from ledger alone; single-run flock; gzip sidecar fallback.
 - [EN_Card_Data csv quirks](card-data-csv-quirks.md) — "Pokémon Tool" contains "pok" (classify trainer markers before pokemon); Dragon energy_type is glyph 竜 not {N} (honest non-match, no fake color fix).
 - [pass gating + report honesty](pass-gating-honesty.md) — held-probe retention must AND the no-collapse gate into a persisted conjunction; report root-safety must be filecmp-derived (yes/no/unverified), never hardcoded yes/PASS.
 - [shared-artifact stale tests](pass-shared-artifact-stale-tests.md) — single shared canvas/site/report/queue/meta_pool overwritten each pass; older strict snapshot tests go red structurally (not a regression); write your pass's tests forward-compatibly.

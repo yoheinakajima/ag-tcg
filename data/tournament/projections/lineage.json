@@ -1,0 +1,147 @@
+{
+  "generated_at": "2026-06-20T18:46:52Z",
+  "no_upload": true,
+  "families": {
+    "diamond": {
+      "best_with_games": "diamond_toolbox_diancie",
+      "members": [
+        {
+          "candidate_id": "diamond_toolbox_diancie",
+          "generation": 0,
+          "parent": null,
+          "status": "portfolio_anchor"
+        }
+      ]
+    },
+    "dragapult": {
+      "best_with_games": "league_dragapult_v1_search_only",
+      "members": [
+        {
+          "candidate_id": "league_dragapult_spread",
+          "generation": 0,
+          "parent": null,
+          "status": "active"
+        },
+        {
+          "candidate_id": "league_dragapult_v1_search_only",
+          "generation": 1,
+          "parent": "league_dragapult_spread",
+          "status": "portfolio_anchor"
+        }
+      ]
+    },
+    "durant": {
+      "best_with_games": null,
+      "members": [
+        {
+          "candidate_id": "deckout_carousel_durant_v2",
+          "generation": 0,
+          "parent": null,
+          "status": "special_pilot_only"
+        }
+      ]
+    },
+    "lightning": {
+      "best_with_games": "mono_lightning_miraidon_easy",
+      "members": [
+        {
+          "candidate_id": "mono_lightning_miraidon_easy",
+          "generation": 0,
+          "parent": null,
+          "status": "portfolio_anchor"
+        }
+      ]
+    },
+    "mega_charizard": {
+      "best_with_games": "league_mega_charizard_x_burst",
+      "members": [
+        {
+          "candidate_id": "league_mega_charizard_x_burst",
+          "generation": 0,
+          "parent": null,
+          "status": "family_champion"
+        },
+        {
+          "candidate_id": "mega_charizard_x_burst_typed35",
+          "generation": 1,
+          "parent": "league_mega_charizard_x_burst",
+          "status": "active"
+        }
+      ]
+    },
+    "mega_gardevoir": {
+      "best_with_games": "league_mega_gardevoir_psychic_ramp",
+      "members": [
+        {
+          "candidate_id": "league_mega_gardevoir_psychic_ramp",
+          "generation": 0,
+          "parent": null,
+          "status": "family_champion"
+        },
+        {
+          "candidate_id": "mega_gardevoir_psychic_ramp_typed35",
+          "generation": 1,
+          "parent": "league_mega_gardevoir_psychic_ramp",
+          "status": "active"
+        }
+      ]
+    },
+    "mega_venusaur": {
+      "best_with_games": "league_mega_venusaur_tank",
+      "members": [
+        {
+          "candidate_id": "league_mega_venusaur_tank",
+          "generation": 0,
+          "parent": null,
+          "status": "family_champion"
+        },
+        {
+          "candidate_id": "mega_venusaur_tank_typed35",
+          "generation": 1,
+          "parent": "league_mega_venusaur_tank",
+          "status": "active"
+        }
+      ]
+    },
+    "toxic": {
+      "best_with_games": null,
+      "members": [
+        {
+          "candidate_id": "toxic_trap_poison_lock",
+          "generation": 0,
+          "parent": null,
+          "status": "special_pilot_only"
+        }
+      ]
+    },
+    "water": {
+      "best_with_games": null,
+      "members": [
+        {
+          "candidate_id": "core_pilot_water_v2_runtime",
+          "generation": -1,
+          "parent": null,
+          "status": "retired"
+        },
+        {
+          "candidate_id": "league_water_core_reference",
+          "generation": 0,
+          "parent": null,
+          "status": "family_champion"
+        },
+        {
+          "candidate_id": "league_water_anti_disruption_pivot_v1",
+          "generation": 1,
+          "parent": "league_water_core_reference",
+          "status": "portfolio_anchor"
+        },
+        {
+          "candidate_id": "water_basic_density_v1",
+          "generation": 1,
+          "parent": "league_water_core_reference",
+          "status": "held_probe"
+        }
+      ]
+    }
+  }
+}

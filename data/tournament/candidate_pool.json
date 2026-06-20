@@ -1,0 +1,343 @@
+{
+  "tournament_id": "ptcg_standing_tournament_v0",
+  "no_upload": true,
+  "note": "Internal diagnostics only. Tarballs are immutable; status marks only, never deleted. NOT a Kaggle leaderboard.",
+  "candidates": [
+    {
+      "candidate_id": "league_water_anti_disruption_pivot_v1",
+      "family_id": "water",
+      "generation": 1,
+      "parent_candidate_id": "league_water_core_reference",
+      "tarball_path": "candidates_pass33/league_water_anti_disruption_pivot_v1.tar.gz",
+      "deck_fingerprint": "6cffd4dc97f9df0fc80010c305b997420731718a9b2a7219d0d673760d9e0a56",
+      "main_fingerprint": "521662978a20a50538533e326202b916396b6432b6a99465a333755bb7449d28",
+      "status": "portfolio_anchor",
+      "source_pass": "pass33",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "water",
+        "pass33",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Water anti-disruption pivot; portfolio anchor for the live water line."
+    },
+    {
+      "candidate_id": "league_water_core_reference",
+      "family_id": "water",
+      "generation": 0,
+      "parent_candidate_id": null,
+      "tarball_path": "candidates_pass33/league_water_core_reference.tar.gz",
+      "deck_fingerprint": "6cffd4dc97f9df0fc80010c305b997420731718a9b2a7219d0d673760d9e0a56",
+      "main_fingerprint": "bd748657e7d52a2eee35f0e336c072424d8f33393498822fa1f38cc4ebb3be3a",
+      "status": "family_champion",
+      "source_pass": "pass33",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "water",
+        "pass33",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Water family champion / control reference."
+    },
+    {
+      "candidate_id": "water_basic_density_v1",
+      "family_id": "water",
+      "generation": 1,
+      "parent_candidate_id": "league_water_core_reference",
+      "tarball_path": "candidates_pass33/water_basic_density_v1.tar.gz",
+      "deck_fingerprint": "ca861a59eaee8fcd85fb0aa25962646c20a326404cf6dcdb6edc61779222c5ca",
+      "main_fingerprint": "7073c1ec375b913b5f58e800dc411d8579f88b42b9ec5c02155847348f7cc372",
+      "status": "held_probe",
+      "source_pass": "pass33",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "water",
+        "pass33",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Held dry-run probe (currently in submission queue). Stays held; not submitted."
+    },
+    {
+      "candidate_id": "core_pilot_water_v2_runtime",
+      "family_id": "water",
+      "generation": -1,
+      "parent_candidate_id": null,
+      "tarball_path": "candidates_pass33/core_pilot_water_v2_runtime.tar.gz",
+      "deck_fingerprint": "6cffd4dc97f9df0fc80010c305b997420731718a9b2a7219d0d673760d9e0a56",
+      "main_fingerprint": "237c899b073686e5ee808887747d74c5604ba9c2031c710fd3b784ca2c3c8aa8",
+      "status": "retired",
+      "source_pass": "pass33",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "water",
+        "pass33",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Older water grandparent superseded by core_reference; retained, not deleted."
+    },
+    {
+      "candidate_id": "league_dragapult_v1_search_only",
+      "family_id": "dragapult",
+      "generation": 1,
+      "parent_candidate_id": "league_dragapult_spread",
+      "tarball_path": "candidates_pass33/league_dragapult_v1_search_only.tar.gz",
+      "deck_fingerprint": "67d21e98e301da6ccfb7c4bca41d992fcfc1a6928cc446f9418b9fbcbc1161c4",
+      "main_fingerprint": "f3021ec80b1043c7b6d38c4df5a3570b506d95f07268c588a8f0bccdc5f725d2",
+      "status": "portfolio_anchor",
+      "source_pass": "pass33",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "dragapult",
+        "pass33",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Dragapult search-only portfolio reference."
+    },
+    {
+      "candidate_id": "league_dragapult_spread",
+      "family_id": "dragapult",
+      "generation": 0,
+      "parent_candidate_id": null,
+      "tarball_path": "candidates_pass33/league_dragapult_spread.tar.gz",
+      "deck_fingerprint": "67d21e98e301da6ccfb7c4bca41d992fcfc1a6928cc446f9418b9fbcbc1161c4",
+      "main_fingerprint": "0b62664504f5e55b73c42dbbb9636393987af9726667a7403fad0c67b4e2a1cd",
+      "status": "active",
+      "source_pass": "pass33",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "dragapult",
+        "pass33",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Dragapult spread parent (spread attack UNSUPPORTED honesty caveat applies)."
+    },
+    {
+      "candidate_id": "mono_lightning_miraidon_easy",
+      "family_id": "lightning",
+      "generation": 0,
+      "parent_candidate_id": null,
+      "tarball_path": "candidates_pass34/mono_lightning_miraidon_easy.tar.gz",
+      "deck_fingerprint": "2aff883dd844be2c37010a3247803617c7f11c76b916b64dca416203707319ed",
+      "main_fingerprint": "1de5a6a375bd111d07ee858a50a9059665164cee66975cdc36231a3ec28cd2fd",
+      "status": "portfolio_anchor",
+      "source_pass": "pass34",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "lightning",
+        "pass34",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Mono-lightning Miraidon portfolio reference."
+    },
+    {
+      "candidate_id": "diamond_toolbox_diancie",
+      "family_id": "diamond",
+      "generation": 0,
+      "parent_candidate_id": null,
+      "tarball_path": "candidates_pass34/diamond_toolbox_diancie.tar.gz",
+      "deck_fingerprint": "6bd177851f3290167ce99778ff2fe957eb0af3361a247304b61e9759a88e4b5a",
+      "main_fingerprint": "856a808ba7784fb430dda3c111cb5648d417c05870719b2f563682c7e507aa43",
+      "status": "portfolio_anchor",
+      "source_pass": "pass34",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "diamond",
+        "pass34",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Diamond toolbox (Diancie) portfolio reference."
+    },
+    {
+      "candidate_id": "league_mega_venusaur_tank",
+      "family_id": "mega_venusaur",
+      "generation": 0,
+      "parent_candidate_id": null,
+      "tarball_path": "candidates_pass33/league_mega_venusaur_tank.tar.gz",
+      "deck_fingerprint": "40f092efe21ddb6b73b3f189dfcbd2f469cda930b64f98ad568969a12bef8ccf",
+      "main_fingerprint": "572da7b4b83b07cbb028898f7191fe0f7f84adcd349f85dd1a241e977ece4da8",
+      "status": "family_champion",
+      "source_pass": "pass33",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "mega_venusaur",
+        "pass33",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Mega Venusaur tank family champion."
+    },
+    {
+      "candidate_id": "mega_venusaur_tank_typed35",
+      "family_id": "mega_venusaur",
+      "generation": 1,
+      "parent_candidate_id": "league_mega_venusaur_tank",
+      "tarball_path": "candidates_pass35/mega_venusaur_tank.tar.gz",
+      "deck_fingerprint": "40f092efe21ddb6b73b3f189dfcbd2f469cda930b64f98ad568969a12bef8ccf",
+      "main_fingerprint": "c1160d14e2d41569f0872e3ad3cc983215cafc3ab0b21b5bc98becfb91e96675",
+      "status": "active",
+      "source_pass": "pass35",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "mega_venusaur",
+        "pass35",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Typed-lite child (Pass 35). NOT a proven win-rate gain; under evaluation."
+    },
+    {
+      "candidate_id": "league_mega_charizard_x_burst",
+      "family_id": "mega_charizard",
+      "generation": 0,
+      "parent_candidate_id": null,
+      "tarball_path": "candidates_pass33/league_mega_charizard_x_burst.tar.gz",
+      "deck_fingerprint": "4ca0a8ecbc084ca02ca2efcb9e6c5a8a7e57d52e0c8ccb9e79b1f74b398ff118",
+      "main_fingerprint": "9263f396e463c57878f1458f10a7b35cbc3546dc00b68b092245d09c500d596f",
+      "status": "family_champion",
+      "source_pass": "pass33",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "mega_charizard",
+        "pass33",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Mega Charizard X burst family champion."
+    },
+    {
+      "candidate_id": "mega_charizard_x_burst_typed35",
+      "family_id": "mega_charizard",
+      "generation": 1,
+      "parent_candidate_id": "league_mega_charizard_x_burst",
+      "tarball_path": "candidates_pass35/mega_charizard_x_burst.tar.gz",
+      "deck_fingerprint": "4ca0a8ecbc084ca02ca2efcb9e6c5a8a7e57d52e0c8ccb9e79b1f74b398ff118",
+      "main_fingerprint": "b26cfe81de44d13a130395afbfa31e75951144bf7298c234e8d1e18403792c8b",
+      "status": "active",
+      "source_pass": "pass35",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "mega_charizard",
+        "pass35",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Typed-lite child (Pass 35). NOT a proven win-rate gain; under evaluation."
+    },
+    {
+      "candidate_id": "league_mega_gardevoir_psychic_ramp",
+      "family_id": "mega_gardevoir",
+      "generation": 0,
+      "parent_candidate_id": null,
+      "tarball_path": "candidates_pass33/league_mega_gardevoir_psychic_ramp.tar.gz",
+      "deck_fingerprint": "4f5b96ae92fc6ec5d7fa0e719e560b66242970e97c5a875d86be771b3d807539",
+      "main_fingerprint": "feacf11540afa72b4b22ab860e245a6b73aa0eb81dea860c6da9f90b11007699",
+      "status": "family_champion",
+      "source_pass": "pass33",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "mega_gardevoir",
+        "pass33",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Mega Gardevoir psychic-ramp family champion."
+    },
+    {
+      "candidate_id": "mega_gardevoir_psychic_ramp_typed35",
+      "family_id": "mega_gardevoir",
+      "generation": 1,
+      "parent_candidate_id": "league_mega_gardevoir_psychic_ramp",
+      "tarball_path": "candidates_pass35/mega_gardevoir_psychic_ramp.tar.gz",
+      "deck_fingerprint": "4f5b96ae92fc6ec5d7fa0e719e560b66242970e97c5a875d86be771b3d807539",
+      "main_fingerprint": "7a09febd866a2c4841816a183f57b03fdabfc1eb950f7249cbaaf6b99e3a192e",
+      "status": "active",
+      "source_pass": "pass35",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "mega_gardevoir",
+        "pass35",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Typed-lite child (Pass 35). NOT a proven win-rate gain; under evaluation."
+    },
+    {
+      "candidate_id": "toxic_trap_poison_lock",
+      "family_id": "toxic",
+      "generation": 0,
+      "parent_candidate_id": null,
+      "tarball_path": "candidates_pass34/toxic_trap_poison_lock.tar.gz",
+      "deck_fingerprint": "e277868bbb20b6cb0c13e830fdb1e87781b802a9d9515391201c2c7d595ba713",
+      "main_fingerprint": "bda696221fac8364bc31416767ce103db78a871b5cdf9518d10c387bd56844ae",
+      "status": "special_pilot_only",
+      "source_pass": "pass34",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "toxic",
+        "pass34",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Special-pilot-only: requires a poison-lock pilot that does not exist yet."
+    },
+    {
+      "candidate_id": "deckout_carousel_durant_v2",
+      "family_id": "durant",
+      "generation": 0,
+      "parent_candidate_id": null,
+      "tarball_path": "candidates_pass34/deckout_carousel_durant_v2.tar.gz",
+      "deck_fingerprint": "792d44020fb635893f6dc92d2255a211215fcc54fd66465e8d089aff24fe11d2",
+      "main_fingerprint": "44482140b99c3f11c81a0d8a43fd5f574cc7d0d94aaddae5d6b4f57cadee2710",
+      "status": "special_pilot_only",
+      "source_pass": "pass34",
+      "validation_status": "valid",
+      "entrypoint_status": "ok",
+      "smoke_status": "unknown",
+      "tags": [
+        "durant",
+        "pass34",
+        "pass36_seed"
+      ],
+      "no_upload": true,
+      "status_note": "Special-pilot-only: requires a deckout-carousel pilot that does not exist yet."
+    }
+  ]
+}

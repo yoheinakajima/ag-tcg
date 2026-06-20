@@ -1,0 +1,6 @@
+candidate_lo,candidate_hi,n,lo_wins,hi_wins,draws,invalid,lo_win_rate
+diamond_toolbox_diancie,league_dragapult_v1_search_only,1,0,1,0,0,0.0
+diamond_toolbox_diancie,league_mega_charizard_x_burst,1,0,1,0,0,0.0
+diamond_toolbox_diancie,league_mega_gardevoir_psychic_ramp,1,1,0,0,0,1.0
+diamond_toolbox_diancie,league_mega_venusaur_tank,1,1,0,0,0,1.0
+diamond_toolbox_diancie,mono_lightning_miraidon_easy,1,0,1,0,0,0.0
