@@ -1,0 +1,316 @@
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+PASS 37 — Deployment-Ready Scheduled Tournament Worker + Persistent Storage
+
+MISSION
+Pass 36 created the standing event-first tournament engine v0. Pass 37 must make it safe to run as a Replit Scheduled Deployment.
+
+Do NOT build new candidates. Do NOT upload to Kaggle. Do NOT submit. Do NOT push to GitHub. This pass is deployment readiness only.
+
+Core problem to solve:
+Pass 36 stores primary state in local files under data/tournament/. That is fine in the dev workspace, but Replit published deployments run from a snapshot and should not rely on files written to the deployment filesystem for durable state. The deployment version needs a persistent storage backend before we schedule it.
+
+Goal:
+Create a production-safe scheduled worker wrapper that:
+- persists tournament ledger/projections/game sidecars outside the ephemeral deployed filesystem;
+- can be invoked repeatedly by Replit Scheduled Deployments;
+- is idempotent and bounded;
+- never uploads/submits;
+- keeps the same event-first semantics from Pass 36;
+- can run in dev with file storage and in deployment with Replit App/Object Storage or another clearly available persistent backend.
+
+ABSOLUTE GUARDRAILS
+- NO Kaggle upload, submit, or competition_submit.
+- NO GitHub push.
+- NEVER modify root main.py or root deck.csv.
+- Root main.py/deck.csv must remain byte-identical to data/baselines/v1_kaggle_349_8.
+- Do not mutate existing candidate tarballs.
+- Do not commit card CSV/PDF, raw private replays, Kaggle credentials, deployment secrets, or generated raw logs containing secrets.
+- All new deployment/tournament events must carry no_upload=true.
+- auto_submit must remain false.
+- The held probe remains held.
+- Toxic/Durant remain special_pilot_only and unscheduled.
+- Internal tournament scores are local diagnostics only, never Kaggle claims.
+- Do not use the root “Start application” workflow as a server. The scheduled worker must be a separate command / deployment concept.
+
+IMPORTANT CONTEXT
+- Pass 36 created src/ptcg_activegraph/tournament/{config,pool,ledger,artifacts,scheduler,projections,runner}. It emits live game events and rebuildable projections.
+- Pass 36 smoke ran 2 bounded ticks, 5 games, no duplicate game IDs, no upload events.
+- Pass 36 ledger is event-first and projections rebuild from events alone, including CandidatePool.from_events.
+- Replit Scheduled Deployments are the intended operational model: one bounded tick per scheduled run, then exit.
+- Replit deployment filesystem should not be trusted as durable state; use storage/database.
+- Replit App/Object Storage is acceptable if available. If not available, create an abstraction and fail closed in production rather than silently falling back to local files.
+- Game/replay artifacts already naturally fit the event-sidecar pattern because the raw cabt replay structure carries EpisodeId, rewards, statuses, step/action/observation records, and module metadata.  [oai_citation:3‡80374966.json](sediment://file_000000009e1471fd94e4cbd97fd946c2)
+
+PHASE A — Root safety + deployment assumptions audit
+1. Verify root main.py and deck.csv byte-identical to v1 baseline.
+2. Run package_submission.py --verify-only.
+3. Read Pass 36 docs/artifacts:
+   - docs/TOURNAMENT_ENGINE_PLAN.md
+   - docs/PERSISTENT_TOURNAMENT_DAEMON.md
+   - data/tournament/config.yaml
+   - data/tournament/events.jsonl
+   - data/tournament/projections/*
+   - data/reports/pass36_standing_tournament_engine_report.md
+4. Write data/experiments/pass37_root_safety.{json,md}.
+5. Write data/experiments/pass37_deployment_assumptions.{json,md} explicitly documenting:
+   - dev filesystem is okay for dev;
+   - deployed filesystem is not durable enough for primary state;
+   - production scheduled worker must use persistent storage;
+   - no upload/no submit/no auto-submit;
+   - scheduled deployment should run bounded ticks, not an infinite loop.
+
+PHASE B — Storage backend abstraction
+Add a storage abstraction under the tournament package, for example:
+
+src/ptcg_activegraph/tournament/storage.py
+
+Implement at least:
+- LocalFileStorageBackend
+- ReplitAppStorageBackend or ObjectStorageBackend if `replit.object_storage` is available
+- InMemory/FakeStorageBackend for tests
+
+Backend interface should support:
+- exists(key)
+- read_text(key)
+- write_text(key, text)
+- read_bytes(key)
+- write_bytes(key, bytes)
+- list(prefix)
+- delete(key) only where explicitly needed
+- put_json/get_json helpers
+- upload/download directory helpers for data/tournament subset
+- sha256 verification helpers
+
+Rules:
+- In dev, default backend can be local files.
+- In production/deployment mode, default must be persistent storage.
+- If production mode is requested and persistent storage is unavailable, fail closed with a clear error. Do NOT silently fall back to local filesystem.
+- Use environment variables:
+  - TOURNAMENT_ENV=dev|production
+  - TOURNAMENT_STORAGE_BACKEND=local|replit_app_storage
+  - TOURNAMENT_STORAGE_PREFIX=tournament/v0 or similar
+  - TOURNAMENT_AUTO_SUBMIT=false, and refuse true in this pass
+- Keep Replit storage imports outside the Kaggle runtime tarball path. This is lab/deployment infrastructure only.
+
+PHASE C — Storage-backed state sync
+Create scripts/helpers so scheduled worker can:
+1. Pull latest persistent tournament state into a local working directory.
+2. Run a bounded tick using existing Pass 36 engine.
+3. Rebuild projections.
+4. Push updated ledger, runs, projections, pool snapshots, and game sidecars back to persistent storage.
+5. Verify sha256 / manifest consistency.
+6. Leave local `data/tournament/` usable for dev inspection.
+
+Create a manifest such as:
+data/tournament/storage_manifest.json
+
+Persistent keys should include:
+- events.jsonl
+- config.yaml
+- candidate_pool.json
+- projections/*
+- runs/*
+- games/* sidecars
+- storage_manifest.json
+
+Be careful with append-only event semantics. Prefer:
+- download events.jsonl at start,
+- append locally during tick,
+- upload complete events.jsonl at end with manifest hash,
+- verify rebuilt projections are based on uploaded event log.
+
+If object storage supports no atomic compare-and-swap, be honest. Use the single-run deployment lock + schedule interval > timeout as the primary guard, and add a best-effort storage lease with timestamp/tick_id for safety.
+
+PHASE D — Deployment lock / lease
+Pass 36 has a local flock lock. That protects one filesystem instance but may not protect separate scheduled deployment instances if storage is external.
+
+Add a production-safe best-effort lease:
+- key: locks/tournament_tick.lock.json
+- fields: tick_id, owner, started_at, expires_at, heartbeat_at
+- refuse to run if a non-expired lease exists
+- allow stale lock recovery after TTL
+- always release lease on clean exit
+- keep local flock too
+
+If App Storage cannot guarantee atomic writes, state that this is best-effort and configure schedule interval conservatively. Do not overclaim perfect distributed locking.
+
+Tests should cover:
+- fresh lease acquired
+- active lease blocks
+- expired lease can be recovered
+- release clears lock
+- production without storage fails closed
+
+PHASE E — Scheduled worker wrapper
+Create:
+
+scripts/tournament_deployment_tick.py
+
+Behavior:
+- parse args:
+  --max-games
+  --max-seconds
+  --storage-backend
+  --storage-prefix
+  --production
+  --dry-run
+  --no-games
+  --push-only
+  --pull-only
+- refuse if auto_submit true
+- refuse if root files changed
+- refuse if Kaggle upload env/flag requested
+- acquire storage lease
+- pull storage state
+- seed pool only if no pool/registration exists
+- run bounded tick
+- rebuild projections
+- push state
+- release lease
+- write data/experiments/pass37_deployment_tick_smoke.{json,md}
+- emit no_upload events only
+
+Run commands should be safe:
+- `python scripts/tournament_deployment_tick.py --max-games 20 --max-seconds 900 --storage-backend replit_app_storage --production`
+- `python scripts/tournament_deployment_tick.py --no-games --storage-backend replit_app_storage --production` for dry deployment test
+- `python scripts/tournament_deployment_tick.py --max-games 2 --max-seconds 300 --storage-backend local` for dev smoke
+
+PHASE F — Replit Scheduled Deployment config generator
+Create a script that prints/writes the exact setup guidance:
+
+scripts/print_replit_scheduled_deployment_config.py
+
+Output should include:
+- recommended deployment type: Scheduled Deployment, not Autoscale/Reserved VM
+- schedule: start every 2 hours
+- timezone: user-selected, default UTC
+- job timeout: 25 or 30 minutes
+- build command: inspect repo and propose the correct dependency install command
+- run command:
+  python scripts/tournament_deployment_tick.py --max-games 20 --max-seconds 900 --storage-backend replit_app_storage --production
+- deployment secrets:
+  - none required for tournament-only ticks unless storage SDK needs default Replit environment
+  - Kaggle secrets NOT required for tournament-only ticks
+  - if future score refresh is added, then KAGGLE_USERNAME/KAGGLE_KEY read-only only
+- monitoring:
+  - use Scheduled Deployment logs/run history
+  - inspect data/tournament/projections/rankings.md after sync
+- no auto-submit / no upload
+
+Also update docs/PERSISTENT_TOURNAMENT_DAEMON.md with these exact steps:
+1. Open Publishing / Deployments.
+2. Choose Scheduled.
+3. Set schedule.
+4. Set timeout.
+5. Set build command.
+6. Set run command.
+7. Add secrets only if needed.
+8. Run Now once.
+9. Inspect logs and projections.
+10. If failed, fix and republish; do not run auto-submit.
+
+PHASE G — Deployment dry-run
+If Replit App Storage is available in the dev environment:
+1. Run storage backend unit smoke.
+2. Run `--no-games --production --storage-backend replit_app_storage`.
+3. Run `--max-games 1 or 2 --production --storage-backend replit_app_storage` if time allows.
+4. Pull back state and rebuild projections from pulled storage state.
+5. Verify no duplicate game IDs and no upload events.
+
+If App Storage is not available:
+- run local backend smoke,
+- mark production storage smoke as SKIPPED with reason,
+- do not claim deployment-ready until storage is configured.
+
+PHASE H — Throughput and cadence recommendation
+Based on Pass 36 smoke (~single game 11s) and any Pass 37 run time:
+- recommend initial max-games
+- recommend interval
+- recommend timeout
+- estimate games/day
+- flag cost/usage uncertainty
+- note scheduled jobs may run slower than dev; keep conservative.
+
+Start recommendation:
+- every 2 hours
+- 20 games/tick
+- max-seconds 900
+- job timeout 25–30 minutes
+- after 24h stable, consider every hour or 30 games/tick.
+
+PHASE I — Tests
+Add tests for deployment readiness. Keep fast tests pure/fake where possible.
+
+Required tests:
+- root main/deck byte-identical
+- production mode refuses local-only storage
+- local backend read/write/list/sha works
+- fake app-storage backend read/write/list/sha works
+- storage manifest roundtrip
+- storage sync pull/push idempotent
+- lease acquire/block/expire/release
+- deployment tick refuses auto_submit true
+- deployment tick emits no SubmissionUploaded/KaggleScoreUpdated
+- deployment tick can run no-games dry run
+- projections rebuild after storage pull
+- scheduler does not schedule special-pilot-only entries
+- held probe remains held
+- deployment config generator includes Scheduled Deployment, bounded run command, no auto-submit, no Kaggle secrets for tournament-only mode
+- docs include "do not rely on deployment filesystem"
+- zstd/gzip fallback still recorded honestly
+- no raw replay/card CSV/credentials committed
+- all scripts import cleanly
+
+PHASE J — Docs and reports
+Update/create:
+- docs/PERSISTENT_TOURNAMENT_DAEMON.md
+- docs/TOURNAMENT_ENGINE_PLAN.md if needed
+- data/reports/pass37_deployment_ready_tournament_worker_report.md
+- data/reports/activegraph_strategy_report.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/site/index.html
+
+Report exact 10 sections:
+1. Root safety
+2. Deployment storage decision
+3. Storage backend implementation
+4. State sync / manifest
+5. Lease / concurrency guard
+6. Scheduled worker wrapper
+7. Replit setup instructions
+8. Dry-run results
+9. Tests / guardrails
+10. Next recommendation
+
+Every report must say:
+- no upload
+- no auto-submit
+- no candidate generation
+- internal tournament only
+- not Kaggle leaderboard
+- deploy only as Scheduled Deployment bounded tick
+- production state must use persistent storage
+
+PHASE K — Architect review
+Run mandatory architect/code review.
+Fix all HIGH/CRITICAL.
+Fix MEDIUM affecting persistence, no-upload, concurrency, honesty, determinism, root safety, or deployment instructions.
+Do not weaken tests.
+
+PHASE L — Final response
+Final response should answer:
+- whether it is safe to deploy now
+- exact Scheduled Deployment run command
+- recommended schedule/timeout
+- whether storage is configured and tested
+- how to monitor it
+- what remains before automated candidate generation
+- confirm no upload/no submit/root unchanged
+
+EXPECTED OUTCOME
+Pass 37 succeeds if and only if we can say:
+"Yes, the tournament tick can be run as a Replit Scheduled Deployment using persistent storage, bounded execution, no-upload guarantees, and resumable event-sourced projections."
+
+If persistent storage cannot be validated, final answer must say:
+"Do not deploy yet; storage backend is not production-ready."

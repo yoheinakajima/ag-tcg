@@ -32,6 +32,41 @@ racing to schedule duplicate games — so it's safe to schedule ticks generously
   workflow is the Kaggle agent entrypoint, not a server. Create a separate
   console workflow if you want a local recurring tick.
 
+## Scheduled Deployment setup — exact 10 steps (Pass 37)
+> Internal diagnostics only. **NO upload, NO submit, NO auto-submit, no candidate
+> generation.** Deploy ONLY as a Replit *Scheduled Deployment* bounded tick.
+> Regenerate this guidance any time with
+> `python scripts/print_replit_scheduled_deployment_config.py` (writes
+> `data/experiments/pass37_scheduled_deployment_config.{json,md}`).
+
+1. Open the **Publishing** (Deployments) tool in this Repl.
+2. Choose deployment type = **Scheduled Deployment** (NOT Autoscale, NOT Reserved
+   VM / Always-on, NOT Static).
+3. Set the **schedule** to run every **2 hours** (cron `0 */2 * * *`); leave the
+   timezone at the **UTC** default.
+4. Set the **job timeout** to **25-30 minutes** (the run command caps work at
+   `--max-seconds 900` = 15 min, comfortably below the timeout).
+5. Set the **build command**:
+   ```bash
+   python -m pip install --upgrade pip && python -m pip install -e . replit-object-storage pyyaml
+   ```
+6. Set the **run command** (one bounded tick; fails closed without persistent
+   storage):
+   ```bash
+   python scripts/tournament_deployment_tick.py --max-games 20 --max-seconds 900 --storage-backend replit_app_storage --production
+   ```
+7. **Secrets:** none are required for tournament-only operation. Do **NOT** add
+   Kaggle credentials — there is no upload/submit. (Only a hypothetical future
+   read-only score refresh would ever read `KAGGLE_USERNAME`/`KAGGLE_KEY`, and
+   only read-only.)
+8. Click **Run Now** once to execute a single tick immediately and validate the
+   end-to-end pull → lease → tick → reconcile → push flow.
+9. Inspect the **Scheduled Deployment logs**, then the synced projections
+   (`data/tournament/projections/rankings.md`) to confirm progress; verify the
+   logs show `no_upload=true` and no auto-submit.
+10. If the run **failed**, fix the cause and **republish**; never enable
+    auto-submit, never upload, and never convert this into an always-on server.
+
 ## Expected state files (`data/tournament/`)
 - `config.yaml` — budgets, caps, safety flags.
 - `candidate_pool.json` — canonical pool (status marks only; tarballs immutable).
@@ -65,3 +100,16 @@ tarballs and **never** touch root `main.py`/`deck.csv`.
 Dev and deployed environments may use different storage. v0 deliberately uses
 file-backed `data/tournament/`. A later version can move the ledger behind the
 real `ag.adapter` backend without changing the engine interface.
+
+## Production storage durability (Pass 37)
+**Do not rely on the deployment filesystem; production state must use persistent
+storage.** A Scheduled Deployment's local filesystem is **NOT durable** across
+runs — anything written only to `data/tournament/` on a deployed run can vanish
+before the next tick. In production the primary state (`events.jsonl`,
+`projections/`, `runs/`, `games/`, `candidate_pool.json`, `storage_manifest.json`)
+**MUST** live in persistent storage (Replit App / Object Storage); the local
+`data/tournament/` directory is only a disposable per-run working dir
+(pull → tick → rebuild → reconcile → push → release lease). The
+`--production --storage-backend replit_app_storage` worker **fails CLOSED** when
+persistent storage is unavailable, so it never silently writes throwaway state to
+the deployed disk.
