@@ -1,0 +1,437 @@
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+PASS 36 — Standing ActiveGraph Tournament Engine v0
+
+MISSION
+We are done creating one-off passNN tournament scripts as the main operating mode. Pass 36 should promote the repeated tournament pattern into a standing, reusable, event-first tournament engine.
+
+Build the smallest reliable v0 of a persistent tournament system that can later run continuously on Replit deployment via bounded ticks. It should NOT yet auto-generate new candidates or auto-submit to Kaggle. It should create the durable substrate:
+
+- canonical candidate pool
+- deterministic scheduler
+- game ledger/events emitted live, not retroactively
+- resumable bounded tournament tick
+- projections folded from events
+- rankings / lineage / pool state
+- no-upload dry-run decision state
+- docs/tests/report
+
+This is consolidation over the proven repo substrate, NOT a rebuild.
+
+ABSOLUTE GUARDRAILS
+- NO Kaggle upload, submit, or competition_submit.
+- NO GitHub push.
+- NEVER modify root main.py or root deck.csv.
+- Root main.py/deck.csv must remain byte-identical to data/baselines/v1_kaggle_349_8.
+- Candidate tarballs remain immutable; do not mutate existing tarballs.
+- Do not commit or print Kaggle credentials.
+- Do not commit official card CSV/PDF or raw private replay payloads.
+- Runtime submission contract remains top-level main.py + deck.csv only; no cg package shipping.
+- Do not claim leaderboard relevance for internal tournament results.
+- Internal tournament scores are local diagnostics only.
+- All new events/artifacts from this pass must carry no_upload=true unless they are purely root-safety/status metadata with no upload action.
+- The “Start application” workflow is the Kaggle agent entrypoint, not a server; leave it not-started unless you explicitly create a separate console workflow for a bounded local task.
+- If a task seems to suggest another one-off tournament, redirect it into the standing tournament engine.
+
+IMPORTANT CONTEXT FROM PRIOR PASSES
+- Pass 35: typed-lite layer is SAFE infrastructure but NOT a proven win-rate gain. No typed child clearly beat parent after null-control calibration.
+- Held queue currently contains water_basic_density_v1 from Pass 33. Keep it held; do not submit.
+- Toxic and Durant are special-pilot-only; executable=false; do not include them as league participants until a special pilot exists.
+- Use subprocess-isolated or batch-worker game execution. Native OpenSpiel/cabt can hang or leak state when run in a long-lived in-process loop. Do not rely only on SIGALRM.
+- Use event-first design. Prior passes often ran games first and emitted passNN events afterward. That pattern is now deprecated.
+- Uploaded replay structure proves cabt artifacts contain immutable steps/actions/observations/statuses that can support event-sourced game records. Use that style of provenance for game artifacts.  [oai_citation:0‡80374966.json](sediment://file_000000009e1471fd94e4cbd97fd946c2)
+
+HIGH-LEVEL ARCHITECTURE
+Create a standing tournament engine under something like:
+
+src/ptcg_activegraph/tournament/
+  __init__.py
+  pool.py
+  scheduler.py
+  runner.py
+  ledger.py
+  projections.py
+  config.py
+  artifacts.py
+
+Scripts:
+  scripts/tournament_daemon_tick.py
+  scripts/build_tournament_projections.py
+  scripts/seed_tournament_pool.py
+  scripts/run_pass36_engine_smoke.py
+
+Docs:
+  docs/TOURNAMENT_ENGINE_PLAN.md
+  docs/PERSISTENT_TOURNAMENT_DAEMON.md
+
+Reports:
+  data/reports/pass36_standing_tournament_engine_report.md
+  update data/reports/activegraph_strategy_report.md
+  update docs/PTCG_STRATEGY_CANVAS.md
+  update data/site/index.html
+
+Data:
+  data/tournament/
+    config.yaml
+    candidate_pool.json
+    events.jsonl or game_events.jsonl
+    games/
+      <game_id>.json or .jsonl[.gz/.zst]
+    projections/
+      tournament_state.json
+      rankings.json/md
+      candidate_pool.json/md
+      matchups.csv
+      scheduler_queue.json/md
+      lineage.json/md
+    runs/
+      <tick_run_id>.json
+
+Use existing ActiveGraph/event infrastructure where possible. Do not fork a second incompatible event system if the repo already has graph/events.py, ag/ledger, ag/adapter, etc. Prefer adding small new EventType values only when existing ones are inadequate.
+
+PHASE A — Root safety and current-state intake
+1. Verify root main.py and deck.csv byte-identical to v1 baseline.
+2. Run package_submission.py --verify-only.
+3. Read current:
+   - live_score_registry if present
+   - submission_queue.json
+   - pass35 typed tournament artifacts
+   - pass33/34/35 candidate manifests
+   - strategy profile registry
+   - pass30/33/34/35 tournament outputs
+4. Write data/experiments/pass36_root_safety.{json,md}.
+5. Do not refresh Kaggle unless there is already a safe read-only helper; if unavailable, record stale caveat honestly.
+
+PHASE B — Candidate pool seed
+Build a canonical candidate pool from existing local tarballs only. No new candidates this pass.
+
+Pool must include at least:
+- water live/control family candidates:
+  - league_water_anti_disruption_pivot_v1 if present
+  - water_basic_density_v1 held probe if present
+  - league_water_core_reference if present
+- current useful portfolio references:
+  - league_dragapult_v1_search_only or latest Dragapult reference
+  - league_dragapult_spread parent if present
+  - league_mono_lightning_miraidon_easy
+  - league_diamond_toolbox
+  - league_mega_venusaur_tank and/or typed35 if present
+  - league_mega_charizard_x_burst and/or typed35 if present
+  - league_mega_gardevoir_psychic_ramp and/or typed35 if present
+- special-pilot-only entries:
+  - toxic_trap_poison_lock
+  - deckout_carousel_durant_v2 / league_durant_deckout_carousel
+  These must be registered but inactive/excluded.
+
+Candidate pool fields:
+- candidate_id
+- family_id
+- generation
+- parent_candidate_id if known
+- tarball_path
+- deck_fingerprint
+- main_fingerprint
+- status: active | held_probe | family_champion | portfolio_anchor | probation | retired | quarantined | special_pilot_only | invalid
+- source_pass
+- validation_status if known
+- entrypoint_status if known
+- smoke_status if known
+- tags
+- no_upload=true
+- reason/status_note
+
+Pool policy v0:
+- soft active cap: 16
+- hard active cap: 24
+- never delete tarballs
+- mark status only
+- keep at least:
+  - current live/water control
+  - portfolio reference
+  - family champion per family
+  - held probe
+  - immediate parent of any active child
+- retire grandparents unless champion/reference/held/submitted
+- special-pilot-only entries do not count toward active cap
+- invalid entries are quarantined, not deleted
+
+Artifacts:
+- data/tournament/candidate_pool.json
+- data/tournament/projections/candidate_pool.md
+- data/experiments/pass36_candidate_pool_seed.{json,md}
+
+PHASE C — Event vocabulary and ledger
+Implement or adapt a tournament event layer. Prefer existing event store/ledger infrastructure.
+
+Required logical events, mapped to existing EventType if possible:
+- TournamentEngineInitialized
+- TournamentTickStarted
+- TournamentTickFinished
+- TournamentParticipantRegistered
+- GameScheduled
+- GameStarted
+- GameFinished
+- MatchupFinished
+- TournamentRankingUpdated
+- CandidatePoolUpdated
+- CandidateStatusChanged
+- CandidateNonInertnessMeasured
+- TournamentProjectionUpdated
+- TournamentReportGenerated
+
+If exact EventType names do not exist, add minimal new enum members. Do not add redundant names when existing ones clearly fit.
+
+Every game event must include:
+- event_id
+- timestamp
+- parent_event_ids
+- run_id / tick_id
+- game_id
+- tournament_id
+- candidate_a
+- candidate_b
+- seat assignment
+- result: win/loss/draw/invalid/timeout/error/skipped
+- rewards/statuses
+- steps count if available
+- elapsed seconds
+- artifact path(s)
+- artifact sha256
+- no_upload=true
+
+Trace artifact:
+- Write a compact game sidecar per game or per batch.
+- Prefer .jsonl.zst if zstandard is available in the lab environment.
+- If zstandard is not available, use stdlib gzip .jsonl.gz and record the fallback honestly.
+- Never store raw private replay payloads from Kaggle unless already approved; these are local cabt self-play game traces only.
+- Include sha256 for every sidecar.
+
+PHASE D — Deterministic scheduler v0
+Implement a deterministic scheduler that chooses the next game/matchup from candidate pool + current projections.
+
+The scheduler should not try to complete an entire tournament in one call. It should produce a bounded worklist for a tick.
+
+Deterministic priority order:
+1. Validation/smoke gaps for active/probation candidates, if any.
+2. New/probation candidates vs anchors:
+   - held probe vs water control
+   - new deck vs portfolio reference
+   - new deck vs family champion
+3. Parent-child confirmation:
+   - child vs parent, seat-swapped
+4. Top bracket maintenance:
+   - top 6 active candidates round-robin, least-played matchup first
+5. Exploration:
+   - active candidates with fewest total games
+   - new family candidates get a temporary priority boost until min placement games reached
+6. Regression sentinels:
+   - periodic matches vs known weak/broken controls only if they are smoke-valid and active; do not include Toxic/Durant until special pilot exists.
+
+Tie-breakers:
+- lower number of completed games for matchup
+- older last_played timestamp first
+- lexicographic candidate_id
+- deterministic seat alternation
+
+Config:
+data/tournament/config.yaml:
+- tick_max_games default 50
+- tick_max_seconds default 900
+- per_game_timeout_seconds default 90
+- active_soft_cap 16
+- active_hard_cap 24
+- min_placement_games_per_candidate 20
+- min_parent_child_games_per_seat 10
+- top_bracket_size 6
+- exploration_ratio maybe 0.25
+- auto_submit false
+- max_dry_run_queue 1
+
+PHASE E — Bounded tournament tick runner
+Implement:
+
+python scripts/tournament_daemon_tick.py --max-games 50 --max-seconds 900
+
+Behavior:
+- Initializes/loads pool and projections.
+- Schedules deterministic games.
+- Emits GameScheduled and GameStarted before running each game.
+- Runs games with subprocess isolation or proven batch worker.
+- Emits GameFinished immediately after each game.
+- Updates projections after each game or small batch.
+- Stops cleanly at max-games or max-seconds.
+- Re-running should resume from ledger/projections and not duplicate finished games.
+- Must be safe to run repeatedly in Replit dev or deployed environment.
+- No infinite loop in this pass.
+- No upload.
+- No candidate generation.
+- No deleting old data.
+
+Important: if Replit background shell dies, the tick must remain safe to rerun. Do not depend on a child process surviving outside the current call.
+
+PHASE F — Projections
+Implement projections folded from the tournament events, not from ad hoc passNN JSON.
+
+Required projections:
+1. tournament_state.json
+   - current tick/run status
+   - game counts
+   - bad/timeout/invalid counts
+   - last event id
+2. rankings.json/md
+   - adjusted win rate
+   - W/L/D
+   - Wilson CI
+   - games
+   - invalid/timeout penalties
+   - family_id
+   - status
+   - caveat: internal only, not Kaggle
+3. matchups.csv
+   - pairwise matrix
+   - n
+   - a_win_rate
+   - status counts
+4. candidate_pool.json/md
+   - status by candidate
+   - family champion flags
+   - retired/quarantined/special-only
+5. lineage.json/md
+   - parent-child tree
+   - generation
+   - current best per family
+6. scheduler_queue.json/md
+   - next scheduled matchups
+   - reason/priority
+7. non_inertness.json/md
+   - candidate_id
+   - parent_id
+   - whether enough evidence exists
+   - firing/delta/misfire status if available
+   - do not claim improvement unless calibrated
+
+The projections should be rebuildable from ledger/events alone. Add a script:
+python scripts/build_tournament_projections.py
+
+PHASE G — ActiveGraph integration
+Use existing ag.adapter / ag.ledger / graph events if available. If the real ActiveGraph backend is unavailable, fallback to local JSONL. But keep the same interface.
+
+Requirement:
+- Do not emit passNN-style retroactive summary-only events as the primary record.
+- Game events must be emitted live during the tick.
+- Reports can summarize after the fact, but they must point back to game events/artifacts.
+
+PHASE H — Smoke run
+Run a small real tick:
+- max_games: 6 to 12
+- max_seconds: bounded
+- participants: a small selected subset from active pool
+- verify:
+  - no root changes
+  - events emitted for every game
+  - projections update
+  - no duplicate game IDs on rerun
+  - rankings are nonempty
+  - no upload
+
+Then run a second tick:
+- verify it resumes/continues deterministically, not replaying already finished game IDs.
+- verify scheduler_queue changes after games complete.
+
+PHASE I — Tests
+Add tests, but keep them efficient. Use fake/minimal game runner for pure scheduler/projection unit tests; only one tiny real-cabt smoke if needed and skip gracefully if cabt unavailable.
+
+Required tests:
+- root main.py/deck.csv byte-identical to baseline
+- candidate pool seed includes active, held, special-pilot-only statuses correctly
+- Toxic/Durant special-pilot-only are excluded from active schedule
+- scheduler deterministic for same state/config
+- scheduler prioritizes probation/new candidates before top-bracket maintenance
+- scheduler never schedules retired/quarantined/special-pilot-only candidates
+- event IDs unique and parent_event_ids link tick → schedule → start → finish
+- GameFinished requires artifact path + sha256
+- projections rebuild from event log and match live projection files
+- rerunning projection builder is idempotent
+- bounded tick respects max_games
+- bounded tick emits no SubmissionUploaded and no Kaggle submit
+- no_upload true on all tournament events
+- pool cap/retirement policy marks status only; no tarball deletion
+- report includes internal-only / not-Kaggle caveat
+- held probe remains held, not auto-submitted
+- all new scripts import cleanly
+- If zstd unavailable, gzip fallback is recorded and tests accept it only if explicitly documented.
+
+PHASE J — Docs
+Create docs/TOURNAMENT_ENGINE_PLAN.md with:
+- why build in, not rebuild
+- module map
+- event vocabulary mapping
+- projection specs
+- candidate lifecycle
+- scheduler priority policy
+- pool cap/retirement policy
+- deployment plan
+- caveats
+
+Create docs/PERSISTENT_TOURNAMENT_DAEMON.md with:
+- how to run one tick locally
+- how a Replit scheduled/deployed environment should call the tick
+- expected state files
+- how to stop/resume
+- how to inspect rankings
+- how to reset production data if needed
+- note that dev and deployed environments may have different storage; v0 uses file-backed data/tournament, later can adapt ag.adapter real backend.
+
+PHASE K — Reports
+Write exact 10-section report:
+data/reports/pass36_standing_tournament_engine_report.md
+
+Sections:
+1. Root safety
+2. Candidate pool seed
+3. Event/ledger implementation
+4. Scheduler policy
+5. Bounded tick runner
+6. Projection outputs
+7. Smoke tick results
+8. Tests
+9. ActiveGraph / no-upload / deployment notes
+10. Next recommendation
+
+Also update:
+- data/reports/activegraph_strategy_report.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/site/index.html
+
+Every report must include:
+- internal tournament != Kaggle leaderboard
+- no upload
+- no auto-submit
+- standing engine v0 only
+- no candidate generation yet
+- no promotion claims
+
+PHASE L — Architect review
+Run the mandatory architect/code review after implementation.
+Fix all HIGH/CRITICAL issues.
+Fix MEDIUM issues if they affect honesty, gating, event lineage, root safety, no-upload, or determinism.
+Do not weaken tests to pass.
+
+PHASE M — Final response
+Final answer must summarize:
+- what modules/scripts/docs were created
+- whether the tick actually ran
+- how many events/games were emitted in smoke
+- where projections live
+- whether no-upload/root invariants held
+- current known limitations
+- the next step toward true daemon/autonomous candidate loop
+
+EXPECTED FINAL DECISION
+Do NOT submit anything.
+Do NOT build new candidates.
+Do NOT promote a typed child.
+Pass 36 succeeds if we have a reusable, bounded, event-first tournament engine v0 that can be safely run repeatedly and is ready to become the persistent Replit daemon later.
+
+REMEMBER
+Push toward the standing tournament engine even if tempting local results suggest another one-off candidate pass. This pass is about infrastructure consolidation and event-sourced game tracking.
