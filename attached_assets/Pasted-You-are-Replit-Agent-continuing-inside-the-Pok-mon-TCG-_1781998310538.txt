@@ -1,0 +1,349 @@
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+PASS 39 — Scheduled Tick Confirmation + Candidate Lifecycle Manager v0
+
+Objective:
+Close the operational loop after Pass 38 and add the first deterministic lifecycle manager for the standing tournament engine. This pass is OPS + STATUS-MARK AUTOMATION ONLY.
+
+Do NOT create new candidates.
+Do NOT mutate root main.py or deck.csv.
+Do NOT mutate existing tarballs.
+Do NOT delete candidate tarballs.
+Do NOT upload/submit to Kaggle.
+Do NOT enable auto-submit.
+Do NOT start the “Start application” workflow — it is the frozen Kaggle agent entrypoint, not a server.
+Do NOT add LLM mutation yet.
+All new events must carry no_upload=true.
+Internal tournament standings are NOT Kaggle results.
+
+Context:
+Pass 36 created the standing event-first tournament engine.
+Pass 37 made it deployable with persistent Replit Object Storage.
+Pass 38 verified production storage health, controlled production ticks, health checks, projection rebuilds, scheduler safety, runbook, and deployment ops.
+Pass 38’s only open observation: no real scheduled tick with signature max_games=20 / max_seconds=900 had yet appeared in the ledger. Manual/smoke ticks were observed, but not the scheduled cron tick.
+
+Current production deployment command:
+python scripts/tournament_deployment_tick.py --max-games 20 --max-seconds 900 --storage-backend replit_app_storage --production
+
+Build command:
+python -m pip install --user --break-system-packages replit-object-storage pyyaml kaggle-environments==1.30.1
+
+Expected schedule:
+0 */2 * * * UTC
+
+High-level deliverables:
+1. Confirm whether a real scheduled tick has fired.
+2. If it has not, diagnose without masking it by running a manual tick first.
+3. Add a deterministic CandidateLifecycleManager that marks candidate statuses from ledger evidence.
+4. Emit lifecycle status events live, as first-class ActiveGraph/tournament events.
+5. Rebuild projections from the ledger.
+6. Add tests and an exact 10-section report.
+
+Part A — Root/deploy safety preflight
+- Verify root main.py and deck.csv are byte-identical to data/baselines/v1_kaggle_349_8.
+- Run python scripts/package_submission.py --verify-only.
+- Verify .replit deployment target is scheduled and run command is tournament_deployment_tick.py, not main.py.
+- Verify pyproject.toml has [tool.uv] package = false.
+- Verify build command includes:
+  replit-object-storage
+  pyyaml
+  kaggle-environments==1.30.1
+  --user
+  --break-system-packages
+- Verify Start application remains not-started and document that this is expected.
+- Write data/experiments/pass39_root_deploy_safety.{json,md}.
+
+Part B — Production state pull and scheduled tick confirmation
+- Pull production state from replit_app_storage using the existing sync/storage layer.
+- Do not run a manual tick before this detection.
+- Inspect data/tournament/events.jsonl and data/tournament/runs/.
+- Re-run or extend the Pass 38 scheduled-run detector.
+- A scheduled tick is recognized by:
+  max_games == 20
+  max_seconds == 900
+  production/object-storage backend
+  no_upload=true
+  tick event chain present
+  GameScheduled/GameStarted/GameFinished events parent-linked to that tick
+- Also inspect deployment logs if available.
+- Output:
+  data/experiments/pass39_scheduled_tick_confirmation.{json,md}
+- Classify:
+  scheduled_tick_confirmed
+  no_scheduled_tick_observed_yet
+  schedule_misconfigured
+  storage_or_lease_blocked
+  deployment_logs_unavailable
+- If no scheduled tick is observed, do not fail the pass automatically. Treat it as an operational observation unless there is a hard config/storage error.
+
+Part C — Production health check after pull
+- Run scripts/check_tournament_health.py --mode prod.
+- Hard failures must stop the pass before lifecycle marks are applied.
+- Warnings like placement_sample_size are expected early and should not block.
+- Write or preserve:
+  data/experiments/pass39_tournament_health.{json,md}
+- Confirm:
+  zero SubmissionUploaded events
+  zero KaggleScoreUpdated events from tournament engine
+  all events no_upload=true
+  no duplicate GameFinished game_id
+  no divergent GameFinished sha
+  every finished game has sidecar
+  manifest integrity passes in prod
+  held probe retained
+  special-pilot-only candidates excluded from queue
+  auto_submit false
+
+Part D — Lifecycle policy spec
+Create docs/TOURNAMENT_CANDIDATE_LIFECYCLE.md.
+
+Define statuses exactly:
+- active
+- held_probe
+- family_champion
+- portfolio_anchor
+- probation
+- retired
+- quarantined
+- special_pilot_only
+- invalid
+
+Define protected statuses:
+- held_probe
+- family_champion
+- portfolio_anchor
+- special_pilot_only
+- any candidate explicitly marked live_control / water_family_current_best / manual_hold
+- immediate parent of an active child, if lineage data exists
+
+Define never-schedule statuses:
+- retired
+- quarantined
+- special_pilot_only
+- invalid
+
+Define lifecycle rules v0:
+- New or under-sampled schedulable candidates remain probation until they meet placement sample requirements.
+- Any candidate with invalid/timeout/error rate above threshold becomes quarantined.
+- A candidate with zero games remains probation unless protected.
+- A candidate with enough games and no hard failures may become active.
+- Per family, the strongest sufficiently sampled candidate may become family_champion, but only if its Wilson lower bound and head-to-head evidence justify it.
+- A candidate can be retired only by status mark, never by tarball deletion.
+- Never retire held_probe, portfolio_anchor, special_pilot_only, or family_champion unless an explicit manual override exists.
+- No promotion to Kaggle is possible in this pass.
+- No “strictly better” claim unless Wilson intervals and parent/child/self-mirror controls support it. Otherwise label as no_regression / inconclusive / needs_more_games.
+
+Part E — Implement CandidateLifecycleManager
+Add src/ptcg_activegraph/tournament/lifecycle.py.
+
+It should:
+- load CandidatePool rebuilt from events
+- load ranking/projection evidence from GameFinished events
+- compute per-candidate stats:
+  games
+  wins/losses/draws
+  invalids/timeouts/errors
+  adjusted win rate
+  Wilson 95% interval
+  family
+  current status
+  protected flag
+  schedulable flag
+  last played
+  parent/child relation if available
+- output proposed status changes only, not apply by default
+- have a dry_run=True default
+- explain every proposed change with machine-readable reasons
+- never propose deleting a tarball
+- never propose upload
+- never modify root
+
+Add function names similar to:
+- evaluate_lifecycle(pool, projection_state, config) -> LifecyclePlan
+- apply_lifecycle_plan(plan, ledger, pool, dry_run=True) -> AppliedLifecycleResult
+- write_lifecycle_report(plan, result, out_json, out_md)
+
+Add a CLI:
+scripts/run_tournament_lifecycle_manager.py
+
+Required flags:
+--mode prod|local
+--dry-run
+--apply
+--storage-backend replit_app_storage|local
+--storage-prefix tournament/v0
+--output-prefix data/experiments/pass39_lifecycle
+
+Default must be dry-run. Applying status changes requires --apply explicitly.
+
+Part F — Dry-run lifecycle evaluation
+Run lifecycle manager in dry-run mode against production-pulled state.
+Write:
+data/experiments/pass39_lifecycle_plan.{json,md}
+
+Expected early-soak behavior:
+- likely many candidates remain probation or active with needs_more_games
+- placement_sample_size should prevent aggressive retirement
+- held probe water_basic_density_v1 remains held_probe
+- Toxic and Durant remain special_pilot_only
+- retired/core old candidates remain retired
+- no tarball deletion
+- no upload
+- no queue mutation beyond status planning
+
+Part G — Apply only safe status marks, if justified
+Only use --apply if the plan contains safe, evidence-backed marks such as:
+- candidates with hard invalid/timeout/error evidence → quarantined
+- candidates that are already retired remain retired
+- special-pilot-only remains special-pilot-only
+- under-sampled new candidates → probation
+- active candidates with insufficient evidence remain active/probation, no aggressive retirement
+
+Do NOT apply speculative “family_champion” changes unless sample sizes are sufficient.
+Do NOT demote protected candidates.
+Do NOT retire any candidate solely due to early tiny-N ranking.
+
+If no safe changes are justified, record apply_skipped=true and explain why.
+
+If applying:
+- emit CandidateStatusChanged events with parent_event_ids
+- update candidate_pool.json by status mark only
+- rebuild projections
+- push to object storage only through existing sync layer
+- verify manifest and health afterward
+
+Write:
+data/experiments/pass39_lifecycle_apply.{json,md}
+
+Part H — Scheduler integration audit
+After lifecycle dry-run/apply:
+- rebuild projections
+- rebuild scheduler queue
+- assert never-schedule statuses are absent
+- assert held_probe remains present or protected appropriately
+- assert active/probation/portfolio/family/held candidates are eligible
+- assert queue is deterministic across two rebuilds
+- assert no completed game_id appears in next queue
+- assert seat balance max imbalance <= 1 unless there is documented reason
+Write:
+data/experiments/pass39_scheduler_after_lifecycle.{json,md}
+
+Part I — Event and projection audit
+- Verify all new events are pass39-tagged and no_upload=true.
+- Verify no SubmissionUploaded, no KaggleScoreUpdated from the tournament engine.
+- Verify CandidateStatusChanged events, if any, contain:
+  old_status
+  new_status
+  candidate_id
+  reason
+  evidence_summary
+  protected_override=false unless explicit
+  parent_event_ids
+- Rebuild projections from ledger only.
+- Confirm projection idempotency.
+Write:
+data/experiments/pass39_event_projection_audit.{json,md}
+
+Part J — Optional controlled production tick
+Only after Parts B-I pass.
+Run one small controlled production tick if safe:
+python scripts/tournament_deployment_tick.py --max-games 3 --max-seconds 240 --storage-backend replit_app_storage --production
+
+Before running:
+- ensure no active lease
+- ensure health checker has zero hard failures
+- ensure this will not mask scheduled-tick detection, which was already completed in Part B
+
+After running:
+- re-pull
+- verify event count and GameFinished count advanced consistently
+- verify sidecars and manifest
+- verify no forbidden events
+Write:
+data/experiments/pass39_controlled_tick_after_lifecycle.{json,md}
+
+Part K — Update docs/runbook
+Update:
+- docs/PERSISTENT_TOURNAMENT_DAEMON.md
+- docs/REPLIT_SCHEDULED_DEPLOYMENT_RUNBOOK.md
+- docs/TOURNAMENT_ENGINE_PLAN.md
+- docs/TOURNAMENT_CANDIDATE_LIFECYCLE.md
+- data/reports/activegraph_strategy_report.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/site/index.html
+
+Add Pass 39 section:
+- scheduled tick confirmed or not
+- current production health
+- lifecycle manager status
+- what status marks were applied or skipped
+- no-upload guarantee
+- next step toward automated mutation
+
+Part L — Tests
+Add tests/test_pass39_candidate_lifecycle.py.
+
+Tests must cover:
+1. root main.py/deck.csv byte-identical to baseline
+2. lifecycle manager dry-run default
+3. lifecycle manager refuses to delete tarballs
+4. held_probe never retired
+5. special_pilot_only never scheduled
+6. retired/quarantined/invalid never scheduled
+7. protected family_champion/portfolio_anchor not demoted on tiny sample
+8. invalid/timeout-heavy candidate proposed quarantined
+9. under-sampled candidate remains probation/needs_more_games
+10. status-change events carry no_upload=true
+11. status-change events include old_status/new_status/reason/evidence
+12. no SubmissionUploaded/KaggleScoreUpdated allowed
+13. projections rebuild from ledger after lifecycle
+14. scheduler deterministic after lifecycle
+15. candidate_pool status marks only, tarballs unchanged
+16. scheduled-run detector recognizes 20/900 signature from synthetic tick
+17. scheduled-run detector does not classify smoke ticks as scheduled
+18. health checker remains green after lifecycle
+19. docs/runbook mention lifecycle status marks and no auto-submit
+20. exact 10-section final report exists
+
+Run relevant suites:
+pytest tests/test_pass36_tournament_engine.py tests/test_pass37_deployment_storage.py tests/test_pass38_deployment_ops.py tests/test_pass39_candidate_lifecycle.py
+
+Do not weaken existing tests.
+
+Part M — Report
+Write data/reports/pass39_candidate_lifecycle_report.md with exact 10 sections:
+
+1. Root safety
+2. Scheduled deployment confirmation
+3. Production health snapshot
+4. Lifecycle policy
+5. Lifecycle dry-run
+6. Lifecycle apply result
+7. Scheduler after lifecycle
+8. Event/projection audit
+9. Tests/docs
+10. Next recommendation
+
+The report must state:
+- internal rankings are not Kaggle results
+- no upload/submit
+- no auto-submit
+- no candidate generation
+- no tarball deletion
+- scheduled tick confirmation status
+- whether lifecycle marks were applied or skipped
+- next step is LLM-assisted mutation proposal only after lifecycle is stable
+
+Part N — Architect review
+Run the code_review skill / architect review after implementation.
+Fix any HIGH/CRITICAL issues.
+Fix MEDIUM issues unless clearly out of scope and documented.
+Re-run tests after fixes.
+Delete session plan at the end.
+
+Expected final decision:
+- If scheduled tick is confirmed: “deployment schedule healthy”
+- If not confirmed: “deployment published and controlled ticks healthy, scheduled trigger still unobserved”
+- Lifecycle manager should be present and safe.
+- No candidate generation yet.
+- Next pass should be Pass 40: LLM-assisted mutation proposal v0, JSON-only, local-only, no build/apply unless deterministic validators pass.
