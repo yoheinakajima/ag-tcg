@@ -109,3 +109,16 @@ metadata dict for **only** the card ids used by our profiles and candidate decks
 That dict is inlined into candidate `main.py`. The CSV itself is gitignored and is
 never shipped or committed (`data/experiments/pass35_card_metadata.json` records the
 derived table for audit, keyed by our own ids only).
+
+## Pass 35 outcome (refreshed)
+
+_The internal tournament, parent/child H2H confirmations, and the replay-derived meta sanity are LOCAL diagnostics: every seat is OUR own portfolio deck driven by the SAME deck-agnostic base pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal._
+
+_Honesty mandate: attack damage/effect, lethal, KO target, spread placement, Boss/gust are UNSUPPORTED by the option schema (numeric attackId only); the typed layer refuses to fabricate them. Raging Bolt gets NO fake color-match fix (Pass 28 refuted it)._
+
+The Option B stdlib typed-lite layer shipped and was exercised end-to-end:
+
+- **Safety:** 4275 live decisions, 2.5% typed firing, 0 illegal refinements, 0 misfires / 0 unsafe in fixture and live replay. The layer always runs the base policy first and bails to it on any error or mismatch.
+- **Contexts refined:** [0, 1, 2, 7, 8, 38] (setup/active, bench, search-to-hand, attach, discard).
+- **Honesty:** every executable profile refuses to fabricate attack/lethal/ko/spread/boss/gust (numeric attackId only); Raging Bolt gets no fake color-match fix.
+- **Strength:** NOT demonstrated. Parent/child H2H any_superiority_claim=no; no child clears the engine self-mirror noise floor, so the layer is adopted as safe infrastructure, not as a proven win-rate improvement.

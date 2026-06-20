@@ -1,51 +1,54 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph — Pass 34 New Deck Intake + Lane Split</title>
+<title>ActiveGraph — Pass 35 Typed Board-Aware Strategy Layer</title>
 <style>
  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
  h1{font-size:1.5rem} table{border-collapse:collapse;width:100%;margin:1rem 0}
- th,td{border:1px solid #ddd;padding:.4rem .6rem;text-align:left;font-size:.9rem}
- th{background:#f4f4f6} .caveat{background:#fff7e6;border:1px solid #f0c36d;padding:.7rem;border-radius:6px;font-size:.9rem}
+ th,td{border:1px solid #ddd;padding:.4rem .6rem;text-align:left;font-size:.85rem}
+ th{background:#f4f4f6} .caveat{background:#fff7e6;border:1px solid #f0c36d;padding:.7rem;border-radius:6px;font-size:.9rem;margin:.5rem 0}
  code{background:#f4f4f6;padding:.1rem .3rem;border-radius:3px}
 </style></head><body>
-<h1>ActiveGraph — Pass 34: New Deck Intake + Easy Basic / Chaos Lane Split</h1>
-<p class="caveat">The internal new-deck tournament and the replay-derived meta sanity are LOCAL diagnostics: both seats are OUR portfolio decks driven by the SAME deck-agnostic generic pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal.</p>
-<h2>Live reference (Kaggle, read-only)</h2>
-<p>live_score_leader: <code>league_dragapult_v1_search_only.tar.gz</code> @ 380.2
- &middot; water_family_current_best: <code>league_water_anti_disruption_pivot_v1.tar.gz</code>
- @ 340.0 &middot; dragapult_family_best:
- <code>league_dragapult_v1_search_only.tar.gz</code> @ 380.2
- (above water: yes) &middot; portfolio_reference:
- <code>league_water_core_reference.tar.gz</code> @ 219.5</p>
+<h1>ActiveGraph — Pass 35: Typed Board-Aware Strategy Layer + Portfolio Tournament</h1>
+<p class="caveat">The internal tournament, parent/child H2H confirmations, and the replay-derived meta sanity are LOCAL diagnostics: every seat is OUR own portfolio deck driven by the SAME deck-agnostic base pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal.</p>
+<p class="caveat">Honesty mandate: attack damage/effect, lethal, KO target, spread placement, Boss/gust are UNSUPPORTED by the option schema (numeric attackId only); the typed layer refuses to fabricate them. Raging Bolt gets NO fake color-match fix (Pass 28 refuted it).</p>
+<h2>Lane &amp; safety</h2>
+<p>Lane: <code>stdlib_typed_lite</code> (Option B stdlib typed-lite, embed-not-import).
+ Root main.py unchanged: yes &middot; deck.csv unchanged: yes
+ &middot; package verify-only: PASS &middot; upload performed: no.</p>
+<h2>Typed layer safety</h2>
+<p>profiles: 11 (9 executable +
+ 2 special-pilot-only) &middot; typed strategy gate:
+ PASS &middot; live firing: 2.5% over
+ 4275 decisions &middot; illegal refinements:
+ 0 &middot; always falls back to base.</p>
 <h2>Internal tournament standings (NOT Kaggle)</h2>
-<table><thead><tr><th>rank</th><th>candidate</th><th>family</th><th>lane</th><th>adj win_rate</th><th>label</th></tr></thead>
+<p class="caveat">These standings are internal self-play diagnostics. Not a Kaggle leaderboard and not a promotion or upload signal.</p>
+<table><thead><tr><th>rank</th><th>typed child</th><th>adj win_rate</th><th>Wilson</th><th>label</th><th>vs-parent</th></tr></thead>
 <tbody>
-      <tr><td>1</td><td>water_basic_density_v1</td><td>water</td><td>benchmark</td><td>73.2%</td><td>strong_benchmark</td></tr>
-      <tr><td>2</td><td>league_water_anti_disruption_pivot_v1</td><td>water</td><td>benchmark</td><td>68.3%</td><td>strong_benchmark</td></tr>
-      <tr><td>3</td><td>league_dragapult_v1_search_only</td><td>dragapult</td><td>benchmark</td><td>67.5%</td><td>strong_benchmark</td></tr>
-      <tr><td>4</td><td>mono_lightning_miraidon_easy</td><td>miraidon_new</td><td>normal</td><td>50.0%</td><td>promising_but_noisy</td></tr>
-      <tr><td>5</td><td>diamond_toolbox_diancie</td><td>diamond_new</td><td>normal</td><td>48.8%</td><td>below_benchmark</td></tr>
-      <tr><td>6</td><td>league_mega_charizard_x_burst</td><td>charizard</td><td>benchmark</td><td>48.7%</td><td>below_benchmark</td></tr>
-      <tr><td>7</td><td>league_mega_venusaur_tank</td><td>venusaur</td><td>benchmark</td><td>40.6%</td><td>below_benchmark</td></tr>
-      <tr><td>8</td><td>league_mega_gardevoir_psychic_ramp</td><td>gardevoir</td><td>benchmark</td><td>2.4%</td><td>legal_but_weak</td></tr>
+      <tr><td>1</td><td>mega_venusaur_tank_typed35</td><td>63.9%</td><td>[0.4757, 0.7752]</td><td>strong</td><td>inconclusive</td></tr>
+      <tr><td>2</td><td>mega_charizard_x_burst_typed35</td><td>52.8%</td><td>[0.3701, 0.6801]</td><td>above_even_noisy</td><td>no_regression</td></tr>
+      <tr><td>3</td><td>raging_bolt_ogerpon_basic_aggro_typed35</td><td>50.0%</td><td>[0.3447, 0.6553]</td><td>above_even_noisy</td><td>inconclusive</td></tr>
+      <tr><td>4</td><td>mono_lightning_miraidon_easy_typed35</td><td>33.3%</td><td>[0.2021, 0.4967]</td><td>weak</td><td>no_regression</td></tr>
+      <tr><td>5</td><td>diamond_toolbox_diancie_typed35</td><td>50.0%</td><td>[0.3363, 0.6637]</td><td>above_even_noisy</td><td>no_regression</td></tr>
+      <tr><td>6</td><td>water_basic_density_v1_typed35</td><td>46.9%</td><td>[0.3087, 0.6355]</td><td>below_even</td><td>no_regression</td></tr>
+      <tr><td>7</td><td>dragapult_spread_control_typed35</td><td>43.8%</td><td>[0.2817, 0.6067]</td><td>below_even</td><td>no_regression</td></tr>
+      <tr><td>8</td><td>mega_gardevoir_psychic_ramp_typed35</td><td>40.6%</td><td>[0.2552, 0.5774]</td><td>below_even</td><td>inconclusive</td></tr>
+      <tr><td>9</td><td>water_core_reference_typed35</td><td>40.6%</td><td>[0.2552, 0.5774]</td><td>below_even</td><td>inconclusive</td></tr>
 </tbody></table>
-<h2>Special-lane diagnosis</h2>
-<table><thead><tr><th>deck</th><th>decklist valid</th><th>built</th><th>smoke valid</th><th>enter sprint</th></tr></thead>
-<tbody>
-      <tr><td>toxic_trap_poison_lock</td><td>yes</td><td>yes</td><td>no</td><td>yes</td></tr>
-      <tr><td>deckout_carousel_durant_v2</td><td>yes</td><td>yes</td><td>no</td><td>yes</td></tr>
-</tbody></table>
+<h2>Parent/child confirmation (control-calibrated)</h2>
+<p>any superiority claim: <b>no</b> &middot;
+ no_regression=5, inconclusive=4 &middot; no child clears the
+ engine self-mirror noise floor.</p>
 <h2>Meta sanity (directional, surrogate)</h2>
-<p>sanity_passed: no &middot; best:
- <code>water_basic_density_v1</code> @ 90.0%</p>
+<p>sanity_passed: yes &middot; best:
+ <code>mega_charizard_x_burst_typed35</code> @ 60.0% &middot; 0 collapses.</p>
 <h2>Decision</h2>
-<p><b>Keep water_basic_density_v1 as the single HELD dry-run probe (re-affirmed by Pass 34). Label Miraidon/Diamond candidate_for_confirmation (clean but not tournament-strong; not queued). Open special-pilot tasks for Toxic (priority 1) and Durant (priority 2). No upload/submit performed.</b> &middot; held probe: <code>water_basic_density_v1</code>
- (re-affirmed rank 1)</p>
-<p>dry-run queue: 1 (max
- 1, HELD) &middot; human approval required:
+<p><b>Keep water_basic_density_v1 as the single HELD dry-run probe (carried, unchanged). The Pass-35 typed board-aware layer is adopted as SAFE (0 illegal refinements, always falls back, ~2.5% live firing) and meta-sane (0 collapses), but NO typed child clearly beats its untyped parent once calibrated against the self-mirror noise floor, so none is promoted to the queue. No upload/submit performed.</b></p>
+<p>dry-run queue: 1 (max 1, HELD
+ <code>water_basic_density_v1</code>) &middot; human approval required:
  yes &middot; auto-submit:
- no &middot; events emitted: 25
- (all no_upload)</p>
-<p>Full report: <code>data/reports/pass34_new_deck_intake_tournament_report.md</code></p>
+ no &middot; events emitted: 55
+ (all no_upload).</p>
+<p>Full report: <code>data/reports/pass35_final_report.md</code></p>
 </body></html>

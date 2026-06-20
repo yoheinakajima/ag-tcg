@@ -1,41 +1,39 @@
 # PTCG Strategy Canvas
 
-> Living strategy canvas. Updated through Pass 34.
+> Living strategy canvas. Updated through Pass 35.
 
-_The internal new-deck tournament and the replay-derived meta sanity are LOCAL diagnostics: both seats are OUR portfolio decks driven by the SAME deck-agnostic generic pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal._
+_The internal tournament, parent/child H2H confirmations, and the replay-derived meta sanity are LOCAL diagnostics: every seat is OUR own portfolio deck driven by the SAME deck-agnostic base pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal._
 
-## Current live reference (Kaggle, read-only)
+_Honesty mandate: attack damage/effect, lethal, KO target, spread placement, Boss/gust are UNSUPPORTED by the option schema (numeric attackId only); the typed layer refuses to fabricate them. Raging Bolt gets NO fake color-match fix (Pass 28 refuted it)._
 
-- live_score_leader: `league_dragapult_v1_search_only.tar.gz` @ 380.2
-- water_family_current_best: `league_water_anti_disruption_pivot_v1.tar.gz` @ 340.0
-- dragapult_family_best: `league_dragapult_v1_search_only.tar.gz` @ 380.2 (above water: yes)
-- portfolio_reference: `league_water_core_reference.tar.gz` @ 219.5
+## Pass 35 — typed board-aware strategy layer
 
-## Pass 34 — new-deck intake + lane split
+- Lane: Option B stdlib typed-lite (`stdlib_typed_lite`), embed-not-import, refine-then-fallback.
+- Profiles: 11 (9 executable + 2 special-pilot-only).
+- Typed strategy gate: PASS; firing probe 2.5% with 0 illegal refinements.
 
-Four new families ingested and split into two lanes. Internal tournament standings (NOT Kaggle):
+## Internal tournament standings (NOT Kaggle)
 
-| rank | candidate | family | lane | adj win_rate | label |
-|---|---|---|---|---|---|
-| 1 | water_basic_density_v1 | water | benchmark | 73.2% | strong_benchmark |
-| 2 | league_water_anti_disruption_pivot_v1 | water | benchmark | 68.3% | strong_benchmark |
-| 3 | league_dragapult_v1_search_only | dragapult | benchmark | 67.5% | strong_benchmark |
-| 4 | mono_lightning_miraidon_easy | miraidon_new | normal | 50.0% | promising_but_noisy |
-| 5 | diamond_toolbox_diancie | diamond_new | normal | 48.8% | below_benchmark |
-| 6 | league_mega_charizard_x_burst | charizard | benchmark | 48.7% | below_benchmark |
-| 7 | league_mega_venusaur_tank | venusaur | benchmark | 40.6% | below_benchmark |
-| 8 | league_mega_gardevoir_psychic_ramp | gardevoir | benchmark | 2.4% | legal_but_weak |
+| rank | typed child | adj win_rate | Wilson | label |
+|---|---|---|---|---|
+| 1 | mega_venusaur_tank_typed35 | 63.9% | [0.4757, 0.7752] | strong |
+| 2 | mega_charizard_x_burst_typed35 | 52.8% | [0.3701, 0.6801] | above_even_noisy |
+| 3 | raging_bolt_ogerpon_basic_aggro_typed35 | 50.0% | [0.3447, 0.6553] | above_even_noisy |
+| 4 | mono_lightning_miraidon_easy_typed35 | 33.3% | [0.2021, 0.4967] | weak |
+| 5 | diamond_toolbox_diancie_typed35 | 50.0% | [0.3363, 0.6637] | above_even_noisy |
+| 6 | water_basic_density_v1_typed35 | 46.9% | [0.3087, 0.6355] | below_even |
+| 7 | dragapult_spread_control_typed35 | 43.8% | [0.2817, 0.6067] | below_even |
+| 8 | mega_gardevoir_psychic_ramp_typed35 | 40.6% | [0.2552, 0.5774] | below_even |
+| 9 | water_core_reference_typed35 | 40.6% | [0.2552, 0.5774] | below_even |
 
-## Lanes
+## Parent/child confirmation (control-calibrated)
 
-- **Normal lane (built + tournament-eligible):** `mono_lightning_miraidon_easy`, `diamond_toolbox_diancie`
-- **Special-pilot lane (legal decklist, pilot-blocked):** `toxic_trap_poison_lock`, `deckout_carousel_durant_v2`
+- any_superiority_claim: no; no_regression=5, inconclusive=4 — no child clears the self-mirror noise floor.
 
 ## Meta sanity (directional, surrogate)
 
-- sanity_passed: no; best: `water_basic_density_v1` @ 90.0%
-- new decks collapses: Miraidon none, Diamond none
+- sanity_passed: yes; best `mega_charizard_x_burst_typed35` @ 60.0%; 0 collapses.
 
 ## Next move
 
-`Keep water_basic_density_v1 as the single HELD dry-run probe (re-affirmed by Pass 34). Label Miraidon/Diamond candidate_for_confirmation (clean but not tournament-strong; not queued). Open special-pilot tasks for Toxic (priority 1) and Durant (priority 2). No upload/submit performed.` Keep `water_basic_density_v1` as the held probe (rank 1, no collapse). Miraidon/Diamond = candidate_for_confirmation. Open special-pilot sprint for Toxic (P1) and Durant (P2). Dragapult stays the non-Water reference.
+`Keep water_basic_density_v1 as the single HELD dry-run probe (carried, unchanged). The Pass-35 typed board-aware layer is adopted as SAFE (0 illegal refinements, always falls back, ~2.5% live firing) and meta-sane (0 collapses), but NO typed child clearly beats its untyped parent once calibrated against the self-mirror noise floor, so none is promoted to the queue. No upload/submit performed.` Keep `water_basic_density_v1` as the single held dry-run probe; adopt the typed layer as SAFE infrastructure but DO NOT submit. Run a larger confirmation batch before any human submit. Toxic + Durant stay special-pilot-only.
