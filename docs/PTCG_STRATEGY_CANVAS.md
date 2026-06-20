@@ -1,48 +1,41 @@
 # PTCG Strategy Canvas
 
-> Living strategy canvas. Updated through Pass 33.
+> Living strategy canvas. Updated through Pass 34.
 
-_The internal composition tournament, correlations, parent/child confirmations and meta sanity are LOCAL diagnostics: both seats are OUR portfolio decks driven by the SAME generic core pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal._
+_The internal new-deck tournament and the replay-derived meta sanity are LOCAL diagnostics: both seats are OUR portfolio decks driven by the SAME deck-agnostic generic pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal._
 
 ## Current live reference (Kaggle, read-only)
 
-- live_score_leader: `submission.tar.gz` @ 363.0
+- live_score_leader: `league_dragapult_v1_search_only.tar.gz` @ 380.2
 - water_family_current_best: `league_water_anti_disruption_pivot_v1.tar.gz` @ 340.0
-- dragapult_family_best: `league_dragapult_v1_search_only.tar.gz` @ 306.7 (above water: no)
+- dragapult_family_best: `league_dragapult_v1_search_only.tar.gz` @ 380.2 (above water: yes)
 - portfolio_reference: `league_water_core_reference.tar.gz` @ 219.5
 
-## Pass 33 — deck composition stress test
+## Pass 34 — new-deck intake + lane split
 
-We stress-tested OUR portfolio by composition to pick the next human-approved probe. Internal Stage-1 standings (NOT Kaggle):
+Four new families ingested and split into two lanes. Internal tournament standings (NOT Kaggle):
 
-| rank | candidate | family | adj win_rate | label |
-|---|---|---|---|---|
-| 1 | core_pilot_water_v2_runtime | water | 71.0% | strong_reference |
-| 2 | league_water_core_reference | water | 70.8% | strong_reference |
-| 3 | water_basic_density_v1 | water | 67.2% | density_variant_under_test |
-| 4 | water_basic_density_v2 | water | 67.2% | density_variant_under_test |
-| 5 | league_dragapult_spread | dragapult | 60.9% | candidate_for_confirmation |
-| 6 | league_water_anti_disruption_pivot_v1 | water | 60.9% | strong_reference |
-| 7 | league_dragapult_v1_search_only | dragapult | 58.5% | candidate_for_confirmation |
-| 8 | league_mega_charizard_x_burst | charizard | 53.8% | keep_as_benchmark |
-| 9 | effect_loop_exit_guard_v1 | venusaur | 47.7% | legal_but_weak |
-| 10 | league_mega_venusaur_tank | venusaur | 25.0% | legal_but_weak |
-| 11 | league_mega_gardevoir_psychic_ramp | gardevoir | 12.1% | keep_as_benchmark |
-| 12 | league_raging_bolt_ogerpon | raging_bolt | 0.0% | needs_special_pilot |
+| rank | candidate | family | lane | adj win_rate | label |
+|---|---|---|---|---|---|
+| 1 | water_basic_density_v1 | water | benchmark | 73.2% | strong_benchmark |
+| 2 | league_water_anti_disruption_pivot_v1 | water | benchmark | 68.3% | strong_benchmark |
+| 3 | league_dragapult_v1_search_only | dragapult | benchmark | 67.5% | strong_benchmark |
+| 4 | mono_lightning_miraidon_easy | miraidon_new | normal | 50.0% | promising_but_noisy |
+| 5 | diamond_toolbox_diancie | diamond_new | normal | 48.8% | below_benchmark |
+| 6 | league_mega_charizard_x_burst | charizard | benchmark | 48.7% | below_benchmark |
+| 7 | league_mega_venusaur_tank | venusaur | benchmark | 40.6% | below_benchmark |
+| 8 | league_mega_gardevoir_psychic_ramp | gardevoir | benchmark | 2.4% | legal_but_weak |
 
-## Water Basic-density ladder
+## Lanes
 
-| deck | Basics | no-Basic prob | internal adj win_rate |
-|---|---|---|---|
-| league_water_anti_disruption_pivot_v1 | 8 | 34.6% | 60.9% |
-| water_basic_density_v1 | 12 | 19.1% | 67.2% |
-| water_basic_density_v2 | 16 | 9.9% | 67.2% |
+- **Normal lane (built + tournament-eligible):** `mono_lightning_miraidon_easy`, `diamond_toolbox_diancie`
+- **Special-pilot lane (legal decklist, pilot-blocked):** `toxic_trap_poison_lock`, `deckout_carousel_durant_v2`
 
 ## Meta sanity (directional, surrogate)
 
-- best: `league_mega_charizard_x_burst` @ 70.7%
-- probe `water_basic_density_v1` collapses: none (Raging Bolt = expected control)
+- sanity_passed: no; best: `water_basic_density_v1` @ 90.0%
+- new decks collapses: Miraidon none, Diamond none
 
 ## Next move
 
-`Queue water_basic_density_v1 as the single HELD dry-run probe candidate (candidate_for_deeper_confirmation), pending human approval. No upload/submit performed.` Hold `water_basic_density_v1` as a deeper-confirmation probe (halves mulligan risk, ties Water internally). Keep Water as the always-on benchmark; Dragapult stays a reference until it clears Water live.
+`Keep water_basic_density_v1 as the single HELD dry-run probe (re-affirmed by Pass 34). Label Miraidon/Diamond candidate_for_confirmation (clean but not tournament-strong; not queued). Open special-pilot tasks for Toxic (priority 1) and Durant (priority 2). No upload/submit performed.` Keep `water_basic_density_v1` as the held probe (rank 1, no collapse). Miraidon/Diamond = candidate_for_confirmation. Open special-pilot sprint for Toxic (P1) and Durant (P2). Dragapult stays the non-Water reference.

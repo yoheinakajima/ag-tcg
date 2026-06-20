@@ -1,0 +1,638 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+This is Pass 34: New Deck Intake + Easy Basic / Chaos Lane Split.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not mutate existing candidate tarballs.
+- Do not clone opponent decks.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Raw replay JSON files must remain gitignored.
+- Candidate tarballs must contain only top-level main.py + deck.csv.
+- No Kaggle upload.
+- No Kaggle submit.
+- This is a local portfolio/deck-intake/tournament pass only.
+- Use EN_Card_Data.csv locally for validation, but never commit it.
+- Treat the user-provided deck specs as BUILDABLE SKELETONS, not finalized 60-card decks.
+- Counts in the skeletons may not sum to 60. That is expected. Fill transparently and document all flex slots.
+
+Read before acting:
+- docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md
+- docs/NEXT_AGENT_README.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- docs/CORE_PILOT_ARCHITECTURE.md
+- docs/CORE_PILOT_ROLE_TAXONOMY.md
+- data/reports/pass33_deck_composition_stress_test_report.md
+- data/experiments/pass33_deck_composition_audit.json
+- data/experiments/pass33_strategy_decision.json
+- data/submission_queue.json
+- data/activegraph/lab_events.jsonl
+
+Context from Pass 33:
+- water_basic_density_v1 was held as a dry-run future probe, not submitted.
+- Basic density looked directionally important.
+- Internal tournament is not Kaggle and not a promotion signal.
+- The user now wants to add more deck families to the internal portfolio.
+- The goal is not to upload; the goal is to see where these deck shells sit and identify which ones need special pilot rules.
+
+New deck ideas to ingest this pass:
+1. D10_mono_lightning_easy / Mono-Lightning Miraidon ex
+2. D11_diamond_toolbox / Diamond Toolbox — mono-Psychic Basic ex
+3. D8_toxic_trap / Toxic Trap — passive poison lock
+4. D7_deckout_carousel / Deck-Out Carousel — Durant ex mill-lock, revised chaos/deckout idea
+
+Lane assignment:
+- Normal tournament lane:
+  - mono_lightning_miraidon_easy
+  - diamond_toolbox_diancie
+- Special-pilot / control lane:
+  - toxic_trap_poison_lock
+  - deckout_carousel_durant_v2
+- Existing benchmark lane:
+  - water current best
+  - water_basic_density_v1
+  - dragapult search_only
+  - Venusaur loop guard if valid
+  - Charizard X burst
+  - any other existing valid benchmark needed for comparison
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Read-only live score status
+
+Run read-only Kaggle status if available:
+
+kaggle competitions submissions pokemon-tcg-ai-battle -v
+
+If kaggle CLI is not on PATH, use the Python Kaggle CLI/API path used in prior passes. If status refresh fails, use the last-known registry and mark stale honestly.
+
+Rules:
+- no submit
+- no upload
+- publicScore may be string; coerce safely to float
+- preserve status logs
+
+Create:
+- data/experiments/pass34_live_score_status.json
+- data/experiments/pass34_live_score_status.md
+
+Report:
+- live_score_leader
+- water_family_current_best
+- dragapult_family_best
+- portfolio_reference
+- water_basic_density_v1 queue state from Pass 33
+- stale/drift caveat
+- upload_performed=false
+
+Part C — Add deck ideas to strategy canvas and structured deck registry
+
+Update:
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/experiments/pass34_deck_ideas.yaml or append to existing deck_ideas registry if one exists
+
+Add these four deck families with the user-provided intent, but normalize names and include validation caveats.
+
+Deck idea 1 — Mono-Lightning Miraidon ex
+Canonical id: mono_lightning_miraidon_easy
+Design class: simple Basic ex / low decision density
+Core IDs from user:
+- Miraidon ex: 957
+- Levincia: 1254
+- Pawmi: 809
+- Pawmo: 810
+- Pawmot: 811
+- Thundurus: 514
+- Cheren: 1224
+- Dawn: 1231
+- Ultra Ball: 1121
+- Buddy-Buddy Poffin: 1086
+- Boss's Orders: 1182
+- Rare Candy: 1079
+- Basic Lightning Energy: resolve from card DB by name, do NOT assume blindly
+
+Deck idea 2 — Diamond Toolbox / Mega Diancie ex
+Canonical id: diamond_toolbox_diancie
+Design class: mono-Psychic Basic toolbox
+Core IDs from user:
+- Mega Diancie ex: 766
+- Smoochum: 183
+- Gimmighoul: 186
+- Mimikyu: 767
+- Xerneas: 751
+- Xerneas EX: 331
+- Meloetta ex: 525
+- Meloetta: 765
+- Team Rocket's Mimikyu: 434
+- Dawn: 1231
+- Ultra Ball: 1121
+- Buddy-Buddy Poffin: 1086
+- Cheren: 1224
+- Boss's Orders: 1182
+- Basic Psychic Energy: resolve from card DB by name
+
+Deck idea 3 — Toxic Trap / Pecharunt poison lock
+Canonical id: toxic_trap_poison_lock
+Design class: passive poison/status lock; special-pilot likely required
+Core IDs from user:
+- Pecharunt: 230
+- Perilous Jungle: 1243
+- Spinarak: 1011
+- Ariados: 1012
+- Mismagius ex: 813
+- Dangerous Laser: 1095
+- Binding Mochi: 1162
+- Cook: 1212
+- Fennel: 1222
+- Dawn: 1231
+- Ultra Ball: 1121
+- Buddy-Buddy Poffin: 1086
+- Cheren: 1224
+- Boss's Orders: 1182
+- Basic Darkness Energy: resolve from card DB by name, do NOT assume user-provided numeric placeholder
+
+Deck idea 4 — Deck-Out Carousel / Durant ex
+Canonical id: deckout_carousel_durant_v2
+Design class: non-prize / deckout / mill-control; special-pilot required
+Core IDs from user:
+- Durant ex: 198
+- Deino: 227
+- Zweilous: 228
+- Neutralization Zone: 1247
+- Slowpoke: 162
+- Iron Leaves: 27
+- Whimsicott: 815
+- Lacey: 1199
+- Acerola's Mischief: 1228
+- Judge: 1213
+- Boss's Orders: 1182
+- Dawn: 1231
+- Ultra Ball: 1121
+- Buddy-Buddy Poffin: 1086
+- Basic Darkness Energy: resolve from card DB by name
+
+Important validation requirements:
+- Verify every listed ID exists in EN_Card_Data.csv.
+- Verify Basic / Stage / Evolution requirements where possible.
+- If Mismagius ex is Stage 1 and its Basic is missing, block or add the required Basic only if verified by card DB and explicitly reported.
+- If Whimsicott is an evolution and its Basic is missing, block or add the required Basic only if verified by card DB and explicitly reported.
+- If Mega Diancie ex is not Basic according to card DB, do not assume it is Basic; mark the deck as requiring correction.
+- If energy IDs conflict with the user notes, trust card DB and report the correction.
+- Non-energy copy cap <=4.
+- Basic Energy can exceed 4.
+- No invented IDs.
+
+Output:
+- data/experiments/pass34_deck_intake.json
+- data/experiments/pass34_deck_intake.md
+
+Part D — Build 60-card decklists from skeletons
+
+Create:
+- scripts/build_pass34_decklists.py
+
+Outputs:
+- data/experiments/pass34_decklist_builds.json
+- data/experiments/pass34_decklist_builds.md
+- decklists under experiments/pass34_decklists/<deck_id>/deck.csv
+
+Build transparent v0 60-card lists for each new idea if legal.
+
+Flex-fill policy:
+- First satisfy required evolution lines if deck is not Basic-only.
+- Then add consistency cards already listed in the idea, within copy caps.
+- Then add the correct Basic Energy.
+- Do not add arbitrary new techs unless they are in the user-provided idea or already in the strategy canvas and validated.
+- If a skeleton count is far below 60, fill with draw/search/energy transparently.
+- Every added card must be listed in a "flex_fill" section with reason.
+- If no legal fill exists, block rather than guess.
+
+Expected:
+- Miraidon should be buildable unless card validation fails.
+- Diamond should be buildable if Mega Diancie ex is actually Basic; otherwise block and report.
+- Toxic may be blocked if evolution prerequisites are missing or if poison-lock mechanics are not pilotable.
+- Durant may be buildable as a decklist but likely special-pilot / smoke-risk.
+
+Part E — Candidate build policy
+
+Build candidates for:
+1. mono_lightning_miraidon_easy if decklist valid
+2. diamond_toolbox_diancie if decklist valid
+3. toxic_trap_poison_lock only if decklist valid AND a minimal special-pilot smoke scaffold is available
+4. deckout_carousel_durant_v2 only if decklist valid AND a minimal special-pilot smoke scaffold is available
+
+Do not build Toxic/Durant as normal generic-pilot tournament candidates if they require non-standard win condition handling and the special pilot is not ready.
+
+For each built candidate:
+- Use existing candidate compiler pattern.
+- Runtime must be stdlib-only.
+- Candidate tarball must be top-level main.py + deck.csv only.
+- Embed correct deck fallback.
+- Preserve last-callable entrypoint invariant.
+- Do not import src.ptcg_activegraph at runtime.
+
+Outputs:
+- experiments/runs_pass34/<candidate_id>/
+- data/submissions/candidates_pass34/<candidate_id>.tar.gz
+- data/experiments/pass34_candidate_manifest.json
+- data/experiments/pass34_candidate_manifest.md
+
+Part F — Special-pilot scaffolds for weird decks
+
+Create plan-first, then implement only if safe.
+
+For toxic_trap_poison_lock:
+Define special-pilot objectives:
+- prefer Pecharunt active if safe
+- play Perilous Jungle if available
+- use poison / trap line where observable
+- avoid random prize-race attacking if poison clock is active
+- preserve Pecharunt copies and status pieces
+- heal Pecharunt if Cook/Fennel is observable
+- Boss up high-retreat target only if context observable
+
+For deckout_carousel_durant_v2:
+Define special-pilot objectives:
+- prefer Deino/Zweilous as Active wall
+- bench Durant ex for Sudden Shearing triggers if observable
+- keep Zweilous, do not evolve away if Hydreigon is later added
+- prefer Stomp Off / mill attack if attackId resolvable
+- play Neutralization Zone if observable
+- do not race prizes unless Vengeful Crush is lethal or late-game
+- avoid unnecessary draw/search if deckout plan needs conservation
+
+Create:
+- data/fixtures/pass34_special_pilot_plans.yaml
+- docs/SPECIAL_PILOT_LANES.md or update existing chaos doc
+
+If these rules cannot be tied to reliable cabt contexts, mark executable=false and do not build the special candidate.
+
+Part G — Validation and live smoke
+
+For every built candidate:
+
+python scripts/validate_candidate_tarball.py <tarball>
+python scripts/validate_candidate_entrypoint.py <tarball>
+
+Run:
+- self-play live smoke, 1 game/seat
+- vs Water reference smoke, 1 game/seat if feasible
+- for Toxic/Durant, run special smoke that checks no INVALID and no immediate illegal action
+
+Outputs:
+- data/experiments/pass34_candidate_validation.json
+- data/experiments/pass34_candidate_validation.md
+- data/experiments/pass34_live_smoke.json
+- data/experiments/pass34_live_smoke.md
+
+Eligibility:
+- tarball validator PASS
+- entrypoint validator PASS
+- no INVALID/ERROR/TIMEOUT
+- finite rewards
+- not stuck in endless effect loop
+- not self-invalidating
+- no broad unknown failure
+
+Part H — Tournament / lane evaluation
+
+Run internal tournament with eligible normal-lane candidates:
+- mono_lightning_miraidon_easy
+- diamond_toolbox_diancie if eligible
+- water current best / water_basic_density_v1
+- dragapult search_only
+- Venusaur loop guard
+- Charizard X
+- Gardevoir diagnostic
+- Raging Bolt weak-control if desired
+- other valid benchmarks from Pass 33
+
+Exclude:
+- Toxic if special-pilot not executable
+- Durant if special-pilot not executable
+- any INVALID/ERROR/TIMEOUT candidate
+
+Budget:
+- Stage 1: 3 games/seat
+- Stage 2: top 4 + Water + best non-Water, 10 games/seat if feasible
+- subprocess isolated
+- Replit workflow if needed
+- no upload
+
+Outputs:
+- data/experiments/pass34_new_deck_tournament.json
+- data/experiments/pass34_new_deck_tournament.md
+- data/experiments/pass34_new_deck_matrix.csv
+- data/experiments/pass34_new_deck_rankings.json
+- data/experiments/pass34_new_deck_rankings.md
+
+Metrics:
+- W/L/D
+- adjusted win rate
+- Wilson CI
+- invalid/crash/timeout
+- average steps
+- first attack turn
+- attack rate
+- attach rate
+- evolution rate
+- bench development
+- no-pokemon losses
+- deckout losses
+- effect-loop count
+- deck/pilot compatibility label
+
+Labels:
+- strong_reference
+- candidate_for_confirmation
+- promising_but_noisy
+- legal_but_weak
+- simple_deck_success
+- basic_toolbox_success
+- needs_special_pilot
+- invalid_or_blocked
+- keep_as_benchmark
+
+Part I — Special-lane diagnosis
+
+For Toxic and Durant, whether built or blocked, produce a separate diagnosis.
+
+Outputs:
+- data/experiments/pass34_special_lane_diagnosis.json
+- data/experiments/pass34_special_lane_diagnosis.md
+
+For each:
+- decklist valid?
+- built?
+- smoke-valid?
+- reason if blocked
+- generic pilot compatibility
+- missing pilot hooks
+- reliable contexts observed
+- first executable fixture needed
+- whether it should enter a future special-pilot sprint
+
+Do not let Toxic/Durant tournament failure contaminate normal deck ranking.
+
+Part J — Composition + pilot-fit analysis
+
+Create:
+- data/experiments/pass34_pilot_fit_analysis.json
+- data/experiments/pass34_pilot_fit_analysis.md
+
+Compare:
+- Water basic-density
+- Dragapult search_only
+- Miraidon
+- Diamond
+- Charizard
+- Venusaur
+- Gardevoir
+- Toxic/Durant special-lane status
+
+Analyze:
+- Basic density
+- energy simplicity
+- mono-color vs multi-color
+- evolution complexity
+- number of unique cards
+- attack simplicity
+- need for non-attack win condition
+- special-condition/deckout requirements
+- pilot fit
+- no-pokemon losses
+- first attack turn
+- attack conversion
+- score/tournament strength
+
+Answer:
+- Did simple Basic deck design help?
+- Did Basic toolbox design help?
+- Are weird decks blocked by decklist or by pilot?
+- Which family should be improved next?
+
+Part K — Meta sanity, directional only
+
+Run limited meta sanity for:
+- top tournament candidate
+- Water current best
+- water_basic_density_v1
+- Dragapult search_only
+- Miraidon if eligible
+- Diamond if eligible
+- Venusaur guard if eligible
+- Charizard if eligible
+
+Opponents:
+- current replay-derived archetype surrogates
+
+Outputs:
+- data/experiments/pass34_meta_sanity.json
+- data/experiments/pass34_meta_sanity.md
+- data/experiments/pass34_meta_matrix.csv
+
+Caveat:
+- surrogate only
+- not Kaggle
+- not sufficient for promotion
+
+Part L — Strategy decision / dry-run queue
+
+Create:
+- data/experiments/pass34_strategy_decision.json
+- data/experiments/pass34_strategy_decision.md
+- data/submission_queue.json
+
+Decision labels:
+- keep_water_as_reference
+- keep_dragapult_as_nonwater_reference
+- miraidon_candidate_for_confirmation
+- diamond_candidate_for_confirmation
+- venusaur_candidate_for_confirmation
+- water_basic_density_candidate_for_confirmation
+- build_toxic_special_pilot_next
+- build_durant_special_pilot_next
+- continue_portfolio_expansion
+- no_action
+
+Rules:
+- No upload.
+- Dry-run queue max 1.
+- A candidate may enter dry-run queue only if:
+  - validators PASS
+  - smoke PASS
+  - no INVALID/ERROR/TIMEOUT
+  - tournament strong
+  - meta sanity does not collapse
+  - not special-pilot blocked
+  - no major regression
+- If no candidate clears, queue empty.
+- If one simple/basic deck clearly stands out, queue as held future calibration probe.
+- If weird deck is blocked, do not queue it; create special-pilot task instead.
+- If Water basic-density remains the best, keep that held queue unless a new candidate clearly beats it.
+
+Part M — ActiveGraph events
+
+Emit:
+- StrategyFamilyRegistered for new families
+- StrategyHypothesisLogged for each deck idea
+- StrategyIterationCreated for built candidates
+- StrategyIterationEvaluated for tournament participants
+- LocalEvaluationFinished for tournament/meta sanity
+- StrategyDecisionRecorded
+- SubmissionQueued only if dry-run queue has one candidate
+- ReportSiteGenerated
+
+All pass34 events:
+- no_upload=true
+- pass34 tag
+- family_id
+- candidate_id when applicable
+- parent_id when applicable
+- source_artifacts
+- validation status
+- tournament status
+- decision label
+
+Part N — Reports and docs
+
+Update:
+- docs/PTCG_STRATEGY_CANVAS.md
+- docs/SPECIAL_PILOT_LANES.md or docs/CHAOS_PLAYBOOK_LANE.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- data/reports/pass34_new_deck_intake_tournament_report.md
+
+Include:
+- live score state
+- new deck intake
+- ID/card validation
+- decklists built/blocked
+- normal lane vs special lane
+- validation/smoke
+- tournament
+- special-lane diagnosis
+- pilot-fit analysis
+- meta sanity
+- strategy decision
+- dry-run queue
+- no-upload note
+- caveat: internal tournament is not Kaggle
+
+Part O — Tests
+
+Add/update tests for:
+- all new card IDs validated against EN_Card_Data.csv
+- energy IDs resolved from card DB, not user placeholders
+- skeleton counts do not need to sum to 60 but built decklists must
+- non-energy copy cap <=4
+- Basic Energy copies may exceed 4
+- missing evolution prerequisites block or are explicitly fixed with verified card IDs
+- Mega Diancie stage is read from card DB
+- Miraidon candidate is built only if legal
+- Diamond candidate is built only if legal
+- Toxic/Durant excluded from normal tournament if special pilot not executable
+- Durant remains blocked unless smoke-valid
+- tarballs top-level only
+- entrypoint validators pass for eligible candidates
+- internal tournament has is_kaggle_leaderboard=false
+- dry-run queue max 1
+- no upload flag false / no_upload true
+- root files unchanged
+- reports include normal lane / special lane distinction
+- no opponent clones are built
+- all new pass34 events carry no_upload=true
+
+Run targeted tests.
+Run broader pass33/pass34-related tests if feasible.
+
+Part P — Architect review
+
+Run the repo's architect/code review procedure if available.
+Fix all HIGH/CRITICAL issues.
+For MEDIUM issues, fix if they affect honesty, gating, legality, upload safety, root immutability, or evidence integrity.
+
+Part Q — Final report
+
+Report exactly:
+
+ActiveGraph Pass 34 New Deck Intake + Easy Basic / Chaos Lane Split Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Live score state
+- live_score_leader:
+- water_family_current_best:
+- dragapult_family_best:
+- portfolio_reference:
+- conclusion:
+
+3. Deck intake
+- new deck ideas:
+- IDs validated:
+- energy ID corrections:
+- stage/evolution corrections:
+- skeleton count issues:
+- no invented IDs:
+
+4. Candidates / variants
+- normal-lane candidates built:
+- special-lane candidates built:
+- candidates blocked:
+- tarballs:
+
+5. Validation / smoke
+- tarball validators:
+- entrypoint validators:
+- smoke-valid:
+- invalid/crash/timeout:
+- excluded:
+
+6. Internal tournament
+- participants:
+- games per seat:
+- top candidate:
+- best new deck:
+- best simple/basic deck:
+- worst family:
+- caveat:
+
+7. Special-lane diagnosis
+- Toxic Trap:
+- Durant Carousel:
+- required special pilot hooks:
+- next special-pilot step:
+
+8. Pilot-fit / meta sanity
+- pilot-fit findings:
+- meta sanity:
+- strongest finding:
+- confidence:
+
+9. Strategy decision / ActiveGraph
+- decision:
+- dry-run queue:
+- next family:
+- events emitted:
+- report site:
+
+10. Next recommendation
+- one sentence only.

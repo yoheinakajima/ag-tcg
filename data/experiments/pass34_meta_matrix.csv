@@ -1,0 +1,8 @@
+our_deck \ subfamily (win_rate),metal_ex_zacian_ramp,water_kyogre_abomasnow_maxbelt,mega_lucario_ex_tempo,mega_kangaskhan_energy_stack,dragapult_ex,lightning_bellibolt,weighted_meta_score
+water_basic_density_v1,0.8333,0.6667,1.0,1.0,1.0,1.0,0.9
+league_water_anti_disruption_pivot_v1,0.6667,0.6667,0.5,0.6667,0.6667,0.0,0.5467
+league_dragapult_v1_search_only,0.5,0.6667,0.8333,0.8333,0.6667,1.0,0.7333
+mono_lightning_miraidon_easy,0.8333,0.8333,0.6667,0.5,0.8333,1.0,0.7733
+diamond_toolbox_diancie,0.8333,0.3333,0.8333,0.5,0.5,0.1667,0.5733
+league_mega_venusaur_tank,0.25,0.5,0.3333,0.0,0.2,0.8,0.35
+league_mega_charizard_x_burst,0.6667,1.0,0.5,0.8333,0.5,0.5,0.6733

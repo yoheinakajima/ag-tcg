@@ -1,15 +1,16 @@
 {
   "schema": "ptcg_dry_run_submission_queue_v1",
-  "generated_at": 1781918829.139662,
-  "run_id": "run_pass33_composition_stress_20260620_012709",
-  "stage": "pass33_deck_composition_stress_test",
+  "generated_at": 1781926369.9393945,
+  "run_id": "run_pass34_new_deck_intake_20260620_033249",
+  "stage": "pass34_new_deck_intake_lane_split",
   "auto_submit_enabled": false,
   "require_manual_approval_for_submit": true,
   "upload_performed": false,
   "no_more_submissions_today": true,
   "max_queue_size": 1,
   "active_control": "league_water_anti_disruption_pivot_v1",
-  "decision": "queue_density_v1_for_deeper_confirmation",
+  "held_probe": "water_basic_density_v1",
+  "decision": "keep_water_basic_density_held_probe",
   "queue": [
     {
       "candidate_id": "water_basic_density_v1",
@@ -18,32 +19,23 @@
         "deck.csv",
         "main.py"
       ],
-      "disposition": "candidate_for_deeper_confirmation",
-      "reason": "Pass-33 composition stress test: best next human-approved probe among OUR decks. Halves no-Basic / mulligan risk (no_basic_p 0.346 -> 0.191) while preserving the validated core engine (721/722/723/1121). Tops Stage-2 of the internal composition tournament (adj win_rate 0.5667, Wilson95 [0.441, 0.6843]) and edges the Water control in replay-derived meta sanity (weighted 0.68 vs control 0.6403, 0 collapses). Head-to-head vs the Water control is a TIE (child adj win_rate 0.5, Wilson95 [0.2993, 0.7007]) \u2014 no regression but not a clear win, so this is a deeper-confirmation / future calibration probe ONLY. Reused verbatim core with extra LEGAL Basics \u2014 NOT a clone of any opponent and no invented card ids.",
-      "local_adjusted_win_rate_stage1": 0.6719,
-      "wilson_95_ci_stage1": [
-        0.55,
-        0.7743
+      "disposition": "held_future_calibration_probe",
+      "reason": "Re-affirmed by Pass 34: water_basic_density_v1 is STILL rank 1 of the internal new-deck tournament (adj win_rate 0.7317, Wilson95 [0.5807, 0.8431]) with 0 invalid/timeout/crash, and posts 0 collapses in the Part-K replay-derived meta sanity (weighted 0.9). No NEW Pass-34 deck (Miraidon ~0.50, Diamond ~0.49) clearly beats it, so the single held dry-run probe is unchanged. HELD ONLY \u2014 internal/surrogate numbers, human approval required before any submission.",
+      "internal_tournament_adj_win_rate": 0.7317,
+      "internal_tournament_wilson": [
+        0.5807,
+        0.8431
       ],
-      "local_adjusted_win_rate_stage2_focused": 0.5667,
-      "wilson_95_ci_stage2": [
-        0.441,
-        0.6843
-      ],
-      "weighted_meta_score": 0.68,
-      "weighted_meta_score_control": 0.6403,
-      "h2h_vs_control_child_win_rate": 0.5,
-      "h2h_vs_control_verdict": "inconclusive",
-      "tarball_valid": true,
-      "entrypoint_valid": true,
-      "smoke_status": "PASS",
+      "weighted_meta_score": 0.9,
+      "meta_collapses": [],
       "is_clone_or_replay_deck": false,
-      "recommended_kaggle_message": "water_basic_density_v1: Water core with denser Basic line (mulligan-risk reduction). LOCAL internal tournament + replay-derived meta sanity lead/tie among our decks; surrogate numbers only. Human review required before any submission.",
+      "is_kaggle_leaderboard": false,
       "upload_performed": false,
       "auto_submit_enabled": false,
-      "require_manual_approval_for_submit": true
+      "require_manual_approval_for_submit": true,
+      "reaffirmed_by": "pass34"
     }
   ],
   "queued_candidate_count": 1,
-  "selection_reason": "Pass 33 composition stress test: one HELD dry-run recommendation (water_basic_density_v1) as candidate_for_deeper_confirmation. auto_submit_enabled=false and require_manual_approval_for_submit=true \u2014 NO upload is performed and a human must approve before any submission."
+  "selection_reason": "Pass 34 new-deck intake: the held dry-run probe remains water_basic_density_v1 (re-affirmed rank 1; no new deck clearly beats it). New eligible decks Miraidon/Diamond are candidate_for_confirmation (not queued); Toxic/Durant are special-pilot blocked (not queued). auto_submit_enabled=false, manual approval required, NO upload."
 }

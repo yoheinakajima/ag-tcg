@@ -1,0 +1,38 @@
+# Pass 34 deck ideas registry (intake). LOCAL. no upload.
+deck_ideas:
+  - id: mono_lightning_miraidon_easy
+    display_name: "Mono-Lightning Miraidon ex"
+    design_class: "simple Basic ex / low decision density"
+    lane: normal
+    special_pilot_required: false
+    energy_color: lightning
+    energy_id: 4
+    intake_status: buildable
+    evolution_corrections: 0
+  - id: diamond_toolbox_diancie
+    display_name: "Diamond Toolbox — Mega Diancie ex (mono-Psychic)"
+    design_class: "mono-Psychic Basic toolbox"
+    lane: normal
+    special_pilot_required: false
+    energy_color: psychic
+    energy_id: 5
+    intake_status: buildable
+    evolution_corrections: 0
+  - id: toxic_trap_poison_lock
+    display_name: "Toxic Trap — Pecharunt poison lock"
+    design_class: "passive poison/status lock; special-pilot likely required"
+    lane: special
+    special_pilot_required: true
+    energy_color: darkness
+    energy_id: 7
+    intake_status: buildable
+    evolution_corrections: 1
+  - id: deckout_carousel_durant_v2
+    display_name: "Deck-Out Carousel — Durant ex (mill-control)"
+    design_class: "non-prize / deckout / mill-control; special-pilot required"
+    lane: special
+    special_pilot_required: true
+    energy_color: darkness
+    energy_id: 7
+    intake_status: buildable
+    evolution_corrections: 1

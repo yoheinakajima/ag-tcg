@@ -1,0 +1,60 @@
+# Pass 34 — Special-Pilot Lane plans (PLAN-FIRST). LOCAL. no upload.
+#
+# These are DESIGN plans only. No special pilot is wired in Pass 34, so every
+# entry is executable: false. The generic pilot demonstrably emits an illegal
+# gameplay action piloting these decks (Part G live smoke: deck reaches DONE on
+# one seat => deck is LEGAL; the other seat goes INVALID => the GENERIC PILOT
+# mis-pilots the win condition). A dedicated pilot must be built and proven
+# (tieable in a clean cabt game) before any special-lane deck is league-eligible.
+
+meta:
+  pass: 34
+  lane: special
+  executable: false
+  no_upload: true
+  why_not_executable: >-
+    A special pilot is a non-trivial gameplay policy, not a deck swap. Pass 34 is
+    a deck-intake pass; building and proving a new pilot is out of scope here.
+    Until a special pilot ties a clean cabt game with the deck, these stay
+    blocked_from_league.
+
+special_pilots:
+  - deck_id: toxic_trap_poison_lock
+    display_name: "Toxic Trap — Pecharunt poison lock"
+    win_condition: >-
+      Passive attrition: keep the opponent poisoned/statused via Pecharunt and
+      Pecharunt-adjacent effects, stall with Ariados/Mismagius ex, and win on
+      cumulative status damage rather than racing prizes.
+    why_generic_pilot_fails: >-
+      The generic pilot optimizes for attacking/prize-racing. It does not value
+      keeping a passive lock online and selects gameplay actions the engine
+      rejects for this board state (observed INVALID in Part G live smoke).
+    required_pilot_behaviors:
+      - prioritize establishing and maintaining the poison/status lock over KOs
+      - avoid actions that drop the lock to chase a prize
+      - manage Binding Mochi / Dangerous Laser disruption timing
+      - only attack when it does not break the lock
+    tieability_smoke_plan: >-
+      A clean cabt game where the special pilot drives this deck and reaches DONE
+      on BOTH seats (no INVALID). Not run in Pass 34.
+    executable: false
+
+  - deck_id: deckout_carousel_durant_v2
+    display_name: "Deck-Out Carousel — Durant ex (mill-control)"
+    win_condition: >-
+      Non-prize / deckout: mill the opponent's deck with Durant ex while walling
+      with Zweilous and recycling disruption (Lacey, Judge, Acerola's Mischief)
+      to win by deck-out, not by taking prizes.
+    why_generic_pilot_fails: >-
+      The generic pilot races prizes and does not understand a deck-out win line;
+      it plays toward attacking and emits actions the engine rejects for the
+      mill/control board (observed INVALID in Part G live smoke).
+    required_pilot_behaviors:
+      - value opponent deck depletion as the win metric
+      - preserve the wall and avoid trading prizes
+      - sequence Judge / Lacey / Acerola disruption to accelerate the deck-out
+      - avoid self-deckout (manage own draw)
+    tieability_smoke_plan: >-
+      A clean cabt game where the special pilot drives this deck and reaches DONE
+      on BOTH seats (no INVALID). Not run in Pass 34.
+    executable: false

@@ -1,8 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph — Pass 33 Deck Composition Stress Test</title>
-<link rel="stylesheet" href="style.css">
+<title>ActiveGraph — Pass 34 New Deck Intake + Lane Split</title>
 <style>
  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
  h1{font-size:1.5rem} table{border-collapse:collapse;width:100%;margin:1rem 0}
@@ -10,47 +9,43 @@
  th{background:#f4f4f6} .caveat{background:#fff7e6;border:1px solid #f0c36d;padding:.7rem;border-radius:6px;font-size:.9rem}
  code{background:#f4f4f6;padding:.1rem .3rem;border-radius:3px}
 </style></head><body>
-<h1>ActiveGraph — Pass 33: Deck Composition Stress Test</h1>
-<p class="caveat">The internal composition tournament, correlations, parent/child confirmations and meta sanity are LOCAL diagnostics: both seats are OUR portfolio decks driven by the SAME generic core pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal.</p>
+<h1>ActiveGraph — Pass 34: New Deck Intake + Easy Basic / Chaos Lane Split</h1>
+<p class="caveat">The internal new-deck tournament and the replay-derived meta sanity are LOCAL diagnostics: both seats are OUR portfolio decks driven by the SAME deck-agnostic generic pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal.</p>
 <h2>Live reference (Kaggle, read-only)</h2>
-<p>live_score_leader: <code>submission.tar.gz</code> @ 363.0
+<p>live_score_leader: <code>league_dragapult_v1_search_only.tar.gz</code> @ 380.2
  &middot; water_family_current_best: <code>league_water_anti_disruption_pivot_v1.tar.gz</code>
  @ 340.0 &middot; dragapult_family_best:
- <code>league_dragapult_v1_search_only.tar.gz</code> @ 306.7
- &middot; portfolio_reference: <code>league_water_core_reference.tar.gz</code>
- @ 219.5</p>
-<h2>Internal tournament — Stage 1 standings (NOT Kaggle)</h2>
-<table><thead><tr><th>rank</th><th>candidate</th><th>family</th><th>adj win_rate</th><th>label</th></tr></thead>
+ <code>league_dragapult_v1_search_only.tar.gz</code> @ 380.2
+ (above water: yes) &middot; portfolio_reference:
+ <code>league_water_core_reference.tar.gz</code> @ 219.5</p>
+<h2>Internal tournament standings (NOT Kaggle)</h2>
+<table><thead><tr><th>rank</th><th>candidate</th><th>family</th><th>lane</th><th>adj win_rate</th><th>label</th></tr></thead>
 <tbody>
-      <tr><td>1</td><td>core_pilot_water_v2_runtime</td><td>water</td><td>71.0%</td><td>strong_reference</td></tr>
-      <tr><td>2</td><td>league_water_core_reference</td><td>water</td><td>70.8%</td><td>strong_reference</td></tr>
-      <tr><td>3</td><td>water_basic_density_v1</td><td>water</td><td>67.2%</td><td>density_variant_under_test</td></tr>
-      <tr><td>4</td><td>water_basic_density_v2</td><td>water</td><td>67.2%</td><td>density_variant_under_test</td></tr>
-      <tr><td>5</td><td>league_dragapult_spread</td><td>dragapult</td><td>60.9%</td><td>candidate_for_confirmation</td></tr>
-      <tr><td>6</td><td>league_water_anti_disruption_pivot_v1</td><td>water</td><td>60.9%</td><td>strong_reference</td></tr>
-      <tr><td>7</td><td>league_dragapult_v1_search_only</td><td>dragapult</td><td>58.5%</td><td>candidate_for_confirmation</td></tr>
-      <tr><td>8</td><td>league_mega_charizard_x_burst</td><td>charizard</td><td>53.8%</td><td>keep_as_benchmark</td></tr>
-      <tr><td>9</td><td>effect_loop_exit_guard_v1</td><td>venusaur</td><td>47.7%</td><td>legal_but_weak</td></tr>
-      <tr><td>10</td><td>league_mega_venusaur_tank</td><td>venusaur</td><td>25.0%</td><td>legal_but_weak</td></tr>
-      <tr><td>11</td><td>league_mega_gardevoir_psychic_ramp</td><td>gardevoir</td><td>12.1%</td><td>keep_as_benchmark</td></tr>
-      <tr><td>12</td><td>league_raging_bolt_ogerpon</td><td>raging_bolt</td><td>0.0%</td><td>needs_special_pilot</td></tr>
+      <tr><td>1</td><td>water_basic_density_v1</td><td>water</td><td>benchmark</td><td>73.2%</td><td>strong_benchmark</td></tr>
+      <tr><td>2</td><td>league_water_anti_disruption_pivot_v1</td><td>water</td><td>benchmark</td><td>68.3%</td><td>strong_benchmark</td></tr>
+      <tr><td>3</td><td>league_dragapult_v1_search_only</td><td>dragapult</td><td>benchmark</td><td>67.5%</td><td>strong_benchmark</td></tr>
+      <tr><td>4</td><td>mono_lightning_miraidon_easy</td><td>miraidon_new</td><td>normal</td><td>50.0%</td><td>promising_but_noisy</td></tr>
+      <tr><td>5</td><td>diamond_toolbox_diancie</td><td>diamond_new</td><td>normal</td><td>48.8%</td><td>below_benchmark</td></tr>
+      <tr><td>6</td><td>league_mega_charizard_x_burst</td><td>charizard</td><td>benchmark</td><td>48.7%</td><td>below_benchmark</td></tr>
+      <tr><td>7</td><td>league_mega_venusaur_tank</td><td>venusaur</td><td>benchmark</td><td>40.6%</td><td>below_benchmark</td></tr>
+      <tr><td>8</td><td>league_mega_gardevoir_psychic_ramp</td><td>gardevoir</td><td>benchmark</td><td>2.4%</td><td>legal_but_weak</td></tr>
 </tbody></table>
-<h2>Water Basic-density ladder</h2>
-<table><thead><tr><th>deck</th><th>Basics</th><th>no-Basic prob</th><th>internal adj win_rate</th></tr></thead>
+<h2>Special-lane diagnosis</h2>
+<table><thead><tr><th>deck</th><th>decklist valid</th><th>built</th><th>smoke valid</th><th>enter sprint</th></tr></thead>
 <tbody>
-      <tr><td>league_water_anti_disruption_pivot_v1</td><td>8</td><td>34.6%</td><td>60.9%</td></tr>
-      <tr><td>water_basic_density_v1</td><td>12</td><td>19.1%</td><td>67.2%</td></tr>
-      <tr><td>water_basic_density_v2</td><td>16</td><td>9.9%</td><td>67.2%</td></tr>
+      <tr><td>toxic_trap_poison_lock</td><td>yes</td><td>yes</td><td>no</td><td>yes</td></tr>
+      <tr><td>deckout_carousel_durant_v2</td><td>yes</td><td>yes</td><td>no</td><td>yes</td></tr>
 </tbody></table>
 <h2>Meta sanity (directional, surrogate)</h2>
-<p>best: <code>league_mega_charizard_x_burst</code> @ 70.7% &middot; probe
- <code>water_basic_density_v1</code> collapses: none
- (Raging Bolt = expected control)</p>
+<p>sanity_passed: no &middot; best:
+ <code>water_basic_density_v1</code> @ 90.0%</p>
 <h2>Decision</h2>
-<p><b>Queue water_basic_density_v1 as the single HELD dry-run probe candidate (candidate_for_deeper_confirmation), pending human approval. No upload/submit performed.</b></p>
+<p><b>Keep water_basic_density_v1 as the single HELD dry-run probe (re-affirmed by Pass 34). Label Miraidon/Diamond candidate_for_confirmation (clean but not tournament-strong; not queued). Open special-pilot tasks for Toxic (priority 1) and Durant (priority 2). No upload/submit performed.</b> &middot; held probe: <code>water_basic_density_v1</code>
+ (re-affirmed rank 1)</p>
 <p>dry-run queue: 1 (max
  1, HELD) &middot; human approval required:
  yes &middot; auto-submit:
- no &middot; events emitted: 34</p>
-<p>Full report: <code>data/reports/pass33_deck_composition_stress_test_report.md</code></p>
+ no &middot; events emitted: 25
+ (all no_upload)</p>
+<p>Full report: <code>data/reports/pass34_new_deck_intake_tournament_report.md</code></p>
 </body></html>
