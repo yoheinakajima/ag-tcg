@@ -1,6 +1,6 @@
 # PTCG Strategy Canvas
 
-> Living strategy canvas. Updated through Pass 35.
+> Living strategy canvas. Updated through Pass 37.
 
 _The internal tournament, parent/child H2H confirmations, and the replay-derived meta sanity are LOCAL diagnostics: every seat is OUR own portfolio deck driven by the SAME deck-agnostic base pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal._
 
@@ -47,3 +47,13 @@ The deprecated per-pass one-off tournaments are replaced by a reusable **event-f
 - Internal standings are NOT a Kaggle leaderboard and NOT a promotion/upload signal.
 
 See `data/reports/pass36_standing_tournament_engine_report.md`, `docs/TOURNAMENT_ENGINE_PLAN.md`, `docs/PERSISTENT_TOURNAMENT_DAEMON.md`.
+
+## Pass 37 — Deployment-ready tournament worker (Scheduled Deployment + persistent storage, NOT Kaggle)
+
+The Pass 36 engine is made safe to run as a Replit **Scheduled Deployment** with **persistent storage** via a thin storage/sync/lease wrapper (`src/ptcg_activegraph/tournament/{storage,sync,lease}.py` + worker `scripts/tournament_deployment_tick.py`). `data/tournament/` is a disposable working dir: pull → bounded tick → rebuild → reconcile (merge by `event_id`, abort on conflict) → push sha-verified manifest → release lease. **NO upload, NO submit, NO auto-submit, no new candidates.**
+
+- Production **fails closed** without persistent storage; storage validated end-to-end on Replit Object Storage (no duplicate game ids, 0 upload events, manifest shas match).
+- Deploy ONLY as a Scheduled Deployment bounded tick (never an always-on server, never the root "Start application" workflow). Schedule every 2h · job timeout ~25 min (< 30-min lease TTL).
+- Root `main.py`/`deck.csv` untouched; held probe held; Toxic/Durant special-pilot-only; 28 tests pass.
+
+See `data/reports/pass37_deployment_ready_tournament_worker_report.md`, `scripts/print_replit_scheduled_deployment_config.py`, `docs/PERSISTENT_TOURNAMENT_DAEMON.md`.

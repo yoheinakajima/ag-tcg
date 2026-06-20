@@ -31,16 +31,17 @@ RUN_COMMAND = (
     "--storage-backend replit_app_storage --production"
 )
 
-# Build command (inspected repo: no uv.lock / requirements.txt; pip-installable
-# pyproject with empty runtime deps; PyYAML used by the tournament config loader;
-# the Replit Object Storage SDK is pip-installable as `replit-object-storage`).
-# `pip install -e .` makes ptcg_activegraph importable without the _bootstrap
-# shim; PyYAML + replit-object-storage are the only extra production deps the
-# bounded tick needs (cabt is provided by the game-runner subprocess only when
-# real games run; --no-games / dry-run never import it).
+# Build command. Replit's nix Python is an externally-managed environment, so a
+# plain `pip install` is blocked — `--user --break-system-packages` is the
+# verified-working incantation (confirmed in this workspace; works in the
+# deployment build too). The bounded tick only needs the Replit Object Storage
+# SDK (`replit-object-storage`) + PyYAML (the tournament config loader); the
+# worker puts src/ on sys.path itself, so an editable `-e .` install is NOT
+# required. cabt is imported only by the per-game subprocess when real games
+# run; --no-games / dry-run never import it.
 BUILD_COMMAND = (
-    "python -m pip install --upgrade pip && "
-    "python -m pip install -e . replit-object-storage pyyaml"
+    "python -m pip install --user --break-system-packages "
+    "replit-object-storage pyyaml"
 )
 
 # The 10 exact Publishing setup steps (also mirrored in
@@ -51,7 +52,8 @@ SETUP_STEPS = [
     "(NOT Autoscale, NOT Reserved VM / Always-on, NOT Static).",
     "Set the schedule to run every 2 hours (cron `0 */2 * * *`); leave the "
     "timezone at the UTC default.",
-    "Set the job timeout to 25-30 minutes (the run command caps work at "
+    "Set the job timeout to ~25 minutes — keep it BELOW the 30-min lease TTL so "
+    "the lease always outlives a tick (the run command caps work at "
     "--max-seconds 900 = 15 min, comfortably below the timeout).",
     "Set the build command: "
     f"`{BUILD_COMMAND}`.",
@@ -94,12 +96,13 @@ CONFIG = {
             "its owning tick and ticks never overlap."
         ),
     },
-    "job_timeout_minutes": {"min": 25, "max": 30, "recommended": 30},
+    "job_timeout_minutes": {"min": 20, "max": 28, "recommended": 25},
     "build_command": BUILD_COMMAND,
     "run_command": RUN_COMMAND,
     "run_command_notes": (
         "Bounded tick: --max-games 20 caps scheduling, --max-seconds 900 caps "
-        "wall-clock (well under the 25-30 min job timeout), "
+        "wall-clock (well under the ~25 min job timeout, which stays below the "
+        "30 min lease TTL), "
         "--storage-backend replit_app_storage uses persistent Object Storage, "
         "--production makes the worker fail CLOSED if storage is unavailable."
     ),
@@ -176,6 +179,8 @@ def render_md(cfg: dict) -> str:
         "## Job timeout",
         f"- **{timeout['min']}-{timeout['max']} minutes** "
         f"(recommended {timeout['recommended']}).",
+        "- Keep the job timeout **below the 30-min lease TTL** so a lease always "
+        "outlives its owning tick (invariant: interval > TTL > job timeout).",
         "- The run command caps work at `--max-seconds 900` (15 min), "
         "comfortably below the timeout.",
         "",

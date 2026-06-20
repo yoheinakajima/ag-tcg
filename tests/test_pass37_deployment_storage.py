@@ -76,10 +76,25 @@ def test_production_refuses_non_durable_backends():
         st.get_storage_backend(env="production", backend="memory")
 
 
-def test_production_object_storage_fails_closed_without_bucket():
-    # No bucket provisioned in the test env -> must fail closed, never fall back.
+def test_object_storage_fails_closed_when_unreachable():
+    # Fail closed (never silently fall back to local) if the client is unusable.
+    class _Broken:
+        def list(self, *a, **k):
+            raise RuntimeError("bucket unreachable")
+
+    be = st.ObjectStorageBackend(prefix="tournament/v0", client=_Broken())
     with pytest.raises(st.StorageUnavailableError):
-        st.get_storage_backend(env="production", backend="replit_app_storage")
+        be.ensure_available()
+
+
+@pytest.mark.skipif(
+    not __import__("os").environ.get("DEFAULT_OBJECT_STORAGE_BUCKET_ID"),
+    reason="no Object Storage bucket provisioned in this environment",
+)
+def test_production_object_storage_available_when_provisioned():
+    be = st.get_storage_backend(env="production", backend="replit_app_storage")
+    assert isinstance(be, st.ObjectStorageBackend)
+    be.ensure_available()  # live round-trip; raises if not reachable
 
 
 def test_dev_defaults_to_local():
@@ -225,6 +240,105 @@ def test_push_detects_remote_drift_and_merges(tmp_path):
     gids = sorted({e["payload"].get("game_id") for e in merged
                    if e["event_type"] == "GameFinished"})
     assert gids == ["gA", "gB"]  # neither side's game was lost
+
+
+def test_push_reconciles_against_empty_base_remote_hash(tmp_path):
+    """Regression: we pulled an EMPTY backend (base_remote_hash=None) but another
+    worker pushed first. The late push must MERGE, never overwrite — otherwise the
+    other worker's events are silently lost."""
+    work = tmp_path / "work"
+    work.mkdir()
+    _seed_workdir(work)  # local ledger has gA scheduled + finished
+    be = st.InMemoryStorageBackend(prefix="tournament/v0")
+
+    base = sync.remote_events_hash(be)
+    assert base is None  # we pulled an empty prefix
+
+    # A concurrent worker writes a disjoint game gB into the (was-empty) remote.
+    be.write_text("events.jsonl", sync.dump_events([
+        _ev("e8", "GameScheduled", 2.5, "gB"),
+        _ev("e9", "GameFinished", 3.0, "gB", "sha_b"),
+    ]))
+
+    res = sync.push_state(be, work, base_remote_hash=base, tick_id="t_race")
+    assert res["drift"] is True and res["status"] == "merged"
+    merged = sync.parse_events_text(be.read_text("events.jsonl"))
+    gids = sorted({e["payload"].get("game_id") for e in merged
+                   if e["event_type"] == "GameFinished"})
+    assert gids == ["gA", "gB"]  # the other worker's game was NOT discarded
+
+
+def test_pull_clears_stale_local_only_keys(tmp_path):
+    """Regression: a file present locally but absent from the backend must not
+    survive a pull (so it can never be pushed back). Bootstrap config/pool are
+    kept so a brand-new tournament can still seed when the backend is empty."""
+    work = tmp_path / "work"
+    work.mkdir()
+    _seed_workdir(work)  # creates events.jsonl, games/gA.json.gz, projections/, pool, config
+    stale_proj = work / "projections" / "old_rankings.json"
+    stale_proj.write_text("{}", encoding="utf-8")
+    stale_game = work / "games" / "gA.json.gz"
+    assert stale_game.is_file() and stale_proj.is_file()
+
+    # Backend holds ONLY a single events.jsonl — no games/projections.
+    be = st.InMemoryStorageBackend(prefix="tournament/v0")
+    be.write_text("events.jsonl", sync.dump_events([_ev("e1", "GameScheduled", 1.0, "gZ")]))
+
+    summary = sync.pull_state(be, work)
+    assert "events.jsonl" in summary["cleared"] and "games/" in summary["cleared"]
+    assert not stale_game.exists()  # local-only derived file removed
+    assert not stale_proj.exists()
+    assert (work / "candidate_pool.json").is_file()  # bootstrap preserved
+    assert (work / "config.yaml").is_file()           # bootstrap preserved
+    keys = sync.collect_local_keys(work)
+    assert "games/gA.json.gz" not in keys  # stale derived state is not re-pushed
+    assert "events.jsonl" in keys
+
+
+def test_reconcile_conflicts_on_divergent_lifecycle():
+    """Regression: two GameScheduled for the same game_id with different identity
+    payloads (different candidates) is a divergence, not a silent drop."""
+    a = {"event_type": "GameScheduled", "event_id": "x1", "timestamp": 1.0,
+         "payload": {"game_id": "gX", "candidate_a": "deck1", "candidate_b": "deck2",
+                     "no_upload": True, "run_id": "r1"}}
+    b = {"event_type": "GameScheduled", "event_id": "x2", "timestamp": 2.0,
+         "payload": {"game_id": "gX", "candidate_a": "deckZ", "candidate_b": "deck2",
+                     "no_upload": True, "run_id": "r2"}}
+    with pytest.raises(sync.ConflictError):
+        sync.reconcile_events([a], [b])
+
+
+def test_reconcile_collapses_idempotent_lifecycle_diff_volatile_only():
+    """The same game scheduled by two workers differs only in volatile run_id/
+    tick_id/priority; that is an idempotent re-emit and collapses cleanly."""
+    a = {"event_type": "GameScheduled", "event_id": "y1", "timestamp": 1.0,
+         "payload": {"game_id": "gY", "candidate_a": "d1", "candidate_b": "d2",
+                     "no_upload": True, "run_id": "rA", "tick_id": "tA", "priority": 1}}
+    b = {"event_type": "GameScheduled", "event_id": "y2", "timestamp": 2.0,
+         "payload": {"game_id": "gY", "candidate_a": "d1", "candidate_b": "d2",
+                     "no_upload": True, "run_id": "rB", "tick_id": "tB", "priority": 5}}
+    merged, report = sync.reconcile_events([a], [b])
+    sched = [e for e in merged
+             if e["event_type"] == "GameScheduled" and e["payload"]["game_id"] == "gY"]
+    assert len(sched) == 1 and report["deduped_lifecycle"] == 1
+
+
+def test_reconcile_collapses_duplicate_finish_same_sha_diff_runtime():
+    """Regression: two GameFinished for the same game_id with the SAME
+    artifact_sha256 but different runtime metadata (elapsed_s/run_id/tick_id) are
+    idempotent duplicates and must collapse, not raise (locked-design rule)."""
+    a = {"event_type": "GameFinished", "event_id": "f1", "timestamp": 5.0,
+         "payload": {"game_id": "gF", "artifact_sha256": "shaX", "a_outcome": "win",
+                     "no_upload": True, "run_id": "rA", "tick_id": "tA",
+                     "elapsed_s": 12.3, "steps": 40}}
+    b = {"event_type": "GameFinished", "event_id": "f2", "timestamp": 6.0,
+         "payload": {"game_id": "gF", "artifact_sha256": "shaX", "a_outcome": "win",
+                     "no_upload": True, "run_id": "rB", "tick_id": "tB",
+                     "elapsed_s": 14.9, "steps": 41}}
+    merged, report = sync.reconcile_events([a], [b])
+    fin = [e for e in merged
+           if e["event_type"] == "GameFinished" and e["payload"]["game_id"] == "gF"]
+    assert len(fin) == 1 and report["deduped_lifecycle"] == 1
 
 
 # --------------------------------------------------------------------------- #

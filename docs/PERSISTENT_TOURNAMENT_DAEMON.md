@@ -44,11 +44,14 @@ racing to schedule duplicate games — so it's safe to schedule ticks generously
    VM / Always-on, NOT Static).
 3. Set the **schedule** to run every **2 hours** (cron `0 */2 * * *`); leave the
    timezone at the **UTC** default.
-4. Set the **job timeout** to **25-30 minutes** (the run command caps work at
-   `--max-seconds 900` = 15 min, comfortably below the timeout).
-5. Set the **build command**:
+4. Set the **job timeout** to **~25 minutes** — keep it **below the 30-min lease
+   TTL** so the lease always outlives a tick (invariant: interval > TTL > job
+   timeout). The run command caps work at `--max-seconds 900` = 15 min,
+   comfortably below the timeout.
+5. Set the **build command** (Replit's nix Python is externally-managed, so use
+   `--user --break-system-packages`):
    ```bash
-   python -m pip install --upgrade pip && python -m pip install -e . replit-object-storage pyyaml
+   python -m pip install --user --break-system-packages replit-object-storage pyyaml
    ```
 6. Set the **run command** (one bounded tick; fails closed without persistent
    storage):

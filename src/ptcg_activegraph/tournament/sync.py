@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -45,9 +46,26 @@ LOCK_PREFIX = "locks/"
 SYNC_DIRS = ("projections", "runs", "games")
 # Files/dirs that are NOT part of the synced primary state.
 _EXCLUDE_TOP = {MANIFEST_KEY, CONFLICT_KEY, ".tick.lock"}
+# Derived/append-only managed state cleared before a pull so the working dir
+# mirrors persistent storage exactly (bootstrap config/pool + locks/ are kept).
+_CLEAN_TOP = (EVENTS_KEY, MANIFEST_KEY, CONFLICT_KEY)
 
 # Per-game lifecycle events that must be unique per game_id in a merged ledger.
 _LIFECYCLE = {"GameScheduled", "GameStarted", "GameFinished"}
+# Volatile per-tick orchestration fields that may legitimately differ between
+# two workers emitting the SAME logical lifecycle event; ignored when deciding
+# whether a duplicate is an idempotent re-emit vs a genuine divergence.
+_VOLATILE_PAYLOAD_KEYS = {"run_id", "tick_id", "priority", "reason"}
+# Stable identity fields per non-Finished lifecycle event. Anything outside this
+# allowlist is treated as volatile. GameFinished is NOT listed here: it is
+# compared by ``artifact_sha256`` instead, because its payload carries runtime
+# metadata (elapsed_s/result/steps/rewards/...) that legitimately differs between
+# two identical-outcome replays of the same game.
+_IDENTITY_KEYS = {
+    "GameScheduled": ("game_id", "candidate_a", "candidate_b",
+                      "seat_assignment", "tournament_id"),
+    "GameStarted": ("game_id", "candidate_a", "candidate_b", "tournament_id"),
+}
 
 
 class ConflictError(StorageError):
@@ -75,12 +93,47 @@ def collect_local_keys(local_root: str | Path = TOURNAMENT_DIR) -> list[str]:
 
 
 # --------------------------------------------------------------------------- #
-# pull
+# clean + pull
 # --------------------------------------------------------------------------- #
+def clean_working_state(local_root: str | Path = TOURNAMENT_DIR) -> list[str]:
+    """Remove derived/append-only managed state before a pull.
+
+    The working dir must mirror persistent storage after a pull, otherwise a file
+    that exists locally but was removed from (or never existed in) the backend
+    would survive ``collect_local_keys`` and be pushed back — making the working
+    dir, not the backend, the source of truth. We delete the append-only ledger,
+    the rebuilt ``projections``/``runs``/``games`` trees, and the
+    manifest/conflict reports. We KEEP bootstrap ``config.yaml`` and
+    ``candidate_pool.json`` (used to seed a brand-new tournament when the backend
+    is empty) and the ``locks/`` dir (the lease lives there). Anything the
+    backend does have is restored by the subsequent pull.
+    """
+    local_root = Path(local_root)
+    removed: list[str] = []
+    for top in _CLEAN_TOP:
+        p = local_root / top
+        if p.is_file():
+            p.unlink()
+            removed.append(top)
+    for sub in SYNC_DIRS:
+        d = local_root / sub
+        if d.is_dir():
+            shutil.rmtree(d)
+            removed.append(sub + "/")
+    return removed
+
+
 def pull_state(backend: StorageBackend, local_root: str | Path = TOURNAMENT_DIR) -> dict:
-    """Download every remote key (except locks) into the local working dir."""
+    """Make the working dir mirror the backend: clear managed state, then download.
+
+    Clearing first guarantees persistent storage is the sole source of truth for
+    the synced keys — stale local-only files cannot survive a pull and be pushed
+    back. Bootstrap ``config.yaml``/``candidate_pool.json`` and ``locks/`` are
+    preserved (see :func:`clean_working_state`).
+    """
     local_root = Path(local_root)
     local_root.mkdir(parents=True, exist_ok=True)
+    cleared = clean_working_state(local_root)
     pulled: list[str] = []
     total_bytes = 0
     for key in backend.list():
@@ -92,7 +145,7 @@ def pull_state(backend: StorageBackend, local_root: str | Path = TOURNAMENT_DIR)
         dest.write_bytes(data)
         pulled.append(key)
         total_bytes += len(data)
-    return {"keys": pulled, "count": len(pulled), "bytes": total_bytes}
+    return {"keys": pulled, "count": len(pulled), "bytes": total_bytes, "cleared": cleared}
 
 
 def remote_events_hash(backend: StorageBackend) -> str | None:
@@ -122,6 +175,26 @@ def _sort_key(e: dict) -> tuple:
     return (e.get("timestamp", 0.0), str(e.get("event_id", "")))
 
 
+def _lifecycle_identity(e: dict) -> str:
+    """Canonical JSON of a non-Finished lifecycle event's STABLE identity.
+
+    For GameScheduled/GameStarted we compare a curated allowlist (game id,
+    candidates, seat assignment, tournament) so two workers that re-emit the same
+    logical event with different volatile metadata (run_id/tick_id/priority/
+    reason/timestamps) are recognised as idempotent duplicates. Two duplicates
+    with equal identity json collapse; unequal identity is a divergence.
+    GameFinished is handled separately (by artifact_sha256).
+    """
+    et = e.get("event_type")
+    payload = e.get("payload") or {}
+    keys = _IDENTITY_KEYS.get(et)
+    if keys is None:
+        ident = {k: v for k, v in payload.items() if k not in _VOLATILE_PAYLOAD_KEYS}
+    else:
+        ident = {k: payload.get(k) for k in keys if k in payload}
+    return json.dumps(ident, sort_keys=True, default=str)
+
+
 def reconcile_events(local_events: list[dict], remote_events: list[dict]) -> tuple[list[dict], dict]:
     """Merge two ledgers honestly. Returns (merged_events, report).
 
@@ -141,45 +214,61 @@ def reconcile_events(local_events: list[dict], remote_events: list[dict]) -> tup
 
     merged = sorted(by_id.values(), key=_sort_key)
 
-    # Enforce one lifecycle event per (type, game_id); detect finish conflicts.
+    # Enforce one lifecycle event per (type, game_id), honestly:
+    #   * GameFinished: two finishes for the same game_id with DIFFERENT non-null
+    #     artifact_sha256 is a hard divergence (ConflictError). The same sha is an
+    #     idempotent duplicate and is collapsed (keeping the earliest) regardless
+    #     of runtime metadata (elapsed_s/result/steps may differ across identical
+    #     replays).
+    #   * GameScheduled/GameStarted: collapse duplicates whose STABLE identity is
+    #     equal; a duplicate whose identity DIFFERS is a divergence (ConflictError).
+    # We never silently discard a divergent event.
     conflicts: list[dict] = []
     deduped_lifecycle = 0
-    finish_sha: dict[str, str] = {}
-    for e in merged:
-        if e.get("event_type") != "GameFinished":
-            continue
-        gid = (e.get("payload") or {}).get("game_id")
-        sha = (e.get("payload") or {}).get("artifact_sha256")
-        if gid is None:
-            continue
-        if gid in finish_sha and finish_sha[gid] != sha:
-            conflicts.append({
-                "game_id": gid,
-                "sha_a": finish_sha[gid],
-                "sha_b": sha,
-            })
-        else:
-            finish_sha.setdefault(gid, sha)
-    if conflicts:
-        raise ConflictError(
-            "ledger divergence: same game_id finished with different artifact "
-            f"sha256 in local vs remote: {conflicts}"
-        )
-
-    # Collapse duplicate lifecycle events (same type+game_id) keeping earliest.
-    seen_life: set[tuple[str, str]] = set()
+    finish_sha: dict[str, str | None] = {}
+    seen_life: dict[tuple[str, str], str] = {}
     final: list[dict] = []
     for e in merged:
         et = e.get("event_type")
-        if et in _LIFECYCLE:
-            gid = (e.get("payload") or {}).get("game_id")
-            if gid is not None:
-                k = (et, str(gid))
-                if k in seen_life:
-                    deduped_lifecycle += 1
-                    continue
-                seen_life.add(k)
-        final.append(e)
+        if et not in _LIFECYCLE:
+            final.append(e)
+            continue
+        gid = (e.get("payload") or {}).get("game_id")
+        if gid is None:
+            final.append(e)
+            continue
+        gid = str(gid)
+        if et == "GameFinished":
+            sha = (e.get("payload") or {}).get("artifact_sha256")
+            if gid in finish_sha:
+                prev = finish_sha[gid]
+                if prev is not None and sha is not None and prev != sha:
+                    conflicts.append({
+                        "event_type": et, "game_id": gid,
+                        "sha_a": prev, "sha_b": sha,
+                    })
+                deduped_lifecycle += 1
+                continue
+            finish_sha[gid] = sha
+            final.append(e)
+        else:
+            k = (et, gid)
+            ident = _lifecycle_identity(e)
+            if k in seen_life:
+                if seen_life[k] != ident:
+                    conflicts.append({
+                        "event_type": et, "game_id": gid,
+                        "identity_a": seen_life[k], "identity_b": ident,
+                    })
+                deduped_lifecycle += 1
+                continue
+            seen_life[k] = ident
+            final.append(e)
+    if conflicts:
+        raise ConflictError(
+            "ledger divergence: same (event_type, game_id) diverges between "
+            f"local and remote: {conflicts}"
+        )
 
     report = {
         "local_count": len(local_events),
@@ -259,12 +348,12 @@ def push_state(
     drift = False
 
     # Re-read the remote ledger right before upload to catch a concurrent writer.
+    # Drift is ANY remote ledger that differs from the one we pulled — including
+    # the case where we pulled an empty backend (base_remote_hash is None) but
+    # another worker has since pushed (current_remote_hash is not None). Treating
+    # that as drift forces a reconcile instead of overwriting the other worker.
     current_remote_hash = remote_events_hash(backend)
-    if (
-        current_remote_hash is not None
-        and base_remote_hash is not None
-        and current_remote_hash != base_remote_hash
-    ):
+    if current_remote_hash is not None and current_remote_hash != base_remote_hash:
         drift = True
         local_events = parse_events_text(
             (local_root / EVENTS_KEY).read_text(encoding="utf-8")

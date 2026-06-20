@@ -20,6 +20,15 @@ lab = [
 dev = [
     "pytest>=8",
 ]
+# Deployment-only extras for the Pass 37 scheduled tournament worker. The
+# Replit Object Storage SDK + the YAML config loader are the only third-party
+# deps the bounded production tick needs (cabt is only imported by the per-game
+# subprocess when real games run). Install in the Scheduled Deployment build
+# step; the Kaggle runtime tarball never imports these.
+deploy = [
+    "replit-object-storage",
+    "pyyaml",
+]
 
 [tool.setuptools]
 package-dir = { "" = "src" }

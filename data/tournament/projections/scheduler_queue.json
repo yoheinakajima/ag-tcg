@@ -1,16 +1,8 @@
 {
-  "generated_at": "2026-06-20T19:52:24Z",
+  "generated_at": "2026-06-20T20:02:41Z",
   "no_upload": true,
   "count": 50,
   "queue": [
-    {
-      "game_id": "ptcg_standing_tournament_v0|league_mega_charizard_x_burst>mega_charizard_x_burst_typed35@0|g0",
-      "candidate_a": "league_mega_charizard_x_burst",
-      "candidate_b": "mega_charizard_x_burst_typed35",
-      "a_seat": 0,
-      "priority": 1,
-      "reason": "smoke_or_placement_gap"
-    },
     {
       "game_id": "ptcg_standing_tournament_v0|league_mega_gardevoir_psychic_ramp>mega_gardevoir_psychic_ramp_typed35@0|g0",
       "candidate_a": "league_mega_gardevoir_psychic_ramp",
@@ -87,6 +79,14 @@
       "game_id": "ptcg_standing_tournament_v0|league_dragapult_spread>league_dragapult_v1_search_only@1|g0",
       "candidate_a": "league_dragapult_v1_search_only",
       "candidate_b": "league_dragapult_spread",
+      "a_seat": 0,
+      "priority": 2,
+      "reason": "placement_vs_anchor[active]"
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_mega_charizard_x_burst>mega_charizard_x_burst_typed35@1|g0",
+      "candidate_a": "mega_charizard_x_burst_typed35",
+      "candidate_b": "league_mega_charizard_x_burst",
       "a_seat": 0,
       "priority": 2,
       "reason": "placement_vs_anchor[active]"
@@ -180,14 +180,6 @@
       "reason": "top_bracket_round_robin"
     },
     {
-      "game_id": "ptcg_standing_tournament_v0|league_mega_charizard_x_burst>mega_charizard_x_burst_typed35@1|g0",
-      "candidate_a": "mega_charizard_x_burst_typed35",
-      "candidate_b": "league_mega_charizard_x_burst",
-      "a_seat": 0,
-      "priority": 1,
-      "reason": "smoke_or_placement_gap"
-    },
-    {
       "game_id": "ptcg_standing_tournament_v0|league_mega_gardevoir_psychic_ramp>mega_gardevoir_psychic_ramp_typed35@1|g0",
       "candidate_a": "mega_gardevoir_psychic_ramp_typed35",
       "candidate_b": "league_mega_gardevoir_psychic_ramp",
@@ -263,6 +255,14 @@
       "game_id": "ptcg_standing_tournament_v0|league_dragapult_spread>league_dragapult_v1_search_only@0|g1",
       "candidate_a": "league_dragapult_spread",
       "candidate_b": "league_dragapult_v1_search_only",
+      "a_seat": 0,
+      "priority": 2,
+      "reason": "placement_vs_anchor[active]"
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_mega_charizard_x_burst>mega_charizard_x_burst_typed35@0|g1",
+      "candidate_a": "league_mega_charizard_x_burst",
+      "candidate_b": "mega_charizard_x_burst_typed35",
       "a_seat": 0,
       "priority": 2,
       "reason": "placement_vs_anchor[active]"
@@ -356,14 +356,6 @@
       "reason": "top_bracket_round_robin"
     },
     {
-      "game_id": "ptcg_standing_tournament_v0|league_mega_charizard_x_burst>mega_charizard_x_burst_typed35@0|g1",
-      "candidate_a": "league_mega_charizard_x_burst",
-      "candidate_b": "mega_charizard_x_burst_typed35",
-      "a_seat": 0,
-      "priority": 1,
-      "reason": "smoke_or_placement_gap"
-    },
-    {
       "game_id": "ptcg_standing_tournament_v0|league_mega_gardevoir_psychic_ramp>mega_gardevoir_psychic_ramp_typed35@0|g1",
       "candidate_a": "league_mega_gardevoir_psychic_ramp",
       "candidate_b": "mega_gardevoir_psychic_ramp_typed35",
@@ -402,6 +394,14 @@
       "a_seat": 0,
       "priority": 2,
       "reason": "placement_vs_anchor[portfolio_anchor]"
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|diamond_toolbox_diancie>league_mega_charizard_x_burst@1|g1",
+      "candidate_a": "league_mega_charizard_x_burst",
+      "candidate_b": "diamond_toolbox_diancie",
+      "a_seat": 0,
+      "priority": 2,
+      "reason": "placement_vs_anchor[family_champion]"
     }
   ]
 }

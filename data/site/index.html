@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph — Pass 36 Standing Tournament Engine (internal diagnostics)</title>
+<title>ActiveGraph — Pass 37 Deployment-Ready Tournament Worker (internal diagnostics)</title>
 <style>
  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
  h1{font-size:1.5rem} table{border-collapse:collapse;width:100%;margin:1rem 0}
@@ -9,6 +9,18 @@
  th{background:#f4f4f6} .caveat{background:#fff7e6;border:1px solid #f0c36d;padding:.7rem;border-radius:6px;font-size:.9rem;margin:.5rem 0}
  code{background:#f4f4f6;padding:.1rem .3rem;border-radius:3px}
 </style></head><body>
+<h1>ActiveGraph — Pass 37: Deployment-Ready Standing Tournament Worker</h1>
+<p class="caveat"><b>Internal self-play diagnostics only — NOT a Kaggle leaderboard.</b> <b>NO upload, NO submit, NO auto-submit, no new candidates.</b> Deploy ONLY as a Replit <b>Scheduled Deployment</b> bounded tick (never an always-on server, never the root "Start application" workflow). In production, primary state MUST live in <b>persistent storage</b> — the deployed filesystem is not durable.</p>
+<h2>Scheduled Deployment with persistent storage</h2>
+<p>A thin storage / sync / lease wrapper (<code>src/ptcg_activegraph/tournament/{storage,sync,lease}.py</code> + worker <code>scripts/tournament_deployment_tick.py</code>) runs the <b>unchanged</b> Pass 36 engine as a bounded tick: <b>pull</b> persistent state &rarr; run one bounded tick &rarr; rebuild projections &rarr; <b>reconcile</b> (merge by <code>event_id</code>, abort on <code>GameFinished</code> sha conflict) &rarr; <b>push</b> a sha-verified manifest &rarr; release a best-effort TTL lease. Production <b>fails closed</b> when persistent storage is unavailable.</p>
+<ul>
+ <li>Storage <b>validated end-to-end</b> on Replit Object Storage (user-approved provisioning): production no-games + 1-game ticks pushed cleanly; an independent pull-back confirmed <b>0</b> upload/submit events, every event <code>no_upload=true</code>, no duplicate game ids, manifest shas match.</li>
+ <li>Root <code>main.py</code>/<code>deck.csv</code> byte-identical to <code>v1_kaggle_349_8</code> &middot; held probe still held &middot; Toxic + Durant <code>special_pilot_only</code> (never scheduled).</li>
+ <li>Run: <code>python scripts/tournament_deployment_tick.py --max-games 20 --max-seconds 900 --storage-backend replit_app_storage --production</code> &middot; schedule every 2h &middot; job timeout ~25 min (&lt; 30-min lease TTL).</li>
+ <li>28 tests pass &middot; auto-submit refused &middot; no upload/submit events &middot; no raw replay/card CSV/credentials committed.</li>
+</ul>
+<p>Report: <code>data/reports/pass37_deployment_ready_tournament_worker_report.md</code> &middot; Config: <code>scripts/print_replit_scheduled_deployment_config.py</code> &middot; Ops: <code>docs/PERSISTENT_TOURNAMENT_DAEMON.md</code>.</p>
+<hr>
 <h1>ActiveGraph — Pass 36: Standing Tournament Engine v0</h1>
 <p class="caveat"><b>Internal self-play diagnostics only — NOT a Kaggle leaderboard</b> and not predictive of leaderboard placement. The engine performs <b>NO upload, NO auto-submit</b>, and creates <b>no new candidates</b> in v0.</p>
 <h2>Standing tournament engine v0</h2>

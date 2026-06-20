@@ -266,8 +266,13 @@ class ObjectStorageBackend(StorageBackend):
                 "replit.object_storage SDK is not importable; install "
                 "'replit-object-storage' and configure a bucket."
             ) from exc
+        # The Python SDK reads the default bucket from `.replit`'s
+        # ``[objectStorage]`` block; deployments expose it as
+        # ``DEFAULT_OBJECT_STORAGE_BUCKET_ID`` instead. Pass it explicitly so the
+        # worker is portable across both without needing `.replit` edits.
+        bucket_id = os.environ.get("DEFAULT_OBJECT_STORAGE_BUCKET_ID") or None
         try:
-            self._client = Client()
+            self._client = Client(bucket_id=bucket_id) if bucket_id else Client()
         except Exception as exc:  # no default bucket configured, etc.
             raise StorageUnavailableError(
                 "Replit Object Storage client could not be created "
