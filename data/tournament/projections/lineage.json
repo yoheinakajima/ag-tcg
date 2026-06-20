@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-20T22:30:27Z",
+  "generated_at": "2026-06-20T23:03:02Z",
   "no_upload": true,
   "families": {
     "diamond": {
@@ -53,7 +53,7 @@
       ]
     },
     "mega_charizard": {
-      "best_with_games": "mega_charizard_x_burst_typed35",
+      "best_with_games": "league_mega_charizard_x_burst",
       "members": [
         {
           "candidate_id": "league_mega_charizard_x_burst",
@@ -70,7 +70,7 @@
       ]
     },
     "mega_gardevoir": {
-      "best_with_games": "league_mega_gardevoir_psychic_ramp",
+      "best_with_games": "mega_gardevoir_psychic_ramp_typed35",
       "members": [
         {
           "candidate_id": "league_mega_gardevoir_psychic_ramp",
@@ -87,7 +87,7 @@
       ]
     },
     "mega_venusaur": {
-      "best_with_games": "league_mega_venusaur_tank",
+      "best_with_games": "mega_venusaur_tank_typed35",
       "members": [
         {
           "candidate_id": "league_mega_venusaur_tank",
@@ -115,7 +115,7 @@
       ]
     },
     "water": {
-      "best_with_games": null,
+      "best_with_games": "league_water_anti_disruption_pivot_v1",
       "members": [
         {
           "candidate_id": "core_pilot_water_v2_runtime",

@@ -123,3 +123,24 @@ before the next tick. In production the primary state (`events.jsonl`,
 `--production --storage-backend replit_app_storage` worker **fails CLOSED** when
 persistent storage is unavailable, so it never silently writes throwaway state to
 the deployed disk.
+
+<!-- PASS38_ADDENDUM_START -->
+## Pass 38 — Deployment incident addendum & soak status (OPS only)
+
+> Internal diagnostics only. **NOT a Kaggle leaderboard.** **NO upload, NO submit, NO auto-submit, no new candidates, no root mutation.** The root "Start application" workflow stays not-started (frozen Kaggle entrypoint) — that is EXPECTED.
+
+### What went wrong at publish (Pass 37) and the durable fixes
+- **uv editable-install into the read-only Nix store** — the deploy build auto-runs `uv sync`, which editable-installed the root project and wrote `__editable__*.pth` into the read-only store → EACCES → build failed. **Fix:** `[tool.uv] package = false` (the worker puts `src/` on `sys.path` itself; no install needed). Do not add dependency-groups/default-groups.
+- **uv cannot install deploy deps** — install deploy-only deps in the BUILD command with `python -m pip install --user --break-system-packages` so they land in the writable `.pythonlibs` (PYTHONUSERBASE).
+- **bundled cabt env** — games run via `kaggle_environments.make("cabt")`; the cabt env ships INSIDE the `kaggle-environments==1.30.1` wheel, so that pin must be in the build command or every game errors (publish still succeeds → silent zero progress).
+- **publish-success is decoupled from game-success** — a failing game is recorded `timeout`/`error` and never fails the tick; the worker exits non-zero only on top-level/storage/refused/conflict/lease errors. When debugging a publish failure, separate "does the run exit 0" from "do games progress".
+
+### Pass 38 soak status (live)
+- root `main.py`/`deck.csv` byte-identical to the frozen baseline + deploy config verified: **yes**
+- controlled production tick: played **3** internal games, ledger **64 → 77** events, push self-verified: **yes**
+- health checker (prod + local) healthy: **yes** (soft warnings: ['placement_sample_size'])
+- scheduled production run observed yet: **no** (all 5 recorded ticks are manual/smoke; 5 classified manual — the deployment is published and ready but a real scheduled tick has not yet fired in the ledger/deployment logs)
+- guardrails intact: held probe retained, special-pilot-only decks never scheduled, `auto_submit` refused, every event `no_upload=true`.
+
+Detail: `data/reports/pass38_scheduled_deployment_ops_report.md`; runbook `docs/REPLIT_SCHEDULED_DEPLOYMENT_RUNBOOK.md`; per-part artifacts `data/experiments/pass38_*.{json,md}`.
+<!-- PASS38_ADDENDUM_END -->

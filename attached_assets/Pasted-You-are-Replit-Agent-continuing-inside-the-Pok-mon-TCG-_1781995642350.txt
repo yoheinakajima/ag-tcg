@@ -1,0 +1,293 @@
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+PASS 38 — Production Scheduled Deployment Soak + Operational Report
+
+Goal:
+The Replit Scheduled Deployment is now published successfully after the Pass 37 deployment-build fixes. This pass must verify that production scheduled ticks are actually running safely over persistent Object Storage, record the deployment incident/fix as an addendum, and produce an operations-grade health report.
+
+This is OPS / SOAK / MONITORING only.
+
+Do NOT generate candidates.
+Do NOT upload or submit to Kaggle.
+Do NOT auto-submit.
+Do NOT mutate root main.py/deck.csv.
+Do NOT mutate or delete candidate tarballs.
+Do NOT GitHub push.
+Do NOT use the root Start application workflow.
+The root Start application workflow is the frozen Kaggle agent entrypoint, not a server.
+
+Authoritative deployment state:
+- Scheduled Deployment is now published successfully.
+- Correct run command:
+  python scripts/tournament_deployment_tick.py --max-games 20 --max-seconds 900 --storage-backend replit_app_storage --production
+- Correct build command:
+  python -m pip install --user --break-system-packages replit-object-storage pyyaml kaggle-environments==1.30.1
+- Correct schedule:
+  0 */2 * * * UTC
+- Job timeout:
+  25–30 minutes
+- Production storage:
+  Replit Object Storage via replit_app_storage
+- tournament-only operation needs no Kaggle credentials.
+- Internal tournament rankings are NOT a Kaggle leaderboard and NOT a promotion signal.
+
+Important Pass 37 deployment incident to document:
+The first publish failed because Replit deploy runs uv sync, and uv tried to editable-install the root package into the read-only Nix store. The fix was:
+  [tool.uv]
+  package = false
+The worker self-bootstraps src/ on sys.path, so package install is unnecessary.
+The build command must install deploy dependencies with pip --user --break-system-packages.
+Also, kaggle-environments==1.30.1 must be included so production can run real cabt games through kaggle_environments.make("cabt").
+
+Part A — Root safety and deployment config verification
+- Verify root main.py and deck.csv are byte-identical to data/baselines/v1_kaggle_349_8/.
+- Run package verify-only.
+- Verify .replit deployment section points to the tournament worker, NOT main.py.
+- Verify deploymentTarget is scheduled.
+- Verify build command includes:
+  --user
+  --break-system-packages
+  replit-object-storage
+  pyyaml
+  kaggle-environments==1.30.1
+- Verify pyproject.toml has [tool.uv] package = false.
+- Verify Start application workflow remains not-started / irrelevant.
+- Write data/experiments/pass38_root_and_deploy_config.{json,md}.
+
+Part B — Deployment incident addendum
+Write a concise durable addendum explaining:
+- initial publish failed;
+- uv sync editable-install attempted to write to read-only Nix store;
+- [tool.uv] package=false fixed that;
+- deploy dependencies moved to pip --user build command;
+- kaggle-environments==1.30.1 added because cabt is registered inside kaggle_environments;
+- standalone cabt package is not required;
+- run command remains bounded production tick;
+- no upload/no submit/no auto-submit invariant preserved.
+Update:
+- docs/PERSISTENT_TOURNAMENT_DAEMON.md
+- docs/TOURNAMENT_ENGINE_PLAN.md if relevant
+- data/reports/activegraph_strategy_report.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/site/index.html
+Do not erase Pass 36/37 history; append current-state sections.
+Write data/experiments/pass38_deployment_incident_addendum.{json,md}.
+
+Part C — Pull production Object Storage state
+Use the production storage backend to pull the current tournament state into local data/tournament/ without corrupting remote state.
+Inspect:
+- events.jsonl
+- storage_manifest.json
+- projections/
+- games/ sidecars
+- runs/
+Record:
+- remote key count
+- event count
+- game sidecar count
+- last tick timestamp
+- last manifest timestamp
+- sha verification status
+- no_upload violations
+- upload events
+- duplicate game_id count
+- special-pilot scheduled count
+Write data/experiments/pass38_remote_state_snapshot.{json,md}.
+
+Part D — Scheduled-run detection
+Determine whether the state contains:
+- only manual Run Now / smoke ticks; or
+- at least one actual scheduled tick after publish.
+If deployment metadata does not expose this directly, infer from event timestamps and tick cadence, but label it honestly as inferred.
+Report:
+- tick count
+- tick ids
+- started_at / finished_at
+- games per tick
+- ok/invalid/timeout/error per tick
+- gaps between ticks
+- whether cadence is consistent with the 2-hour schedule
+Write data/experiments/pass38_scheduled_run_detection.{json,md}.
+
+Part E — Run one controlled production verification tick if safe
+If no tick is currently running and no unexpired lease exists, run one small controlled production tick:
+  python scripts/tournament_deployment_tick.py --max-games 3 --max-seconds 240 --storage-backend replit_app_storage --production
+If a lease is active, do not run; record lease-held and skip honestly.
+After the tick, pull remote state again and verify:
+- event count increased or lease-held skipped;
+- no duplicate game ids;
+- sidecars exist and sha256 matches;
+- projections rebuilt;
+- scheduler queue advanced;
+- all events no_upload=true;
+- no upload events.
+Write data/experiments/pass38_controlled_production_tick.{json,md}.
+
+Part F — Tournament health checker
+Create or update:
+  scripts/check_tournament_health.py
+It must support production/local modes and produce JSON + markdown.
+
+The health checker must report:
+- root main/deck byte identity
+- auto_submit value
+- total events
+- total ticks
+- total games
+- ok / invalid / timeout / error counts
+- duplicate event_id count
+- duplicate game_id count
+- missing game sidecars
+- sidecar sha mismatches
+- upload event count
+- no_upload violations
+- KaggleScoreUpdated presence in tournament ledger
+- special-pilot scheduled count
+- held probe status
+- scheduler queue size
+- projection freshness
+- current top internal candidate, games, adjusted win rate, Wilson CI
+- sample-size caveat
+
+It must exit nonzero on hard safety failures:
+- root changed
+- auto_submit true
+- upload event present
+- no_upload violation
+- duplicate game_id
+- missing sidecar
+- sha mismatch
+- special-pilot scheduled
+- held probe missing/dropped
+It should warn, not fail, for tiny sample sizes.
+
+Run it and write:
+data/experiments/pass38_tournament_health.{json,md}
+
+Part G — Projection rebuild audit
+Rebuild projections from the ledger only:
+  python scripts/build_tournament_projections.py
+Verify every projection group is present:
+- tournament_state.json
+- rankings.json/md
+- matchups.csv
+- candidate_pool.json/md
+- lineage.json/md
+- scheduler_queue.json/md
+- non_inertness.json/md
+Verify rebuild is idempotent.
+Verify candidate registry is reconstructed from TournamentParticipantRegistered events, not only candidate_pool.json.
+Write data/experiments/pass38_projection_rebuild_audit.{json,md}.
+
+Part H — Scheduler fairness / progress audit
+Using current projections and scheduler queue:
+- confirm special_pilot_only / invalid / retired / quarantined are not scheduled.
+- confirm held_probe is scheduled only according to policy, not auto-promoted.
+- confirm participants with zero games are prioritized.
+- confirm parent-child confirmations still appear where needed.
+- confirm game ids are deterministic and unique.
+- confirm future queue has no overlap with finished game ids.
+- confirm the scheduler is not starving new/probation/held candidates.
+Write data/experiments/pass38_scheduler_progress_audit.{json,md}.
+
+Part I — Candidate lifecycle readiness, status-only
+Do not retire or promote anything yet unless the existing code already produces a status view.
+Build a status-only report that answers:
+- Which candidates are active?
+- Which are family_champion?
+- Which are portfolio_anchor?
+- Which are held_probe?
+- Which are special_pilot_only?
+- Which have too few games to judge?
+- Which have invalid/timeout/error flags?
+- Which have enough games for future lifecycle decisions?
+- What data threshold should Pass 39 require before status changes?
+Recommended future thresholds should be conservative, e.g.:
+- no lifecycle retirement until at least 40 total games and at least 10 games against anchors;
+- no champion promotion until Wilson lower bound clears family baseline by a margin;
+- no candidate deletion ever, only status marks.
+Write data/experiments/pass38_candidate_lifecycle_readiness.{json,md}.
+
+Part J — Deployment ops docs
+Update docs/REPLIT_SCHEDULED_DEPLOYMENT_RUNBOOK.md or create it if missing.
+It must include:
+- exact build command
+- exact run command
+- cron schedule
+- timeout
+- object storage requirement
+- why [tool.uv] package=false exists
+- why kaggle-environments==1.30.1 is needed
+- how to inspect deployment logs
+- how to run check_tournament_health.py
+- how to pull/rebuild projections
+- how to pause/disable the schedule
+- how to recover from lease-held
+- how to recover from conflict_report.json
+- what never to do: root Start application workflow, auto_submit, Kaggle upload, local-only storage in production.
+Write data/experiments/pass38_operator_runbook_check.{json,md}.
+
+Part K — Tests
+Add tests/test_pass38_deployment_ops.py or equivalent.
+
+Required test coverage:
+1. root main/deck byte-identical to baseline.
+2. pyproject has [tool.uv] package=false.
+3. .replit deployment run command points to scripts/tournament_deployment_tick.py, not main.py.
+4. deployment build command includes --user, --break-system-packages, replit-object-storage, pyyaml, kaggle-environments==1.30.1.
+5. health checker fails on upload event.
+6. health checker fails on no_upload violation.
+7. health checker fails on duplicate game_id.
+8. health checker fails on missing sidecar/sha mismatch.
+9. health checker fails if special-pilot is scheduled.
+10. held probe remains held.
+11. projections rebuild idempotently from ledger.
+12. schedule docs mention Scheduled Deployment, not Start application workflow.
+13. docs mention object storage / deployment filesystem not durable.
+14. docs mention no Kaggle secrets required for tournament-only operation.
+15. tournament ledger refuses SubmissionUploaded/KaggleScoreUpdated.
+16. controlled production tick artifact contains no upload events.
+17. candidate lifecycle readiness is status-only and does not mutate tarballs.
+18. exact 10-section final report structure.
+
+Run targeted pass36/pass37/pass38 tests. If older historical tests fail from stale cross-pass expectations, document but do not weaken them unless this pass caused it.
+
+Part L — Final report
+Write data/reports/pass38_scheduled_deployment_ops_report.md with exactly these 10 sections:
+1. Root safety
+2. Deployment build/run configuration
+3. Deployment incident addendum
+4. Production Object Storage state
+5. Scheduled tick / controlled tick results
+6. Tournament health check
+7. Projection rebuild / scheduler audit
+8. Candidate lifecycle readiness
+9. Tests / docs / no-upload status
+10. Next recommendation
+
+The report must clearly state:
+- Scheduled Deployment is published successfully.
+- Whether at least one scheduled run has happened yet, or only manual/controlled ticks.
+- Whether production state is healthy.
+- Whether it is safe to leave the schedule on.
+- No Kaggle upload/submit.
+- No candidate generation.
+- Internal tournament rankings are not Kaggle scores.
+
+Part M — Architect review
+Run architect/code review over:
+- deployment config changes
+- pyproject/uv fix
+- storage/sync/lease behavior
+- health checker
+- docs/runbook
+- tests
+- final report
+Fix any HIGH/CRITICAL or real MEDIUM safety issues.
+Do not weaken tests just to pass.
+
+Expected final decision:
+If all hard checks pass, final answer should be:
+“Leave the Scheduled Deployment enabled. It is now operationally verified. Next pass should implement candidate lifecycle status changes only — no generation yet.”
+
+No Kaggle upload. No GitHub push. No new candidates. No root mutation.

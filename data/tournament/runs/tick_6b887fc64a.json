@@ -1,0 +1,39 @@
+{
+  "tick_id": "tick_6b887fc64a",
+  "run_id": "tick_6b887fc64a",
+  "tournament_id": "ptcg_standing_tournament_v0",
+  "stop_reason": "worklist_exhausted",
+  "planned": 3,
+  "games_played": 3,
+  "results": [
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_water_anti_disruption_pivot_v1>league_water_core_reference@0|g0",
+      "result": "win",
+      "event_id": "evt_68bdc9f43ec6",
+      "elapsed_s": 15.376
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_water_anti_disruption_pivot_v1>water_basic_density_v1@0|g0",
+      "result": "win",
+      "event_id": "evt_3d720f18b3a9",
+      "elapsed_s": 10.64
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|diamond_toolbox_diancie>league_dragapult_v1_search_only@1|g0",
+      "result": "win",
+      "event_id": "evt_94349efb948b",
+      "elapsed_s": 10.818
+    }
+  ],
+  "totals": {
+    "games": 12,
+    "ok": 12,
+    "invalid": 0,
+    "timeout": 0,
+    "error": 0,
+    "draw": 0
+  },
+  "tick_finished_event": "evt_66e96e5e12b0",
+  "next_queue_size": 3,
+  "no_upload": true
+}
