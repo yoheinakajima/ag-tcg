@@ -30,3 +30,63 @@ id = "Q0e6EPJJjROrZbfMXGfgj"
 uri = "file://data/reports/pass35_typed_strategy_portfolio_report.md"
 type = "text"
 title = "Pass 35 Typed Strategy Portfolio Report"
+
+[[outputs]]
+id = "-LJjggrRZdIbXl6RgHLev"
+uri = "file://data/reports/pass36_standing_tournament_engine_report.md"
+type = "text"
+title = "Pass 36 — Standing Tournament Engine Report (10 sections)"
+
+[[outputs]]
+id = "u3gB94P7tCbDUoibE86AJ"
+uri = "file://data/reports/activegraph_strategy_report.md"
+type = "text"
+title = "ActiveGraph Strategy Report"
+
+[[outputs]]
+id = "7FrXwpkSjlL03Jq7ly17T"
+uri = "file://data/tournament/projections/rankings.md"
+type = "text"
+title = "Tournament Rankings (internal, 5 games)"
+
+[[outputs]]
+id = "FhN_pR6FC0wIO3IGB6Enz"
+uri = "file://data/tournament/projections/candidate_pool.md"
+type = "text"
+title = "Candidate Pool & Lifecycle"
+
+[[outputs]]
+id = "j3bjRk09M3jL3oq0f56I-"
+uri = "file://data/tournament/projections/lineage.md"
+type = "text"
+title = "Candidate Lineage"
+
+[[outputs]]
+id = "8HtxBMwdcmwTc8MkVYaaq"
+uri = "file://data/tournament/projections/non_inertness.md"
+type = "text"
+title = "Non-Inertness (parent/child evidence)"
+
+[[outputs]]
+id = "Tl_xIJTWTFcYFnqlc9MFM"
+uri = "file://data/tournament/projections/scheduler_queue.md"
+type = "text"
+title = "Scheduler Queue"
+
+[[outputs]]
+id = "TGxHQ5ec6SSfp-kVGUypj"
+uri = "file://data/tournament/projections/matchups.csv"
+type = "table"
+title = "Matchups (raw results)"
+
+[[outputs]]
+id = "5RZMse7fksxafkzGiERdl"
+uri = "file://docs/TOURNAMENT_ENGINE_PLAN.md"
+type = "text"
+title = "Tournament Engine — Design Plan"
+
+[[outputs]]
+id = "qjmDp1-EerBClRHQbPKB2"
+uri = "file://docs/PERSISTENT_TOURNAMENT_DAEMON.md"
+type = "text"
+title = "Persistent Tournament Daemon — Ops Guide"
