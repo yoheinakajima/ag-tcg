@@ -49,9 +49,16 @@ racing to schedule duplicate games — so it's safe to schedule ticks generously
    timeout). The run command caps work at `--max-seconds 900` = 15 min,
    comfortably below the timeout.
 5. Set the **build command** (Replit's nix Python is externally-managed, so use
-   `--user --break-system-packages`):
+   `--user --break-system-packages`, which installs into the writable
+   `.pythonlibs` the runtime keeps on `sys.path`). `kaggle-environments` ships
+   the bundled `cabt` game env that the per-game subprocess drives, so it must be
+   installed for real games to run (its absence does not fail the tick — games
+   just degrade to errors). `pyproject.toml` sets `[tool.uv] package = false` so
+   the automatic `uv sync` no longer tries to editable-install the root package
+   into the read-only Nix store (that was the original build failure: EACCES on
+   `__editable__.ptcg_activegraph-0.1.0.pth`):
    ```bash
-   python -m pip install --user --break-system-packages replit-object-storage pyyaml
+   python -m pip install --user --break-system-packages replit-object-storage pyyaml kaggle-environments==1.30.1
    ```
 6. Set the **run command** (one bounded tick; fails closed without persistent
    storage):

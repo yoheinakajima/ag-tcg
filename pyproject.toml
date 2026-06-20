@@ -20,15 +20,32 @@ lab = [
 dev = [
     "pytest>=8",
 ]
-# Deployment-only extras for the Pass 37 scheduled tournament worker. The
-# Replit Object Storage SDK + the YAML config loader are the only third-party
-# deps the bounded production tick needs (cabt is only imported by the per-game
-# subprocess when real games run). Install in the Scheduled Deployment build
-# step; the Kaggle runtime tarball never imports these.
+# Deployment-only extras for the Pass 37 scheduled tournament worker, installed
+# by the Scheduled Deployment BUILD command (pip install --user, NOT uv — see
+# [tool.uv] below). The bounded production tick needs: the Replit Object Storage
+# SDK + PyYAML (config loader), and kaggle-environments (its BUNDLED "cabt" env
+# is the actual game engine the per-game subprocess drives via make("cabt"); the
+# standalone `cabt` module is NOT required and is not importable here). Pinned to
+# the workspace-validated version. The Kaggle runtime tarball never imports any
+# of these.
 deploy = [
     "replit-object-storage",
     "pyyaml",
+    "kaggle-environments==1.30.1",
 ]
+
+[tool.uv]
+# Do NOT build/editable-install this project during `uv sync`. The Replit
+# deployment build runs `uv sync` against a read-only Nix store, so uv's default
+# editable install of the root package fails with EACCES
+# (".../site-packages/__editable__.ptcg_activegraph-0.1.0.pth: Permission
+# denied (os error 13)"). The worker scripts add ``src`` to sys.path themselves
+# and do not need the package installed, so a virtual (non-package) project is
+# correct here. Deploy deps (replit-object-storage, pyyaml) are NOT declared for
+# uv to install — uv targets the immutable Nix store and would fail the same
+# way; they are installed by the deployment BUILD command via
+# `pip install --user` into the writable .pythonlibs (PYTHONUSERBASE) instead.
+package = false
 
 [tool.setuptools]
 package-dir = { "" = "src" }

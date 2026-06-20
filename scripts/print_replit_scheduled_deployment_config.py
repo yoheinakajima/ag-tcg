@@ -33,15 +33,19 @@ RUN_COMMAND = (
 
 # Build command. Replit's nix Python is an externally-managed environment, so a
 # plain `pip install` is blocked — `--user --break-system-packages` is the
-# verified-working incantation (confirmed in this workspace; works in the
-# deployment build too). The bounded tick only needs the Replit Object Storage
-# SDK (`replit-object-storage`) + PyYAML (the tournament config loader); the
-# worker puts src/ on sys.path itself, so an editable `-e .` install is NOT
-# required. cabt is imported only by the per-game subprocess when real games
-# run; --no-games / dry-run never import it.
+# verified-working incantation (it installs into the writable .pythonlibs /
+# PYTHONUSERBASE, which the runtime python keeps on sys.path; confirmed in this
+# workspace and required because uv targets the read-only Nix store). The worker
+# puts src/ on sys.path itself, so an editable `-e .` install is NOT required —
+# and pyproject sets [tool.uv] package=false so the automatic `uv sync` does not
+# try (and fail) to editable-install the root package into the read-only store.
+# Deps: the Replit Object Storage SDK (`replit-object-storage`) + PyYAML (config
+# loader) + kaggle-environments (its bundled "cabt" env IS the game engine the
+# per-game subprocess drives via make("cabt"); the standalone `cabt` module is
+# not needed). --no-games / dry-run never touch the game engine.
 BUILD_COMMAND = (
     "python -m pip install --user --break-system-packages "
-    "replit-object-storage pyyaml"
+    "replit-object-storage pyyaml kaggle-environments==1.30.1"
 )
 
 # The 10 exact Publishing setup steps (also mirrored in

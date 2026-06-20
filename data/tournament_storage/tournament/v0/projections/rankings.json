@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-20T19:52:24Z",
+  "generated_at": "2026-06-20T22:30:27Z",
   "caveat": "Internal self-play diagnostics only. NOT a Kaggle leaderboard and NOT predictive of leaderboard placement. NO upload.",
   "no_upload": true,
   "rankings": [
@@ -17,9 +17,9 @@
       "wilson_high": 1.0
     },
     {
-      "candidate_id": "league_mega_charizard_x_burst",
+      "candidate_id": "mega_charizard_x_burst_typed35",
       "family_id": "mega_charizard",
-      "status": "family_champion",
+      "status": "active",
       "games": 1,
       "wins": 1,
       "losses": 0,
@@ -46,6 +46,19 @@
       "candidate_id": "league_dragapult_v1_search_only",
       "family_id": "dragapult",
       "status": "portfolio_anchor",
+      "games": 2,
+      "wins": 1,
+      "losses": 1,
+      "draws": 0,
+      "invalid": 0,
+      "adj_win_rate": 0.5,
+      "wilson_low": 0.0945,
+      "wilson_high": 0.9055
+    },
+    {
+      "candidate_id": "league_mega_charizard_x_burst",
+      "family_id": "mega_charizard",
+      "status": "family_champion",
       "games": 2,
       "wins": 1,
       "losses": 1,
@@ -111,19 +124,6 @@
       "candidate_id": "league_water_core_reference",
       "family_id": "water",
       "status": "family_champion",
-      "games": 0,
-      "wins": 0,
-      "losses": 0,
-      "draws": 0,
-      "invalid": 0,
-      "adj_win_rate": 0.0,
-      "wilson_low": 0.0,
-      "wilson_high": 0.0
-    },
-    {
-      "candidate_id": "mega_charizard_x_burst_typed35",
-      "family_id": "mega_charizard",
-      "status": "active",
       "games": 0,
       "wins": 0,
       "losses": 0,

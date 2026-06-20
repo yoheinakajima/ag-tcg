@@ -1,7 +1,7 @@
 {
   "auto_submit": false,
-  "base_remote_hash": "56852c6f8225dac807ad246138742adbcaa5d6452b83cfc13741a71d21b1ec58",
-  "event_count": 64,
+  "base_remote_hash": "c0c89d214cdf53de06cbf529bb462a3ba4421be2b5d2e735d7eb5fc59a767044",
+  "event_count": 54,
   "files": [
     {
       "key": "candidate_pool.json",
@@ -15,8 +15,8 @@
     },
     {
       "key": "events.jsonl",
-      "sha256": "8e89686761385a1e34d8bd90d466d7ec98abf8ea57987b6ed1de2f2bbf89401f",
-      "size": 52664
+      "sha256": "ea7feb4c2c31a8b96e4f2370f9c789d2ed681a28f96dab9c3a214d4b4ef62e84",
+      "size": 45367
     },
     {
       "key": "games/ptcg_standing_tournament_v0|diamond_toolbox_diancie>league_dragapult_v1_search_only@0|g0.json.gz",
@@ -50,77 +50,67 @@
     },
     {
       "key": "games/ptcg_standing_tournament_v0|league_mega_charizard_x_burst>mega_charizard_x_burst_typed35@0|g0.json.gz",
-      "sha256": "1ebb374903f14e95c72574c41497d3dea03add409493e2035c2056c36f8c65b0",
-      "size": 288
-    },
-    {
-      "key": "games/ptcg_standing_tournament_v0|league_mega_gardevoir_psychic_ramp>mega_gardevoir_psychic_ramp_typed35@0|g0.json.gz",
-      "sha256": "cde49894394b2324f00e2bf8032017c87dcd61f3e23938fcd36d58f51c95b2d4",
-      "size": 291
-    },
-    {
-      "key": "games/ptcg_standing_tournament_v0|league_mega_venusaur_tank>mega_venusaur_tank_typed35@0|g0.json.gz",
-      "sha256": "4f7144f1aaad97dde93a9dd2a2b306d9dda56fd40ae46e1d7e5674af243d568c",
-      "size": 284
+      "sha256": "08e392bf3a832aa64d039e58be86b3d73efa08311d1ed8f41b7837c50278a637",
+      "size": 289
     },
     {
       "key": "projections/candidate_pool.json",
-      "sha256": "703388c0982706cddae124e573ac7f82c40994573059d17c0ca177048fd90a23",
+      "sha256": "0fed77af0492643a549d72d15f67f53f0490cf352a5a90fdfa0f02b9a269d5ea",
       "size": 13067
     },
     {
       "key": "projections/candidate_pool.md",
-      "sha256": "2697deb9198cf8a5803099d6e7771b463a2cd96845777beae111cb3d9a80d7de",
+      "sha256": "736a9555e4cf353accae6d7676bc25f96defbc7d057732506fa8bb693dd3d1f0",
       "size": 1852
     },
     {
       "key": "projections/lineage.json",
-      "sha256": "21c74b1126f51439ff05dacd55718b2fd546fa783245241b0ad79ca1da90fe2f",
-      "size": 3817
+      "sha256": "077881c250c8c2d34d2e3b04feabc709dce1b5c6520b3d9287475fd5abb8e362",
+      "size": 3816
     },
     {
       "key": "projections/lineage.md",
-      "sha256": "74c138326982bd66c52788aad8933f06ffae52810ed9342966a6e749a0368edf",
-      "size": 1988
+      "sha256": "b8f1612c630c13ffb6ddcbf9c86e5978d420ec8df861eae5d8f82798ee35e921",
+      "size": 1987
     },
     {
       "key": "projections/matchups.csv",
-      "sha256": "ea560e9a506e4fae2442fd06151430f14b56175768a1771953fb367f7b06b1e2",
-      "size": 719
+      "sha256": "cec246f6dfcd7ba984e593362e15de4167039087fe9fde803d276e5b6bdb1724",
+      "size": 565
     },
     {
       "key": "projections/non_inertness.json",
-      "sha256": "7772c7c19f105befbc9992f32729684a56307c809861c8201b6d685d8782f645",
-      "size": 2099
+      "sha256": "7c18f4e3c4bc0ad1a79d9ae3ffebbb9b791aba4edc4fb77206c220a41caa06fa",
+      "size": 2098
     },
     {
       "key": "projections/non_inertness.md",
-      "sha256": "326d33c1a02d78a5940ace5283f241b6bcada58caba48aa0d02803b947762ef9",
-      "size": 999
+      "sha256": "679cde2bd0a995ff1af8c39377388bfa16e2cdf84ad9882f9f0ddea288836ad5",
+      "size": 998
     },
     {
       "key": "projections/rankings.json",
-      "sha256": "9fab68f940392dbc1340283a15aa43eec3383c643f771dff14745b118da401e9",
-      "size": 4176
+      "sha256": "663ba128217bad274b4a84d5d85671b9c140596c8613ee9995ec0d8ddab39bae",
+      "size": 4173
     },
     {
       "key": "projections/rankings.md",
-      "sha256": "82f22c3c71d170c3f675c584d87cf476c4ba12dd342c05a5ca7c4620e9f56088",
+      "sha256": "430f9ab0792a5613d6fa55e2a91e46c1d58c93ba2dc24543b56d33059803646f",
       "size": 1752
     },
     {
       "key": "projections/scheduler_queue.json",
-      "sha256": "ed8f2abdf3c712fe9c338bd1793dc0dadf211976277b7ff9cdc8fa9858d42add",
-      "size": 15921
+      "sha256": "917526ee81ec1206a6cc8ef3de73d0e5e95b9f83a3ccfb88795534f621337cdd",
+      "size": 15832
     },
     {
       "key": "projections/scheduler_queue.md",
-      "sha256": "c7cb87824b1c23562ceeafa205b782edb00df55874a7906a697de95cc7f00a65",
-      "size": 9866
+      "sha256": "9bd3c28612a783510430a66dbaaaa6e0c9a1cea32006efea2f9405ee5fc279f2",
+      "size": 9777
     },
     {
       "key": "projections/tournament_state.json",
-      "sha256": "05527847557cb1cb172baf70510ec778498b83f82554409b117fc96651dbacf4",
+      "sha256": "88e71853cb15ef513deb3fe0a2735fd7f5d4a7987aaad0df288dc4ceef524999",
       "size": 485
     },
     {
@@ -129,19 +119,14 @@
       "size": 831
     },
     {
-      "key": "runs/tick_95b2cafdc7.json",
-      "sha256": "a8f7f60c7d3d9459c7d15731edb1fb70c8f82432a82c8e781ef9e04b9ea687ba",
-      "size": 845
-    },
-    {
       "key": "runs/tick_bbc3db8b12.json",
       "sha256": "ae1cf4c68c85e5cca079e9425f7fe0e8bd8c028258a62db34bfd2de058e49dc2",
       "size": 1034
     },
     {
-      "key": "runs/tick_c28471cf90.json",
-      "sha256": "b8848dd6c8236b8110e5309e4682080c3c42f2127e43e6f85d3a02bd117e7ae0",
-      "size": 627
+      "key": "runs/tick_ce20ff7415.json",
+      "sha256": "cd98359e356d71265238399951631f75be52ea4d92b1402ff77dd3c6f5fc36f0",
+      "size": 628
     },
     {
       "key": "runs/tick_e76fd1a4a1.json",
@@ -149,10 +134,10 @@
       "size": 622
     }
   ],
-  "generated_at": 1781987751.1211789,
-  "last_event_id": "evt_91a72ccd997a",
+  "generated_at": 1781994627.1804092,
+  "last_event_id": "evt_7859519c73c8",
   "no_upload": true,
   "schema": "pass37_storage_manifest_v1",
   "status": "clean",
-  "tick_id": "tick_d52f78b7b9"
+  "tick_id": "tick_87e0ea2e96"
 }

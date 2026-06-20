@@ -33,7 +33,7 @@ outputType = "console"
 [deployment]
 deploymentTarget = "scheduled"
 run = ["python", "scripts/tournament_deployment_tick.py", "--max-games", "20", "--max-seconds", "900", "--storage-backend", "replit_app_storage", "--production"]
-build = ["python", "-m", "pip", "install", "--break-system-packages", "replit-object-storage", "pyyaml"]
+build = ["python", "-m", "pip", "install", "--user", "--break-system-packages", "replit-object-storage", "pyyaml", "kaggle-environments==1.30.1"]
 
 [postMerge]
 path = "scripts/post-merge.sh"

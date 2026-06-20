@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-20T19:52:24Z",
+  "generated_at": "2026-06-20T22:30:27Z",
   "no_upload": true,
   "note": "Evidence sufficiency only. Pass 35 calibration: typed children are NOT a proven win-rate gain. No improvement is claimed here.",
   "candidates": [
@@ -28,11 +28,11 @@
     {
       "child": "mega_charizard_x_burst_typed35",
       "parent": "league_mega_charizard_x_burst",
-      "child_games": 0,
-      "parent_games": 1,
-      "child_adj_wr": 0.0,
-      "parent_adj_wr": 1.0,
-      "delta": -1.0,
+      "child_games": 1,
+      "parent_games": 2,
+      "child_adj_wr": 1.0,
+      "parent_adj_wr": 0.5,
+      "delta": 0.5,
       "evidence": "insufficient_evidence",
       "improvement_claimed": false
     },

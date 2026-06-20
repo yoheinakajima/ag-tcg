@@ -15,15 +15,15 @@ _Internal self-play diagnostics only. NOT a Kaggle leaderboard and NOT predictiv
 ## lightning  (best-with-games: mono_lightning_miraidon_easy)
 - gen0 `mono_lightning_miraidon_easy` (parent: —, status: portfolio_anchor)
 
-## mega_charizard  (best-with-games: league_mega_charizard_x_burst)
+## mega_charizard  (best-with-games: mega_charizard_x_burst_typed35)
 - gen0 `league_mega_charizard_x_burst` (parent: —, status: family_champion)
 - gen1 `mega_charizard_x_burst_typed35` (parent: league_mega_charizard_x_burst, status: active)
 
-## mega_gardevoir  (best-with-games: mega_gardevoir_psychic_ramp_typed35)
+## mega_gardevoir  (best-with-games: league_mega_gardevoir_psychic_ramp)
 - gen0 `league_mega_gardevoir_psychic_ramp` (parent: —, status: family_champion)
 - gen1 `mega_gardevoir_psychic_ramp_typed35` (parent: league_mega_gardevoir_psychic_ramp, status: active)
 
-## mega_venusaur  (best-with-games: mega_venusaur_tank_typed35)
+## mega_venusaur  (best-with-games: league_mega_venusaur_tank)
 - gen0 `league_mega_venusaur_tank` (parent: —, status: family_champion)
 - gen1 `mega_venusaur_tank_typed35` (parent: league_mega_venusaur_tank, status: active)
 

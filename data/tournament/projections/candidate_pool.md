@@ -8,11 +8,11 @@ _Internal self-play diagnostics only. NOT a Kaggle leaderboard and NOT predictiv
 |---|---|---|---|---|---|---|
 | league_dragapult_spread | dragapult | 0 | — | active | valid | 1 |
 | mega_charizard_x_burst_typed35 | mega_charizard | 1 | league_mega_charizard_x_burst | active | valid | 1 |
-| mega_gardevoir_psychic_ramp_typed35 | mega_gardevoir | 1 | league_mega_gardevoir_psychic_ramp | active | valid | 1 |
-| mega_venusaur_tank_typed35 | mega_venusaur | 1 | league_mega_venusaur_tank | active | valid | 1 |
+| mega_gardevoir_psychic_ramp_typed35 | mega_gardevoir | 1 | league_mega_gardevoir_psychic_ramp | active | valid | 0 |
+| mega_venusaur_tank_typed35 | mega_venusaur | 1 | league_mega_venusaur_tank | active | valid | 0 |
 | league_mega_charizard_x_burst | mega_charizard | 0 | — | family_champion | valid | 2 |
-| league_mega_gardevoir_psychic_ramp | mega_gardevoir | 0 | — | family_champion | valid | 2 |
-| league_mega_venusaur_tank | mega_venusaur | 0 | — | family_champion | valid | 2 |
+| league_mega_gardevoir_psychic_ramp | mega_gardevoir | 0 | — | family_champion | valid | 1 |
+| league_mega_venusaur_tank | mega_venusaur | 0 | — | family_champion | valid | 1 |
 | league_water_core_reference | water | 0 | — | family_champion | valid | 0 |
 | water_basic_density_v1 | water | 1 | league_water_core_reference | held_probe | valid | 0 |
 | diamond_toolbox_diancie | diamond | 0 | — | portfolio_anchor | valid | 5 |
