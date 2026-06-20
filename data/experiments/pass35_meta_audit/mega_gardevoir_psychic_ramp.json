@@ -1,0 +1,66 @@
+{
+  "1079": {
+    "card_type": "trainer",
+    "name": "Rare Candy"
+  },
+  "1086": {
+    "card_type": "trainer",
+    "name": "Buddy-Buddy Poffin"
+  },
+  "1097": {
+    "card_type": "trainer",
+    "name": "Night Stretcher"
+  },
+  "1121": {
+    "card_type": "trainer",
+    "name": "Ultra Ball"
+  },
+  "1199": {
+    "card_type": "trainer",
+    "name": "Lacey"
+  },
+  "1213": {
+    "card_type": "trainer",
+    "name": "Judge"
+  },
+  "1224": {
+    "card_type": "trainer",
+    "name": "Cheren"
+  },
+  "1231": {
+    "card_type": "trainer",
+    "name": "Dawn"
+  },
+  "5": {
+    "card_type": "energy",
+    "energy_type": "Psychic",
+    "is_basic_energy": true,
+    "name": "Basic {P} Energy"
+  },
+  "745": {
+    "card_type": "pokemon",
+    "energy_type": "Psychic",
+    "hp": 70,
+    "is_basic_pokemon": true,
+    "name": "Ralts",
+    "retreat_cost": 1,
+    "stage": "basic"
+  },
+  "746": {
+    "card_type": "pokemon",
+    "energy_type": "Psychic",
+    "hp": 100,
+    "name": "Kirlia",
+    "retreat_cost": 1,
+    "stage": "stage1"
+  },
+  "747": {
+    "card_type": "pokemon",
+    "energy_type": "Psychic",
+    "ex": true,
+    "hp": 360,
+    "name": "Mega Gardevoir ex",
+    "retreat_cost": 2,
+    "stage": "stage2"
+  }
+}

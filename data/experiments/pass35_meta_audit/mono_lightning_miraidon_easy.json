@@ -1,0 +1,76 @@
+{
+  "1079": {
+    "card_type": "trainer",
+    "name": "Rare Candy"
+  },
+  "1086": {
+    "card_type": "trainer",
+    "name": "Buddy-Buddy Poffin"
+  },
+  "1121": {
+    "card_type": "trainer",
+    "name": "Ultra Ball"
+  },
+  "1224": {
+    "card_type": "trainer",
+    "name": "Cheren"
+  },
+  "1231": {
+    "card_type": "trainer",
+    "name": "Dawn"
+  },
+  "1254": {
+    "card_type": "trainer",
+    "name": "Levincia"
+  },
+  "4": {
+    "card_type": "energy",
+    "energy_type": "Lightning",
+    "is_basic_energy": true,
+    "name": "Basic {L} Energy"
+  },
+  "514": {
+    "card_type": "pokemon",
+    "energy_type": "Lightning",
+    "hp": 120,
+    "is_basic_pokemon": true,
+    "name": "Thundurus",
+    "retreat_cost": 1,
+    "stage": "basic"
+  },
+  "809": {
+    "card_type": "pokemon",
+    "energy_type": "Lightning",
+    "hp": 60,
+    "is_basic_pokemon": true,
+    "name": "Pawmi",
+    "retreat_cost": 1,
+    "stage": "basic"
+  },
+  "810": {
+    "card_type": "pokemon",
+    "energy_type": "Lightning",
+    "hp": 90,
+    "name": "Pawmo",
+    "retreat_cost": 1,
+    "stage": "stage1"
+  },
+  "811": {
+    "card_type": "pokemon",
+    "energy_type": "Lightning",
+    "hp": 140,
+    "name": "Pawmot",
+    "retreat_cost": 1,
+    "stage": "stage2"
+  },
+  "957": {
+    "card_type": "pokemon",
+    "energy_type": "Lightning",
+    "ex": true,
+    "hp": 220,
+    "is_basic_pokemon": true,
+    "name": "Miraidon ex",
+    "retreat_cost": 1,
+    "stage": "basic"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "profile_id": "dragapult_spread_control",
+  "profile_assertions": {"executable": true},
+  "cases": [
+    {
+      "name": "setup_active_opens_evolution_line_starter",
+      "tag": "setup_active",
+      "kind": "setup_active",
+      "board": {},
+      "options": [{"card_id": 119}, {"card_id": 131}],
+      "expect": {"chosen_card_id": 119}
+    },
+    {
+      "name": "search_prioritizes_dragapult_line",
+      "tag": "search",
+      "kind": "search_to_hand",
+      "board": {"active": {"card_id": 119}, "bench": []},
+      "options": [{"card_id": 120}, {"card_id": 121}, {"card_id": 5}],
+      "expect": {"chosen_card_id": 121}
+    },
+    {
+      "name": "spread_placement_is_unsupported_no_claim",
+      "tag": "no_spread_claim",
+      "kind": "spread",
+      "board": {},
+      "options": [],
+      "expect": {"unsupported": true}
+    },
+    {
+      "name": "attack_is_unsupported_numeric_attackid_only",
+      "tag": "unsupported_attack",
+      "kind": "attack",
+      "board": {},
+      "options": [],
+      "expect": {"unsupported": true}
+    }
+  ]
+}

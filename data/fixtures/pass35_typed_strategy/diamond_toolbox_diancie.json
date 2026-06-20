@@ -1,0 +1,30 @@
+{
+  "profile_id": "diamond_toolbox_diancie",
+  "profile_assertions": {"executable": true},
+  "cases": [
+    {
+      "name": "attach_energy_targets_diancie_attacker",
+      "tag": "attach_to_attacker",
+      "kind": "attach_energy",
+      "board": {"active": {"card_id": 766}, "bench": [{"card_id": 525}]},
+      "options": [{"card_id": 766}, {"card_id": 525}],
+      "expect": {"chosen_target_id": 766}
+    },
+    {
+      "name": "setup_active_opens_diancie",
+      "tag": "setup_active",
+      "kind": "setup_active",
+      "board": {},
+      "options": [{"card_id": 766}, {"card_id": 525}, {"card_id": 751}, {"card_id": 767}],
+      "expect": {"chosen_card_id": 766}
+    },
+    {
+      "name": "search_fetches_meloetta_not_in_play",
+      "tag": "search",
+      "kind": "search_to_hand",
+      "board": {"active": {"card_id": 766}, "bench": []},
+      "options": [{"card_id": 525}, {"card_id": 1121}],
+      "expect": {"chosen_card_id": 525}
+    }
+  ]
+}

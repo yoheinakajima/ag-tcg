@@ -1,0 +1,38 @@
+{
+  "profile_id": "raging_bolt_ogerpon_basic_aggro",
+  "profile_assertions": {"executable": true, "refuted": true},
+  "cases": [
+    {
+      "name": "attach_to_active_attacker_by_role_not_fake_color_match",
+      "tag": "attach_to_attacker_no_fake_fix",
+      "kind": "attach_energy",
+      "board": {"active": {"card_id": 63}, "bench": [{"card_id": 96}]},
+      "options": [{"card_id": 63}, {"card_id": 96}],
+      "expect": {"chosen_target_id": 63}
+    },
+    {
+      "name": "attack_damage_unsupported_no_fake_fix",
+      "tag": "no_fake_fix",
+      "kind": "attack",
+      "board": {},
+      "options": [],
+      "expect": {"unsupported": true}
+    },
+    {
+      "name": "lethal_unsupported_no_fake_fix",
+      "tag": "no_fake_fix",
+      "kind": "lethal",
+      "board": {},
+      "options": [],
+      "expect": {"unsupported": true}
+    },
+    {
+      "name": "spread_unsupported_no_fake_fix",
+      "tag": "no_fake_fix",
+      "kind": "spread",
+      "board": {},
+      "options": [],
+      "expect": {"unsupported": true}
+    }
+  ]
+}

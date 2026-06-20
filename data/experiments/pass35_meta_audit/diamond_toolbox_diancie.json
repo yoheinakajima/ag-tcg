@@ -1,0 +1,106 @@
+{
+  "1086": {
+    "card_type": "trainer",
+    "name": "Buddy-Buddy Poffin"
+  },
+  "1121": {
+    "card_type": "trainer",
+    "name": "Ultra Ball"
+  },
+  "1224": {
+    "card_type": "trainer",
+    "name": "Cheren"
+  },
+  "1231": {
+    "card_type": "trainer",
+    "name": "Dawn"
+  },
+  "183": {
+    "card_type": "pokemon",
+    "energy_type": "Psychic",
+    "hp": 30,
+    "is_basic_pokemon": true,
+    "name": "Smoochum",
+    "stage": "basic"
+  },
+  "186": {
+    "card_type": "pokemon",
+    "energy_type": "Psychic",
+    "hp": 70,
+    "is_basic_pokemon": true,
+    "name": "Gimmighoul",
+    "retreat_cost": 2,
+    "stage": "basic"
+  },
+  "331": {
+    "card_type": "pokemon",
+    "energy_type": "Psychic",
+    "ex": true,
+    "hp": 210,
+    "is_basic_pokemon": true,
+    "name": "XerneasEX",
+    "retreat_cost": 1,
+    "stage": "basic"
+  },
+  "434": {
+    "card_type": "pokemon",
+    "energy_type": "Psychic",
+    "hp": 60,
+    "is_basic_pokemon": true,
+    "name": "Team Rocket's Mimikyu",
+    "stage": "basic"
+  },
+  "5": {
+    "card_type": "energy",
+    "energy_type": "Psychic",
+    "is_basic_energy": true,
+    "name": "Basic {P} Energy"
+  },
+  "525": {
+    "card_type": "pokemon",
+    "energy_type": "Psychic",
+    "ex": true,
+    "hp": 200,
+    "is_basic_pokemon": true,
+    "name": "Meloetta ex",
+    "retreat_cost": 1,
+    "stage": "basic"
+  },
+  "751": {
+    "card_type": "pokemon",
+    "energy_type": "Psychic",
+    "hp": 120,
+    "is_basic_pokemon": true,
+    "name": "Xerneas",
+    "retreat_cost": 1,
+    "stage": "basic"
+  },
+  "765": {
+    "card_type": "pokemon",
+    "energy_type": "Psychic",
+    "hp": 90,
+    "is_basic_pokemon": true,
+    "name": "Meloetta",
+    "retreat_cost": 1,
+    "stage": "basic"
+  },
+  "766": {
+    "card_type": "pokemon",
+    "energy_type": "Psychic",
+    "ex": true,
+    "hp": 270,
+    "is_basic_pokemon": true,
+    "name": "Mega Diancie ex",
+    "retreat_cost": 1,
+    "stage": "basic"
+  },
+  "767": {
+    "card_type": "pokemon",
+    "energy_type": "Psychic",
+    "hp": 70,
+    "is_basic_pokemon": true,
+    "name": "Mimikyu",
+    "retreat_cost": 1,
+    "stage": "basic"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "profile_id": "water_core_reference",
+  "profile_assertions": {"executable": true, "implemented_contexts": [7, 8]},
+  "cases": [
+    {
+      "name": "setup_active_open_with_kyogre",
+      "tag": "setup_active",
+      "kind": "setup_active",
+      "board": {},
+      "options": [{"card_id": 721}, {"card_id": 722}],
+      "expect": {"chosen_card_id": 721}
+    },
+    {
+      "name": "search_fetch_setup_basic_not_in_play",
+      "tag": "search",
+      "kind": "search_to_hand",
+      "board": {"active": {"card_id": 721}, "bench": []},
+      "options": [{"card_id": 722}, {"card_id": 1121}],
+      "expect": {"chosen_card_id": 722}
+    },
+    {
+      "name": "discard_dumps_excess_energy_keeps_backup_basic",
+      "tag": "keep_backup_basic",
+      "kind": "discard",
+      "board": {"discard_count": 1},
+      "options": [{"card_id": 721}, {"card_id": 3}, {"card_id": 3}],
+      "expect": {"chosen_card_ids": [3], "chosen_card_ids_excludes": [721]}
+    }
+  ]
+}

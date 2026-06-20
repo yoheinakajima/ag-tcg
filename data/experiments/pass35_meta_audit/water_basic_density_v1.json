@@ -1,0 +1,72 @@
+{
+  "1092": {
+    "card_type": "trainer",
+    "name": "Secret Box"
+  },
+  "1121": {
+    "card_type": "trainer",
+    "name": "Ultra Ball"
+  },
+  "1145": {
+    "card_type": "trainer",
+    "name": "Mega Signal"
+  },
+  "1163": {
+    "card_type": "trainer",
+    "name": "Powerglass"
+  },
+  "1219": {
+    "card_type": "trainer",
+    "name": "Team Rocket's Petrel"
+  },
+  "1227": {
+    "card_type": "trainer",
+    "name": "Lillie's Determination"
+  },
+  "1262": {
+    "card_type": "trainer",
+    "name": "Surfing Beach"
+  },
+  "3": {
+    "card_type": "energy",
+    "energy_type": "Water",
+    "is_basic_energy": true,
+    "name": "Basic {W} Energy"
+  },
+  "720": {
+    "card_type": "pokemon",
+    "energy_type": "Water",
+    "hp": 110,
+    "is_basic_pokemon": true,
+    "name": "Mantine",
+    "retreat_cost": 1,
+    "stage": "basic"
+  },
+  "721": {
+    "card_type": "pokemon",
+    "energy_type": "Water",
+    "hp": 150,
+    "is_basic_pokemon": true,
+    "name": "Kyogre",
+    "retreat_cost": 3,
+    "stage": "basic"
+  },
+  "722": {
+    "card_type": "pokemon",
+    "energy_type": "Water",
+    "hp": 90,
+    "is_basic_pokemon": true,
+    "name": "Snover",
+    "retreat_cost": 3,
+    "stage": "basic"
+  },
+  "723": {
+    "card_type": "pokemon",
+    "energy_type": "Water",
+    "ex": true,
+    "hp": 350,
+    "name": "Mega Abomasnow ex",
+    "retreat_cost": 4,
+    "stage": "stage1"
+  }
+}

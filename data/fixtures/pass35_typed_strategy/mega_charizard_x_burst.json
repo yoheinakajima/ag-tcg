@@ -1,0 +1,30 @@
+{
+  "profile_id": "mega_charizard_x_burst",
+  "profile_assertions": {"executable": true},
+  "cases": [
+    {
+      "name": "setup_active_opens_charmander_line",
+      "tag": "setup_active",
+      "kind": "setup_active",
+      "board": {},
+      "options": [{"card_id": 788}, {"card_id": 795}],
+      "expect": {"chosen_card_id": 788}
+    },
+    {
+      "name": "attach_energy_targets_active_attacker",
+      "tag": "attach_to_attacker",
+      "kind": "attach_energy",
+      "board": {"active": {"card_id": 790}, "bench": [{"card_id": 788}]},
+      "options": [{"card_id": 790}, {"card_id": 788}],
+      "expect": {"chosen_target_id": 790}
+    },
+    {
+      "name": "search_prioritizes_charizard_line",
+      "tag": "search",
+      "kind": "search_to_hand",
+      "board": {"active": {"card_id": 788}, "bench": []},
+      "options": [{"card_id": 790}, {"card_id": 789}, {"card_id": 1121}],
+      "expect": {"chosen_card_id": 790}
+    }
+  ]
+}

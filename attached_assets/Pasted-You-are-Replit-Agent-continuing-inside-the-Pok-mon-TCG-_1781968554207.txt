@@ -1,0 +1,449 @@
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+Task: Pass 35 — Typed Board-Aware Strategy Layer + Portfolio Tournament.
+
+This is a LOCAL research / implementation pass. No Kaggle upload, no Kaggle submit, no GitHub push. Root main.py and root deck.csv are immutable and must remain byte-identical to data/baselines/v1_kaggle_349_8/main.py and deck.csv. Do not invent card IDs. Do not commit or print secrets. Do not commit official card CSV/PDF or raw replay JSON. Existing candidate tarballs must not be mutated.
+
+This pass is intentionally larger and more flexible than prior passes. Think through the right implementation path, but preserve all guardrails and report honestly.
+
+Context / motivation:
+- Pass 34 added new deck ideas and validated four new decks:
+  - league_mono_lightning_miraidon_easy
+  - league_diamond_toolbox
+  - league_toxic_trap
+  - league_durant_deckout_carousel
+- Miraidon and Diamond appear compatible with the current generic pilot.
+- Toxic and Durant are legal/buildable but INVALID or incompatible under the generic pilot, so they belong in a special-pilot lane.
+- Pass 34 held water_basic_density_v1 as a deeper-confirmation candidate, but did NOT upload.
+- Claude’s external analysis of Kaggle example agents found a root issue: strong agents decode the typed cabt state and reason over the board; our shipped/compiled agents mostly score opaque options and only use narrow context hooks.
+- Kaggle examples use:
+  - to_observation_class(obs_dict)
+  - all_card_data()
+  - typed SelectContext / OptionType
+  - get_card(area/index)
+  - prize_count()
+  - HP / energy / tools / weakness / resistance / ex/mega status
+  - turn-state memory
+  - per-context scoring
+  - damage / lethal / target / Boss / deckout / energy sequencing logic.
+- Do NOT copy competitor code wholesale or clone their decklists. Use the patterns as architecture inspiration only.
+
+High-level goal:
+Create a typed, board-aware strategy layer for our portfolio. It should be able to read the board, evaluate legal options with card/state context, and produce deck-specific decisions that are much closer to the Kaggle sample agents. Then build and test a small number of profile-aware candidates, rerun a tournament, and decide whether anything is worth holding for human review. No upload.
+
+Important design fork:
+The repo currently enforces top-level main.py + deck.csv and stdlib-only runtime for most candidates. Kaggle examples package cg/api code and import cg.api. You must investigate the best path and be explicit:
+
+Option A — cg.api lane:
+- If a local cg package or equivalent is available and can be packaged safely, create a separate typed-cg candidate lane.
+- Do NOT weaken existing validators silently.
+- If cg is included in tarballs, create a separate typed-cg validator/tarball spec and report that this lane differs from the stdlib-only lane.
+- This lane is local-only unless all gates explicitly pass.
+
+Option B — stdlib typed-lite lane:
+- If cg.api is unavailable or would violate the existing tarball contract, implement a stdlib typed-lite decoder over obs_dict directly.
+- Parse current.players, active, bench, hand, discard, prize, select.context, select.option, hp, energyCards, tools, inPlayArea/inPlayIndex, attackId, number, deckCount.
+- Generate a minimal metadata table at compile time from data/cards/EN_Card_Data.csv for OUR deck cards and known portfolio cards only. Do NOT ship or commit the raw card CSV.
+- Prefer this lane if it preserves the current validated tarball shape.
+
+Do not get stuck on the fork. Make a reasoned choice, document it, and proceed with the safest runnable lane.
+
+Core capabilities to implement or prototype:
+1. Board reader
+   - current player / opponent
+   - active / bench / hand / discard / prize count
+   - deck count
+   - stadium
+   - supporterPlayed / energyAttached / retreated if available
+   - active HP, max HP, attached energy count, tools
+   - opponent active/bench HP and prize value if metadata supports it
+   - select context and option type
+
+2. Card metadata
+   - Load card DB in lab only.
+   - Compile minimal metadata into candidate main.py only if needed.
+   - Include fields where available:
+     - name
+     - cardType
+     - type / energy type
+     - stage
+     - ex / megaEx / rule-box marker if available
+     - retreatCost
+     - weakness / resistance if available
+     - basic/stage1/stage2
+   - Never commit the official source CSV.
+
+3. Generic tactical primitives
+   Implement as pure, deterministic functions:
+   - get_card_from_option(obs, option)
+   - prize_count(pokemon/card metadata)
+   - pokemon_target_score()
+   - estimate_attack_damage() where possible
+   - can_take_prize_now()
+   - best_target_for_KO()
+   - safe_draws / deckout guard
+   - choose_setup_active()
+   - choose_setup_bench()
+   - choose_search_target()
+   - choose_discard()
+   - choose_attach_target()
+   - choose_evolution()
+   - choose_retreat_or_promote()
+   - choose_attack_or_continue_setup()
+   - action ordering: do setup/search/evolve/attach first, attack/end as terminal unless the current choice is forced.
+
+4. Deck-specific StrategyProfiles
+   Create experiments/strategy_profiles.yaml plus docs/STRATEGY_PROFILE_SCHEMA.md.
+
+   Profiles should be executable only where the strategy can be implemented safely from observable state.
+
+   Required profiles:
+   - Water / Kyogre + Mega Abomasnow
+     - keep a backup Basic
+     - Kyogre pressure plan
+     - Mega Abomasnow tank plan
+     - search for backup/evolution only when board needs it
+     - avoid over-thinning
+   - Water Basic Density
+     - same Water plan but validate higher-Basic consistency angle
+   - Dragapult
+     - Dreepy/Drakloak/Dragapult line
+     - energy split
+     - attack tempo
+     - mark spread targeting as unsupported unless target identity is observable
+   - Miraidon mono-Lightning
+     - simplest aggressive profile
+     - prioritize Miraidon active/bench
+     - attach Lightning to active/next attacker
+     - use Levincia if observable/safe
+     - Boss only if target is observable
+   - Diamond Toolbox
+     - prioritize Diancie + Smoochum/Xerneas/Mimikyu setup
+     - attach/load Psychic onto Diancie
+     - preserve accelerators
+   - Charizard X
+     - combo/burst profile
+     - setup Charmander/Mega line
+     - Fire energy banking if observable
+     - avoid all-in attack if no reasonable KO math exists
+   - Venusaur
+     - include loop-exit guard if safe
+     - tank setup
+     - mark ability/effect sequencing as partial unless observable
+   - Gardevoir
+     - go-wide Psychic ramp
+     - mark ability/ramp sequencing as partial unless effect targets are observable
+   - Raging Bolt
+     - record Pass 28 finding: color-match and attack-pressure hypotheses were refuted
+     - do not make fake color-match fixes
+     - only implement if a real observable decision changes
+   - Toxic Trap
+     - special-pilot-only for now
+     - document poison-lock plan, but executable=false unless legal/smoke-valid
+   - Durant
+     - special-pilot-only for now
+     - document deckout plan, but executable=false unless legal/smoke-valid
+
+A. Root safety
+1. Verify root main.py and deck.csv byte-identical to v1 baseline.
+2. Run package_submission.py --verify-only.
+3. Write data/experiments/pass35_root_safety.{json,md}.
+4. If root files changed, STOP.
+
+B. Current-state intake
+1. Read:
+   - deck_ideas.yaml
+   - docs/PTCG_STRATEGY_CANVAS.md
+   - experiments/strategy_families.yaml
+   - data/experiments/pass33_* and pass34_* artifacts
+   - candidate directories under data/submissions/candidates_pass17 through candidates_pass34.
+2. Summarize current portfolio status:
+   - generic compatible
+   - special-pilot only
+   - blocked
+   - live-smoke pass/fail
+   - tournament result if known
+3. Output data/experiments/pass35_portfolio_state.{json,md}.
+
+C. Typed observation audit
+1. Build a script to inspect raw replay obs and live cabt obs and enumerate which fields are actually available in candidate runtime:
+   - current.players[].active/bench/hand/discard/prize
+   - HP/maxHp
+   - energyCards/tools
+   - option area/index/inPlayArea/inPlayIndex/attackId/number/type
+   - opponent board visibility
+   - search target visibility
+   - attack target visibility
+   - supporter/card identity visibility
+2. Compare this against what the Kaggle examples rely on.
+3. Decide whether to proceed with cg.api lane or stdlib typed-lite lane.
+4. Output:
+   - data/experiments/pass35_typed_obs_audit.{json,md}
+   - docs/TYPED_AGENT_ARCHITECTURE.md
+
+D. Implement typed board-aware layer
+Create modules under src/ptcg_activegraph/pilot_typed/ or an appropriate existing package.
+
+Must include:
+- board.py
+- metadata.py
+- tactics.py
+- profiles.py
+- decisions.py
+- compiler.py or adapter.py
+- __init__.py
+
+Implementation rules:
+- Pure deterministic functions.
+- Never raise outward in compiled runtime.
+- Always fall back to the known-safe base policy when data is missing.
+- Never select illegal option counts.
+- Ties deterministic.
+- No network.
+- No LLM.
+- No raw official CSV in runtime.
+- Candidate runtime must either be stdlib-only or explicitly typed-cg lane with a separate validator.
+
+E. StrategyProfile registry
+Create:
+- experiments/strategy_profiles.yaml
+- data/experiments/pass35_strategy_profiles.{json,md}
+
+Each profile must state:
+- executable: true/false
+- lane: generic-compatible / typed-lite / typed-cg / special-pilot-only
+- implemented contexts
+- unsupported mechanics
+- card IDs used
+- deck plan
+- known risks
+- parent candidate if any
+
+F. Fixtures
+Create fixtures under data/fixtures/pass35_typed_strategy/.
+
+For every executable profile, include at least:
+- setup active fixture
+- setup bench fixture
+- search target fixture
+- discard fixture or energy attach fixture
+
+Specific required tests:
+- Water: preserve/bench backup Basic.
+- Dragapult: search/evolve line priority, no unsupported spread claim.
+- Miraidon: attach Lightning to attacker / next attacker.
+- Diamond: prioritize Diancie + accelerator setup.
+- Venusaur: loop exit guard if included.
+- Raging Bolt: explicitly test that we do NOT add a fake color-match fix contradicted by Pass 28.
+- Toxic/Durant: planned-only fixture records, executable=false.
+
+Run a typed strategy fixture gate:
+- data/reports/pass35_typed_strategy_gate.{json,md}
+
+G. Build candidates
+Build only candidates that:
+- have executable profiles;
+- pass fixture gate;
+- can be compiled safely;
+- have clean tarball shape under their lane.
+
+Likely candidate set:
+- typed_water_v1 or profile_water_v1
+- profile_water_basic_density_v1 if already queued from Pass 33 and safe
+- profile_dragapult_v1
+- profile_miraidon_v1
+- profile_diamond_v1
+- profile_venusaur_v1 if loop guard/profile remains safe
+- optionally profile_charizard_v1 or profile_gardevoir_v1 if they validate and smoke
+- Do NOT build Toxic/Durant as league candidates unless they pass validators + live smoke.
+
+Record all built candidates:
+- data/submissions/candidates_pass35/
+- data/experiments/pass35_candidate_build.{json,md}
+
+H. Candidate validation
+Run, as applicable:
+- validate_candidate_tarball.py
+- validate_candidate_entrypoint.py
+- static import scan
+- fixture gate
+- live self-play smoke
+- parent-vs-child smoke when possible
+
+If a typed-cg lane is used, create a dedicated validator that understands that tarball spec. Do not weaken existing stdlib/top-level validators.
+
+Output:
+- data/experiments/pass35_candidate_validation.{json,md}
+
+I. Decision replay / non-inertness
+For every child vs parent:
+- replay deterministic fixture decisions.
+- replay any relevant real-game decision windows if available.
+- count deltas.
+- classify:
+  - intended_non_inert
+  - inert
+  - misfire
+  - unsafe
+  - invalid
+Only intended_non_inert or clearly no-regression candidates advance to tournament ranking.
+
+Output:
+- data/experiments/pass35_decision_replay.{json,md}
+
+J. Internal tournament
+Run a full internal tournament with:
+- current Water control/reference
+- current Dragapult reference
+- Pass 34 Miraidon and Diamond
+- new typed/profile candidates
+- relevant generic parents
+- stable Charizard/Venusaur/Gardevoir diagnostics if smoke-valid
+- exclude Toxic/Durant unless legal/smoke-valid.
+
+Infrastructure requirements:
+- Use subprocess-isolated game worker.
+- Checkpoint after every matchup.
+- Real subprocess timeout per game.
+- Resumable.
+- If it exceeds Replit tool wall, use managed console workflow with sentinel, not bare nohup.
+- Mark timeout/skips honestly.
+- Do not allow native cabt/OpenSpiel hangs to block the pass.
+
+Run:
+- Stage 1: 3 games/seat per matchup if feasible.
+- Stage 2: top 4–6, 10 games/seat if feasible.
+If reduced, report honestly.
+
+Output:
+- data/experiments/pass35_internal_tournament.{json,md}
+- data/experiments/pass35_league_matrix.csv
+- data/experiments/pass35_rankings.{json,md}
+
+K. Parent/child confirmations
+For each profile-aware candidate:
+- direct H2H vs parent, seat-swapped.
+- at least 10 games/seat if feasible.
+- classify:
+  - improves_parent
+  - no_regression
+  - worse_than_parent
+  - inconclusive
+  - invalid/timeout
+
+Do not claim superiority if aggregate and H2H disagree.
+
+Output:
+- data/experiments/pass35_parent_child.{json,md}
+
+L. Meta sanity
+Run small replay-derived surrogate sanity check only to detect collapses.
+This is directional only and not Kaggle proof.
+
+Output:
+- data/experiments/pass35_meta_sanity.{json,md}
+
+M. Strategy decision
+Conservative decision:
+- No Kaggle upload.
+- No auto-submit.
+- At most one HELD dry-run queue entry if a candidate:
+  - passes all validators/smoke;
+  - is non-inert or meaningfully no-regression;
+  - beats or ties parent in H2H without collapse;
+  - performs well internally;
+  - does not collapse in meta sanity;
+  - has a clear mechanism grounded in typed decisions;
+  - is not special-pilot-only.
+
+If no candidate qualifies, queue remains empty.
+
+Output:
+- data/experiments/pass35_strategy_decision.{json,md}
+- data/submission_queue.json
+
+N. ActiveGraph events
+Emit no_upload=true events for:
+- StrategyProfileCreated
+- StrategyFixtureAdded
+- CandidateBuilt
+- CandidateValidated
+- LocalEvaluationFinished
+- StrategyIterationEvaluated
+- StrategyDecisionRecorded
+- StrategyPromotionDecision
+- ReportSiteGenerated
+
+No SubmissionUploaded event.
+
+O. Reports / docs / site
+Update:
+- docs/PTCG_STRATEGY_CANVAS.md
+- docs/TYPED_AGENT_ARCHITECTURE.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- data/reports/pass35_typed_strategy_portfolio_report.md
+- data/reports/pass35_final_report.md
+
+Final report must include exactly:
+1. Root safety
+2. Live score / control state
+3. Typed observation audit
+4. StrategyProfile schema + profiles
+5. Candidate build/validation
+6. Fixture gate
+7. Internal tournament
+8. Parent/child + meta sanity
+9. Strategy decision / queue
+10. Next recommendation
+
+Every report must state:
+- internal tournament is not Kaggle;
+- no upload;
+- no GitHub push;
+- no invented IDs;
+- special-pilot-only decks are not failures, they are unsupported by the current runtime;
+- local/surrogate evidence does not predict Kaggle score.
+
+P. Tests
+Add tests/test_pass35_typed_strategy.py.
+
+Cover:
+- root main.py/deck.csv byte-identical
+- typed observation audit artifact exists
+- strategy_profiles.yaml exists and includes all major families
+- special-pilot-only profiles executable=false
+- no invented IDs in profiles/decklists
+- fixture index references real fixtures
+- at least one fixture per executable profile
+- typed strategy gate runs
+- candidate tarballs have valid shape for their lane
+- validators passed for built candidates
+- candidate runtime does not import src.ptcg_activegraph
+- if cg.api lane is used, validator explicitly permits/records cg and tarball contains required files
+- decision replay records non-inert/inert honestly
+- tournament excludes invalid Toxic/Durant unless smoke-valid
+- parent/child artifacts exist
+- no_upload flags true
+- queue max one, held/manual only
+- no SubmissionUploaded events in pass35
+- final report has exact 10 sections
+- report includes internal-not-Kaggle caveat
+
+Run targeted tests and relevant prior suites. If older pass snapshot tests fail because mutable site/canvas/report changed, report as pre-existing/stale only if verified.
+
+Q. Architect review
+Run mandatory architect/code review.
+Fix HIGH/CRITICAL.
+Fix MEDIUM if it is about honesty, gating, data provenance, validator correctness, or root/upload safety.
+Document any deferred non-blocking suggestions.
+
+R. Final answer
+Return the exact 10-section report summary, plus:
+- which implementation lane was chosen: stdlib typed-lite or typed-cg;
+- best typed/profile candidate, if any;
+- whether typed strategy improved over generic parent;
+- which decks remain special-pilot-only;
+- whether queue is empty or one held dry-run;
+- explicit no-upload/no-push statement;
+- next recommendation.

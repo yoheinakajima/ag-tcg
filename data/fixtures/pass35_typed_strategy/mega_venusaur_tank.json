@@ -1,0 +1,30 @@
+{
+  "profile_id": "mega_venusaur_tank",
+  "profile_assertions": {"executable": true},
+  "cases": [
+    {
+      "name": "setup_active_opens_bulbasaur",
+      "tag": "setup_active",
+      "kind": "setup_active",
+      "board": {},
+      "options": [{"card_id": 650}],
+      "expect": {"chosen_card_id": 650}
+    },
+    {
+      "name": "draw_guard_avoids_self_deckout",
+      "tag": "loop_guard",
+      "kind": "draw_count",
+      "board": {"deck_count": 3},
+      "options": [{"number": 1}, {"number": 2}, {"number": 5}],
+      "expect": {"chosen_number": 1}
+    },
+    {
+      "name": "ability_loop_context_deferred_to_base_loop_guard",
+      "tag": "loop_guard",
+      "kind": "ability_loop",
+      "board": {},
+      "options": [],
+      "expect": {"defer_to_base": true}
+    }
+  ]
+}

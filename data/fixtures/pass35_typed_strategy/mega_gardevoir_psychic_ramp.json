@@ -1,0 +1,22 @@
+{
+  "profile_id": "mega_gardevoir_psychic_ramp",
+  "profile_assertions": {"executable": true},
+  "cases": [
+    {
+      "name": "setup_active_opens_ralts",
+      "tag": "setup_active",
+      "kind": "setup_active",
+      "board": {},
+      "options": [{"card_id": 745}],
+      "expect": {"chosen_card_id": 745}
+    },
+    {
+      "name": "attach_energy_targets_active_attacker",
+      "tag": "attach_to_attacker",
+      "kind": "attach_energy",
+      "board": {"active": {"card_id": 747}, "bench": [{"card_id": 745}]},
+      "options": [{"card_id": 747}, {"card_id": 745}],
+      "expect": {"chosen_target_id": 747}
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "1079": {
+    "card_type": "trainer",
+    "name": "Rare Candy"
+  },
+  "1086": {
+    "card_type": "trainer",
+    "name": "Buddy-Buddy Poffin"
+  },
+  "1097": {
+    "card_type": "trainer",
+    "name": "Night Stretcher"
+  },
+  "1121": {
+    "card_type": "trainer",
+    "name": "Ultra Ball"
+  },
+  "1198": {
+    "card_type": "trainer",
+    "name": "Crispin"
+  },
+  "1224": {
+    "card_type": "trainer",
+    "name": "Cheren"
+  },
+  "1231": {
+    "card_type": "trainer",
+    "name": "Dawn"
+  },
+  "1232": {
+    "card_type": "trainer",
+    "name": "Firebreather"
+  },
+  "2": {
+    "card_type": "energy",
+    "energy_type": "Fire",
+    "is_basic_energy": true,
+    "name": "Basic {R} Energy"
+  },
+  "788": {
+    "card_type": "pokemon",
+    "energy_type": "Fire",
+    "hp": 80,
+    "is_basic_pokemon": true,
+    "name": "Charmander",
+    "retreat_cost": 2,
+    "stage": "basic"
+  },
+  "789": {
+    "card_type": "pokemon",
+    "energy_type": "Fire",
+    "hp": 110,
+    "name": "Charmeleon",
+    "retreat_cost": 2,
+    "stage": "stage1"
+  },
+  "790": {
+    "card_type": "pokemon",
+    "energy_type": "Fire",
+    "ex": true,
+    "hp": 360,
+    "name": "Mega Charizard X ex",
+    "retreat_cost": 2,
+    "stage": "stage2"
+  },
+  "795": {
+    "card_type": "pokemon",
+    "energy_type": "Fire",
+    "ex": true,
+    "hp": 190,
+    "is_basic_pokemon": true,
+    "name": "Oricorio ex",
+    "retreat_cost": 1,
+    "stage": "basic"
+  }
+}

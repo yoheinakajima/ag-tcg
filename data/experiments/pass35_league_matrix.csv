@@ -1,0 +1,10 @@
+deck \ opponent (row win_rate),diamond_toolbox_diancie_typed35,dragapult_spread_control_typed35,mega_charizard_x_burst_typed35,mega_gardevoir_psychic_ramp_typed35,mega_venusaur_tank_typed35,mono_lightning_miraidon_easy_typed35,raging_bolt_ogerpon_basic_aggro_typed35,water_basic_density_v1_typed35,water_core_reference_typed35
+diamond_toolbox_diancie_typed35,—,0.5,0.75,0.5,0.25,0.25,0.5,0.75,0.5
+dragapult_spread_control_typed35,0.5,—,0.5,0.5,0.5,0.5,0.25,0.25,0.5
+mega_charizard_x_burst_typed35,0.25,0.5,—,0.75,0.0,0.5,1.0,0.75,0.75
+mega_gardevoir_psychic_ramp_typed35,0.5,0.5,0.25,—,0.5,0.25,0.25,0.5,0.5
+mega_venusaur_tank_typed35,0.75,0.5,1.0,0.5,—,0.5,0.5,0.25,0.5
+mono_lightning_miraidon_easy_typed35,0.75,0.5,0.5,0.75,0.5,—,0.5,0.75,0.75
+raging_bolt_ogerpon_basic_aggro_typed35,0.5,0.75,0.0,0.75,0.5,0.5,—,0.5,0.75
+water_basic_density_v1_typed35,0.25,0.75,0.25,0.5,0.75,0.25,0.5,—,0.5
+water_core_reference_typed35,0.5,0.5,0.25,0.5,0.5,0.25,0.25,0.5,—

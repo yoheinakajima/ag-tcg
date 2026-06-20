@@ -1,0 +1,411 @@
+# ActiveGraph Pass 35 — StrategyProfile registry (typed board-aware strategy layer).
+#
+# LOCAL ONLY. No Kaggle upload/submit, no GitHub push. Every card id below is
+# confirmed present in data/cards/EN_Card_Data.csv (that CSV is gitignored and
+# NEVER committed). NO invented ids. The builder
+# (scripts/build_pass35_strategy_profiles.py) validates each profile against
+# src/ptcg_activegraph/pilot_typed/profiles.py and re-checks id existence, then
+# renders data/experiments/pass35_strategy_profiles.{json,md}.
+#
+# A StrategyProfile is the deck-specific INPUT the typed-lite tactics consume. It
+# does NOT change the 60-card deck.csv; it tells the typed pilot which cards play
+# which role so it can refine the observable contexts (0,1,2,7,8,38) and bail to
+# the proven base policy on any mismatch/error.
+#
+# HONESTY CONTRACT (applies to every profile):
+#   The typed lane observes board STATE only. It does NOT model attack damage,
+#   lethal, KO targeting, spread placement, Boss/gust target choice, or the
+#   opponent's hand. These are listed in `unsupported_mechanics` for every deck.
+#   No profile claims a deck mechanic the runtime cannot honestly compute.
+#
+# Basic Energy card ids: 1={G}Grass 2={R}Fire 3={W}Water 4={L}Lightning
+#   5={P}Psychic 6={F}Fighting 7={D}Darkness 8={M}Metal.
+
+schema: activegraph.strategy_profiles/v1
+pass: "35"
+lane: stdlib_typed_lite
+no_upload: true
+upload_performed: false
+
+# The honest unsupported-mechanic set every executable profile carries. These are
+# the mechanics the typed board observation cannot compute; the pilot never acts
+# on them and always falls back to the base policy where they would be needed.
+default_unsupported_mechanics:
+  - attack_damage
+  - lethal
+  - ko_targeting
+  - spread
+  - boss
+  - gust
+  - opponent_hand
+
+profiles:
+
+  # ---- Generic-compatible (executable=true) ------------------------------
+
+  - id: water_core_reference
+    family: water_kyogre_abomasnow
+    candidate_id: league_water_core_reference
+    executable: true
+    lane: stdlib_typed_lite
+    role: reference_benchmark
+    parent: null
+    # Faithful to the proven v2 reference: only refine search (7) and discard (8).
+    implemented_contexts: [7, 8]
+    unsupported_mechanics:
+      [attack_damage, lethal, ko_targeting, spread, boss, gust, opponent_hand]
+    energy_types: [Water]
+    roles:
+      primary_attacker: [721, 723]      # Kyogre, Mega Abomasnow ex
+      setup_basic: [722, 721]           # Snover, Kyogre
+      draw_engine: [1219, 1227]         # Team Rocket's Petrel, Lillie's Determination
+      search: [1121, 1145, 1092]        # Ultra Ball, Mega Signal, Secret Box
+      key_item: [1163]                  # Powerglass (tool)
+      tech: [1262]                      # Surfing Beach (stadium)
+    priority: [721, 723, 722, 1121, 1145]
+    deckout_guard: {min_deck: 2, max_draw: null}
+    discard_keep: [721, 722, 723, 1163]
+    discard_prefer: [3]                 # excess Basic {W} Energy
+    card_ids: [3, 721, 722, 723, 1092, 1121, 1145, 1163, 1219, 1227, 1262]
+    deck_plan: >
+      Stable Water benchmark (Kyogre / Snover / Mega Abomasnow ex). The control
+      every other family is measured against. Keep a backup Basic in play; do not
+      over-search away the second attacker. Typed layer stays minimal here on
+      purpose so the reference behaviour is unchanged.
+    risks:
+      - may be locally overfit to the internal league
+      - byte-identical deck to the historical Kaggle anchor; do not mutate
+
+  - id: water_basic_density_v1
+    family: water_basic_density
+    candidate_id: water_basic_density_v1
+    executable: true
+    lane: stdlib_typed_lite
+    role: held_dry_run_probe
+    parent: water_core_reference
+    implemented_contexts: [0, 1, 2, 7, 8, 38]
+    unsupported_mechanics:
+      [attack_damage, lethal, ko_targeting, spread, boss, gust, opponent_hand]
+    energy_types: [Water]
+    roles:
+      primary_attacker: [721, 723]      # Kyogre, Mega Abomasnow ex
+      setup_basic: [720, 721, 722]      # Mantine, Kyogre, Snover
+      draw_engine: [1219, 1227]         # Team Rocket's Petrel, Lillie's Determination
+      search: [1121, 1145, 1092]        # Ultra Ball, Mega Signal, Secret Box
+      key_item: [1163]                  # Powerglass (tool)
+      tech: [1262]                      # Surfing Beach (stadium)
+      bench_sitter: [720]               # Mantine
+    priority: [721, 723, 722, 720, 1121, 1145]
+    deckout_guard: {min_deck: 2, max_draw: null}
+    discard_keep: [721, 722, 723, 1163]
+    discard_prefer: [3]
+    card_ids: [3, 720, 721, 722, 723, 1092, 1121, 1145, 1163, 1219, 1227, 1262]
+    deck_plan: >
+      Higher Basic-Pokémon density variant of the Water reference (adds Mantine).
+      Goal: lower the no-Basic-opening risk and always keep a backup Basic. Pass
+      33/34 internal held dry-run probe (rank 1 internally; never uploaded).
+    risks:
+      - internal-league strength is not Kaggle evidence
+      - keep a backup Basic; do not search away the second attacker
+
+  - id: dragapult_spread_control
+    family: dragapult_spread
+    candidate_id: league_dragapult_spread
+    executable: true
+    lane: stdlib_typed_lite
+    role: non_water_reference
+    parent: null
+    implemented_contexts: [0, 1, 2, 7, 8, 38]
+    unsupported_mechanics:
+      [attack_damage, lethal, ko_targeting, spread, boss, gust, opponent_hand]
+    energy_types: [Psychic, Fire]
+    roles:
+      primary_attacker: [121]           # Dragapult ex
+      setup_basic: [119, 131]           # Dreepy, Duskull
+      key_item: [1079]                  # Rare Candy (evolution accel)
+      draw_engine: [1231, 1224]         # Dawn, Cheren
+      search: [1121, 1086]              # Ultra Ball, Buddy-Buddy Poffin
+      tech: [120, 133, 1097]            # Drakloak, Dusknoir, Night Stretcher
+    priority: [121, 119, 120, 131, 133, 1079, 1121, 1086]
+    deckout_guard: {min_deck: 2, max_draw: null}
+    discard_keep: [121, 119, 1079]
+    discard_prefer: [5, 2]
+    card_ids: [2, 5, 119, 120, 121, 131, 133, 1079, 1086, 1097, 1121, 1182, 1224, 1231]
+    deck_plan: >
+      Dragapult ex Stage-2 evolution control. Prioritise the Dreepy -> Drakloak ->
+      Dragapult ex line (Rare Candy enables the jump). IMPORTANT: Dragapult ex's
+      damage-spread placement is NOT modeled (spread is unsupported) — the typed
+      layer only sequences setup/search/draw, never claims a spread target.
+    risks:
+      - spread placement unsupported; no spread claim is ever made
+      - Stage-2 line is slow to assemble; protect Rare Candy
+
+  - id: mono_lightning_miraidon_easy
+    family: mono_lightning_miraidon
+    candidate_id: mono_lightning_miraidon_easy
+    executable: true
+    lane: stdlib_typed_lite
+    role: candidate_for_confirmation
+    parent: null
+    implemented_contexts: [0, 1, 2, 7, 8, 38]
+    unsupported_mechanics:
+      [attack_damage, lethal, ko_targeting, spread, boss, gust, opponent_hand]
+    energy_types: [Lightning]
+    roles:
+      primary_attacker: [957, 811]      # Miraidon ex, Pawmot
+      setup_basic: [957, 809, 514]      # Miraidon ex, Pawmi, Thundurus
+      key_item: [1079]                  # Rare Candy
+      draw_engine: [1224, 1231]         # Cheren, Dawn
+      search: [1121, 1086]              # Ultra Ball, Buddy-Buddy Poffin
+      tech: [810, 811, 1254]            # Pawmo, Pawmot, Levincia (stadium)
+      bench_sitter: [514]               # Thundurus
+    priority: [957, 809, 810, 811, 1079, 1121, 1086]
+    deckout_guard: {min_deck: 2, max_draw: null}
+    discard_keep: [957, 811, 1079]
+    discard_prefer: [4]
+    card_ids: [4, 514, 809, 810, 811, 957, 1079, 1086, 1121, 1182, 1224, 1231, 1254]
+    deck_plan: >
+      Low-decision-density mono-Lightning Basic ex. Open Miraidon ex active, fill
+      the bench with Lightning Basics, attach Lightning to the attacker every turn.
+      Pawmi -> Pawmo -> Pawmot is a secondary line. Attach energy to the intended
+      attacker (context 0/1), never to a bench-sitter.
+    risks:
+      - promising but noisy internally (Pass 34 ~0.5 adj); not tournament-strong
+      - single-prize trades if Miraidon ex is removed without a backup
+
+  - id: diamond_toolbox_diancie
+    family: diamond_toolbox
+    candidate_id: diamond_toolbox_diancie
+    executable: true
+    lane: stdlib_typed_lite
+    role: candidate_for_confirmation
+    parent: null
+    implemented_contexts: [0, 1, 2, 7, 8, 38]
+    unsupported_mechanics:
+      [attack_damage, lethal, ko_targeting, spread, boss, gust, opponent_hand]
+    energy_types: [Psychic]
+    roles:
+      primary_attacker: [766, 525]      # Mega Diancie ex, Meloetta ex
+      setup_basic: [766, 525, 751, 767] # Mega Diancie ex, Meloetta ex, Xerneas, Mimikyu
+      draw_engine: [1224, 1231]         # Cheren, Dawn
+      search: [1121, 1086]              # Ultra Ball, Buddy-Buddy Poffin
+      tech: [183, 186, 331, 434, 751, 765, 767]  # toolbox basics
+    priority: [766, 525, 1121, 1086]
+    deckout_guard: {min_deck: 2, max_draw: null}
+    discard_keep: [766, 525]
+    discard_prefer: [5]
+    card_ids: [5, 183, 186, 331, 434, 525, 751, 765, 766, 767, 1086, 1121, 1182, 1224, 1231]
+    deck_plan: >
+      Mono-Psychic Basic toolbox around Mega Diancie ex with Meloetta ex and an
+      attacker/utility toolbox (Xerneas, Mimikyu, Gimmighoul, Smoochum). All
+      Basics, no evolution burden — set up the attacker, attach Psychic, pick the
+      right toolbox Basic for the matchup (matchup choice is a human plan, not a
+      runtime claim).
+    risks:
+      - below benchmark internally (Pass 34 ~0.49 adj)
+      - toolbox matchup selection is not modeled by the typed layer
+
+  # ---- Backlog (executable=true; high-ceiling evolution shells) -----------
+
+  - id: mega_charizard_x_burst
+    family: mega_charizard_x_burst
+    candidate_id: league_mega_charizard_x_burst
+    executable: true
+    lane: stdlib_typed_lite
+    role: backlog_validate_later
+    parent: null
+    implemented_contexts: [0, 1, 2, 7, 8, 38]
+    unsupported_mechanics:
+      [attack_damage, lethal, ko_targeting, spread, boss, gust, opponent_hand]
+    energy_types: [Fire]
+    roles:
+      primary_attacker: [790, 795]      # Mega Charizard X ex, Oricorio ex
+      setup_basic: [788, 795]           # Charmander, Oricorio ex
+      energy_accel: [1232, 1198]        # Firebreather, Crispin
+      key_item: [1079]                  # Rare Candy
+      draw_engine: [1231, 1224]         # Dawn, Cheren
+      search: [1121, 1086]              # Ultra Ball, Buddy-Buddy Poffin
+      tech: [789, 1097]                 # Charmeleon, Night Stretcher
+    priority: [790, 788, 789, 1079, 1198, 1232, 1121, 1086]
+    deckout_guard: {min_deck: 2, max_draw: null}
+    discard_keep: [790, 788, 1079]
+    discard_prefer: [2]
+    card_ids: [2, 788, 789, 790, 795, 1079, 1086, 1097, 1121, 1182, 1198, 1224, 1231, 1232]
+    deck_plan: >
+      Mega Charizard X ex Fire burst. Charmander -> Charmeleon -> Mega Charizard X
+      ex (Rare Candy jump) with Crispin / Firebreather energy acceleration. Typed
+      layer sequences the evolution line and energy attach only; the burst-damage
+      math itself is unsupported.
+    risks:
+      - heavy evolution sequencing not deeply modeled; benchmark/diagnostic only
+      - energy-dump payoff timing is a human plan, not a runtime claim
+
+  - id: mega_venusaur_tank
+    family: mega_venusaur_tank
+    candidate_id: league_mega_venusaur_tank
+    executable: true
+    lane: stdlib_typed_lite
+    role: backlog_validate_later
+    parent: null
+    implemented_contexts: [0, 1, 2, 7, 8, 38]
+    unsupported_mechanics:
+      [attack_damage, lethal, ko_targeting, spread, boss, gust, opponent_hand]
+    energy_types: [Grass]
+    roles:
+      primary_attacker: [652]           # Mega Venusaur ex
+      setup_basic: [650]                # Bulbasaur
+      key_item: [1079]                  # Rare Candy
+      draw_engine: [1231, 1224, 1199]   # Dawn, Cheren, Lacey
+      search: [1121, 1086]              # Ultra Ball, Buddy-Buddy Poffin
+      tech: [651, 1097, 1261]           # Ivysaur, Night Stretcher, Forest of Vitality
+    priority: [652, 650, 651, 1079, 1121, 1086]
+    deckout_guard: {min_deck: 2, max_draw: null}
+    discard_keep: [652, 650, 1079]
+    discard_prefer: [1]
+    card_ids: [1, 650, 651, 652, 1079, 1086, 1097, 1121, 1182, 1199, 1213, 1224, 1231, 1261]
+    deck_plan: >
+      Mega Venusaur ex bulky Grass tank. Bulbasaur -> Ivysaur -> Mega Venusaur ex
+      (Rare Candy jump), Forest of Vitality sustain. Pass 29 added an effect-loop
+      EXIT GUARD (fires only on a detected repeating decision loop) — the typed
+      layer must preserve a loop guard so the tank line never stalls forever.
+    risks:
+      - prone to an effect/decision loop without the exit guard
+      - sustain tempo is slow; protect Rare Candy and the Stage-2 line
+
+  - id: mega_gardevoir_psychic_ramp
+    family: mega_gardevoir_ramp
+    candidate_id: league_mega_gardevoir_psychic_ramp
+    executable: true
+    lane: stdlib_typed_lite
+    role: backlog_validate_later
+    parent: null
+    implemented_contexts: [0, 1, 2, 7, 8, 38]
+    unsupported_mechanics:
+      [attack_damage, lethal, ko_targeting, spread, boss, gust, opponent_hand]
+    energy_types: [Psychic]
+    roles:
+      primary_attacker: [747]           # Mega Gardevoir ex
+      setup_basic: [745]                # Ralts
+      key_item: [1079]                  # Rare Candy
+      draw_engine: [1231, 1224, 1199, 1213]  # Dawn, Cheren, Lacey, Judge
+      search: [1121, 1086]              # Ultra Ball, Buddy-Buddy Poffin
+      tech: [746, 1097]                 # Kirlia, Night Stretcher
+    priority: [747, 745, 746, 1079, 1121, 1086]
+    deckout_guard: {min_deck: 2, max_draw: null}
+    discard_keep: [747, 745, 1079]
+    discard_prefer: [5]
+    card_ids: [5, 745, 746, 747, 1079, 1086, 1097, 1121, 1182, 1199, 1213, 1224, 1231]
+    deck_plan: >
+      Mega Gardevoir ex Psychic ramp. Ralts -> Kirlia -> Mega Gardevoir ex (Rare
+      Candy jump) with a heavy Psychic base to accumulate energy. Typed layer
+      sequences the evolution line, search and energy attach; the ramp/scaling
+      payoff math is unsupported.
+    risks:
+      - heavy evolution + ramp not deeply modeled; benchmark/diagnostic only
+      - slow to come online; protect the Stage-2 line
+
+  # ---- Refuted-structural (executable=true; NO fake fix) ------------------
+
+  - id: raging_bolt_ogerpon_basic_aggro
+    family: raging_bolt_ogerpon
+    candidate_id: league_raging_bolt_ogerpon
+    executable: true
+    lane: stdlib_typed_lite
+    role: refuted_deck_structural
+    parent: null
+    implemented_contexts: [1, 2, 7, 8, 38]
+    unsupported_mechanics:
+      [attack_damage, lethal, ko_targeting, spread, boss, gust, opponent_hand]
+    energy_types: [Fighting, Lightning]
+    roles:
+      primary_attacker: [63, 96]        # Raging Bolt ex, Teal Mask Ogerpon ex
+      setup_basic: [63, 96]
+      energy_accel: [1198]              # Crispin
+      draw_engine: [1231, 1224]         # Dawn, Cheren
+      search: [1121, 1086]              # Ultra Ball, Buddy-Buddy Poffin
+      tech: [1097]                      # Night Stretcher
+    priority: [63, 96, 1198, 1121, 1086]
+    deckout_guard: {min_deck: 2, max_draw: null}
+    discard_keep: [63, 96]
+    discard_prefer: [1]                 # off-color Basic {G}; keep {F}/{L}
+    card_ids: [1, 4, 6, 63, 96, 1086, 1097, 1121, 1182, 1198, 1224, 1231]
+    refuted: true
+    deck_plan: >
+      Raging Bolt ex + Teal Mask Ogerpon ex basic aggro. PASS 18/28 DISPROVED the
+      energy/tempo hypothesis: the correct energy IS attached and attacks ARE
+      taken — the 0-win failure is deck/STRUCTURAL, not a pilot bug. NO fake
+      color-match fix is added. The typed layer pilots it honestly (setup/search/
+      attach) and we report the structural refutation rather than inventing a fix.
+    risks:
+      - 0-win baseline in prior internal leagues (structural, not pilot)
+      - DO NOT add a color-match / attack-damage runtime rule (refuted Pass 28)
+
+  # ---- Special-pilot-only (executable=false) ------------------------------
+
+  - id: toxic_trap_poison_lock
+    family: toxic_trap
+    candidate_id: toxic_trap_poison_lock
+    executable: false
+    special_pilot_required: true
+    lane: stdlib_typed_lite
+    role: special_pilot_only
+    parent: null
+    implemented_contexts: []            # generic pilot cannot pilot the win condition
+    unsupported_mechanics:
+      [attack_damage, lethal, ko_targeting, spread, boss, gust, opponent_hand]
+    energy_types: [Darkness]
+    roles:
+      primary_attacker: [230, 813, 1012]   # Pecharunt, Mismagius ex, Ariados
+      setup_basic: [230, 1011, 812]        # Pecharunt, Spinarak, Misdreavus
+      key_item: [1162, 1095]               # Binding Mochi (tool), Dangerous Laser
+      draw_engine: [1224, 1231, 1212, 1222]  # Cheren, Dawn, Cook, Fennel
+      search: [1121, 1086]                 # Ultra Ball, Buddy-Buddy Poffin
+      tech: [1012, 1243]                   # Ariados, Perilous Jungle (stadium)
+    priority: [230, 1011, 812, 1121, 1086]
+    deckout_guard: {min_deck: 2, max_draw: null}
+    discard_keep: [230, 813, 1162]
+    discard_prefer: [7]
+    card_ids: [7, 230, 812, 813, 1011, 1012, 1086, 1095, 1121, 1162, 1182, 1212, 1222, 1231, 1243]
+    deck_plan: >
+      Passive poison / status lock around Pecharunt with Mismagius ex and Ariados.
+      The win condition is incremental poison/status damage and lock, which the
+      GENERIC pilot cannot legally pilot (it would chase KOs and misplay the
+      lock). PLANNED-ONLY: executable=false until a real special pilot exists; no
+      candidate is built or entered in the tournament this pass.
+    risks:
+      - special pilot required; generic pilot misplays the lock
+      - excluded from candidate build and tournament unless smoke-valid
+
+  - id: deckout_carousel_durant_v2
+    family: durant_deckout_carousel
+    candidate_id: deckout_carousel_durant_v2
+    executable: false
+    special_pilot_required: true
+    lane: stdlib_typed_lite
+    role: special_pilot_only
+    parent: null
+    implemented_contexts: []            # deckout/mill win condition not implemented
+    unsupported_mechanics:
+      [attack_damage, lethal, ko_targeting, spread, boss, gust, opponent_hand]
+    energy_types: [Darkness]
+    roles:
+      primary_attacker: [198]           # Durant ex (mill engine, not a prize racer)
+      setup_basic: [227, 162, 27, 815]  # Deino, Slowpoke, Iron Leaves, Whimsicott
+      key_item: [1247]                  # Neutralization Zone (stadium)
+      draw_engine: [1199, 1213, 1228, 1231]  # Lacey, Judge, Acerola's Mischief, Dawn
+      search: [1121, 1086]              # Ultra Ball, Buddy-Buddy Poffin
+      tech: [228]                       # Zweilous
+    priority: [198, 227, 162, 1121, 1086]
+    deckout_guard: {min_deck: 2, max_draw: null}
+    discard_keep: [198, 1247]
+    discard_prefer: [7]
+    card_ids: [7, 27, 162, 198, 227, 228, 815, 1086, 1121, 1182, 1199, 1213, 1228, 1231, 1247]
+    deck_plan: >
+      Durant ex deck-out / mill carousel. The win condition is decking the
+      opponent out (non-prize), which the GENERIC pilot cannot pilot — piloted
+      generically it races prizes and misplays the carousel. PLANNED-ONLY:
+      executable=false; built+smoke-tested historically for honesty but excluded
+      from candidate build and the tournament unless a special pilot exists.
+    risks:
+      - special pilot required; generic pilot races prizes incorrectly
+      - excluded from candidate build and tournament unless smoke-valid

@@ -1,0 +1,66 @@
+{
+  "1": {
+    "card_type": "energy",
+    "energy_type": "Grass",
+    "is_basic_energy": true,
+    "name": "Basic {G} Energy"
+  },
+  "1079": {
+    "card_type": "trainer",
+    "name": "Rare Candy"
+  },
+  "1086": {
+    "card_type": "trainer",
+    "name": "Buddy-Buddy Poffin"
+  },
+  "1097": {
+    "card_type": "trainer",
+    "name": "Night Stretcher"
+  },
+  "1121": {
+    "card_type": "trainer",
+    "name": "Ultra Ball"
+  },
+  "1199": {
+    "card_type": "trainer",
+    "name": "Lacey"
+  },
+  "1224": {
+    "card_type": "trainer",
+    "name": "Cheren"
+  },
+  "1231": {
+    "card_type": "trainer",
+    "name": "Dawn"
+  },
+  "1261": {
+    "card_type": "trainer",
+    "name": "Forest of Vitality"
+  },
+  "650": {
+    "card_type": "pokemon",
+    "energy_type": "Grass",
+    "hp": 80,
+    "is_basic_pokemon": true,
+    "name": "Bulbasaur",
+    "retreat_cost": 2,
+    "stage": "basic"
+  },
+  "651": {
+    "card_type": "pokemon",
+    "energy_type": "Grass",
+    "hp": 110,
+    "name": "Ivysaur",
+    "retreat_cost": 3,
+    "stage": "stage1"
+  },
+  "652": {
+    "card_type": "pokemon",
+    "energy_type": "Grass",
+    "ex": true,
+    "hp": 380,
+    "name": "Mega Venusaur ex",
+    "retreat_cost": 4,
+    "stage": "stage2"
+  }
+}

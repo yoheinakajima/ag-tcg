@@ -1,0 +1,30 @@
+{
+  "profile_id": "water_basic_density_v1",
+  "profile_assertions": {"executable": true, "implemented_contexts": [0, 1, 2, 7, 8, 38]},
+  "cases": [
+    {
+      "name": "setup_bench_picks_best_two_basics_by_priority",
+      "tag": "setup_bench",
+      "kind": "setup_bench_multi",
+      "board": {"bench_pick_count": 2},
+      "options": [{"card_id": 720}, {"card_id": 721}, {"card_id": 722}],
+      "expect": {"chosen_card_ids": [721, 722]}
+    },
+    {
+      "name": "emergency_backup_bench_when_bench_empty",
+      "tag": "emergency_bench",
+      "kind": "emergency_backup_bench",
+      "board": {"active": {"card_id": 721}, "bench": []},
+      "options": [{"card_id": 720}, {"card_id": 722}],
+      "expect": {"chosen_card_id": 722}
+    },
+    {
+      "name": "discard_dumps_excess_energy_keeps_backup_basic",
+      "tag": "keep_backup_basic",
+      "kind": "discard",
+      "board": {"discard_count": 1},
+      "options": [{"card_id": 721}, {"card_id": 3}, {"card_id": 3}],
+      "expect": {"chosen_card_ids": [3], "chosen_card_ids_excludes": [721]}
+    }
+  ]
+}

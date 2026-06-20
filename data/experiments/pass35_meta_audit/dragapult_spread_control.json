@@ -1,0 +1,81 @@
+{
+  "1079": {
+    "card_type": "trainer",
+    "name": "Rare Candy"
+  },
+  "1086": {
+    "card_type": "trainer",
+    "name": "Buddy-Buddy Poffin"
+  },
+  "1097": {
+    "card_type": "trainer",
+    "name": "Night Stretcher"
+  },
+  "1121": {
+    "card_type": "trainer",
+    "name": "Ultra Ball"
+  },
+  "119": {
+    "card_type": "pokemon",
+    "energy_type": "\u7adc",
+    "hp": 70,
+    "is_basic_pokemon": true,
+    "name": "Dreepy",
+    "retreat_cost": 1,
+    "stage": "basic"
+  },
+  "120": {
+    "card_type": "pokemon",
+    "energy_type": "\u7adc",
+    "hp": 90,
+    "name": "Drakloak",
+    "retreat_cost": 1,
+    "stage": "stage1"
+  },
+  "121": {
+    "card_type": "pokemon",
+    "energy_type": "\u7adc",
+    "ex": true,
+    "hp": 320,
+    "name": "Dragapult ex",
+    "retreat_cost": 1,
+    "stage": "stage2"
+  },
+  "1224": {
+    "card_type": "trainer",
+    "name": "Cheren"
+  },
+  "1231": {
+    "card_type": "trainer",
+    "name": "Dawn"
+  },
+  "131": {
+    "card_type": "pokemon",
+    "energy_type": "Psychic",
+    "hp": 60,
+    "is_basic_pokemon": true,
+    "name": "Duskull",
+    "retreat_cost": 1,
+    "stage": "basic"
+  },
+  "133": {
+    "card_type": "pokemon",
+    "energy_type": "Psychic",
+    "hp": 160,
+    "name": "Dusknoir",
+    "retreat_cost": 3,
+    "stage": "stage2"
+  },
+  "2": {
+    "card_type": "energy",
+    "energy_type": "Fire",
+    "is_basic_energy": true,
+    "name": "Basic {R} Energy"
+  },
+  "5": {
+    "card_type": "energy",
+    "energy_type": "Psychic",
+    "is_basic_energy": true,
+    "name": "Basic {P} Energy"
+  }
+}

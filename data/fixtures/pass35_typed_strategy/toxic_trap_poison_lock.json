@@ -1,0 +1,5 @@
+{
+  "profile_id": "toxic_trap_poison_lock",
+  "profile_assertions": {"executable": false, "special_pilot_required": true, "implemented_contexts": []},
+  "cases": []
+}
