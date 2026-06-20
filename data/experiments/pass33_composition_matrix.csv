@@ -1,0 +1,13 @@
+deck \ opponent (a_win_rate),core_pilot_water_v2_runtime,effect_loop_exit_guard_v1,league_dragapult_spread,league_dragapult_v1_search_only,league_mega_charizard_x_burst,league_mega_gardevoir_psychic_ramp,league_mega_venusaur_tank,league_raging_bolt_ogerpon,league_water_anti_disruption_pivot_v1,league_water_core_reference,water_basic_density_v1,water_basic_density_v2
+core_pilot_water_v2_runtime,—,0.8333,0.6667,0.3333,0.6667,0.8333,0.5,1.0,1.0,0.6667,0.5,0.6667
+effect_loop_exit_guard_v1,0.1667,—,0.3333,0.5,0.1667,1.0,1.0,1.0,0.6667,0.1667,0.0,0.3333
+league_dragapult_spread,0.3333,0.6667,—,0.6667,0.3333,1.0,1.0,1.0,0.5,0.6667,0.3333,0.3333
+league_dragapult_v1_search_only,0.6667,0.5,0.3333,—,0.6667,1.0,1.0,1.0,0.1667,0.1667,0.5,0.5
+league_mega_charizard_x_burst,0.3333,0.8333,0.6667,0.3333,—,1.0,1.0,1.0,0.5,0.0,0.3333,0.0
+league_mega_gardevoir_psychic_ramp,0.1667,0.0,0.0,0.0,0.0,—,0.1667,1.0,0.0,0.0,0.0,0.0
+league_mega_venusaur_tank,0.5,0.0,0.0,0.0,0.0,0.8333,—,1.0,0.25,0.2,0.0,0.0
+league_raging_bolt_ogerpon,0.0,0.0,0.0,0.0,0.0,0.0,0.0,—,0.0,0.0,0.0,0.0
+league_water_anti_disruption_pivot_v1,0.0,0.3333,0.5,0.8333,0.5,1.0,0.75,1.0,—,0.6667,0.6667,0.5
+league_water_core_reference,0.3333,0.8333,0.3333,0.8333,1.0,1.0,0.8,1.0,0.3333,—,0.6667,0.6667
+water_basic_density_v1,0.5,1.0,0.6667,0.5,0.6667,1.0,1.0,1.0,0.3333,0.3333,—,0.5
+water_basic_density_v2,0.3333,0.6667,0.6667,0.5,1.0,1.0,1.0,1.0,0.5,0.3333,0.5,—

@@ -1,1 +1,2 @@
 - [cabt replay schema](cabt-replay-schema.md) — decode replay step/option type codes + prize/bench loss conditions honestly; numeric attackId only (no spread claims); dedupe Kaggle submission history by best-complete row.
+- [shared-artifact stale tests](pass-shared-artifact-stale-tests.md) — single shared canvas/site/report/queue/meta_pool overwritten each pass; older strict snapshot tests go red structurally (not a regression); write your pass's tests forward-compatibly.

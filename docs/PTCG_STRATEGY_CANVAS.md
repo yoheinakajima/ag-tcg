@@ -1,74 +1,48 @@
 # PTCG Strategy Canvas
 
-> Living strategy canvas. Updated through Pass 30.
+> Living strategy canvas. Updated through Pass 33.
 
-_The internal tournament, parent/child confirmations and meta sanity are LOCAL diagnostics: both seats are OUR portfolio decks driven by the SAME generic core pilot, run subprocess-isolated and seat-swapped. They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal._
+_The internal composition tournament, correlations, parent/child confirmations and meta sanity are LOCAL diagnostics: both seats are OUR portfolio decks driven by the SAME generic core pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal._
 
 ## Current live reference (Kaggle, read-only)
 
-- live_score_leader: `league_water_anti_disruption_pivot_v1.tar.gz` @ 376.5
-- water_family_current_best: `league_water_anti_disruption_pivot_v1.tar.gz` @ 376.5
-- portfolio_reference: `league_water_core_reference.tar.gz` @ 222.3
-- distinction preserved: yes
+- live_score_leader: `submission.tar.gz` @ 363.0
+- water_family_current_best: `league_water_anti_disruption_pivot_v1.tar.gz` @ 340.0
+- dragapult_family_best: `league_dragapult_v1_search_only.tar.gz` @ 306.7 (above water: no)
+- portfolio_reference: `league_water_core_reference.tar.gz` @ 219.5
 
-## Pass 30 — existing portfolio hardening tournament
+## Pass 33 — deck composition stress test
 
-We hardened and ranked OUR existing portfolio to pick the next human-approved probe. Internal Stage-1 standings (NOT Kaggle):
+We stress-tested OUR portfolio by composition to pick the next human-approved probe. Internal Stage-1 standings (NOT Kaggle):
 
 | rank | candidate | family | adj win_rate | label |
 |---|---|---|---|---|
-| 1 | league_water_core_reference | water | 74.3% | strong_reference |
-| 2 | league_dragapult_v1_search_only | dragapult | 72.5% | candidate_for_confirmation |
-| 3 | league_mega_charizard_x_burst | charizard | 72.2% | keep_as_benchmark |
-| 4 | league_dragapult_v1_draw_only | dragapult | 70.6% | candidate_for_confirmation |
-| 5 | league_water_anti_disruption_pivot_v1 | water | 69.0% | strong_reference |
-| 6 | league_dragapult_spread | dragapult | 68.6% | candidate_for_confirmation |
-| 7 | effect_loop_exit_guard_v1 | venusaur | 60.6% | candidate_for_confirmation |
-| 8 | core_pilot_water_v2_runtime | water | 60.0% | strong_reference |
-| 9 | league_mega_venusaur_tank | venusaur | 43.4% | legal_but_weak |
-| 10 | league_mega_gardevoir_psychic_ramp | gardevoir | 26.8% | keep_as_benchmark |
-| 11 | league_raging_bolt_consistency_v1 | raging_bolt | 13.2% | needs_special_pilot |
-| 12 | league_raging_bolt_ogerpon | raging_bolt | 11.1% | needs_special_pilot |
-| 13 | league_raging_bolt_energy_attacker_v1 | raging_bolt | 7.0% | needs_special_pilot |
+| 1 | core_pilot_water_v2_runtime | water | 71.0% | strong_reference |
+| 2 | league_water_core_reference | water | 70.8% | strong_reference |
+| 3 | water_basic_density_v1 | water | 67.2% | density_variant_under_test |
+| 4 | water_basic_density_v2 | water | 67.2% | density_variant_under_test |
+| 5 | league_dragapult_spread | dragapult | 60.9% | candidate_for_confirmation |
+| 6 | league_water_anti_disruption_pivot_v1 | water | 60.9% | strong_reference |
+| 7 | league_dragapult_v1_search_only | dragapult | 58.5% | candidate_for_confirmation |
+| 8 | league_mega_charizard_x_burst | charizard | 53.8% | keep_as_benchmark |
+| 9 | effect_loop_exit_guard_v1 | venusaur | 47.7% | legal_but_weak |
+| 10 | league_mega_venusaur_tank | venusaur | 25.0% | legal_but_weak |
+| 11 | league_mega_gardevoir_psychic_ramp | gardevoir | 12.1% | keep_as_benchmark |
+| 12 | league_raging_bolt_ogerpon | raging_bolt | 0.0% | needs_special_pilot |
 
-## Family hardening verdicts
+## Water Basic-density ladder
 
-| family | action | helped | stay active | best deck |
-|---|---|---|---|---|
-| water | reuse_benchmark_only | None | True | league_water_core_reference |
-| dragapult | reuse_confirm_children | True | True | league_dragapult_v1_search_only |
-| venusaur | reuse_runtime_loop_guard | True | True | effect_loop_exit_guard_v1 |
-| raging_bolt | built_two_new_structural_variants | False | False | league_raging_bolt_consistency_v1 |
-| diagnostics | reuse_as_benchmark | None | True | league_mega_charizard_x_burst |
+| deck | Basics | no-Basic prob | internal adj win_rate |
+|---|---|---|---|
+| league_water_anti_disruption_pivot_v1 | 8 | 34.6% | 60.9% |
+| water_basic_density_v1 | 12 | 19.1% | 67.2% |
+| water_basic_density_v2 | 16 | 9.9% | 67.2% |
 
 ## Meta sanity (directional, surrogate)
 
-- best: `league_dragapult_v1_search_only` @ 85.1% (> water 64.0%)
-- collapses: league_raging_bolt_ogerpon (Raging Bolt = expected control)
+- best: `league_mega_charizard_x_burst` @ 70.7%
+- probe `water_basic_density_v1` collapses: none (Raging Bolt = expected control)
 
 ## Next move
 
-`Queue league_dragapult_v1_search_only as the single HELD dry-run probe candidate, pending human approval. No upload/submit performed.` Stop building Raging Bolt decklists — its next move is a PILOT/policy change. Keep Water as the always-on benchmark.
-
-## Pass 31 — human-approved single Kaggle calibration probe
-
-> Calibration probe, NOT a promotion. Human-approved single upload. No GitHub push. No second upload. No backup candidate.
-
-- Uploaded exactly once: `league_dragapult_v1_search_only.tar.gz` (the Pass-30 held dry-run candidate).
-- All pre-upload gates PASS; root main.py/deck.csv byte-identical before AND after.
-- Pending guard: no pending submission before upload; live leader before upload `submission.tar.gz` @ 363.0.
-- Result: status **pending** — wait, no conclusion; do not resubmit this pass.
-
-See `data/reports/pass31_dragapult_search_only_kaggle_probe_report.md` for the full 10-section report.
-
-## Pass 32 — Dragapult Kaggle result + replay postmortem
-
-> READ-ONLY wrt Kaggle. NO upload, NO second submission. No new candidates. Root files byte-identical.
-
-- Dragapult probe resolved: **complete @ 309.2** (was pending) — clean transfer, but BELOW Water control (340.0) and live leader `submission.tar.gz` (363.0).
-- 3 new replays (gitignored): self-mirror win (80760752), loss vs water_kyogre_abomasnow_maxbelt (80760852), loss vs unknown (80761535) — all `league_dragapult_v1_search_only` on our p0. vs real opponents: 0-2.
-- Loss modes: prize_race_loss (attacked 4×, 0 prizes converted) + no_pokemon_loss (very late first attack, ran out of Pokémon). Spread target NOT observable from numeric attackIds — no misplay claimed.
-
-## Next move (Pass 32)
-
-`keep_water_control` — Dragapult @ 309.2 is below the Water control; nothing queued (dry-run 0/1). The next Dragapult move is a PILOT/pacing change, not a new decklist; no upload this pass.
+`Queue water_basic_density_v1 as the single HELD dry-run probe candidate (candidate_for_deeper_confirmation), pending human approval. No upload/submit performed.` Hold `water_basic_density_v1` as a deeper-confirmation probe (halves mulligan risk, ties Water internally). Keep Water as the always-on benchmark; Dragapult stays a reference until it clears Water live.

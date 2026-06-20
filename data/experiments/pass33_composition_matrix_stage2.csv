@@ -1,0 +1,5 @@
+deck \ opponent (a_win_rate),core_pilot_water_v2_runtime,league_water_core_reference,water_basic_density_v1,water_basic_density_v2
+core_pilot_water_v2_runtime,—,0.6,0.45,0.5
+league_water_core_reference,0.4,—,0.4,0.35
+water_basic_density_v1,0.55,0.6,—,0.55
+water_basic_density_v2,0.5,0.65,0.45,—

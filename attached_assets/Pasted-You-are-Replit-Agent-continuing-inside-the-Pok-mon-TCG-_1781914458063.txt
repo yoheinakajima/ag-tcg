@@ -1,0 +1,593 @@
+You are Replit Agent continuing inside the Pokémon TCG AI Battle Challenge repo.
+
+This is Pass 33: Deck Composition Stress Test + Next Probe Selection.
+
+Important:
+- Do not push to GitHub.
+- Do not upload or submit anything to Kaggle.
+- Do not modify root main.py or root deck.csv.
+- Do not clone opponent decks.
+- Do not build exact opponent replay decks.
+- Do not invent card IDs.
+- Do not commit official card CSV/PDF data, raw private replay payloads, or credentials.
+- Raw replay JSON files must remain gitignored.
+- Candidate tarballs must contain only top-level main.py + deck.csv.
+- No Kaggle upload.
+- No Kaggle submit.
+- This is a local portfolio/deck-composition stress test over OUR existing deck ideas, candidates, and validated card IDs.
+- Build only from our existing strategy canvas / deck_ideas / existing portfolio artifacts unless a new card is verified directly from EN_Card_Data.csv and clearly documented.
+- Goal is to identify the best next human-approved probe candidate, not to submit it.
+
+Read before acting:
+- docs/ACTIVEGRAPH_LAB_OPERATING_MANUAL.md
+- docs/NEXT_AGENT_README.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- docs/CORE_PILOT_ARCHITECTURE.md
+- docs/CORE_PILOT_ROLE_TAXONOMY.md
+- data/reports/pass27_multi_archetype_portfolio_report.md
+- data/reports/pass28_cross_deck_forensic_report.md
+- data/reports/pass29_observability_ratchet_report.md
+- data/reports/pass30_existing_portfolio_hardening_report.md
+- data/reports/pass31_dragapult_search_only_kaggle_probe_report.md
+- data/reports/pass32_dragapult_kaggle_result_and_replay_report.md
+- experiments/pass27_portfolio_decks.yaml if present
+- experiments/pass30_existing_portfolio.yaml if present
+- data/experiments/pass30_hardening_diagnosis.json if present
+- data/experiments/pass30_portfolio_rankings.json if present
+- data/activegraph/lab_events.jsonl
+
+Current interpretation:
+- Dragapult search_only is no longer a clear fail. The user's latest live read shows:
+  - league_dragapult_v1_search_only: 357.3
+  - league_water_anti_disruption_pivot_v1: 340.0
+- Fresh live score must be re-read this pass before deciding anything.
+- If Dragapult is still above Water but below global leader, treat it as competitive calibration, not a control replacement.
+- We are probably too early to over-refine one deck.
+- We need to test whether deck composition / deck shell ceiling is the main bottleneck.
+- Water may be too energy-heavy and low on Basic redundancy.
+- Dragapult may be the best non-Water transfer so far.
+- Venusaur loop guard fixed a real local bug but needs competitive testing.
+- Raging Bolt structural variants failed; do not keep rebuilding Raging Bolt unless a new hypothesis is genuinely different.
+- Durant/chaos remains blocked unless a special pilot exists.
+- Charizard/Gardevoir/Venusaur/Dragapult are useful for very different deck-composition stress tests.
+
+Goal:
+Run Pass 33: Deck Composition Stress Test + Next Probe Selection.
+
+Core questions:
+1. Is our score ceiling limited by deck composition rather than micro-policy?
+2. Which of OUR existing deck ideas has the best combination of legality, pilotability, internal strength, and meta sanity?
+3. Is Water's low Basic density / high Energy ratio a real risk compared with other shells?
+4. Is Dragapult the best non-Water family, or did a different shell like Charizard/Venusaur outperform it locally?
+5. Should the next human-approved Kaggle probe be Dragapult, Venusaur loop guard, Charizard, a Water basic-density variant, or nothing?
+
+Part A — Root safety
+
+Run:
+
+python scripts/package_submission.py --verify-only
+
+Verify:
+
+cmp main.py data/baselines/v1_kaggle_349_8/main.py && echo "root main.py unchanged vs v1"
+cmp deck.csv data/baselines/v1_kaggle_349_8/deck.csv && echo "root deck.csv unchanged vs v1"
+
+Do not modify root files.
+
+Part B — Read-only live score status
+
+Run read-only Kaggle status:
+
+kaggle competitions submissions pokemon-tcg-ai-battle -v
+
+If kaggle CLI is not on PATH, use the Python Kaggle CLI/API path used in prior passes.
+
+Rules:
+- no submit
+- no upload
+- publicScore may be string; coerce safely to float
+- preserve status logs
+- do not make a promotion decision
+
+Save:
+- data/kaggle_uploads/status_before_pass33.log
+- data/kaggle_uploads/status_before_pass33.csv
+
+Create:
+- data/experiments/pass33_live_score_status.json
+- data/experiments/pass33_live_score_status.md
+
+Report:
+- live_score_leader
+- water_family_current_best
+- dragapult_family_best
+- portfolio_reference
+- score drift since Pass 32
+- whether Dragapult remains above Water
+- no upload performed
+
+Part C — Deck composition audit
+
+Create:
+
+scripts/audit_pass33_deck_composition.py
+
+Outputs:
+- data/experiments/pass33_deck_composition_audit.json
+- data/experiments/pass33_deck_composition_audit.md
+- data/experiments/pass33_deck_composition_audit.csv
+
+Audit every existing candidate deck in:
+- data/submissions/candidates_pass17/
+- data/submissions/candidates_pass19/
+- data/submissions/candidates_pass22/
+- data/submissions/candidates_pass23/
+- data/submissions/candidates_pass27/
+- data/submissions/candidates_pass29/
+- data/submissions/candidates_pass30/
+- any other existing candidates directory
+
+For each deck:
+- candidate_id
+- family_id
+- tarball path
+- 60-card validity
+- unique card count
+- Basic Pokémon count
+- non-Basic Pokémon count
+- evolution count
+- ex / Mega count if identifiable
+- Basic Energy count
+- non-energy trainer/support/stadium/tool count
+- search/draw count if identifiable
+- recovery count if identifiable
+- opening no-Basic probability from 7-card hand using hypergeometric math
+- bench redundancy score
+- evolution complexity score
+- energy ratio
+- pilot complexity score
+- previous internal result if known
+- previous Kaggle score if known
+- no_pokemon_loss risk estimate
+- deckout risk estimate
+
+Important:
+- Use EN_Card_Data.csv locally for card names/stage/type, but do not commit the CSV.
+- If stage/type is not parseable, mark unknown rather than guessing.
+- Mega Abomasnow ex / Mega Pokémon are NOT Basic unless card DB says Basic.
+- Basic Energy may exceed four copies.
+- Non-energy card copy cap must be <=4 unless replay/simulator legality has already proven otherwise.
+
+Part D — Select stress-test deck set
+
+Create:
+
+data/experiments/pass33_stress_test_plan.json
+data/experiments/pass33_stress_test_plan.md
+
+Select 8–12 candidates for the stress test.
+
+Required include, if valid:
+1. current Water family best
+2. league_water_core_reference
+3. core_pilot_water_v2_runtime if valid
+4. league_dragapult_v1_search_only
+5. league_dragapult_spread parent
+6. league_mega_charizard_x_burst
+7. league_mega_venusaur_tank
+8. effect_loop_exit_guard_v1 if valid
+9. league_mega_gardevoir_psychic_ramp
+10. league_raging_bolt_ogerpon only as known weak control
+11. one or two Water basic-density variants if buildable
+12. one high-ceiling Charizard or Venusaur variant if already described in the strategy canvas and card IDs validate
+
+Exclude:
+- Durant unless it is smoke-valid
+- any invalid candidate
+- any candidate lacking entrypoint validator pass
+- any opponent clone
+
+For each selected candidate:
+- source
+- why included
+- expected composition lesson
+- candidate status:
+  - existing_reuse
+  - build_variant
+  - blocked
+- no_upload: true
+
+Part E — Build small composition variants
+
+Create:
+
+scripts/build_pass33_composition_variants.py
+
+Outputs:
+- experiments/runs_pass33/<candidate_id>/
+- data/submissions/candidates_pass33/<candidate_id>.tar.gz
+- data/experiments/pass33_candidate_manifest.json
+- data/experiments/pass33_candidate_manifest.md
+
+Build at most 4 new variants.
+
+Allowed variant types:
+
+Variant family 1 — Water basic-density variants
+Hypothesis: Water's high Energy / low Basic density causes board fragility.
+Build up to 2:
+- water_basic_density_v1
+- water_basic_density_v2
+
+Rules:
+- Start from proven Water pivot/reference deck.
+- Reduce Basic Water Energy count.
+- Add only verified, legal, Water-compatible or neutral Basic Pokémon already present in our strategy canvas or validated card database.
+- If no suitable Basic exists, do not build.
+- Do not exceed 4 copies of non-energy cards.
+- Preserve core cards unless explicitly documented:
+  - Kyogre
+  - Snover
+  - Mega Abomasnow ex
+  - Ultra Ball / search package
+- Record exact deck diff and Basic-density change.
+- Calculate no-Basic probability before/after.
+
+Variant family 2 — Venusaur loop guard
+Hypothesis: effect-loop fix converts Venusaur from stalled to playable.
+- Reuse effect_loop_exit_guard_v1 if present.
+- If missing, rebuild exactly from Pass 29 artifacts.
+- Do not change deck unless already planned.
+
+Variant family 3 — Charizard high-ceiling sanity
+Hypothesis: a high-ceiling deck may outperform Water if generic pilot can operate it.
+- Reuse existing league_mega_charizard_x_burst if present.
+- Build no new Charizard variant unless it is already specified in docs/PTCG_STRATEGY_CANVAS.md and all IDs validate.
+
+Variant family 4 — Gardevoir / ramp diagnostic
+- Reuse existing only.
+- Do not build new ramp candidate this pass.
+
+Do NOT build:
+- opponent clones
+- broad runtime hooks
+- Raging Bolt decklist variants unless materially different from Pass 30 and explicitly justified
+- chaos/Durant without special pilot
+
+Every new tarball:
+- top-level main.py + deck.csv only
+- robust deck-selection
+- last callable invariant
+- stdlib-only runtime
+
+Part F — Validation and live smoke
+
+For every selected candidate:
+
+python scripts/validate_candidate_tarball.py <tarball>
+python scripts/validate_candidate_entrypoint.py <tarball>
+
+Run:
+- live self-smoke 1 game/seat
+- smoke vs current Water reference 1 game/seat if feasible
+- core competency gate where applicable
+- effect-loop smoke for Venusaur guard if applicable
+
+Outputs:
+- data/experiments/pass33_candidate_validation.json
+- data/experiments/pass33_candidate_validation.md
+- data/experiments/pass33_live_smoke.json
+- data/experiments/pass33_live_smoke.md
+
+Eligibility:
+- tarball validator PASS
+- entrypoint validator PASS
+- no INVALID/ERROR/TIMEOUT
+- finite rewards
+- not stuck in endless loop
+- no broad unknown failure
+
+Part G — Internal composition tournament
+
+Run a round-robin among all eligible stress-test candidates.
+
+Budget:
+- Stage 1: 3 games/seat, seat-swapped
+- Stage 2: top 4 plus required controls, 10 games/seat if feasible
+- subprocess isolated
+- Replit workflow if needed
+- no upload
+
+Outputs:
+- data/experiments/pass33_composition_tournament.json
+- data/experiments/pass33_composition_tournament.md
+- data/experiments/pass33_composition_matrix.csv
+- data/experiments/pass33_composition_rankings.json
+- data/experiments/pass33_composition_rankings.md
+
+Metrics:
+- W/L/D
+- adjusted win rate
+- Wilson CI
+- invalid/crash/timeout
+- average steps
+- first attack turn
+- attack rate
+- attach rate
+- evolution rate
+- bench development
+- no-pokemon losses
+- deckout losses
+- effect-loop count
+- deck/pilot compatibility label
+
+Labels:
+- strong_reference
+- candidate_for_confirmation
+- promising_but_noisy
+- legal_but_weak
+- fixed_but_not_competitive
+- invalid_or_blocked
+- needs_special_pilot
+- keep_as_benchmark
+
+Caveat:
+- Internal tournament is not Kaggle.
+- It only measures our own decks under our own pilot.
+- It is not a promotion signal by itself.
+
+Part H — Composition correlation analysis
+
+Create:
+
+scripts/analyze_pass33_composition_correlations.py
+
+Outputs:
+- data/experiments/pass33_composition_correlations.json
+- data/experiments/pass33_composition_correlations.md
+
+Correlate deck composition with tournament/smoke results:
+- Basic Pokémon count vs no-pokemon losses
+- Basic count vs first attack turn
+- Energy count vs attach rate / attack rate
+- evolution complexity vs first attack turn
+- search/draw count vs deckout / over-thinning
+- unique-card count vs pilot compatibility
+- high energy ratio vs board fragility
+- ex/Mega count vs prize-race losses
+
+Do not overclaim statistical significance. Use "directional" language unless sample sizes justify more.
+
+Part I — Parent/child confirmations
+
+Create:
+
+data/experiments/pass33_parent_child_confirmations.json
+data/experiments/pass33_parent_child_confirmations.md
+
+Run or reuse direct H2H for:
+1. Water current best vs Water basic_density_v1 if built
+2. Water current best vs Water basic_density_v2 if built
+3. Dragapult parent vs search_only
+4. Venusaur parent vs effect_loop_exit_guard
+5. Charizard vs Water current best
+6. Best non-Water vs Water current best
+
+Budget:
+- 10 games/seat minimum if feasible
+- 20 games/seat if near boundary and workflow time allows
+- seat-swapped
+- subprocess isolated
+
+For each:
+- parent wins
+- child wins
+- draws
+- child adjusted win rate
+- Wilson CI
+- behavior/composition rationale
+- verdict:
+  - child_better
+  - parent_better
+  - inconclusive
+  - child_fixed_bug_but_weaker
+  - needs_more_games
+
+Part J — Meta sanity, directional only
+
+Run limited meta sanity for:
+- Water current best
+- Dragapult search_only
+- tournament top 3
+- Venusaur guard if eligible
+- Charizard if eligible
+
+Opponents:
+- replay-derived archetype surrogates from current meta pool
+
+Outputs:
+- data/experiments/pass33_meta_sanity.json
+- data/experiments/pass33_meta_sanity.md
+- data/experiments/pass33_meta_matrix.csv
+
+Metrics:
+- weighted score
+- per-archetype score
+- hard collapses
+- invalid/timeouts
+- no-pokemon/deckout losses
+
+Caveat:
+- surrogate only
+- not Kaggle
+- not sufficient for promotion
+
+Part K — Strategy decision / dry-run queue
+
+Create:
+- data/experiments/pass33_strategy_decision.json
+- data/experiments/pass33_strategy_decision.md
+- data/submission_queue.json
+
+Decision labels:
+- keep_water_as_reference
+- keep_dragapult_as_nonwater_reference
+- candidate_for_deeper_confirmation
+- future_kaggle_probe_candidate
+- build_water_basic_density_next
+- build_high_ceiling_probe_next
+- continue_portfolio_expansion
+- no_action
+
+Rules:
+- No upload.
+- Dry-run queue max 1.
+- A candidate may enter dry-run queue only if:
+  - validators PASS
+  - smoke PASS
+  - no INVALID/ERROR/TIMEOUT
+  - internal tournament strong
+  - parent/child or meta sanity supports it
+  - no major regression
+- If no candidate clears, queue empty.
+- If one candidate is promising but not enough, mark candidate_for_deeper_confirmation.
+- If a candidate is selected for possible human-approved probe, make clear it is only a future calibration probe.
+
+Part L — ActiveGraph events
+
+Emit:
+- StrategyIterationCreated for new variants
+- StrategyIterationEvaluated for every candidate in tournament
+- LocalEvaluationFinished for tournament
+- StrategyDecisionRecorded
+- SubmissionQueued only if dry-run queue has one candidate
+- ReportSiteGenerated
+
+All events:
+- no_upload: true
+- pass33 tags
+- family_id
+- candidate_id
+- parent_id
+- source_artifacts
+- validation status
+- tournament status
+- decision label
+
+Part M — Reports and docs
+
+Update:
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+- data/reports/pass33_deck_composition_stress_test_report.md
+
+Include:
+- live score state
+- deck composition audit
+- stress-test deck set
+- variants built/reused
+- validation/smoke
+- tournament
+- parent/child confirmations
+- meta sanity
+- composition correlation analysis
+- strategy decision
+- dry-run queue
+- no-upload note
+- caveat: internal tournament is not Kaggle
+
+Part N — Tests
+
+Add/update tests for:
+- no opponent deck clones are built
+- only existing portfolio or our own deck variants are used
+- water basic-density variants, if built, increase Basic Pokémon count and reduce no-Basic probability
+- new variants use only verified card IDs
+- root files unchanged
+- candidate tarballs top-level only
+- entrypoint validators pass for eligible candidates
+- invalid candidates excluded from tournament
+- Durant excluded unless smoke-valid
+- internal tournament has is_kaggle_leaderboard false
+- dry-run queue max 1
+- no upload flag false / no_upload true
+- reports include internal/Kaggle caveat
+- composition audit computes Basic count and Energy count
+- Dragapult live score above/below Water is read from fresh status, not hardcoded
+- Water, Dragapult, live leader fields remain distinct
+
+Run targeted tests.
+Run broader tests if feasible.
+
+Part O — Final report
+
+Report exactly:
+
+ActiveGraph Pass 33 Deck Composition Stress Test Report
+
+1. Root safety
+- root main.py unchanged:
+- root deck.csv unchanged:
+- package verify:
+- upload performed:
+
+2. Live score state
+- live_score_leader:
+- water_family_current_best:
+- dragapult_family_best:
+- portfolio_reference:
+- conclusion:
+
+3. Deck composition audit
+- decks audited:
+- Basic count range:
+- Energy count range:
+- highest no-Basic risk:
+- lowest no-Basic risk:
+- key finding:
+
+4. Candidates / variants
+- selected candidates:
+- candidates reused:
+- candidates built:
+- candidates blocked:
+- tarballs:
+
+5. Validation / smoke
+- tarball validators:
+- entrypoint validators:
+- smoke-valid:
+- invalid/crash/timeout:
+- excluded:
+
+6. Internal tournament
+- participants:
+- games per seat:
+- top candidate:
+- best non-Water:
+- worst family:
+- caveat:
+
+7. Composition correlations
+- Basic density:
+- Energy ratio:
+- evolution complexity:
+- search/draw:
+- deckout/no-pokemon findings:
+
+8. Meta sanity / parent-child
+- meta sanity:
+- parent/child strongest finding:
+- best future probe candidate:
+- confidence:
+
+9. Strategy decision / ActiveGraph
+- decision:
+- dry-run queue:
+- next family:
+- events emitted:
+- report site:
+
+10. Next recommendation
+- one sentence only.

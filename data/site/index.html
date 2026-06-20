@@ -1,76 +1,56 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph — Pass 30 Existing Portfolio Hardening Tournament</title>
+<title>ActiveGraph — Pass 33 Deck Composition Stress Test</title>
 <link rel="stylesheet" href="style.css">
 <style>
  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
  h1{font-size:1.5rem} table{border-collapse:collapse;width:100%;margin:1rem 0}
  th,td{border:1px solid #ddd;padding:.4rem .6rem;text-align:left;font-size:.9rem}
  th{background:#f4f4f6} .caveat{background:#fff7e6;border:1px solid #f0c36d;padding:.7rem;border-radius:6px;font-size:.9rem}
- .tag{display:inline-block;background:#eef;border-radius:4px;padding:0 .4rem;font-size:.75rem;margin-left:.3rem}
  code{background:#f4f4f6;padding:.1rem .3rem;border-radius:3px}
 </style></head><body>
-<h1>ActiveGraph — Pass 30: Existing Portfolio Hardening Tournament</h1>
-<p class="caveat">The internal tournament, parent/child confirmations and meta sanity are LOCAL diagnostics: both seats are OUR portfolio decks driven by the SAME generic core pilot, run subprocess-isolated and seat-swapped. They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal.</p>
+<h1>ActiveGraph — Pass 33: Deck Composition Stress Test</h1>
+<p class="caveat">The internal composition tournament, correlations, parent/child confirmations and meta sanity are LOCAL diagnostics: both seats are OUR portfolio decks driven by the SAME generic core pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal.</p>
 <h2>Live reference (Kaggle, read-only)</h2>
-<p>live_score_leader: <code>league_water_anti_disruption_pivot_v1.tar.gz</code> @ 376.5
+<p>live_score_leader: <code>submission.tar.gz</code> @ 363.0
  &middot; water_family_current_best: <code>league_water_anti_disruption_pivot_v1.tar.gz</code>
- @ 376.5 &middot; portfolio_reference:
- <code>league_water_core_reference.tar.gz</code> @ 222.3</p>
+ @ 340.0 &middot; dragapult_family_best:
+ <code>league_dragapult_v1_search_only.tar.gz</code> @ 306.7
+ &middot; portfolio_reference: <code>league_water_core_reference.tar.gz</code>
+ @ 219.5</p>
 <h2>Internal tournament — Stage 1 standings (NOT Kaggle)</h2>
 <table><thead><tr><th>rank</th><th>candidate</th><th>family</th><th>adj win_rate</th><th>label</th></tr></thead>
 <tbody>
-      <tr><td>1</td><td>league_water_core_reference</td><td>water</td><td>74.3%</td><td>strong_reference</td></tr>
-      <tr><td>2</td><td>league_dragapult_v1_search_only</td><td>dragapult</td><td>72.5%</td><td>candidate_for_confirmation</td></tr>
-      <tr><td>3</td><td>league_mega_charizard_x_burst</td><td>charizard</td><td>72.2%</td><td>keep_as_benchmark</td></tr>
-      <tr><td>4</td><td>league_dragapult_v1_draw_only</td><td>dragapult</td><td>70.6%</td><td>candidate_for_confirmation</td></tr>
-      <tr><td>5</td><td>league_water_anti_disruption_pivot_v1</td><td>water</td><td>69.0%</td><td>strong_reference</td></tr>
-      <tr><td>6</td><td>league_dragapult_spread</td><td>dragapult</td><td>68.6%</td><td>candidate_for_confirmation</td></tr>
-      <tr><td>7</td><td>effect_loop_exit_guard_v1</td><td>venusaur</td><td>60.6%</td><td>candidate_for_confirmation</td></tr>
-      <tr><td>8</td><td>core_pilot_water_v2_runtime</td><td>water</td><td>60.0%</td><td>strong_reference</td></tr>
-      <tr><td>9</td><td>league_mega_venusaur_tank</td><td>venusaur</td><td>43.4%</td><td>legal_but_weak</td></tr>
-      <tr><td>10</td><td>league_mega_gardevoir_psychic_ramp</td><td>gardevoir</td><td>26.8%</td><td>keep_as_benchmark</td></tr>
-      <tr><td>11</td><td>league_raging_bolt_consistency_v1</td><td>raging_bolt</td><td>13.2%</td><td>needs_special_pilot</td></tr>
-      <tr><td>12</td><td>league_raging_bolt_ogerpon</td><td>raging_bolt</td><td>11.1%</td><td>needs_special_pilot</td></tr>
-      <tr><td>13</td><td>league_raging_bolt_energy_attacker_v1</td><td>raging_bolt</td><td>7.0%</td><td>needs_special_pilot</td></tr>
+      <tr><td>1</td><td>core_pilot_water_v2_runtime</td><td>water</td><td>71.0%</td><td>strong_reference</td></tr>
+      <tr><td>2</td><td>league_water_core_reference</td><td>water</td><td>70.8%</td><td>strong_reference</td></tr>
+      <tr><td>3</td><td>water_basic_density_v1</td><td>water</td><td>67.2%</td><td>density_variant_under_test</td></tr>
+      <tr><td>4</td><td>water_basic_density_v2</td><td>water</td><td>67.2%</td><td>density_variant_under_test</td></tr>
+      <tr><td>5</td><td>league_dragapult_spread</td><td>dragapult</td><td>60.9%</td><td>candidate_for_confirmation</td></tr>
+      <tr><td>6</td><td>league_water_anti_disruption_pivot_v1</td><td>water</td><td>60.9%</td><td>strong_reference</td></tr>
+      <tr><td>7</td><td>league_dragapult_v1_search_only</td><td>dragapult</td><td>58.5%</td><td>candidate_for_confirmation</td></tr>
+      <tr><td>8</td><td>league_mega_charizard_x_burst</td><td>charizard</td><td>53.8%</td><td>keep_as_benchmark</td></tr>
+      <tr><td>9</td><td>effect_loop_exit_guard_v1</td><td>venusaur</td><td>47.7%</td><td>legal_but_weak</td></tr>
+      <tr><td>10</td><td>league_mega_venusaur_tank</td><td>venusaur</td><td>25.0%</td><td>legal_but_weak</td></tr>
+      <tr><td>11</td><td>league_mega_gardevoir_psychic_ramp</td><td>gardevoir</td><td>12.1%</td><td>keep_as_benchmark</td></tr>
+      <tr><td>12</td><td>league_raging_bolt_ogerpon</td><td>raging_bolt</td><td>0.0%</td><td>needs_special_pilot</td></tr>
 </tbody></table>
-<h2>Family hardening verdicts</h2>
-<table><thead><tr><th>family</th><th>action</th><th>helped</th><th>stay active</th><th>best deck</th></tr></thead>
+<h2>Water Basic-density ladder</h2>
+<table><thead><tr><th>deck</th><th>Basics</th><th>no-Basic prob</th><th>internal adj win_rate</th></tr></thead>
 <tbody>
-      <tr><td>water</td><td>reuse_benchmark_only</td><td>None</td><td>True</td><td>league_water_core_reference</td></tr>
-      <tr><td>dragapult</td><td>reuse_confirm_children</td><td>True</td><td>True</td><td>league_dragapult_v1_search_only</td></tr>
-      <tr><td>venusaur</td><td>reuse_runtime_loop_guard</td><td>True</td><td>True</td><td>effect_loop_exit_guard_v1</td></tr>
-      <tr><td>raging_bolt</td><td>built_two_new_structural_variants</td><td>False</td><td>False</td><td>league_raging_bolt_consistency_v1</td></tr>
-      <tr><td>diagnostics</td><td>reuse_as_benchmark</td><td>None</td><td>True</td><td>league_mega_charizard_x_burst</td></tr>
+      <tr><td>league_water_anti_disruption_pivot_v1</td><td>8</td><td>34.6%</td><td>60.9%</td></tr>
+      <tr><td>water_basic_density_v1</td><td>12</td><td>19.1%</td><td>67.2%</td></tr>
+      <tr><td>water_basic_density_v2</td><td>16</td><td>9.9%</td><td>67.2%</td></tr>
 </tbody></table>
 <h2>Meta sanity (directional, surrogate)</h2>
-<p>best: <code>league_dragapult_v1_search_only</code> @ 85.1% (&gt; water
- 64.0%) &middot; collapses:
- league_raging_bolt_ogerpon (Raging Bolt = expected control)</p>
+<p>best: <code>league_mega_charizard_x_burst</code> @ 70.7% &middot; probe
+ <code>water_basic_density_v1</code> collapses: none
+ (Raging Bolt = expected control)</p>
 <h2>Decision</h2>
-<p><b>Queue league_dragapult_v1_search_only as the single HELD dry-run probe candidate, pending human approval. No upload/submit performed.</b></p>
+<p><b>Queue water_basic_density_v1 as the single HELD dry-run probe candidate (candidate_for_deeper_confirmation), pending human approval. No upload/submit performed.</b></p>
 <p>dry-run queue: 1 (max
  1, HELD) &middot; human approval required:
  yes &middot; auto-submit:
- no &middot; events emitted: 37</p>
-<p>Full report: <code>data/reports/pass30_existing_portfolio_hardening_report.md</code></p>
-<h2>Pass 31 — human-approved single Kaggle calibration probe</h2>
-<p class="caveat">Calibration probe, NOT a promotion. Human-approved single upload. No GitHub push. No second upload. No backup candidate.</p>
-<p>uploaded exactly once: <code>league_dragapult_v1_search_only.tar.gz</code>
- &middot; root main.py/deck.csv byte-identical before AND after: yes
- &middot; pending submission before upload: none
- &middot; live leader before upload: <code>submission.tar.gz</code> @ 363.0</p>
-<p>status: <b>pending</b> (no publicScore yet) &middot; interpretation: wait, no conclusion; do not resubmit this pass</p>
-<p>Full report: <code>data/reports/pass31_dragapult_search_only_kaggle_probe_report.md</code></p>
-<h2>Pass 32 — Dragapult result + replay postmortem</h2>
-<p class="caveat">READ-ONLY wrt Kaggle: status/listing only, NO upload, NO second submission. No GitHub push. No new candidates. Root main.py/deck.csv byte-identical. Existing tarballs untouched. No invented card IDs.</p>
-<p>Dragapult probe resolved: <code>league_dragapult_v1_search_only.tar.gz</code> &middot; status: <b>complete @ 309.2</b> (was pending)
- &middot; live_score_leader: <code>submission.tar.gz</code> @ 363.0
- &middot; water_family_current_best: <code>league_water_anti_disruption_pivot_v1.tar.gz</code> @ 340.0
- &middot; dragapult_family_best: <code>league_dragapult_v1_search_only.tar.gz</code> @ 309.2 (BELOW control)</p>
-<p>new replays (gitignored): 80760752 (self-mirror, p0 win), 80760852 (loss vs water_kyogre_abomasnow_maxbelt), 80761535 (loss vs unknown) &middot; all <code>league_dragapult_v1_search_only</code> on our p0 &middot; vs real opponents: <b>0-2</b></p>
-<p>loss modes: prize_race_loss (attacked 4&times;, 0 prizes converted) + no_pokemon_loss (very late first attack, ran out of Pok&eacute;mon) &middot; spread target NOT observable from numeric attackIds &mdash; no misplay claimed</p>
-<p><b>Decision: keep_water_control</b> &middot; dry-run queue: 0 (max 1, nothing queued) &middot; upload performed: no &middot; pass32 events emitted: 10 (no upload event)</p>
-<p>Full report: <code>data/reports/pass32_dragapult_result_and_replay_postmortem_report.md</code></p>
+ no &middot; events emitted: 34</p>
+<p>Full report: <code>data/reports/pass33_deck_composition_stress_test_report.md</code></p>
 </body></html>
