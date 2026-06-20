@@ -18,3 +18,15 @@ id = "SVoJN0TmsaSqjkbcPqa6s"
 uri = "file://data/experiments/pass25_water_live_control_hardening_report.md"
 type = "text"
 title = "Pass 25 — Water Live-Control Hardening Report (10 sections)"
+
+[[outputs]]
+id = "gWGngojo4FBIRbIdq74EF"
+uri = "file://data/reports/pass35_final_report.md"
+type = "text"
+title = "Pass 35 Final Report (10 sections)"
+
+[[outputs]]
+id = "Q0e6EPJJjROrZbfMXGfgj"
+uri = "file://data/reports/pass35_typed_strategy_portfolio_report.md"
+type = "text"
+title = "Pass 35 Typed Strategy Portfolio Report"
