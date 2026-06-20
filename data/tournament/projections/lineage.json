@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-20T20:02:41Z",
+  "generated_at": "2026-06-20T20:35:50Z",
   "no_upload": true,
   "families": {
     "diamond": {
@@ -70,7 +70,7 @@
       ]
     },
     "mega_gardevoir": {
-      "best_with_games": "league_mega_gardevoir_psychic_ramp",
+      "best_with_games": "mega_gardevoir_psychic_ramp_typed35",
       "members": [
         {
           "candidate_id": "league_mega_gardevoir_psychic_ramp",
@@ -87,7 +87,7 @@
       ]
     },
     "mega_venusaur": {
-      "best_with_games": "league_mega_venusaur_tank",
+      "best_with_games": "mega_venusaur_tank_typed35",
       "members": [
         {
           "candidate_id": "league_mega_venusaur_tank",

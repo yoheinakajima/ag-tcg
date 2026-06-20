@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-20T20:02:41Z",
+  "generated_at": "2026-06-20T20:35:50Z",
   "caveat": "Internal self-play diagnostics only. NOT a Kaggle leaderboard and NOT predictive of leaderboard placement. NO upload.",
   "no_upload": true,
   "rankings": [
@@ -19,6 +19,32 @@
     {
       "candidate_id": "league_dragapult_spread",
       "family_id": "dragapult",
+      "status": "active",
+      "games": 1,
+      "wins": 1,
+      "losses": 0,
+      "draws": 0,
+      "invalid": 0,
+      "adj_win_rate": 1.0,
+      "wilson_low": 0.2065,
+      "wilson_high": 1.0
+    },
+    {
+      "candidate_id": "mega_gardevoir_psychic_ramp_typed35",
+      "family_id": "mega_gardevoir",
+      "status": "active",
+      "games": 1,
+      "wins": 1,
+      "losses": 0,
+      "draws": 0,
+      "invalid": 0,
+      "adj_win_rate": 1.0,
+      "wilson_low": 0.2065,
+      "wilson_high": 1.0
+    },
+    {
+      "candidate_id": "mega_venusaur_tank_typed35",
+      "family_id": "mega_venusaur",
       "status": "active",
       "games": 1,
       "wins": 1,
@@ -72,27 +98,27 @@
       "candidate_id": "league_mega_gardevoir_psychic_ramp",
       "family_id": "mega_gardevoir",
       "status": "family_champion",
-      "games": 1,
+      "games": 2,
       "wins": 0,
-      "losses": 1,
+      "losses": 2,
       "draws": 0,
       "invalid": 0,
       "adj_win_rate": 0.0,
       "wilson_low": 0.0,
-      "wilson_high": 0.7935
+      "wilson_high": 0.6576
     },
     {
       "candidate_id": "league_mega_venusaur_tank",
       "family_id": "mega_venusaur",
       "status": "family_champion",
-      "games": 1,
+      "games": 2,
       "wins": 0,
-      "losses": 1,
+      "losses": 2,
       "draws": 0,
       "invalid": 0,
       "adj_win_rate": 0.0,
       "wilson_low": 0.0,
-      "wilson_high": 0.7935
+      "wilson_high": 0.6576
     },
     {
       "candidate_id": "mega_charizard_x_burst_typed35",
@@ -124,32 +150,6 @@
       "candidate_id": "league_water_core_reference",
       "family_id": "water",
       "status": "family_champion",
-      "games": 0,
-      "wins": 0,
-      "losses": 0,
-      "draws": 0,
-      "invalid": 0,
-      "adj_win_rate": 0.0,
-      "wilson_low": 0.0,
-      "wilson_high": 0.0
-    },
-    {
-      "candidate_id": "mega_gardevoir_psychic_ramp_typed35",
-      "family_id": "mega_gardevoir",
-      "status": "active",
-      "games": 0,
-      "wins": 0,
-      "losses": 0,
-      "draws": 0,
-      "invalid": 0,
-      "adj_win_rate": 0.0,
-      "wilson_low": 0.0,
-      "wilson_high": 0.0
-    },
-    {
-      "candidate_id": "mega_venusaur_tank_typed35",
-      "family_id": "mega_venusaur",
-      "status": "active",
       "games": 0,
       "wins": 0,
       "losses": 0,

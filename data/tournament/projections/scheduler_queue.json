@@ -1,24 +1,8 @@
 {
-  "generated_at": "2026-06-20T20:02:41Z",
+  "generated_at": "2026-06-20T20:35:50Z",
   "no_upload": true,
   "count": 50,
   "queue": [
-    {
-      "game_id": "ptcg_standing_tournament_v0|league_mega_gardevoir_psychic_ramp>mega_gardevoir_psychic_ramp_typed35@0|g0",
-      "candidate_a": "league_mega_gardevoir_psychic_ramp",
-      "candidate_b": "mega_gardevoir_psychic_ramp_typed35",
-      "a_seat": 0,
-      "priority": 1,
-      "reason": "smoke_or_placement_gap"
-    },
-    {
-      "game_id": "ptcg_standing_tournament_v0|league_mega_venusaur_tank>mega_venusaur_tank_typed35@0|g0",
-      "candidate_a": "league_mega_venusaur_tank",
-      "candidate_b": "mega_venusaur_tank_typed35",
-      "a_seat": 0,
-      "priority": 1,
-      "reason": "smoke_or_placement_gap"
-    },
     {
       "game_id": "ptcg_standing_tournament_v0|league_water_anti_disruption_pivot_v1>league_water_core_reference@0|g0",
       "candidate_a": "league_water_anti_disruption_pivot_v1",
@@ -92,20 +76,28 @@
       "reason": "placement_vs_anchor[active]"
     },
     {
+      "game_id": "ptcg_standing_tournament_v0|league_mega_gardevoir_psychic_ramp>mega_gardevoir_psychic_ramp_typed35@1|g0",
+      "candidate_a": "mega_gardevoir_psychic_ramp_typed35",
+      "candidate_b": "league_mega_gardevoir_psychic_ramp",
+      "a_seat": 0,
+      "priority": 2,
+      "reason": "placement_vs_anchor[active]"
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_mega_venusaur_tank>mega_venusaur_tank_typed35@1|g0",
+      "candidate_a": "mega_venusaur_tank_typed35",
+      "candidate_b": "league_mega_venusaur_tank",
+      "a_seat": 0,
+      "priority": 2,
+      "reason": "placement_vs_anchor[active]"
+    },
+    {
       "game_id": "ptcg_standing_tournament_v0|league_water_core_reference>water_basic_density_v1@0|g0",
       "candidate_a": "league_water_core_reference",
       "candidate_b": "water_basic_density_v1",
       "a_seat": 0,
       "priority": 3,
       "reason": "parent_child_confirmation"
-    },
-    {
-      "game_id": "ptcg_standing_tournament_v0|diamond_toolbox_diancie>league_dragapult_spread@0|g0",
-      "candidate_a": "diamond_toolbox_diancie",
-      "candidate_b": "league_dragapult_spread",
-      "a_seat": 0,
-      "priority": 4,
-      "reason": "top_bracket_round_robin"
     },
     {
       "game_id": "ptcg_standing_tournament_v0|league_dragapult_spread>league_mega_charizard_x_burst@0|g0",
@@ -116,9 +108,17 @@
       "reason": "top_bracket_round_robin"
     },
     {
-      "game_id": "ptcg_standing_tournament_v0|league_dragapult_spread>league_mega_gardevoir_psychic_ramp@0|g0",
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_spread>mega_gardevoir_psychic_ramp_typed35@0|g0",
       "candidate_a": "league_dragapult_spread",
-      "candidate_b": "league_mega_gardevoir_psychic_ramp",
+      "candidate_b": "mega_gardevoir_psychic_ramp_typed35",
+      "a_seat": 0,
+      "priority": 4,
+      "reason": "top_bracket_round_robin"
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_spread>mega_venusaur_tank_typed35@0|g0",
+      "candidate_a": "league_dragapult_spread",
+      "candidate_b": "mega_venusaur_tank_typed35",
       "a_seat": 0,
       "priority": 4,
       "reason": "top_bracket_round_robin"
@@ -140,9 +140,17 @@
       "reason": "top_bracket_round_robin"
     },
     {
-      "game_id": "ptcg_standing_tournament_v0|league_dragapult_v1_search_only>league_mega_gardevoir_psychic_ramp@0|g0",
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_v1_search_only>mega_gardevoir_psychic_ramp_typed35@0|g0",
       "candidate_a": "league_dragapult_v1_search_only",
-      "candidate_b": "league_mega_gardevoir_psychic_ramp",
+      "candidate_b": "mega_gardevoir_psychic_ramp_typed35",
+      "a_seat": 0,
+      "priority": 4,
+      "reason": "top_bracket_round_robin"
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_v1_search_only>mega_venusaur_tank_typed35@0|g0",
+      "candidate_a": "league_dragapult_v1_search_only",
+      "candidate_b": "mega_venusaur_tank_typed35",
       "a_seat": 0,
       "priority": 4,
       "reason": "top_bracket_round_robin"
@@ -156,9 +164,17 @@
       "reason": "top_bracket_round_robin"
     },
     {
-      "game_id": "ptcg_standing_tournament_v0|league_mega_charizard_x_burst>league_mega_gardevoir_psychic_ramp@0|g0",
+      "game_id": "ptcg_standing_tournament_v0|league_mega_charizard_x_burst>mega_gardevoir_psychic_ramp_typed35@0|g0",
       "candidate_a": "league_mega_charizard_x_burst",
-      "candidate_b": "league_mega_gardevoir_psychic_ramp",
+      "candidate_b": "mega_gardevoir_psychic_ramp_typed35",
+      "a_seat": 0,
+      "priority": 4,
+      "reason": "top_bracket_round_robin"
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_mega_charizard_x_burst>mega_venusaur_tank_typed35@0|g0",
+      "candidate_a": "league_mega_charizard_x_burst",
+      "candidate_b": "mega_venusaur_tank_typed35",
       "a_seat": 0,
       "priority": 4,
       "reason": "top_bracket_round_robin"
@@ -172,28 +188,28 @@
       "reason": "top_bracket_round_robin"
     },
     {
-      "game_id": "ptcg_standing_tournament_v0|league_mega_gardevoir_psychic_ramp>mono_lightning_miraidon_easy@0|g0",
-      "candidate_a": "league_mega_gardevoir_psychic_ramp",
+      "game_id": "ptcg_standing_tournament_v0|mega_gardevoir_psychic_ramp_typed35>mega_venusaur_tank_typed35@0|g0",
+      "candidate_a": "mega_gardevoir_psychic_ramp_typed35",
+      "candidate_b": "mega_venusaur_tank_typed35",
+      "a_seat": 0,
+      "priority": 4,
+      "reason": "top_bracket_round_robin"
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|mega_gardevoir_psychic_ramp_typed35>mono_lightning_miraidon_easy@0|g0",
+      "candidate_a": "mega_gardevoir_psychic_ramp_typed35",
       "candidate_b": "mono_lightning_miraidon_easy",
       "a_seat": 0,
       "priority": 4,
       "reason": "top_bracket_round_robin"
     },
     {
-      "game_id": "ptcg_standing_tournament_v0|league_mega_gardevoir_psychic_ramp>mega_gardevoir_psychic_ramp_typed35@1|g0",
-      "candidate_a": "mega_gardevoir_psychic_ramp_typed35",
-      "candidate_b": "league_mega_gardevoir_psychic_ramp",
-      "a_seat": 0,
-      "priority": 1,
-      "reason": "smoke_or_placement_gap"
-    },
-    {
-      "game_id": "ptcg_standing_tournament_v0|league_mega_venusaur_tank>mega_venusaur_tank_typed35@1|g0",
+      "game_id": "ptcg_standing_tournament_v0|mega_venusaur_tank_typed35>mono_lightning_miraidon_easy@0|g0",
       "candidate_a": "mega_venusaur_tank_typed35",
-      "candidate_b": "league_mega_venusaur_tank",
+      "candidate_b": "mono_lightning_miraidon_easy",
       "a_seat": 0,
-      "priority": 1,
-      "reason": "smoke_or_placement_gap"
+      "priority": 4,
+      "reason": "top_bracket_round_robin"
     },
     {
       "game_id": "ptcg_standing_tournament_v0|league_water_anti_disruption_pivot_v1>league_water_core_reference@1|g0",
@@ -268,20 +284,28 @@
       "reason": "placement_vs_anchor[active]"
     },
     {
+      "game_id": "ptcg_standing_tournament_v0|league_mega_gardevoir_psychic_ramp>mega_gardevoir_psychic_ramp_typed35@0|g1",
+      "candidate_a": "league_mega_gardevoir_psychic_ramp",
+      "candidate_b": "mega_gardevoir_psychic_ramp_typed35",
+      "a_seat": 0,
+      "priority": 2,
+      "reason": "placement_vs_anchor[active]"
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_mega_venusaur_tank>mega_venusaur_tank_typed35@0|g1",
+      "candidate_a": "league_mega_venusaur_tank",
+      "candidate_b": "mega_venusaur_tank_typed35",
+      "a_seat": 0,
+      "priority": 2,
+      "reason": "placement_vs_anchor[active]"
+    },
+    {
       "game_id": "ptcg_standing_tournament_v0|league_water_core_reference>water_basic_density_v1@1|g0",
       "candidate_a": "water_basic_density_v1",
       "candidate_b": "league_water_core_reference",
       "a_seat": 0,
       "priority": 3,
       "reason": "parent_child_confirmation"
-    },
-    {
-      "game_id": "ptcg_standing_tournament_v0|diamond_toolbox_diancie>league_dragapult_spread@1|g0",
-      "candidate_a": "league_dragapult_spread",
-      "candidate_b": "diamond_toolbox_diancie",
-      "a_seat": 0,
-      "priority": 4,
-      "reason": "top_bracket_round_robin"
     },
     {
       "game_id": "ptcg_standing_tournament_v0|league_dragapult_spread>league_mega_charizard_x_burst@1|g0",
@@ -292,8 +316,16 @@
       "reason": "top_bracket_round_robin"
     },
     {
-      "game_id": "ptcg_standing_tournament_v0|league_dragapult_spread>league_mega_gardevoir_psychic_ramp@1|g0",
-      "candidate_a": "league_mega_gardevoir_psychic_ramp",
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_spread>mega_gardevoir_psychic_ramp_typed35@1|g0",
+      "candidate_a": "mega_gardevoir_psychic_ramp_typed35",
+      "candidate_b": "league_dragapult_spread",
+      "a_seat": 0,
+      "priority": 4,
+      "reason": "top_bracket_round_robin"
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_spread>mega_venusaur_tank_typed35@1|g0",
+      "candidate_a": "mega_venusaur_tank_typed35",
       "candidate_b": "league_dragapult_spread",
       "a_seat": 0,
       "priority": 4,
@@ -316,8 +348,16 @@
       "reason": "top_bracket_round_robin"
     },
     {
-      "game_id": "ptcg_standing_tournament_v0|league_dragapult_v1_search_only>league_mega_gardevoir_psychic_ramp@1|g0",
-      "candidate_a": "league_mega_gardevoir_psychic_ramp",
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_v1_search_only>mega_gardevoir_psychic_ramp_typed35@1|g0",
+      "candidate_a": "mega_gardevoir_psychic_ramp_typed35",
+      "candidate_b": "league_dragapult_v1_search_only",
+      "a_seat": 0,
+      "priority": 4,
+      "reason": "top_bracket_round_robin"
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_v1_search_only>mega_venusaur_tank_typed35@1|g0",
+      "candidate_a": "mega_venusaur_tank_typed35",
       "candidate_b": "league_dragapult_v1_search_only",
       "a_seat": 0,
       "priority": 4,
@@ -332,8 +372,16 @@
       "reason": "top_bracket_round_robin"
     },
     {
-      "game_id": "ptcg_standing_tournament_v0|league_mega_charizard_x_burst>league_mega_gardevoir_psychic_ramp@1|g0",
-      "candidate_a": "league_mega_gardevoir_psychic_ramp",
+      "game_id": "ptcg_standing_tournament_v0|league_mega_charizard_x_burst>mega_gardevoir_psychic_ramp_typed35@1|g0",
+      "candidate_a": "mega_gardevoir_psychic_ramp_typed35",
+      "candidate_b": "league_mega_charizard_x_burst",
+      "a_seat": 0,
+      "priority": 4,
+      "reason": "top_bracket_round_robin"
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_mega_charizard_x_burst>mega_venusaur_tank_typed35@1|g0",
+      "candidate_a": "mega_venusaur_tank_typed35",
       "candidate_b": "league_mega_charizard_x_burst",
       "a_seat": 0,
       "priority": 4,
@@ -348,60 +396,12 @@
       "reason": "top_bracket_round_robin"
     },
     {
-      "game_id": "ptcg_standing_tournament_v0|league_mega_gardevoir_psychic_ramp>mono_lightning_miraidon_easy@1|g0",
-      "candidate_a": "mono_lightning_miraidon_easy",
-      "candidate_b": "league_mega_gardevoir_psychic_ramp",
+      "game_id": "ptcg_standing_tournament_v0|mega_gardevoir_psychic_ramp_typed35>mega_venusaur_tank_typed35@1|g0",
+      "candidate_a": "mega_venusaur_tank_typed35",
+      "candidate_b": "mega_gardevoir_psychic_ramp_typed35",
       "a_seat": 0,
       "priority": 4,
       "reason": "top_bracket_round_robin"
-    },
-    {
-      "game_id": "ptcg_standing_tournament_v0|league_mega_gardevoir_psychic_ramp>mega_gardevoir_psychic_ramp_typed35@0|g1",
-      "candidate_a": "league_mega_gardevoir_psychic_ramp",
-      "candidate_b": "mega_gardevoir_psychic_ramp_typed35",
-      "a_seat": 0,
-      "priority": 1,
-      "reason": "smoke_or_placement_gap"
-    },
-    {
-      "game_id": "ptcg_standing_tournament_v0|league_mega_venusaur_tank>mega_venusaur_tank_typed35@0|g1",
-      "candidate_a": "league_mega_venusaur_tank",
-      "candidate_b": "mega_venusaur_tank_typed35",
-      "a_seat": 0,
-      "priority": 1,
-      "reason": "smoke_or_placement_gap"
-    },
-    {
-      "game_id": "ptcg_standing_tournament_v0|league_water_anti_disruption_pivot_v1>league_water_core_reference@0|g1",
-      "candidate_a": "league_water_anti_disruption_pivot_v1",
-      "candidate_b": "league_water_core_reference",
-      "a_seat": 0,
-      "priority": 1,
-      "reason": "smoke_or_placement_gap"
-    },
-    {
-      "game_id": "ptcg_standing_tournament_v0|league_water_anti_disruption_pivot_v1>water_basic_density_v1@0|g1",
-      "candidate_a": "league_water_anti_disruption_pivot_v1",
-      "candidate_b": "water_basic_density_v1",
-      "a_seat": 0,
-      "priority": 1,
-      "reason": "smoke_or_placement_gap"
-    },
-    {
-      "game_id": "ptcg_standing_tournament_v0|diamond_toolbox_diancie>league_dragapult_v1_search_only@1|g1",
-      "candidate_a": "league_dragapult_v1_search_only",
-      "candidate_b": "diamond_toolbox_diancie",
-      "a_seat": 0,
-      "priority": 2,
-      "reason": "placement_vs_anchor[portfolio_anchor]"
-    },
-    {
-      "game_id": "ptcg_standing_tournament_v0|diamond_toolbox_diancie>league_mega_charizard_x_burst@1|g1",
-      "candidate_a": "league_mega_charizard_x_burst",
-      "candidate_b": "diamond_toolbox_diancie",
-      "a_seat": 0,
-      "priority": 2,
-      "reason": "placement_vs_anchor[family_champion]"
     }
   ]
 }
