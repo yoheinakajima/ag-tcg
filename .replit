@@ -31,8 +31,9 @@ args = "python3 main.py"
 outputType = "console"
 
 [deployment]
-deploymentTarget = "vm"
-run = ["python3", "main.py"]
+deploymentTarget = "scheduled"
+run = ["python", "scripts/tournament_deployment_tick.py", "--max-games", "20", "--max-seconds", "900", "--storage-backend", "replit_app_storage", "--production"]
+build = ["python", "-m", "pip", "install", "--break-system-packages", "replit-object-storage", "pyyaml"]
 
 [postMerge]
 path = "scripts/post-merge.sh"
