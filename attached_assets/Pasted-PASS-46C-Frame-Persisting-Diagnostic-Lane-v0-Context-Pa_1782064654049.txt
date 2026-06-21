@@ -1,0 +1,103 @@
+PASS 46C — Frame-Persisting Diagnostic Lane v0
+
+Context:
+Pass 46B showed that the reference gap is behavioral / turn-planning, not just decklist composition. Outcome-level evidence is strong, but full decision-frame evidence is sparse: only one local replay currently contains full obs/current/select/action frames. Production must keep soaking untouched. This pass is diagnostic-only and local-only.
+
+Hard scope:
+- READ-ONLY / LOCAL DIAGNOSTIC ONLY.
+- Do not mutate production Object Storage.
+- Do not run a production tick.
+- Do not change root main.py or deck.csv.
+- Do not generate, promote, retire, quarantine, queue, upload, submit, or republish anything.
+- Public references remain benchmark-only opponents, never candidates, parents, sources, or promotion targets.
+- Do not optimize a single deck.
+- Do not claim Kaggle strength.
+- Keep unsupported claims explicit: no exact damage, lethal, missed-KO, Boss/gust correctness, or spread-placement claims unless backed by cg Search API. Numeric attackId alone is insufficient.
+
+Objective:
+Build a bounded, reusable diagnostic runner that plays selected local benchmark games and persists full decision-frame traces so future passes can compare our decision behavior against public cg_typed references.
+
+Required parts:
+A. Safety stop-gate
+- Verify root main.py/deck.csv byte-identical to baseline.
+- Verify deployment config unchanged and production not touched.
+- Verify references are benchmark-only and absent from candidate pool.
+- Verify no forbidden events in scope.
+- Write pass46c_safety_preflight.{json,md}.
+
+B. Trace runner design
+- Add a local-only diagnostic trace runner, not wired into the production daemon.
+- It should run subprocess-isolated cabt games and capture full per-decision frames:
+  obs.current, obs.select, legal options, selected action, step, turn, player index, candidate/opponent ids, result, rewards, elapsed, and sha256.
+- Store compressed traces under a diagnostic-only directory, e.g. data/experiments/pass46c_traces/.
+- Produce a manifest with no_upload=true.
+- Never write to data/tournament/events.jsonl or production Object Storage.
+
+C. Match panel
+Use a small bounded panel, enough for evidence but not huge:
+- top internal water candidate vs 2 public references, both seats;
+- generated_lightning_monolightningm_dsratio_v1 vs parent and one public reference, both seats;
+- one low-performing probation candidate vs parent, both seats;
+- one public reference vs another public reference, both seats, as a “good behavior” baseline.
+Keep total games small, around 12–24 max.
+
+D. Extraction compatibility
+- Reuse src/ptcg_activegraph/analysis/turn_planning.py from Pass 46B.
+- Verify that the new trace format can be decoded by the extractor.
+- If needed, extend the extractor to support the new trace schema, but keep it pure/read-only.
+- Do not fabricate legality. Preserve tri-state legality: legal / illegal / not-checkable.
+
+E. Behavior metrics v0
+For each trace and aggregate group, compute observable metrics only:
+- first attack turn;
+- first prize turn;
+- setup bench count over first N turns;
+- energy attachment target family if observable;
+- search/draw/discard/ability/attack/end counts;
+- passive-main-phase count;
+- end-with-non-end-options count, if safely observable;
+- deckout/draw-risk indicators, if visible;
+- unsupported fields explicitly listed as unsupported.
+
+F. Reference comparison report
+- Compare our traces vs public-reference traces at the metric level.
+- Use careful wording: diagnostic, small sample, not causal, not Kaggle strength.
+- Identify candidate reusable primitives suggested by the traces.
+- Do not recommend a specific deck mutation or promotion.
+
+G. Artifacts
+Write:
+- pass46c_trace_manifest.{json,md}
+- pass46c_trace_extractor_validation.{json,md}
+- pass46c_behavior_metrics.{json,md}
+- pass46c_reference_comparison.{json,md}
+- pass46c_strategy_decision.{json,md}
+- data/reports/pass46c_frame_persisting_diagnostic_report.md with exactly 10 sections.
+
+H. Tests
+Add tests/test_pass46c_frame_diagnostics.py with at least 20 tests covering:
+- root immutability;
+- no production mutation;
+- no forbidden events emitted;
+- trace files compressed and hash-matched;
+- manifest no_upload=true;
+- trace schema decodable;
+- extractor returns decision frames for new traces;
+- extractor returns zero or not-checkable honestly for unsupported/missing data;
+- legality tri-state behavior;
+- public references absent from candidate pool;
+- no mutation/promotion/upload/submit paths called;
+- metrics do not include unsupported lethal/damage/Boss/gust claims;
+- report caveats present.
+
+I. Regression
+Run relevant pass42–46C or pass36–46C tests. Do not weaken existing tests.
+
+J. Architect review
+Run architect review before final. Fix real issues. Do not weaken guardrails.
+
+Expected final decision:
+reference_trace_diagnostic_ready_soak_continue
+
+Final recommendation should be:
+Keep production soaking. Use the new trace corpus to build reusable turn-planning primitives next. No promotion, no generation, no upload.
