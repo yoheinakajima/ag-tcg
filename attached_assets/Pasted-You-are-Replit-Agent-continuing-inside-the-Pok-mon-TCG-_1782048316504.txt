@@ -1,0 +1,247 @@
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+The user has now manually republished the existing Scheduled Deployment from the current repo commit after Pass 43.
+
+This is a post-republish production registration and verification pass.
+
+Do NOT generate candidates.
+Do NOT mutate decklists.
+Do NOT optimize a single deck.
+Do NOT run cg_typed candidate work.
+Do NOT promote anything.
+Do NOT upload/submit/queue to Kaggle.
+Do NOT start the root Start application workflow.
+The root Start application workflow is the frozen Kaggle entrypoint and should remain not-started.
+
+Goal:
+Finish the Pass-43 blocked path now that redeploy should have made the Pass-42 generated tarballs deploy-visible.
+
+Expected final decision:
+production_probation_registered_promotion_gate_ready
+
+If tarballs are still not deploy-visible or any production safety issue appears:
+blocked_safety_failure or production_registration_still_blocked
+
+PART A — Post-republish safety preflight
+Run hard preflight before any production mutation:
+
+1. root main.py and deck.csv byte-identical to data/baselines/v1_kaggle_349_8.
+2. .replit scheduled deployment unchanged:
+   - deploymentTarget=scheduled
+   - run uses scripts/tournament_deployment_tick.py
+   - run includes --production
+   - run uses replit_app_storage
+   - not root main.py
+3. auto_submit false.
+4. production Object Storage reachable.
+5. production health check green or only expected sample-size warnings.
+6. no forbidden SubmissionQueued / SubmissionUploaded / KaggleScoreUpdated / CandidatePromoted events in the relevant new scope.
+7. public references absent from candidate pool, main scheduler, mutation lineage, and promotion set.
+8. generated Pass-42 tarballs exist locally and match Pass-42 manifest.
+9. generated Pass-42 tarballs are git-tracked.
+
+Deliver:
+- data/experiments/pass44_post_republish_safety_preflight.{json,md}
+
+If any hard check fails, STOP.
+
+PART B — Confirm deploy-image candidate availability
+The prior block was that the Scheduled Deployment image was published before Pass 42, so tarball visibility in prod was unverifiable.
+
+Now that the user republished, verify as much as possible:
+
+For each Pass-42 probation candidate:
+- local tarball exists,
+- tarball sha matches manifest,
+- tarball is git-tracked,
+- tarball path is inside the repo and therefore should be baked into the deployment image,
+- prod Object Storage currently lacks or has the candidate registration,
+- candidate is not already active/champion/held/protected,
+- public references are not sources/parents.
+
+If there is any available deployment introspection/log/status API, use it to confirm the current deployment was rebuilt after the latest commit/checkpoint. If not available, state that image visibility can only be proven by the controlled post-registration production tick in Part E.
+
+Classify:
+- safe_to_register_after_republish
+- already_registered
+- still_unverifiable_but_repo_tracked
+- unsafe_missing_tarball
+- manifest_mismatch
+- blocked
+
+Deliver:
+- data/experiments/pass44_deploy_image_candidate_availability.{json,md}
+
+Proceed only if classification is safe_to_register_after_republish, already_registered, or still_unverifiable_but_repo_tracked with a clear note that Part E is the runtime proof.
+
+PART C — Apply production probation registration
+Run the Pass-43 registration apply path now.
+
+Use the existing script if present:
+python scripts/build_pass43_production_probation_registration.py --apply
+
+If script name differs, locate the exact Pass-43 production registration script and run its apply mode.
+
+The apply must:
+- acquire production lease,
+- pull Object Storage state,
+- reconcile safely,
+- register only the 3 Pass-42 probation candidates if missing,
+- preserve status=probation,
+- emit no_upload=true on all new events,
+- emit no SubmissionQueued / SubmissionUploaded / KaggleScoreUpdated / CandidatePromoted,
+- not change root files,
+- not mutate/delete tarballs,
+- not touch public references,
+- rebuild projections,
+- refresh storage_manifest with event_count == ledger length,
+- push with sha verification,
+- release lease.
+
+Expected:
+- production_mutated=true if candidates were missing and are now registered,
+- or idempotent no-op if already registered,
+- 3 probation candidates present in production pool/projections after pull-back.
+
+Deliver:
+- data/experiments/pass44_production_probation_registration_apply.{json,md}
+
+PART D — Verify production state after registration
+Pull production Object Storage after Part C and verify:
+
+1. all 3 generated candidates appear in prod candidate_pool.json.
+2. all 3 appear via ledger fold / CandidatePool.from_events.
+3. status=probation for all 3.
+4. candidate snapshots match expected tarball paths and sha.
+5. projections rebuild from ledger.
+6. scheduler queue includes probation candidates in placement/anchor games.
+7. no public reference in main scheduler queue.
+8. no special_pilot_only / retired / quarantined scheduled.
+9. manifest event_count matches ledger length.
+10. no forbidden upload/submit/promotion events emitted.
+
+Deliver:
+- data/experiments/pass44_post_registration_prod_state_audit.{json,md}
+
+PART E — Controlled production tick: runtime proof
+Run a small bounded production tick to prove the live production path can actually find and run the newly registered candidate tarballs:
+
+python scripts/tournament_deployment_tick.py --max-games 3 --max-seconds 240 --storage-backend replit_app_storage --production
+
+Then verify:
+- exit code 0,
+- no missing-tarball errors,
+- no import errors,
+- no upload/submit/promotion events,
+- root unchanged,
+- Object Storage push verified,
+- sidecars for any new games exist and sha match,
+- if a probation candidate was scheduled, it ran successfully or at least did not fail due missing tarball,
+- manifest event_count matches ledger length after push.
+
+If the scheduler does not choose a probation candidate in only 3 games, do not force it unless there is already a safe existing flag to prioritize probation placement. Instead report that the runtime tick succeeded but did not sample a probation candidate. However, if the scheduler queue from Part D shows probation candidates near the top, this tick should likely test them.
+
+Deliver:
+- data/experiments/pass44_post_registration_controlled_prod_tick.{json,md}
+
+PART F — Promotion gate rerun
+Run the Promotion Gate v1 dry-run and apply after registration.
+
+Expected:
+- all 3 generated probation candidates remain insufficient_evidence because they have too few or zero production placement games.
+- --apply should apply_skipped=true.
+- no CandidatePromoted.
+- no SubmissionQueued.
+- no status upgrades.
+- no protected demotions.
+
+Deliver:
+- data/experiments/pass44_promotion_gate_post_registration_dry_run.{json,md}
+- data/experiments/pass44_promotion_gate_post_registration_apply.{json,md}
+
+PART G — Scheduler/lifecycle follow-up audit
+Verify:
+- probation candidates are schedulable.
+- scheduler is deterministic.
+- worklist includes probation placement games.
+- public references remain benchmark-only and absent from main queue.
+- special_pilot_only decks remain unscheduled.
+- retired/quarantined remain unscheduled.
+- family champions / portfolio anchors / held probe remain protected.
+- no active-cap replacement happened.
+- no promotion or retirement happened.
+
+Deliver:
+- data/experiments/pass44_scheduler_lifecycle_after_prod_registration.{json,md}
+
+PART H — Tests
+Add tests/test_pass44_post_republish_registration.py or equivalent.
+
+Minimum coverage:
+1. root unchanged.
+2. generated tarballs exist and match Pass-42 manifest.
+3. generated tarballs are git-tracked.
+4. prod registration apply is idempotent.
+5. prod pool contains generated candidates after apply.
+6. generated candidates status=probation.
+7. no CandidatePromoted/SubmissionQueued/SubmissionUploaded/KaggleScoreUpdated.
+8. manifest event_count == ledger length.
+9. public references absent from pool/scheduler/promotion.
+10. scheduler includes probation candidates.
+11. scheduler excludes retired/quarantined/special.
+12. controlled tick exits 0 or clearly reports no-op reason.
+13. no missing-tarball errors after republish.
+14. promotion gate still insufficient_evidence.
+15. promotion apply skips.
+16. pass36–44 regression green.
+
+PART I — Report/docs
+Write exact 10-section report:
+data/reports/pass44_post_republish_probation_registration_report.md
+
+Sections:
+1. Root and production safety
+2. Deploy-image candidate availability
+3. Production probation registration apply
+4. Production state after registration
+5. Controlled production tick runtime proof
+6. Promotion gate post-registration
+7. Scheduler/lifecycle integration
+8. Tests / events / no-upload guarantees
+9. Operator notes
+10. Verdict and next recommendation
+
+Update:
+- data/reports/activegraph_strategy_report.md
+- docs/NEXT_STEPS.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- docs/REPLIT_SCHEDULED_DEPLOYMENT_RUNBOOK.md if needed
+- data/site/index.html
+
+PART J — Architect review
+Run architect review before final.
+
+Ask specifically:
+- Did the republish actually make generated tarballs deploy-visible?
+- Did production Object Storage registration happen only after it was safe?
+- Did the controlled tick prove no missing-tarball runtime failure?
+- Any public-reference leakage?
+- Any forbidden upload/submit/queue/promotion event?
+- Any CandidatePromoted event?
+- Any root/tarball mutation/deletion?
+- Any manifest/ledger mismatch?
+- Any promotion gate weakness?
+- Any reason the scheduled daemon will fail on the next cron tick?
+
+Fix real issues and add regression tests.
+
+FINAL EXPECTED DECISION
+One of:
+1. production_probation_registered_promotion_gate_ready
+2. production_registration_still_blocked
+3. blocked_safety_failure
+
+Most likely desired result:
+production_probation_registered_promotion_gate_ready
+
+Do not do any new generation or deck work. This is just the post-republish registration bridge and verification.
