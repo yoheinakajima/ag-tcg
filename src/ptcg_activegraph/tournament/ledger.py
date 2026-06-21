@@ -21,12 +21,20 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 TOURNAMENT_DIR = REPO_ROOT / "data" / "tournament"
 DEFAULT_EVENTS_PATH = TOURNAMENT_DIR / "events.jsonl"
 
-# Events this engine must never emit (upload/submit/leaderboard side effects).
+# Events this engine must never emit (upload/submit/leaderboard/Kaggle-queue side
+# effects). The standing tournament engine expresses lifecycle purely via
+# CandidateStatusChanged; a Kaggle-queue (SubmissionQueued) or Kaggle-promotion
+# (CandidatePromoted) event has no legitimate producer on this ledger. (The
+# experiments ledger is a SEPARATE EventStore and may legitimately emit those.)
 _FORBIDDEN = {
     EventType.SubmissionUploaded.value,
     EventType.KaggleScoreUpdated.value,
+    EventType.SubmissionQueued.value,
+    EventType.CandidatePromoted.value,
     "SubmissionUploaded",
     "KaggleScoreUpdated",
+    "SubmissionQueued",
+    "CandidatePromoted",
 }
 
 _BASE_TAGS = ("pass36", "tournament")

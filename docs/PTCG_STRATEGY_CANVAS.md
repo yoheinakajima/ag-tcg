@@ -1,10 +1,15 @@
 # PTCG Strategy Canvas
 
-> Living strategy canvas. Updated through Pass 42.
+> Living strategy canvas. Updated through Pass 43.
 
 _The internal tournament, parent/child H2H confirmations, and the replay-derived meta sanity are LOCAL diagnostics: every seat is OUR own portfolio deck driven by the SAME deck-agnostic base pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal._
 
 _Honesty mandate: attack damage/effect, lethal, KO target, spread placement, Boss/gust are UNSUPPORTED by the option schema (numeric attackId only); the typed layer refuses to fabricate them. Raging Bolt gets NO fake color-match fix (Pass 28 refuted it)._
+
+## Pass 43 — production probation registration + Promotion Gate v1
+
+- **Decision: `production_registration_blocked_republish_required`.** The 3 Pass-42 probation candidates (`generated_diamond_diamondtoolbox_eratio_v1`, `generated_dragapult_leaguedragapul_bdens_v1`, `generated_lightning_monolightningm_dsratio_v1`) are local-only: git-tracked tarballs, absent from prod OS, deploy-image visibility unconfirmed → registering now risks missing-tarball error games. Republish first, then conditional `--apply`. Production NOT mutated; root byte-unchanged.
+- **Promotion Gate v1 (dry-run default, conservative):** 19 thresholds / 9 actions; raw win-rate alone NEVER promotes; ACTIVATE requires direct parent-H2H superiority and PROMOTE requires direct champion-H2H superiority (out-farming weaker opponents in the aggregate is not enough); protected statuses never demoted; public refs never in the candidate set; tarballs never deleted. Dry-run over 19 candidates → 0 actionable; all 3 generated → `insufficient_evidence` (0 placement games). Scheduler unchanged by the gate (deterministic, no leakage). 38 Pass-43 tests + pass36–43 regression green; NO upload/submit/queue/promotion.
 
 ## Pass 35 — typed board-aware strategy layer
 

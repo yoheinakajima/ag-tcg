@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph — Pass 42 Candidate Generation v0 (local factory, internal diagnostics)</title>
+<title>ActiveGraph — Pass 43 Production Probation Registration + Promotion Gate v1 (local diagnostics)</title>
 <style>
  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
  h1{font-size:1.5rem} table{border-collapse:collapse;width:100%;margin:1rem 0}
@@ -9,6 +9,21 @@
  th{background:#f4f4f6} .caveat{background:#fff7e6;border:1px solid #f0c36d;padding:.7rem;border-radius:6px;font-size:.9rem;margin:.5rem 0}
  code{background:#f4f4f6;padding:.1rem .3rem;border-radius:3px}
 </style></head><body>
+<h1>ActiveGraph — Pass 43: Production Probation Registration + Promotion Gate v1 (local diagnostics)</h1>
+<p class="caveat"><b>Lifecycle plumbing + internal diagnostics — NOT a Kaggle score, NOT a leaderboard, NOT a strength claim.</b> <b>NO</b> Kaggle upload/submit/auto-submit, <b>NO</b> <code>SubmissionQueued</code>/<code>SubmissionUploaded</code>/<code>KaggleScoreUpdated</code>/<code>CandidatePromoted</code>, <b>NO</b> root <code>main.py</code>/<code>deck.csv</code> mutation, <b>NO</b> tarball deletion/overwrite, <b>NO</b> new candidate generation. The five public references stay <b>benchmark-only</b>. Internal Promotion-Gate win-rates are self-play diagnostics, never an upload signal.</p>
+<h2>Final decision: <code>production_registration_blocked_republish_required</code></h2>
+<p>The 3 Pass-42 probation candidates are <b>locally complete + git-tracked</b> but absent from production Object Storage, and the live Scheduled-Deployment image (published before Pass 42) cannot be confirmed to carry their tarballs. Registering now would create schedulable pool entries whose tarballs the daemon can't find → missing-tarball error games. Safe path = <b>republish first</b>, then conditional apply. Production was <b>NOT</b> mutated.</p>
+<ul>
+ <li><b>Root/prod safe (STOP-GATE):</b> root <code>main.py</code>/<code>deck.csv</code> byte-unchanged before+after &middot; scheduled deployment still runs <code>tournament_deployment_tick.py --production</code> &middot; <code>auto_submit</code> falsy &middot; <code>Start application</code> frozen Kaggle entrypoint intentionally <b>not started</b> &middot; no forbidden/<code>no_upload=false</code> events in scope &middot; prod health read-only green.</li>
+ <li><b>Visibility audit (3, all <code>local_only_needs_republish</code>):</b> tarballs exist locally, SHA == Pass-42 manifest, git-tracked, in LOCAL pool+ledger &middot; <b>absent</b> from prod pool/ledger (read-only pull) &middot; deploy-image visibility <b>unverifiable → conservative no</b>.</li>
+ <li><b>Deployment decision:</b> <code>case_2_local_only_block_republish</code> &middot; <code>mutate_prod_os=false</code>, <code>republish_required=true</code> &middot; verifiable 5-step operator runbook emitted.</li>
+ <li><b>Registration / post-tick:</b> <code>apply_skipped=true</code> (dry-run, case_2) &middot; would-register captured (3 events each, present locally) &middot; post-registration prod tick <b>skipped by design</b> &middot; <code>production_mutated=false</code>.</li>
+ <li><b>Promotion Gate v1 (dry-run default, conservative):</b> <b>19</b> thresholds / <b>9</b> actions &middot; raw win-rate alone <b>never</b> promotes; ACTIVATE requires direct <b>parent-H2H</b> superiority and PROMOTE requires direct <b>champion-H2H</b> superiority (out-farming weaker opponents in the aggregate is not enough) &middot; protected never demoted &middot; public refs never in candidate set &middot; tarballs never deleted. Dry-run over <b>19</b> candidates → <b>0 actionable</b> (3 blocked_invalidity, 9 blocked_protected_status, 7 insufficient_evidence); all 3 generated → <code>insufficient_evidence</code> (0 placement games). <code>--apply</code> → <code>apply_skipped</code>.</li>
+ <li><b>Scheduler/lifecycle:</b> <code>ok=true</code> &middot; probation+active schedulable, never-schedule statuses excluded, <b>0</b> reference in pool/worklist &middot; gate emits nothing &amp; leaves worklist byte-identical &middot; deterministic build &middot; status-change fold demo (in-memory) honoured by scheduler.</li>
+ <li><b>Tests/guarantees:</b> <b>38</b> Pass-43 tests + pass36–43 regression <b>green</b> &middot; manifest <code>event_count</code> lockstep (214==214) &middot; every Pass-43 step appended <b>0</b> events to local/prod ledger &middot; no upload/submit/queue/promotion.</li>
+</ul>
+<p>Report: <code>data/reports/pass43_production_probation_and_promotion_gate_report.md</code> &middot; Gate: <code>docs/PROMOTION_GATE_V1.md</code> &middot; Runbook §13: <code>docs/REPLIT_SCHEDULED_DEPLOYMENT_RUNBOOK.md</code> &middot; Artifacts: <code>data/experiments/pass43_*</code>.</p>
+<hr>
 <h1>ActiveGraph — Pass 42: Candidate Generation v0 (local factory, probation-only)</h1>
 <p class="caveat"><b>LOCAL-only candidate factory — NOT a Kaggle score, NOT a leaderboard, NOT a strength claim.</b> Mutate <b>internal</b> source decks with stdlib-safe operators, validate via hard gates, admit passing ones as <b>probation</b>. <b>NO promotion, NO queue, NO upload/submit/auto-submit, NO GitHub push, NO root mutation, NO tarball overwrite/delete.</b> The five public references stay <b>benchmark-only</b> — never a source/parent/candidate/queue/promotion. The 12-game probation eval is <b>liveness/placement only — NOT promotion evidence.</b></p>
 <h2>Three internal probation candidates generated, validated, and scheduled</h2>

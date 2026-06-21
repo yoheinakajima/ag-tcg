@@ -174,3 +174,43 @@ not corruption.
 - **Cadence:** cron is now `*/20 * * * *` (every 20 min), was `0 */2 * * *`. Run signature unchanged (`--max-games 20 --max-seconds 900`).
 - **Invariant now:** `lease TTL (30 min) > job timeout (~25 min) > schedule interval (20 min) > --max-seconds (15 min)`. Actual work (≤15 min) finishes inside the 20-min interval, so normal ticks never overlap. Because the interval (20 min) is shorter than the lease TTL (30 min), classify scheduled vs manual by the **run signature**, not tick spacing; the lease + push-merge-by-`event_id` keep concurrent/overrun ticks safe. Do not change the lease TTL unless asked.
 - **This pass:** scheduled_tick_confirmed; prod healthy (0 hard fails, warn `placement_sample_size`); lifecycle dry-run 12 retain / 4 eligible_soft_probation / 0 quarantine (11 protected); `--apply` → apply_skipped=true (no lease, no push). See `data/reports/pass39_candidate_lifecycle_report.md` and `data/experiments/pass39_*`.
+
+## 13. Pass 43 — republishing to add new probation candidate tarballs (OPS only)
+
+> Internal diagnostics only. NO upload, NO submit, NO promotion. Root "Start application"
+> stays not-started (frozen Kaggle entrypoint) — EXPECTED.
+
+**Why this matters:** candidate tarballs are **NOT** synced via Object Storage — the
+sync set is `events.jsonl`, `candidate_pool.json`, `config.yaml`, `projections/runs/games`
+only. The deployed daemon resolves a game's tarball from the **deploy image filesystem**
+(`data/submissions/<tarball_path>`). So a new candidate's pool entry can sync to prod OS,
+but its tarball only reaches the daemon when the image is **republished** from a commit
+that contains it. Registering pool entries whose tarballs are absent → schedulable
+candidates the daemon can't load → missing-tarball error games.
+
+**Decision rule (Pass 43, case_2):** if the candidates are local-only (committed but
+absent from prod OS and the live image is pre-candidate), **do NOT mutate prod OS** —
+republish first. This was the Pass-43 outcome
+(`production_registration_blocked_republish_required`).
+
+**5-step operator runbook (run only when ready to make the 3 Pass-42 candidates real):**
+
+1. Confirm the tarballs are committed (already true):
+   `git ls-files -- data/submissions/generated_pass42/*.tar.gz` → all three printed.
+2. **Republish** the tournament Scheduled Deployment from the current commit (Replit UI →
+   Deployments → Republish). `.replit` `run`/`build` stay unchanged; the new image bakes
+   the tarballs into `data/submissions/`.
+3. Confirm prod health post-republish:
+   `python scripts/check_tournament_health.py --mode prod
+   --out-json data/experiments/pass43_post_republish_health.json` → `healthy=True`
+   (sample-size warnings tolerated).
+4. Register into prod OS (idempotent, no_upload, leased):
+   `python scripts/build_pass43_production_probation_registration.py --apply`.
+5. Verify the daemon can run them:
+   `python scripts/tournament_deployment_tick.py --max-games 3 --max-seconds 240
+   --storage-backend replit_app_storage --production` → exit 0, **no** missing-tarball /
+   error games for the 3 ids, played candidates get sidecars with matching
+   `artifact_sha256`, manifest `event_count == ledger`.
+
+See `data/reports/pass43_production_probation_and_promotion_gate_report.md`,
+`docs/PROMOTION_GATE_V1.md`, and `data/experiments/pass43_*`.

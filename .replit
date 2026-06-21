@@ -23,6 +23,10 @@ args = "Start application"
 task = "workflow.run"
 args = "pass36_42"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "pass36_43_regression"
+
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -41,6 +45,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python3 -m pytest tests/test_pass36_tournament_engine.py tests/test_pass37_deployment_storage.py tests/test_pass38_deployment_ops.py tests/test_pass39_candidate_lifecycle.py tests/test_pass40_reference_intake.py tests/test_pass41_cg_typed_candidate.py tests/test_pass42_candidate_generation.py -q"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "pass36_43_regression"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m pytest tests/test_pass36_tournament_engine.py tests/test_pass37_deployment_storage.py tests/test_pass38_deployment_ops.py tests/test_pass39_candidate_lifecycle.py tests/test_pass40_reference_intake.py tests/test_pass41_cg_typed_candidate.py tests/test_pass42_candidate_generation.py tests/test_pass43_promotion_gate.py -q"
 
 [workflows.workflow.metadata]
 isValidation = true

@@ -1,0 +1,366 @@
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+IMPORTANT ROADMAP CORRECTION:
+Pass 42 generated 3 probation candidates locally. Do NOT start new generation.
+Do NOT optimize a single deck.
+Do NOT continue cg_typed Miraidon.
+Do NOT build family-specific mutation policies yet.
+Do NOT promote anything unless the evidence gates are actually met.
+
+The next task is Pass 43:
+Production Probation Registration + Promotion Gate v1.
+
+Goal:
+1. Determine whether the Pass-42 probation candidates are actually visible to the production scheduled daemon.
+2. If safe, register/sync them into production Object Storage so the scheduled daemon can play real placement games.
+3. Implement the internal promotion gate v1.
+4. Run the gate honestly. Expected outcome is probably "insufficient evidence / no promotion yet."
+
+This is still:
+- NO Kaggle upload.
+- NO Kaggle submit.
+- NO auto-submit.
+- NO SubmissionQueued.
+- NO CandidatePromoted unless all strict internal evidence gates pass.
+- NO root main.py/deck.csv mutation.
+- NO tarball deletion.
+- NO public-reference leakage.
+- NO new candidate generation.
+
+Public references remain benchmark-only external_reference opponents. They are never sources, candidates, queue members, promotion targets, parents, champions, or active-cap participants.
+
+PART A — Root / deployment / production safety stop-gate
+Run the usual hard preflight:
+1. root main.py and deck.csv byte-identical to data/baselines/v1_kaggle_349_8.
+2. .replit scheduled deployment still runs scripts/tournament_deployment_tick.py with --production.
+3. auto_submit false; truthy auto-submit refused.
+4. no new forbidden upload/submit/queue/promotion events.
+5. public references absent from candidate_pool, main scheduler queue, promotion pool, mutation lineage.
+6. production health check is green or only expected sample-size warnings.
+7. Start application workflow remains not-started and is expected.
+
+If any hard check fails, STOP and write only failure artifacts.
+
+Deliver:
+- data/experiments/pass43_safety_preflight.{json,md}
+
+PART B — Pass-42 probation visibility audit
+Before changing anything, audit whether the 3 Pass-42 probation candidates are usable by the production scheduled daemon.
+
+For each Pass-42 generated probation candidate, check:
+- candidate id
+- tarball path
+- tarball exists locally
+- tarball sha256 matches Pass-42 manifest
+- tarball is tracked/available in repo or otherwise deploy-visible
+- candidate appears in local candidate_pool.json
+- candidate appears in local ledger via TournamentParticipantRegistered
+- candidate appears in production Object Storage candidate_pool/events after pull
+- production scheduler queue includes/does not include it
+- deployment image likely has/does not have the tarball
+
+Important:
+If the generated tarballs are not deploy-visible, do NOT push production Object Storage state that references them. That would make scheduled ticks fail or record errors.
+
+Classify each candidate:
+- production_ready
+- local_only_needs_republish
+- missing_tarball
+- manifest_mismatch
+- object_storage_missing
+- unsafe_to_register
+
+Deliver:
+- data/experiments/pass43_probation_visibility_audit.{json,md}
+
+PART C — Deployment availability decision
+Based on Part B, decide whether production registration is safe.
+
+Cases:
+1. If tarballs are deploy-visible and Object Storage is missing them:
+   proceed to Part D production registration.
+2. If tarballs are local-only / deploy image missing:
+   do NOT mutate production Object Storage.
+   write exact operator instructions:
+   - whether republish is required,
+   - which files/tarballs must be included,
+   - how to verify after republish,
+   - what command to run after republish.
+3. If production already has the candidates:
+   no-op registration and proceed to scheduler/projection verification.
+4. If inconsistent:
+   stop before mutation and write conflict report.
+
+Deliver:
+- data/experiments/pass43_deployment_availability_decision.{json,md}
+
+PART D — Safe production registration / sync transaction
+Only run this part if Part C says it is safe.
+
+Use the same production storage/lease/sync discipline as the scheduled deployment:
+- acquire lease,
+- pull Object Storage state,
+- reconcile,
+- apply only the missing Pass-42 probation candidate registrations/status marks,
+- never overwrite divergent remote events,
+- never delete remote data,
+- rebuild projections,
+- build/refresh storage manifest,
+- push with sha verification,
+- release lease.
+
+Events must be idempotent and no_upload=true.
+
+Allowed event types:
+- TournamentParticipantRegistered for probation candidate snapshots, if missing.
+- CandidateStatusChanged only if status needs to become probation.
+- CandidateValidationFinished / CandidateGenerated only if needed for provenance and missing.
+
+Forbidden:
+- CandidatePromoted
+- SubmissionQueued
+- SubmissionUploaded
+- KaggleScoreUpdated
+- any upload/submit event
+- family_champion/portfolio_anchor/held_probe changes
+
+If registration is skipped because deploy visibility is not safe, this artifact should explicitly say apply_skipped=true and why.
+
+Deliver:
+- data/experiments/pass43_production_probation_registration.{json,md}
+
+PART E — Controlled post-registration production tick
+Only run this if Part D actually registered candidates and tarballs are deploy-visible.
+
+Run a small bounded production tick:
+python scripts/tournament_deployment_tick.py --max-games 3 --max-seconds 240 --storage-backend replit_app_storage --production
+
+Then verify:
+- exit code 0
+- no upload/submit/promotion
+- root unchanged
+- no missing-tarball errors
+- probation candidates appear in scheduler/projections
+- if any probation candidate got a game, sidecar exists and sha matches
+- manifest event_count matches ledger
+
+If Part D skipped registration, skip this part and state why.
+
+Deliver:
+- data/experiments/pass43_post_registration_tick.{json,md}
+
+PART F — Promotion Gate v1 design doc
+Write docs/PROMOTION_GATE_V1.md.
+
+Promotion Gate v1 answers:
+When does a probation candidate become active, family_champion, retired, or stay probation?
+
+Define statuses and actions:
+- stay_probation
+- activate
+- promote_family_champion
+- retire_to_retired
+- quarantine
+- insufficient_evidence
+- blocked_protected_status
+- blocked_invalidity
+- blocked_public_reference
+
+Strict conservative rules:
+A probation candidate may become active only if:
+1. It has enough total games: default >= 40.
+2. It has enough anchor games: default >= 10.
+3. It has direct parent/family comparison where possible.
+4. Wilson lower bound clears parent/family baseline by a margin.
+5. No validity collapse: invalid/error/timeout rate below threshold.
+6. No benchmark collapse against public references if benchmark evidence exists, but public references are diagnostic only.
+7. Non-inertness or meaningful deck-composition delta is proven.
+8. It does not regress badly against live controls / water controls.
+9. Self-mirror/noise-floor caveat is respected when doing direct H2H.
+10. No protected candidate is demoted.
+
+Family champion promotion requires stricter criteria:
+- enough games vs family peers and anchors,
+- current family champion baseline exists,
+- lower confidence bound clears champion baseline by margin,
+- no collapse against control/benchmark families.
+
+Retirement/quarantine:
+- retire only after enough evidence and only if not protected.
+- quarantine only for repeated hard validity failures.
+- never delete tarballs.
+
+Deliver:
+- docs/PROMOTION_GATE_V1.md
+- data/experiments/pass43_promotion_gate_policy.{json,md}
+
+PART G — Implement promotion gate evaluator
+Add a module:
+src/ptcg_activegraph/tournament/promotion.py
+
+It should:
+- read CandidatePool from ledger/projections,
+- read fold_games / rankings / matchup evidence,
+- identify probation candidates,
+- compute evidence by candidate:
+  - total games
+  - decisive games
+  - anchor games
+  - parent games
+  - family games
+  - invalid/error/timeout counts
+  - win rate and Wilson CI
+  - parent/family/champion baseline
+  - public benchmark diagnostics if available
+  - non-inertness/deck-delta flag from lineage
+- produce action recommendations, not apply by default.
+
+Default mode = dry-run.
+
+Deliver:
+- src/ptcg_activegraph/tournament/promotion.py
+- scripts/run_tournament_promotion_gate.py
+
+PART H — Run promotion gate dry-run
+Run the promotion gate against current local/production-pulled state.
+
+Expected honest result:
+Most or all probation candidates should be insufficient_evidence because Pass 42 just generated them and the daemon likely has not accumulated enough placement games yet.
+
+Do NOT force promotion.
+Do NOT weaken thresholds to produce promotion.
+
+Deliver:
+- data/experiments/pass43_promotion_gate_dry_run.{json,md}
+
+PART I — Apply mode, but conservative
+Implement --apply in scripts/run_tournament_promotion_gate.py.
+
+Apply mode may emit CandidateStatusChanged only when:
+- dry-run recommendation is activate / promote_family_champion / retire / quarantine,
+- all thresholds pass,
+- no hard safety block exists,
+- root/production safety preflight is still green,
+- public references are absent,
+- apply is idempotent,
+- no forbidden events are emitted.
+
+For this pass, expected apply outcome is likely:
+apply_skipped=true
+reason=insufficient_evidence
+
+If evidence somehow is sufficient, the script may apply only internal pool status changes. Still no Kaggle queue/submission.
+
+Deliver:
+- data/experiments/pass43_promotion_gate_apply.{json,md}
+
+PART J — Scheduler and lifecycle integration audit
+Verify:
+- probation candidates remain schedulable.
+- active candidates remain schedulable.
+- retired/quarantined/special_pilot_only remain unscheduled.
+- no public references in main scheduler.
+- promotion recommendations do not mutate scheduler by themselves.
+- if any status changes were applied, CandidatePool.from_events folds them correctly.
+- scheduler build is deterministic before/after gate.
+
+Deliver:
+- data/experiments/pass43_scheduler_promotion_integration.{json,md}
+
+PART K — Tests
+Add tests/test_pass43_promotion_gate.py.
+
+Minimum 26 tests:
+1. root unchanged
+2. public refs excluded from promotion candidates
+3. special_pilot_only excluded
+4. retired/quarantined excluded from promotion
+5. probation candidates detected
+6. production visibility audit detects local-only candidates
+7. unsafe registration refuses missing tarball/deploy visibility
+8. safe registration is idempotent
+9. promotion dry-run emits no events
+10. insufficient total games => insufficient_evidence
+11. insufficient anchor games => insufficient_evidence
+12. Wilson lower bound must clear baseline by margin
+13. noisy raw win rate alone cannot promote
+14. invalid/error rate blocks activation
+15. public benchmark collapse is diagnostic and blocks only if policy says so
+16. protected candidates never demoted
+17. family champion requires stricter gate
+18. quarantine only on repeated hard failures
+19. no tarball deletion
+20. CandidateStatusChanged folds correctly
+21. apply no-op when no eligible recommendations
+22. apply idempotent
+23. no CandidatePromoted/SubmissionQueued/SubmissionUploaded/KaggleScoreUpdated
+24. scheduler deterministic after promotion gate
+25. storage manifest event_count lockstep
+26. pass36–43 regression green
+
+PART L — Reports and docs
+Write exact 10-section report:
+data/reports/pass43_production_probation_and_promotion_gate_report.md
+
+Required sections:
+1. Root and production safety
+2. Pass-42 probation visibility
+3. Deployment availability decision
+4. Production registration / sync result
+5. Post-registration production tick
+6. Promotion Gate v1 policy
+7. Promotion dry-run and apply result
+8. Scheduler/lifecycle integration
+9. Tests / events / no-upload guarantees
+10. Verdict and next recommendation
+
+Also update:
+- data/reports/activegraph_strategy_report.md
+- docs/NEXT_STEPS.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- docs/REPLIT_SCHEDULED_DEPLOYMENT_RUNBOOK.md if production sync/republish guidance changed
+- data/site/index.html
+
+PART M — Architect review
+Run architect review before final.
+
+Ask specifically:
+- Are generated candidates actually deploy-visible before production registration?
+- Is Object Storage mutation safe and leased?
+- Is promotion gate too weak?
+- Could raw noisy win rates promote?
+- Any public-reference leakage?
+- Any accidental Kaggle queue/upload/submit?
+- Any tarball deletion/overwrite?
+- Any mismatch between candidate_pool.json and ledger projection?
+- Any storage_manifest drift?
+- Any reason scheduled deployment would fail on missing tarballs?
+
+Fix real issues and add regression tests.
+
+FINAL EXPECTED DECISION
+One of:
+1. production_probation_registered_promotion_gate_ready
+   - Pass-42 candidates safely registered in production,
+   - no promotion yet due insufficient evidence,
+   - daemon can now accrue placement games.
+
+2. production_registration_blocked_republish_required
+   - candidates are local-only or not deploy-visible,
+   - no production mutation,
+   - exact manual republish instructions emitted.
+
+3. promotion_gate_ready_no_registration_needed
+   - production already had candidates,
+   - gate evaluated,
+   - no promotion unless evidence passed.
+
+4. blocked_safety_failure
+   - hard failure found, stopped safely.
+
+Most likely desired result:
+production_probation_registered_promotion_gate_ready
+OR
+production_registration_blocked_republish_required
+
+Do not optimize a single deck. Do not generate new candidates. Do not promote without enough evidence. This pass is about making Pass-42 probation candidates real to the daemon and installing the internal promotion gate.

@@ -3,6 +3,24 @@
 Prioritized roadmap from this first version toward a competitive, well-documented
 submission.
 
+## Pass 43 — production probation registration + Promotion Gate v1 (current state)
+
+> Internal diagnostics + lifecycle plumbing only. NO Kaggle upload/submit/auto-submit,
+> NO queue/promotion events, NO root/tarball mutation, NO new candidates.
+
+- **Status: `production_registration_blocked_republish_required`.** The 3 Pass-42
+  probation candidates are local-only (git-tracked tarballs, absent from prod OS and not
+  confirmed on the live deploy image). Production was NOT mutated.
+- **Immediate operator step (when ready):** republish the tournament Scheduled Deployment
+  from the current commit to bake the Pass-42 tarballs into the image, then run the
+  5-step runbook (confirm committed → republish → prod health → `--apply` registration →
+  bounded prod tick) — see §13 of `docs/REPLIT_SCHEDULED_DEPLOYMENT_RUNBOOK.md`.
+- **Promotion Gate v1** is installed dry-run-default and conservative
+  (`src/ptcg_activegraph/tournament/promotion.py`,
+  `scripts/run_tournament_promotion_gate.py`). It recommends nothing until candidates
+  accrue real placement games; raw win-rate alone never promotes. Re-run the dry-run
+  after the daemon plays the new candidates.
+
 ## Top 10
 
 1. **Install the simulator.** `pip install kaggle-environments` and install
