@@ -1,0 +1,43 @@
+Pass 46A — PRIVATE Dashboard Handoff Packet for Separate Read-Only Replit App
+
+We are going to build a separate Replit Autoscale dashboard app that reads this core tournament app’s production tournament state. Do NOT build the dashboard here. Do NOT modify the scheduled daemon. Do NOT change .replit. Do NOT republish. Do NOT mutate Object Storage. Do NOT change root main.py/deck.csv. Do NOT add secrets, bucket IDs, or connection details to repo files.
+
+Critical privacy rule:
+Do not write bucket IDs, deployment IDs, storage access details, tokens, secrets, or dashboard connection values into repo files, docs, reports, artifacts, tests, memory, data/site, JSON, markdown, or git. Do not commit them. Provide them ONLY in the final chat response. For true secrets/tokens, provide only the secret name and setup instructions unless I explicitly ask for the raw value.
+
+Task:
+Produce a PRIVATE DASHBOARD HANDOFF PACKET in the final chat response only.
+
+Please inspect the current production tournament storage configuration and answer:
+
+1. What storage backend does the scheduled daemon use?
+2. What is the storage prefix?
+3. What is the production Replit App/Object Storage bucket ID, or the exact UI path to retrieve it?
+4. Can another Replit app read this bucket by using `Client(bucket_id=...)`? If not fully knowable from this workspace, say what is unknown and what access/share/permission check is required.
+5. What environment variables/secrets should the new dashboard app define? Use names and descriptions. Do not persist values to repo files.
+6. What exact read-only object keys/prefixes should Dashboard v0 read?
+   Include at least:
+   - events.jsonl
+   - candidate_pool.json
+   - config.yaml
+   - storage_manifest.json
+   - projections/rankings.json
+   - projections/rankings.md
+   - projections/scheduler_queue.json
+   - projections/candidate_pool.json
+   - projections/non_inertness.json
+   - runs/
+   - games/ selected sidecars only
+7. What prefixes/objects should the dashboard avoid reading or exposing?
+8. Provide a minimal read-only Python smoke script for the NEW dashboard app that:
+   - imports replit.object_storage.Client
+   - connects to the specified bucket/prefix
+   - lists keys under the tournament prefix
+   - reads events.jsonl, candidate_pool.json, storage_manifest.json, and projections/rankings.json
+   - performs zero writes/deletes
+9. Confirm no Kaggle credentials are needed.
+10. Confirm the dashboard must never call push_state, write_text, write_bytes, delete, emit, CandidateStatusChanged, CandidateGenerated, CandidatePromoted, SubmissionQueued, SubmissionUploaded, KaggleScoreUpdated, or any lifecycle/generation/promotion path.
+11. Recommend FastAPI or Flask for the separate read-only dashboard and explain briefly.
+12. State whether the current scheduled deployment needs republish for this handoff. It should be no unless you find a real reason.
+
+Final response only. No files. No reports. No docs. No tests. No memory writes.
