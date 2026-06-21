@@ -3,7 +3,25 @@
 Prioritized roadmap from this first version toward a competitive, well-documented
 submission.
 
-## Pass 43 — production probation registration + Promotion Gate v1 (current state)
+## Pass 44 — post-republish production probation registration (current state)
+
+> Internal diagnostics + lifecycle plumbing only. NO Kaggle upload/submit/auto-submit,
+> NO queue/promotion events, NO root/tarball mutation, NO new candidates.
+
+- **Status: `production_probation_registered_promotion_gate_ready`.** The operator
+  republished the Scheduled Deployment from the current commit, baking the Pass-42
+  tarballs into the deploy image. The 3 probation candidates are now registered in the
+  **production** registry (KEY-SCOPED: ledger 2893→2902, pool 16→19, 15 keys uploaded,
+  no sidecar re-push), and a controlled production tick proved the live deploy path
+  resolves and runs the new tarballs (real bounded game to completion, no missing-tarball
+  failure).
+- **Promotion gate:** rerun → all 3 still `insufficient_evidence`; `--apply` skipped.
+- **Next:** let the deployed daemon accrue placement games against the 3 candidates on
+  its cron schedule, then re-run the gate. Only once a candidate clears the sample-size
+  / parent-H2H / anchor / deck-delta gates can activation be considered (still no Kaggle
+  upload). See `data/reports/pass44_post_republish_probation_registration_report.md`.
+
+## Pass 43 — production probation registration + Promotion Gate v1 (superseded by Pass 44)
 
 > Internal diagnostics + lifecycle plumbing only. NO Kaggle upload/submit/auto-submit,
 > NO queue/promotion events, NO root/tarball mutation, NO new candidates.

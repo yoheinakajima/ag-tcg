@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph — Pass 43 Production Probation Registration + Promotion Gate v1 (local diagnostics)</title>
+<title>ActiveGraph — Pass 44 Post-Republish Production Probation Registration (local diagnostics)</title>
 <style>
  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
  h1{font-size:1.5rem} table{border-collapse:collapse;width:100%;margin:1rem 0}
@@ -9,6 +9,23 @@
  th{background:#f4f4f6} .caveat{background:#fff7e6;border:1px solid #f0c36d;padding:.7rem;border-radius:6px;font-size:.9rem;margin:.5rem 0}
  code{background:#f4f4f6;padding:.1rem .3rem;border-radius:3px}
 </style></head><body>
+<h1>ActiveGraph — Pass 44: Post-Republish Production Probation Registration + Verification Bridge (local diagnostics)</h1>
+<p class="caveat"><b>Lifecycle plumbing + internal diagnostics — NOT a Kaggle score, NOT a leaderboard, NOT a strength claim.</b> <b>NO</b> Kaggle upload/submit/auto-submit, <b>NO</b> <code>SubmissionQueued</code>/<code>SubmissionUploaded</code>/<code>KaggleScoreUpdated</code>/<code>CandidatePromoted</code>, <b>NO</b> root <code>main.py</code>/<code>deck.csv</code> mutation, <b>NO</b> tarball deletion/overwrite, <b>NO</b> new candidate generation. The five public references stay <b>benchmark-only</b>.</p>
+<h2>Final decision: <code>production_probation_registered_promotion_gate_ready</code></h2>
+<p>The operator republished the Scheduled Deployment from the current commit, baking the git-tracked Pass-42 tarballs into the deploy image. With deploy-visibility attested, the 3 Pass-42 probation candidates were registered into <b>production</b> Object Storage and the live deploy path was proven to resolve and run them. Production was mutated <b>only</b> by appending the 3 missing candidate registrations (KEY-SCOPED), never the game sidecars.</p>
+<ul>
+ <li><b>Root/prod safe (STOP-GATE):</b> root <code>main.py</code>/<code>deck.csv</code> byte-unchanged (filecmp) &middot; scheduled deployment runs <code>tournament_deployment_tick.py --production</code> &middot; <code>auto_submit</code> falsy &middot; all four workflows (<code>Start application</code>, <code>pass36_42</code>, <code>pass36_43_regression</code>, <code>pass36_44_regression</code>) intentionally <b>not started</b> &middot; prod health read-only green.</li>
+ <li><b>Republish attestation + deploy-image availability:</b> <code>head_is_published_commit=true</code> &middot; 3 tarballs git-tracked at the published commit, SHA == Pass-42 manifest, clean tree for tarball + root paths &middot; each <code>deploy_image_has_tarball=true</code> → <code>safe_to_register_after_republish</code>.</li>
+ <li><b>Deployment decision:</b> <code>case_1_deploy_visible_os_missing</code> &middot; <code>mutate_prod_os=true</code>, <code>republish_required=false</code>, <code>stop=false</code> (fail-closed: mutation only when deploy-visible).</li>
+ <li><b>Registration (KEY-SCOPED):</b> lease → pull (events+pool+config) → reconcile → register only 3 missing events → rebuild → sha-verified push of <b>15</b> changed keys (NOT ~950 sidecars) → release. Ledger <b>2893→2902</b> (+9), pool <b>16→19</b>, <code>verify_ok=true</code>, manifest==ledger (2902==2902); sidecars untouched.</li>
+ <li><b>Post-registration prod audit:</b> <code>all_ok=true</code> &middot; each target in prod pool, <code>status=probation</code>, registration event present, tarball SHA matches manifest &middot; scheduler queue (50) schedules all 3 &middot; 0 public-ref in queue/pool/parent &middot; 0 never-schedule scheduled.</li>
+ <li><b>Controlled prod tick (BINDING runtime proof):</b> all 3 tarballs resolved by the engine &middot; a real bounded <code>cabt</code> game from the live prod scheduler queue ran to completion (<code>outcome=loss</code>) — no missing-tarball/import failure &middot; no forbidden events &middot; tarballs sha-clean. Full ~950-key tick left to the deployed daemon's cron (logs confirm real ticks + lease-held graceful skip).</li>
+ <li><b>Promotion Gate rerun:</b> local + prod → <b>0 actionable</b>; all 3 <code>insufficient_evidence</code>; <code>--apply</code> → <code>apply_skipped</code> (no <code>CandidatePromoted</code>, no protected demotion, production not mutated).</li>
+ <li><b>Scheduler/lifecycle:</b> <code>all_ok=true</code> &middot; deterministic worklist; all 3 probation placed; 0 public-ref / never-schedule in worklist; protected never demoted; no active-cap replacement; no retirement/promotion events.</li>
+ <li><b>Tests/guarantees:</b> <b>28</b> Pass-44 tests + <code>pass36_44</code> regression (passes 36→44) <b>green</b> &middot; all tournament events <code>no_upload=true</code> &middot; no upload/submit/queue/promotion; no tarball deletion/overwrite; no reference leakage.</li>
+</ul>
+<p>Report: <code>data/reports/pass44_post_republish_probation_registration_report.md</code> &middot; Gate: <code>docs/PROMOTION_GATE_V1.md</code> &middot; Runbook §13: <code>docs/REPLIT_SCHEDULED_DEPLOYMENT_RUNBOOK.md</code> &middot; Artifacts: <code>data/experiments/pass44_*</code>.</p>
+<hr>
 <h1>ActiveGraph — Pass 43: Production Probation Registration + Promotion Gate v1 (local diagnostics)</h1>
 <p class="caveat"><b>Lifecycle plumbing + internal diagnostics — NOT a Kaggle score, NOT a leaderboard, NOT a strength claim.</b> <b>NO</b> Kaggle upload/submit/auto-submit, <b>NO</b> <code>SubmissionQueued</code>/<code>SubmissionUploaded</code>/<code>KaggleScoreUpdated</code>/<code>CandidatePromoted</code>, <b>NO</b> root <code>main.py</code>/<code>deck.csv</code> mutation, <b>NO</b> tarball deletion/overwrite, <b>NO</b> new candidate generation. The five public references stay <b>benchmark-only</b>. Internal Promotion-Gate win-rates are self-play diagnostics, never an upload signal.</p>
 <h2>Final decision: <code>production_registration_blocked_republish_required</code></h2>

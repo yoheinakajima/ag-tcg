@@ -162,9 +162,20 @@ def test_registration_refuses_unsafe_apply_skipped():
     assert data["guardrails"]["production_mutated"] is False
 
 
-def test_deployment_decision_blocks_prod_mutation():
+def test_deployment_decision_is_fail_closed_on_prod_mutation():
+    # Safety invariant (survives the Pass-44 republish that flipped this SHARED
+    # artifact to case_1): production mutation is only ever permitted once the
+    # tarballs are proven present in the deploy image. While a republish is still
+    # required, the decision MUST fail closed (no prod mutation).
     data = json.loads((EXP / "pass43_deployment_availability_decision.json").read_text())
-    assert data["decision"]["mutate_prod_os"] is False
+    dec = data["decision"]
+    if dec.get("republish_required"):
+        assert dec["mutate_prod_os"] is False
+    if dec["mutate_prod_os"] is True:
+        # mutation only with a deploy-visible case and never while stopped
+        assert str(data["case"]).startswith("case_1")
+        assert dec.get("republish_required") is False
+        assert dec.get("stop") is False
 
 
 # -- 9. dry-run / evaluate is pure -------------------------------------------

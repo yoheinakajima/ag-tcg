@@ -1,10 +1,16 @@
 # PTCG Strategy Canvas
 
-> Living strategy canvas. Updated through Pass 43.
+> Living strategy canvas. Updated through Pass 44.
 
 _The internal tournament, parent/child H2H confirmations, and the replay-derived meta sanity are LOCAL diagnostics: every seat is OUR own portfolio deck driven by the SAME deck-agnostic base pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal._
 
 _Honesty mandate: attack damage/effect, lethal, KO target, spread placement, Boss/gust are UNSUPPORTED by the option schema (numeric attackId only); the typed layer refuses to fabricate them. Raging Bolt gets NO fake color-match fix (Pass 28 refuted it)._
+
+## Pass 44 — post-republish production probation registration + verification bridge
+
+- **Decision: `production_probation_registered_promotion_gate_ready`.** After the operator republished the Scheduled Deployment from the current commit (baking the Pass-42 tarballs into the deploy image, attested `case_1_deploy_visible_os_missing`), the 3 probation candidates (`generated_diamond_diamondtoolbox_eratio_v1`, `generated_dragapult_leaguedragapul_bdens_v1`, `generated_lightning_monolightningm_dsratio_v1`) were registered into **production** Object Storage — KEY-SCOPED (ledger 2893→2902, pool 16→19, 15 keys uploaded, ~950 sidecars untouched), manifest==ledger (2902==2902).
+- **Binding runtime proof:** a controlled production tick resolved all 3 tarballs and ran a real bounded `cabt` game from the live prod scheduler queue to completion — no missing-tarball/import failure.
+- **Gate rerun:** 0 actionable; all 3 `insufficient_evidence`; `--apply` skipped (no promotion/demotion). Scheduler deterministic, all 3 probation placed, zero public-ref/never-schedule leakage, no active-cap replacement. **28** Pass-44 tests + `pass36_44` regression green; NO upload/submit/queue/promotion; root byte-unchanged.
 
 ## Pass 43 — production probation registration + Promotion Gate v1
 

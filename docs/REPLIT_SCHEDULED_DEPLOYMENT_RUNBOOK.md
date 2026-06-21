@@ -214,3 +214,19 @@ republish first. This was the Pass-43 outcome
 
 See `data/reports/pass43_production_probation_and_promotion_gate_report.md`,
 `docs/PROMOTION_GATE_V1.md`, and `data/experiments/pass43_*`.
+
+**Pass 44 — runbook executed (DONE).** The operator republished from the current
+commit (step 2), baking the 3 Pass-42 tarballs into the deploy image. Deploy-image
+visibility was attested (git-tracked-at-published-commit + clean tree ⇒ baked), so
+the availability decision advanced to `case_1_deploy_visible_os_missing` and the
+key-scoped registration (step 4) was applied: prod ledger **2893→2902** (+9 = 3×3),
+pool **16→19**, 15 changed keys pushed (events/pool/config/manifest — **not** the
+~950 game sidecars), `verify_ok=true`, manifest `event_count == ledger` (2902==2902).
+A controlled production tick (step 5) resolved all 3 tarballs and ran a real bounded
+`cabt` game from the live prod scheduler queue to completion — no missing-tarball /
+import failure. The promotion gate rerun stayed `insufficient_evidence` for all 3
+(apply skipped). Final decision:
+`production_probation_registered_promotion_gate_ready`. See
+`data/reports/pass44_post_republish_probation_registration_report.md` and
+`data/experiments/pass44_*`. Next: let the daemon accrue placement games on its cron
+schedule, then re-run the gate.

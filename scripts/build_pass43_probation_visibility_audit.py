@@ -43,6 +43,10 @@ SUBMISSIONS = REPO / "data" / "submissions"
 MANIFEST = EXP / "pass42_generated_candidates_manifest.json"
 LOCAL_POOL = TDIR / "candidate_pool.json"
 LOCAL_LEDGER = TDIR / "events.jsonl"
+# Optional Pass-44 republish attestation. When present and a candidate's tarball is
+# proven git-tracked at the published commit (deploy image baked) with a clean path,
+# deploy_image_has_tarball is set True from evidence; otherwise it stays None (no).
+REPUBLISH_ATTESTATION = EXP / "pass44_republish_attestation.json"
 
 REGISTER_EVENT = "TournamentParticipantRegistered"
 GENERATED_EVENT = "CandidateGenerated"
@@ -207,6 +211,24 @@ def main() -> int:
 
     prod = _read_prod_state()
 
+    # Optional republish attestation: maps candidate_id -> deploy_image baked (bool).
+    attest_baked: dict[str, bool] = {}
+    attest_meta: dict = {}
+    if REPUBLISH_ATTESTATION.is_file():
+        att = json.loads(REPUBLISH_ATTESTATION.read_text(encoding="utf-8"))
+        attest_meta = {
+            "present": True,
+            "published_commit": att.get("published_commit"),
+            "head_is_published_commit": att.get("head_is_published_commit"),
+            "all_candidates_deploy_baked_inferred":
+                att.get("all_candidates_deploy_baked_inferred"),
+        }
+        for c in att.get("candidates", []):
+            attest_baked[c.get("candidate_id")] = bool(
+                c.get("deploy_image_baked_inferred"))
+    else:
+        attest_meta = {"present": False}
+
     records = []
     for cid in target_ids:
         pool_entry = local_idx.get(cid, {})
@@ -250,9 +272,16 @@ def main() -> int:
                 prod_entry.get("status") in SCHEDULABLE_STATUSES
                 if prod["read_ok"] and prod_entry else (None if prod["read_ok"] else None)
             ),
-            # Tarballs ride the deploy filesystem, not Object Storage; the live image
-            # predates Pass 42 and cannot be inspected from here → conservative.
-            "deploy_image_has_tarball": None,  # None == UNVERIFIABLE (treated as no)
+            # Tarballs ride the deploy filesystem, not Object Storage. Default None
+            # (UNVERIFIABLE → treated as no). When a Pass-44 republish attestation
+            # proves this candidate's tarball is git-tracked at the published commit
+            # with a clean path (so it is baked into the published image), it is set
+            # True from that evidence. Binding runtime proof remains Part E.
+            "deploy_image_has_tarball": (True if attest_baked.get(cid) else None),
+            "deploy_image_attestation": (
+                "republish_attestation_baked" if attest_baked.get(cid)
+                else ("attestation_present_not_baked" if attest_meta.get("present")
+                      else "no_attestation_unverifiable")),
         }
         cls, why = _classify(rec)
         rec["classification"] = cls
@@ -272,6 +301,9 @@ def main() -> int:
                       "error": prod["error"]},
         "classifications_present": classes,
         "all_local_only_needs_republish": all_local_only,
+        "republish_attestation": attest_meta,
+        "all_deploy_image_baked": bool(records) and all(
+            r.get("deploy_image_has_tarball") is True for r in records),
         "candidates": records,
     }
     (EXP / "pass43_probation_visibility_audit.json").write_text(
