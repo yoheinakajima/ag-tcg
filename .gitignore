@@ -84,3 +84,5 @@ data/reference_agents/**/*.so
 
 # Pass 40 — transient local benchmark extraction outputs (reproducible; never commit)
 data/tournament/benchmark/_our_extracted/
+# Pass 42 — transient candidate-generation extraction outputs (reproducible; never commit)
+data/tournament/benchmark/_gen42_extracted/

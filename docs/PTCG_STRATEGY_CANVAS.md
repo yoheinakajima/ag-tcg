@@ -1,6 +1,6 @@
 # PTCG Strategy Canvas
 
-> Living strategy canvas. Updated through Pass 41.
+> Living strategy canvas. Updated through Pass 42.
 
 _The internal tournament, parent/child H2H confirmations, and the replay-derived meta sanity are LOCAL diagnostics: every seat is OUR own portfolio deck driven by the SAME deck-agnostic base pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal._
 
@@ -104,3 +104,16 @@ _The five Pass-40 public references are **benchmark-only** opponents on a separa
 - **Next step depends on the eval outcome:** complete the calibration sweep + deepen the parent/child + noise sample before any further typed work; no public-reference parity claims at this sample.
 
 Detail: `data/reports/pass41_reference_calibrated_cg_candidate_report.md`; design `docs/PASS41_CG_TYPED_POLICY_DESIGN.md`; `data/experiments/pass41_*`.
+
+## Pass 42 — candidate generation v0 (LOCAL factory, probation-only)
+
+_A deterministic, LOCAL-only candidate **factory**: mutate **internal** source decks with stdlib-safe operators, validate via hard gates, admit passing ones as **probation**. **No promotion, queue, upload/submit, GitHub push, root mutation, or tarball overwrite/delete.** The five public references stay **benchmark-only** — never a source/parent/candidate/queue/promotion. No Kaggle strength claim._
+
+- **Deterministic factory:** seed = hash(pass_id + `candgen_v0` + sorted eligible source ids + their tarball/main/deck SHA); rerun rebuilds identical tarballs and re-emits 0 events. Budgets 3/run, 1/family.
+- **Operators:** 3 deck-composition operators (basic-density / energy-ratio / draw-search; source-IDs-only, 60-card legal) admitted; `conservative_policy_weight_delta` + `noop_sentinel` are **regression rejections** (duplicate/inert; policy-only non-inertness deferred to v1).
+- **Admitted (3, probation):** `generated_diamond_diamondtoolbox_eratio_v1`, `generated_dragapult_leaguedragapul_bdens_v1`, `generated_lightning_monolightningm_dsratio_v1` — full lineage; 9/9 hard gates each; provenance events folded by neither pool path; projection rebuildable; storage-manifest event_count in lockstep (214=214).
+- **Scheduler:** all 3 appear at p1 placement vs their own anchors, never as champions, never replacing protected decks, no reference in worklist/pool, deterministic double-build.
+- **Eval (liveness only, NOT promotion evidence):** 12 ledger-free games; lanes separate; each candidate split its parent seats and lost its anchor game; reference games directional (1 our_win / 2 reference_win).
+- **Decision:** `candidate_generation_v0_enabled`; `republish_required=false`; admitted candidates stay **local-only probation**. **28** Pass 42 tests + pass36–42 regression green.
+
+Detail: `data/reports/pass42_candidate_generation_v0_report.md`; design `docs/CANDIDATE_GENERATION_V0.md`; `data/experiments/pass42_*`.

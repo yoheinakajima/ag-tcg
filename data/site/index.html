@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph — Pass 41 Reference-Calibrated cg_typed Candidate Spike (internal diagnostics)</title>
+<title>ActiveGraph — Pass 42 Candidate Generation v0 (local factory, internal diagnostics)</title>
 <style>
  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
  h1{font-size:1.5rem} table{border-collapse:collapse;width:100%;margin:1rem 0}
@@ -9,6 +9,20 @@
  th{background:#f4f4f6} .caveat{background:#fff7e6;border:1px solid #f0c36d;padding:.7rem;border-radius:6px;font-size:.9rem;margin:.5rem 0}
  code{background:#f4f4f6;padding:.1rem .3rem;border-radius:3px}
 </style></head><body>
+<h1>ActiveGraph — Pass 42: Candidate Generation v0 (local factory, probation-only)</h1>
+<p class="caveat"><b>LOCAL-only candidate factory — NOT a Kaggle score, NOT a leaderboard, NOT a strength claim.</b> Mutate <b>internal</b> source decks with stdlib-safe operators, validate via hard gates, admit passing ones as <b>probation</b>. <b>NO promotion, NO queue, NO upload/submit/auto-submit, NO GitHub push, NO root mutation, NO tarball overwrite/delete.</b> The five public references stay <b>benchmark-only</b> — never a source/parent/candidate/queue/promotion. The 12-game probation eval is <b>liveness/placement only — NOT promotion evidence.</b></p>
+<h2>Three internal probation candidates generated, validated, and scheduled</h2>
+<p>A deterministic factory (seed = hash of pass id + <code>candgen_v0</code> + sorted eligible source ids + their tarball/main/deck SHA) built 3 deck-composition candidates from 3 internal families and admitted them as <b>probation</b>. Reruns rebuild byte-identical tarballs and re-emit 0 events.</p>
+<ul>
+ <li><b>Root/prod safe (STOP-GATE):</b> root <code>main.py</code>/<code>deck.csv</code> byte-unchanged before+after &middot; scheduled deployment still runs <code>tournament_deployment_tick.py --production</code> &middot; <code>Start application</code> frozen Kaggle entrypoint intentionally <b>not started</b> &middot; 651 events scanned, <b>0</b> forbidden, <b>0</b> <code>no_upload=false</code> &middot; 16-candidate pool, <b>0</b> reference leakage &middot; <b>republish NOT required</b>.</li>
+ <li><b>Operators:</b> basic-density / energy-ratio / draw-search (source-IDs-only, 60-card legal) <b>admitted</b>; <code>conservative_policy_weight_delta</code> + <code>noop_sentinel</code> <b>rejected</b> as regression (duplicate/inert; policy-only non-inertness deferred to v1).</li>
+ <li><b>Admitted (3, probation):</b> <code>generated_diamond_diamondtoolbox_eratio_v1</code>, <code>generated_dragapult_leaguedragapul_bdens_v1</code>, <code>generated_lightning_monolightningm_dsratio_v1</code> &middot; full lineage &middot; <b>9/9</b> hard gates each &middot; provenance events folded by neither pool path &middot; projection rebuildable from ledger &middot; storage-manifest event_count in lockstep (214=214).</li>
+ <li><b>Scheduler:</b> all 3 at <b>p1 placement</b> vs their own anchors &middot; never champions &middot; never replacing protected decks &middot; no reference in worklist/pool &middot; deterministic double-build.</li>
+ <li><b>Eval smoke (liveness only):</b> <b>12</b> ledger-free games &middot; lanes separate &middot; each candidate split its parent seats + lost its anchor game &middot; reference games directional (1 our_win / 2 reference_win) &middot; <code>promotion_evidence=false</code>.</li>
+ <li><b>Decision:</b> <code>candidate_generation_v0_enabled</code> &middot; candidates stay <b>local-only probation</b> &middot; <b>28</b> Pass 42 tests + pass36–42 regression green &middot; every pass42 event <code>no_upload=true</code> (no SubmissionUploaded/KaggleScoreUpdated/CandidatePromoted/SubmissionQueued).</li>
+</ul>
+<p>Report: <code>data/reports/pass42_candidate_generation_v0_report.md</code> &middot; Design: <code>docs/CANDIDATE_GENERATION_V0.md</code> &middot; Artifacts: <code>data/experiments/pass42_*</code>.</p>
+<hr>
 <h1>ActiveGraph — Pass 41: Reference-Calibrated cg_typed Candidate Spike v0 (local-only)</h1>
 <p class="caveat"><b>LOCAL benchmark-lane feasibility only — NOT a Kaggle score, NOT a leaderboard, NOT a strength claim.</b> The five public references are <b>benchmark-only opponents</b> — never a candidate/parent/queue/promotion and never toward the active cap. The cg_typed candidate is <b>ours</b> (original typed policy; no reference code copied). <b>NO submission was made — no upload, no submit, no auto-submit, no promotion.</b> The local benchmark is <b>directional only</b>, and the next step <b>depends on the eval outcome</b>.</p>
 <h2>Owned cg_typed candidate vs the public-reference benchmark</h2>

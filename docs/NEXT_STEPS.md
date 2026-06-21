@@ -84,3 +84,25 @@ root "Start application" workflow stays not-started (frozen Kaggle entrypoint).
   sample before any further typed work. Do **not** pursue public-reference parity
   claims or consider republish until a completed calibration + approved decision
   justify it. Detail: `data/reports/pass41_reference_calibrated_cg_candidate_report.md`.
+
+## Pass 42 — Candidate generation v0 (local factory, probation-only)
+
+- **What landed:** a deterministic, LOCAL-only candidate **factory** — mutate
+  **internal** source decks with stdlib-safe operators, validate via hard gates,
+  admit passing ones as **probation**. 3 admitted
+  (`generated_diamond_diamondtoolbox_eratio_v1`,
+  `generated_dragapult_leaguedragapul_bdens_v1`,
+  `generated_lightning_monolightningm_dsratio_v1`) from 3 families; 2 regression
+  operators (policy-only, no-op) rejected with reasons. **No promotion, queue,
+  upload, submit, push, root mutation, or tarball overwrite/delete.** The 5 public
+  references stay benchmark-only — never a source/parent/candidate.
+- **Honest signal:** the 12-game probation eval is **liveness/placement only — NOT
+  promotion evidence** (each candidate split its parent seats and lost its anchor
+  game). Decision: `candidate_generation_v0_enabled`, `republish_required=false`;
+  admitted candidates stay local-only probation.
+- **Next (no republish):** let the standing daemon accrue real placement games for
+  the 3 probation candidates against their anchors before any parent/child verdict;
+  treat policy-only non-inertness and sibling-family verified-ID transfer as the
+  **v1** workstream (prove them before admitting). Do **not** promote until an
+  adequately-sampled, noise-controlled eval + approved decision justify it. Detail:
+  `data/reports/pass42_candidate_generation_v0_report.md`.

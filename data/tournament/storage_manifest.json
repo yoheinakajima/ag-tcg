@@ -1,12 +1,12 @@
 {
   "auto_submit": false,
   "base_remote_hash": "5357c1cf666dd484aaa95b02ff603b45f052625ea2d705059a7d2276145caf20",
-  "event_count": 205,
+  "event_count": 214,
   "files": [
     {
       "key": "candidate_pool.json",
-      "sha256": "2f787c850a76a16196a11cd47ecba2be27becbc9319eb7b1381dd2abd822ed2e",
-      "size": 12903
+      "sha256": "fadcfcfa70e883ab6c2b754b33ccc2aef38e8146e5cbdee9b0f7bfe905fcc146",
+      "size": 15743
     },
     {
       "key": "config.yaml",
@@ -15,8 +15,8 @@
     },
     {
       "key": "events.jsonl",
-      "sha256": "857280c6879d272210e55628b1503967d36a3a12bc93aff8e8bdc16360a65dab",
-      "size": 171735
+      "sha256": "492cef631831f6651869b1353755b6fcb9d30ff383d7b1ad235a61f418af5e5a",
+      "size": 181479
     },
     {
       "key": "games/ptcg_standing_tournament_v0|diamond_toolbox_diancie>league_dragapult_v1_search_only@0|g0.json.gz",
@@ -279,6 +279,16 @@
       "size": 288
     },
     {
+      "key": "projections/benchmark_results.json",
+      "sha256": "d3a2b844cc02a30c7271bff2ca7514c7709ab390673bc4874dd89072cc181c2d",
+      "size": 24069
+    },
+    {
+      "key": "projections/benchmark_results.md",
+      "sha256": "00b14a8b0b8d448b15ef62b27cb51fd0b79281fc8162a0a4c52f6b647e6f6b63",
+      "size": 7584
+    },
+    {
       "key": "projections/candidate_pool.json",
       "sha256": "bd083fc6683692f53678de2313f9d96529f5af7135bbc845888b8b40c975e438",
       "size": 13067
@@ -379,8 +389,8 @@
       "size": 4626
     }
   ],
-  "generated_at": 1781999025.3600144,
-  "last_event_id": "evt_4a0ebaebe15f",
+  "generated_at": 1782018179.8685074,
+  "last_event_id": "evt_9684a3d20af9",
   "no_upload": true,
   "schema": "pass37_storage_manifest_v1",
   "status": "clean",

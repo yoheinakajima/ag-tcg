@@ -133,6 +133,20 @@ class EventType(str, Enum):
     OwnedCgCandidateRegistered = "OwnedCgCandidateRegistered"
     ReferenceCalibrationFinished = "ReferenceCalibrationFinished"
 
+    # --- Pass 42: candidate generation v0 (deterministic probation factory) ---
+    # A NEW internal candidate is generated locally from an eligible family via a
+    # deterministic stdlib-safe mutation operator and admitted ONLY as
+    # ``probation`` (never active/champion/anchor). These two types are purely
+    # informational provenance facts: they are NEVER folded by
+    # ``CandidatePool.from_events`` / the scheduler / lifecycle (only
+    # TournamentParticipantRegistered + CandidateStatusChanged are folded), so they
+    # can never act as a promotion/queue/active-cap signal. Both carry
+    # no_upload=true and are written to the main lab ledger. They are DISTINCT from
+    # the forbidden CandidatePromoted / SubmissionQueued / SubmissionUploaded /
+    # KaggleScoreUpdated, none of which this pass ever emits.
+    CandidateGenerated = "CandidateGenerated"
+    CandidateValidationFinished = "CandidateValidationFinished"
+
 
 @dataclass
 class Event:

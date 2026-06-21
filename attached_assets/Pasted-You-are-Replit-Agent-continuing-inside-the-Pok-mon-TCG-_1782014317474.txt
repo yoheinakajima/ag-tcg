@@ -1,0 +1,285 @@
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+IMPORTANT STRATEGIC CORRECTION:
+Do NOT continue optimizing cg_typed_mono_lightning_miraidon_policy_v1.
+Do NOT create Miraidon v2.
+Do NOT deepen a single-deck typed policy thread.
+Treat Pass 41 as a local-only cg_typed feasibility spike and reusable harness asset only.
+
+We are returning to the daemon roadmap.
+
+PASS 42 OBJECTIVE:
+Build Candidate Generation v0 — a controlled, local-only, deterministic probation candidate factory for the standing tournament daemon.
+
+This is NOT a Kaggle upload pass.
+This is NOT a promotion pass.
+This is NOT a single-deck optimization pass.
+This is NOT an LLM creative deckbuilding pass unless explicitly proposal-only and fully gated.
+No auto-submit. No Kaggle submit. No Kaggle upload. No root main.py/deck.csv mutation. No tarball deletion. No public-reference mutation. No public-reference submission. No special-pilot decks.
+
+The goal is to let the daemon create a very small number of new INTERNAL candidates from existing eligible families, validate them, and admit only passing candidates into the tournament pool as probation.
+
+Current state context:
+- Pass 36: standing event-first tournament engine exists.
+- Pass 37: scheduled deployment + object storage exists.
+- Pass 38: production scheduled deployment soak/ops verified.
+- Pass 39: lifecycle manager v0 exists, status marks only.
+- Pass 40: public Kaggle reference agents are benchmark-only external_reference opponents, zero-leakage proven.
+- Pass 41: cg_typed owned candidate spike proved typed lane feasibility but remains local-only and must not be promoted/queued.
+
+Use Pass 41 assets only as infrastructure lessons:
+- cg_typed validation lane exists.
+- public benchmark lane exists.
+- non-inertness / noise-control lessons exist.
+- typed policy can use board-aware observation.
+But do not continue the Miraidon policy as a direct optimization target.
+
+PART A — Root / deployment / production safety stop-gate
+1. Verify root main.py and deck.csv byte-identical to data/baselines/v1_kaggle_349_8.
+2. Verify deployment config unchanged: scheduled deployment still runs tournament_deployment_tick.py --production.
+3. Verify auto_submit false and refused if truthy.
+4. Verify no forbidden upload/submit events in new pass scope.
+5. Verify public references remain benchmark-only and absent from candidate pool.
+6. Verify production health checker is green or only has expected sample-size warnings.
+7. If any hard safety failure occurs, STOP and write only the failure artifact.
+
+Deliver:
+- data/experiments/pass42_generation_safety_preflight.{json,md}
+
+PART B — Candidate generation policy design
+Create docs/CANDIDATE_GENERATION_V0.md.
+
+The design must define:
+- eligible source candidates/families,
+- ineligible sources,
+- deterministic mutation operators,
+- candidate identity/versioning,
+- provenance requirements,
+- validation gates,
+- probation admission gates,
+- caps/budgets,
+- no-upload guarantees,
+- event vocabulary,
+- idempotency/resume behavior.
+
+Rules:
+- Generate from OUR internal candidates only.
+- Exclude public references entirely.
+- Exclude special_pilot_only decks unless a real special pilot exists.
+- Exclude quarantined/invalid/retired sources except explicitly protected anchors used as controls.
+- Do not mutate root main.py/deck.csv.
+- Do not mutate existing tarballs.
+- New candidates enter as probation only.
+- No promotions in this pass.
+- No Kaggle queue changes in this pass.
+
+Generation budgets:
+- max_new_candidates_per_run = 3
+- max_new_candidates_per_family_per_run = 1
+- max_total_probation_new_from_this_pass = 3
+- deterministic seed derived from ledger state + pass id, not wall-clock randomness.
+
+PART C — Mutation operators v0
+Implement deterministic mutation operators for stdlib-safe candidates first.
+
+Required operators:
+1. basic_density_adjustment
+   - Change Basic Pokémon count by small deltas where legal.
+   - Preserve 60 cards.
+   - Do not invent card IDs.
+   - Only use card IDs already present in the source family or verified from existing legal deck families.
+2. energy_ratio_adjustment
+   - Adjust basic energy count up/down by small deltas.
+   - Preserve legal 60-card deck.
+   - Avoid over-dilution.
+3. draw_search_ratio_adjustment
+   - Swap small counts among already-used draw/search cards if legal.
+   - No unknown IDs.
+4. conservative_policy_weight_delta
+   - For stdlib candidates only, adjust existing role/weight constants if the candidate's compiler supports it.
+   - Must be non-inert in fixture or live trace.
+5. no-op sentinel
+   - Deliberately produce a no-op candidate and verify it is rejected as duplicate/inert. This is a regression test, not a pool entrant.
+
+Do NOT implement family-specific mutation policies yet. That is a future pass.
+Do NOT use LLM output to directly create candidates in v0.
+Optional: write a proposal-only interface for future LLM suggestions, but it must not materialize candidates in this pass.
+
+Deliver:
+- src/ptcg_activegraph/tournament/generation.py
+- data/experiments/pass42_mutation_operator_catalog.{json,md}
+
+PART D — Candidate builder
+Build a deterministic candidate builder that:
+- takes a source Candidate,
+- applies one mutation,
+- writes a new tarball under data/submissions/generated_pass42/,
+- writes a manifest entry,
+- includes full lineage:
+  - source_candidate_id
+  - source_tarball_sha256
+  - mutation_operator
+  - mutation_parameters
+  - deck_delta
+  - policy_delta if any
+  - generated_candidate_id
+  - generated_tarball_sha256
+- never overwrites existing tarballs unless identical by hash,
+- never deletes anything.
+
+Candidate IDs should be stable and descriptive:
+generated_<family>_<source_short>_<operator>_v1
+
+Deliver:
+- scripts/run_candidate_generation_v0.py
+- data/experiments/pass42_generated_candidates_manifest.{json,md}
+
+PART E — Validation gates
+Every generated candidate must pass all relevant gates before probation admission.
+
+Required gates:
+1. tarball shape validator
+2. entrypoint validator
+3. deck legality / 60-card / known IDs / no invented IDs
+4. smoke game vs self
+5. smoke game vs one anchor
+6. no public-reference leakage
+7. duplicate deck/policy detection
+8. non-inertness or meaningful deck-composition delta
+9. root safety re-check
+10. no upload/submit event emitted
+
+Rejected candidates must be recorded with a reason, not silently dropped.
+
+Deliver:
+- data/experiments/pass42_generated_candidate_validation.{json,md}
+
+PART F — Probation admission, event-first
+Generated candidates that pass all gates may be admitted to the tournament pool as status=probation.
+
+This must be event-first:
+- emit CandidateGenerated or equivalent additive event,
+- emit CandidateValidationFinished,
+- emit CandidateStatusChanged only if adding/marking probation is implemented through ledger status,
+- update candidate_pool projection through event fold or the existing canonical mechanism,
+- do not edit pool out-of-band unless current architecture requires it, and if so document why.
+
+Hard constraints:
+- max 3 admitted.
+- admitted status must be probation, not active.
+- no family_champion / portfolio_anchor / held_probe changes.
+- no retirement in this pass unless lifecycle manager independently recommends it; do not combine generation and retirement.
+
+Deliver:
+- data/experiments/pass42_probation_admission.{json,md}
+- updated projections showing probation candidates visible to scheduler.
+
+PART G — Scheduler integration audit
+Verify probation candidates:
+- appear in scheduler worklist,
+- are prioritized for placement/anchor games,
+- are not treated as champions,
+- do not replace protected candidates,
+- do not count public references,
+- do not break deterministic scheduling.
+
+Run scheduler build twice and assert byte/logical determinism.
+
+Deliver:
+- data/experiments/pass42_scheduler_generation_integration.{json,md}
+
+PART H — Local bounded evaluation smoke
+Run a small local bounded evaluation for the newly admitted probation candidates.
+
+Minimum:
+- each probation candidate vs source parent, both seats if possible,
+- each probation candidate vs one portfolio anchor,
+- each probation candidate vs one public reference benchmark if benchmark lane supports it, but keep benchmark results separate from main tournament evidence.
+
+This is only a smoke/placement seed, not promotion evidence.
+
+Deliver:
+- data/experiments/pass42_probation_eval_smoke.{json,md}
+
+PART I — Tests
+Add tests/test_pass42_candidate_generation.py.
+
+Minimum 24 tests covering:
+1. root unchanged
+2. references excluded as sources
+3. special_pilot_only excluded
+4. retired/quarantined excluded
+5. mutation operators preserve 60 cards
+6. no invented card IDs
+7. duplicate/no-op rejected
+8. generated IDs deterministic
+9. tarballs immutable
+10. manifest hash matches tarball
+11. lineage recorded
+12. validation rejects bad tarball
+13. validation rejects inert/no-op
+14. validation passes at least one real generated candidate if any eligible exists
+15. probation status only
+16. no active/champion promotion
+17. scheduler includes probation
+18. scheduler excludes public refs from main queue
+19. events no_upload=true
+20. no SubmissionQueued/Uploaded/KaggleScoreUpdated/CandidatePromoted
+21. root deployment config unchanged
+22. generated candidates never overwrite existing candidate tarballs
+23. generation is idempotent on re-run
+24. pass36–42 regression green
+
+PART J — Reports / docs
+Write an exact 10-section report:
+data/reports/pass42_candidate_generation_v0_report.md
+
+Required sections:
+1. Root and production safety
+2. Generation policy design
+3. Eligible source pool
+4. Mutation operators
+5. Generated candidates
+6. Validation and rejection reasons
+7. Probation admission
+8. Scheduler integration and smoke eval
+9. Tests / events / no-upload guarantees
+10. Verdict and next recommendation
+
+Also update:
+- data/reports/activegraph_strategy_report.md
+- docs/NEXT_STEPS.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/site/index.html
+
+PART K — Architect review
+Run architect review before final.
+Specifically ask it to look for:
+- public-reference leakage,
+- accidental promotion,
+- candidate deletion/overwrite,
+- invented card IDs,
+- weak validation gates,
+- non-idempotent generation,
+- scheduler contamination,
+- upload/submit leakage,
+- scope drift into single-deck optimization.
+
+Fix any real issues and add regression tests.
+
+FINAL EXPECTED DECISION
+If successful:
+- Decision = candidate_generation_v0_enabled
+- 0–3 generated candidates admitted as probation
+- no promotion
+- no Kaggle upload/submit
+- no republish required unless deployment code actually changed and we intentionally decide to deploy it
+- public references remain benchmark-only
+- next pass should be Promotion Gate v1, not more hand-tuned deck work
+
+If no candidate passes gates:
+- Decision = generation_infrastructure_ready_no_admissions
+- report all rejection reasons
+- still PASS if the infrastructure is correct and safe
+
+Remember: this pass is about creating the daemon's candidate factory, not about making one clever deck.
