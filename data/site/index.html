@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph — Pass 45 Production Probation Soak + Promotion-Readiness Audit (local diagnostics)</title>
+<title>ActiveGraph — Pass 46B Reference-Gap + Turn-Planning Diagnostic (local diagnostics)</title>
 <style>
  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
  h1{font-size:1.5rem} table{border-collapse:collapse;width:100%;margin:1rem 0}
@@ -9,6 +9,20 @@
  th{background:#f4f4f6} .caveat{background:#fff7e6;border:1px solid #f0c36d;padding:.7rem;border-radius:6px;font-size:.9rem;margin:.5rem 0}
  code{background:#f4f4f6;padding:.1rem .3rem;border-radius:3px}
 </style></head><body>
+<h1>ActiveGraph — Pass 46B: Reference-Gap + Turn-Planning Diagnostic v0 (local diagnostics)</h1>
+<p class="caveat"><b>READ-ONLY / LOCAL diagnostic during probation soak — NOT a Kaggle score, NOT a leaderboard, NOT a strength claim.</b> <b>NO</b> production mutation, no tick, <b>NO</b> lifecycle/generation/promotion/upload, <b>NO</b> <code>SubmissionQueued</code>/<code>SubmissionUploaded</code>/<code>KaggleScoreUpdated</code>/<code>CandidatePromoted</code>/<code>CandidateStatusChanged</code>, <b>NO</b> root <code>main.py</code>/<code>deck.csv</code> mutation, <b>NO</b> tarball deletion/overwrite. The five public references stay <b>benchmark-only</b>.</p>
+<h2>Final decision: <code>reference_gap_diagnostic_complete_soak_continue</code></h2>
+<p>Built a reusable, pure turn-planning extractor and honest diagnostic artifacts explaining why internal candidates lag the public references. The gap is <b>behavioral</b> (gameplay policy / turn planning), not a deck-list problem. Production was <b>not</b> mutated by any part of this pass.</p>
+<ul>
+ <li><b>Root/prod safe (STOP-GATE):</b> <code>all_ok=true</code> &middot; root <code>main.py</code>/<code>deck.csv</code> byte-identical to baseline via <b>fresh filecmp before+after</b> &middot; <code>.replit</code> deploy runs <code>tournament_deployment_tick.py --production</code> (not root), <code>auto_submit</code> falsy &middot; the five public references absent from candidate pool <b>and</b> scheduler worklist &middot; all workflows intentionally <b>not started</b>.</li>
+ <li><b>Reference gap (outcome-level, well supported):</b> internal candidates beat the public references only <b>~9.3%</b> of decisive benchmark games (12 W / 117 L / 3 D over 134) &middot; gap holds across families — mega lines weakest (~5%), diamond best (~40%) → it is gameplay <b>policy / turn planning</b>, not deck-list counts.</li>
+ <li><b>Honest evidence limit:</b> full decision frames exist in <b>ONLY one</b> local Kaggle replay (268 frames); tournament sidecars + public-benchmark records are <b>outcome-only</b> (step COUNT, no frames) &middot; trace-level turn-planning metrics are illustrative (n=1), the outcome-level gap is well supported.</li>
+ <li><b>Reusable extractor:</b> <code>src/ptcg_activegraph/analysis/turn_planning.py</code> — read-only trace reader (cabt sidecar + kaggle replay + <code>.gz</code>), decision-frame extraction, action-family classification, tri-state legality &middot; explicitly refuses unsupported claims (damage/lethal/KO-target/spread/Boss-gust; numeric <code>attackId</code> only).</li>
+ <li><b>Forward backlog (not executed):</b> reusable turn-planning primitives — typed board decode wrapper, legal option taxonomy, energy planner, search-capable policy lane — see <code>docs/TURN_PLANNING_PRIMITIVES_BACKLOG.md</code>.</li>
+ <li><b>Tests/guarantees:</b> <b>26</b> Pass-46B tests + <code>pass42–46</code> regression <b>green</b> &middot; no Pass-46B script emits a forbidden/status-change event, deletes/overwrites a tarball, runs a tick, or starts the root workflow.</li>
+</ul>
+<p>Report: <code>data/reports/pass46b_reference_gap_turn_planning_report.md</code> &middot; Schema: <code>docs/TURN_PLANNING_DIAGNOSTIC_SCHEMA.md</code> &middot; Backlog: <code>docs/TURN_PLANNING_PRIMITIVES_BACKLOG.md</code> &middot; Artifacts: <code>data/experiments/pass46b_*</code>.</p>
+<hr>
 <h1>ActiveGraph — Pass 45: Production Probation Soak + Promotion-Readiness Audit v0 (local diagnostics)</h1>
 <p class="caveat"><b>READ-ONLY / AUDIT / SOAK — NOT a Kaggle score, NOT a leaderboard, NOT a strength claim.</b> <b>NO</b> Kaggle upload/submit/auto-submit, <b>NO</b> <code>SubmissionQueued</code>/<code>SubmissionUploaded</code>/<code>KaggleScoreUpdated</code>/<code>CandidatePromoted</code>/<code>CandidateStatusChanged</code>, <b>NO</b> promotion, <b>NO</b> generation/deck-mutation/single-deck-opt/<code>cg_typed</code>, <b>NO</b> root <code>main.py</code>/<code>deck.csv</code> mutation, <b>NO</b> tarball deletion/overwrite, <b>NO</b> production mutation. The five public references stay <b>benchmark-only</b>.</p>
 <h2>Final decision: <code>probation_soak_continue</code></h2>

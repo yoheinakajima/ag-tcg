@@ -1,10 +1,27 @@
 # PTCG Strategy Canvas
 
-> Living strategy canvas. Updated through Pass 44.
+> Living strategy canvas. Updated through Pass 46B.
 
 _The internal tournament, parent/child H2H confirmations, and the replay-derived meta sanity are LOCAL diagnostics: every seat is OUR own portfolio deck driven by the SAME deck-agnostic base pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal._
 
 _Honesty mandate: attack damage/effect, lethal, KO target, spread placement, Boss/gust are UNSUPPORTED by the option schema (numeric attackId only); the typed layer refuses to fabricate them. Raging Bolt gets NO fake color-match fix (Pass 28 refuted it)._
+
+## Pass 46B — reference-gap + turn-planning diagnostic (READ-ONLY / LOCAL)
+
+- **Decision: `reference_gap_diagnostic_complete_soak_continue`.** READ-ONLY/LOCAL: no
+  prod mutation, no tick, no lifecycle/generation/promotion/upload, no forbidden events;
+  references benchmark-only. Safety stop-gate green (root byte-identical before+after;
+  deploy→tick; `auto_submit` falsy; refs absent from pool+worklist).
+- **The reference gap is behavioral.** Internal candidates beat the public references only
+  ~9.3% of decisive benchmark games (12 W / 117 L / 3 D over 134), across all families
+  (mega weakest ~5%, diamond best ~40%) → it is gameplay **policy / turn planning**, not
+  deck-list counts.
+- **Honest evidence limit.** Decision frames exist in ONLY one local Kaggle replay (268);
+  sidecars + benchmark records are outcome-only (step COUNT). Trace metrics illustrative
+  (n=1); outcome-level gap well supported. Numbers are diagnostics, NOT Kaggle scores.
+- **Forward (not executed):** reusable turn-planning primitives — typed board decode,
+  legal option taxonomy, energy planner, search-capable policy lane
+  (`docs/TURN_PLANNING_PRIMITIVES_BACKLOG.md`). **26** tests + `pass42–46` regression green.
 
 ## Pass 44 — post-republish production probation registration + verification bridge
 

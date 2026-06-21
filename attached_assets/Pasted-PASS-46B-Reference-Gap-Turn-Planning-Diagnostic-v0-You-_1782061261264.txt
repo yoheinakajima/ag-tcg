@@ -1,0 +1,422 @@
+PASS 46B — Reference Gap + Turn-Planning Diagnostic v0
+
+You are continuing inside the Pokémon TCG ActiveGraph repo after Pass 46. This is a WAITING-PERIOD, READ-ONLY / LOCAL-DIAGNOSTIC pass while the production daemon continues soaking the Pass-42 probation candidates.
+
+This is NOT full Pass 47. Do not run promotion. Do not mutate production. Do not generate candidates. Do not optimize a single deck. Do not create or admit candidates. Do not republish. Do not touch root main.py/deck.csv. Do not modify production Object Storage. Do not emit CandidateStatusChanged, CandidateGenerated, CandidateValidationFinished, CandidatePromoted, SubmissionQueued, SubmissionUploaded, KaggleScoreUpdated, or any lifecycle/generation/promotion/upload event.
+
+Main objective:
+Build a reference-gap and turn-planning diagnostic layer that explains, from existing benchmark/sidecar/replay evidence, why our internal candidates are far below the public cg_typed reference agents, and what reusable turn-planning primitives future passes should implement.
+
+This pass should produce actionable diagnosis, not a new candidate.
+
+Hard guardrails:
+- READ-ONLY against production Object Storage. You may list/download events/projections/selected sidecars only if needed, but never write, push, emit, delete, or reconcile production state.
+- The deployed Scheduled Deployment remains the only production writer.
+- Public references remain benchmark-only opponents. They must never enter candidate_pool, promotion, generation, lifecycle, active cap, family champion, parent, or submission paths.
+- No Kaggle upload/submit/auto-submit. No GitHub push unless the platform auto-commits at task end.
+- No root main.py/deck.csv mutation. Fresh filecmp root immutability check required.
+- No tarball deletion or overwrite.
+- Do not bulk-download all game sidecars. Sample lazily and boundedly.
+- If any diagnostic is uncertain, say “unsupported / not inferable from trace” rather than fabricating attack damage, lethal, Boss/gust, or search outcomes.
+
+Important framing:
+- Internal tournament scores are not Kaggle leaderboard scores.
+- Public references are calibration opponents, not our candidates.
+- A “gap” finding is not a promotion/submit signal.
+- Turn-planning output is a diagnostic spec for future candidate work, not live gameplay code.
+
+Part A — Safety stop-gate
+1. Verify root main.py and deck.csv are byte-identical to data/baselines/v1_kaggle_349_8 using filecmp/hash, before and after any package preflight.
+2. Verify .replit deployment still points to scripts/tournament_deployment_tick.py with --production and replit_app_storage, not root main.py.
+3. Verify auto_submit false/falsy.
+4. Verify public references remain benchmark-only and absent from candidate_pool/prod scheduler/worklist.
+5. Verify no forbidden event types in newly-created Pass-46B artifacts/events. Ideally this pass emits no events at all.
+6. Write:
+   - data/experiments/pass46b_safety_preflight.json
+   - data/experiments/pass46b_safety_preflight.md
+7. If any hard check fails, STOP.
+
+Part B — Existing evidence inventory
+Read existing local/prod-safe artifacts only. Do not mutate prod.
+
+Inventory:
+- Pass 40 reference intake artifacts.
+- Pass 41 public-reference calibration artifacts and benchmark ledger.
+- Pass 41 cg_typed candidate spike artifacts.
+- Pass 42 probation generation artifacts.
+- Pass 45/46 production soak readiness artifacts.
+- Benchmark sidecar files and projections, if present.
+- Production events/projections only read-only and only for high-level counts.
+
+Produce a map of:
+- Available public-reference benchmark games by candidate family, reference id, seat, outcome.
+- Available sidecars/traces by source.
+- Which traces contain full `obs.current`, `select`, `logs`, `action`.
+- Which trace fields are sufficient for turn-planning analysis:
+  - setup active/bench choices
+  - main phase action choices
+  - attach/energy choices
+  - search/to-hand choices
+  - discard choices
+  - retreat/switch choices
+  - attack/no-attack
+  - KO/prize/log-derived events
+  - deck/hand/prize counts
+- Which fields are unsupported and must not be inferred.
+
+Write:
+- data/experiments/pass46b_evidence_inventory.json
+- data/experiments/pass46b_evidence_inventory.md
+
+Part C — Turn-planning extractor v0
+Create a reusable analysis module. Suggested path:
+- src/ptcg_activegraph/analysis/turn_planning.py
+
+It should be read-only and pure. It must not import production mutation/lifecycle/generation code.
+
+Implement, at minimum:
+
+1. Robust trace reader
+   - Supports CABT sidecar JSON and Kaggle env replay-like JSON.
+   - Handles gzip .json.gz sidecars.
+   - Handles both string enum forms and integer enum forms for OptionType / SelectContext when possible.
+   - If a context/type is unknown, record unknown, do not guess beyond a safe label.
+
+2. TurnPlan / DecisionFrame extraction
+   For every decision frame where a player acts:
+   - game_id / source
+   - step
+   - turn
+   - yourIndex / acting_player if inferable
+   - phase/context
+   - minCount/maxCount
+   - selected indices
+   - option summaries
+   - active/bench summaries for both players, if visible
+   - handCount/deckCount/prizeCount/discardCount
+   - energyAttached/supporterPlayed/stadiumPlayed flags
+   - observed log events since previous frame
+   - action family: setup_active, setup_bench, main_play, attach, evolve, ability, retreat, attack, search_to_hand, discard, switch/to_active, end, unknown
+   - legality sanity: selected indices in range and count within min/max when available
+
+3. Turn-level plan features
+   Aggregate per player/game:
+   - first attack turn
+   - first KO turn, from logs only
+   - first prize taken turn, from logs/prize count only
+   - setup bench count after setup
+   - bench occupancy by turns 1/2/3
+   - energy attachments by turn
+   - turns ending without attack
+   - main-phase End selected while non-End actions existed
+   - search actions count and chosen card ids when visible
+   - discard actions count and discarded card ids when visible
+   - retreat/switch count
+   - ability use count
+   - hand size / deck count trajectory
+   - dead/low-action turn count: main phase with only End or no productive option
+   - invalid/timeout/error flags if present
+
+4. Unsupported flags
+   The extractor must explicitly mark these as unsupported unless observed in logs or computed by a trusted API:
+   - lethal availability
+   - exact damage if not in logs
+   - missed KO
+   - Boss/gust target correctness
+   - spread placement correctness
+   - hidden-hand contents
+   - “best” action
+   - counterfactual attack outcome
+
+5. Unit tests for extractor using small inline synthetic trace snippets. Do not rely on huge sidecars for tests.
+
+Write:
+- data/experiments/pass46b_turn_plan_schema.json
+- data/experiments/pass46b_turn_plan_schema.md
+- docs/TURN_PLANNING_DIAGNOSTIC_SCHEMA.md
+
+Part D — Reference-vs-our behavioral baseline
+Using existing benchmark evidence and bounded sidecar sampling, compare our candidates to public references by observable turn-planning metrics.
+
+Do NOT claim causality or “missed lethal” unless directly observed/supported.
+
+At minimum, compute for:
+- public references overall
+- our internal candidates overall
+- probation candidates, if enough traces exist
+- generated Pass-42 candidates separately if present
+- family-level groups where possible: water, dragapult, lightning, diamond, mega_charizard, mega_gardevoir, mega_venusaur
+
+Metrics:
+- win/loss/draw/invalid
+- first attack turn distribution
+- first KO/prize turn distribution
+- attack rate by turn
+- bench setup count by turn 1/2/3
+- energy attachment rate by turn
+- average energy in play by turn if visible
+- main-phase End-with-alternatives rate
+- search-to-hand action frequency
+- discard frequency and crude discard categories: energy / basic / evolution / trainer / unknown, if card metadata available
+- ability use rate
+- retreat/switch rate
+- hard-fail rate
+- game length distribution
+
+Important: Public references may use cg_typed agents and better turn plans; internal candidates may be stdlib/generic. Report this explicitly.
+
+Write:
+- data/experiments/pass46b_reference_behavior_baseline.json
+- data/experiments/pass46b_reference_behavior_baseline.md
+
+Part E — Loss-mode taxonomy v0
+Create a deterministic loss-mode classifier from observable trace features.
+
+Loss modes should be labels, not causal claims. Use conservative wording:
+- setup_underdeveloped: low bench / no backup attackers by early turns
+- energy_slow: low energy attachments / attack readiness lag
+- attack_lag: first attack later than reference median
+- prize_lag: first prize/KO later than reference median
+- passive_main_phase: frequent End with non-End alternatives
+- discard_pressure: high discard rate of energy/basic/evolution/search cards
+- search_underuse_or_misuse: low search frequency or search-to-hand choices with weak development signal
+- low_ability_usage
+- long_game_resource_decay: deckCount/handCount collapse or too many nonproductive turns
+- runtime_failure: invalid/timeout/error
+- unsupported: insufficient trace info
+
+For each label:
+- define exact deterministic rule
+- record evidence fields
+- record confidence: low/medium/high based on sample size and whether direct logs support it
+- never classify missed lethal unless Search API or exact attack outcome is used and validated separately.
+
+Write:
+- data/experiments/pass46b_loss_mode_taxonomy.json
+- data/experiments/pass46b_loss_mode_taxonomy.md
+
+Part F — Per-family gap report
+Apply the taxonomy to our candidate families and compare to reference medians.
+
+Output a ranked list of “largest observable gaps” by family, not by single deck optimization priority.
+
+For each family:
+- sample size
+- current public-reference win rate if available
+- dominant loss-mode labels
+- the turn-planning primitives likely needed
+- whether this should feed:
+  - generic stdlib mutation policy
+  - cg_typed reusable policy primitives
+  - special-pilot track
+  - no action yet / sample too small
+- uncertainty level
+
+Expected honest likely finding:
+- Our broad gap is gameplay policy / turn planning, not just deck counts.
+- Public references still dominate.
+- The immediate next improvement should be reusable turn-planning primitives, not another one-off clever deck.
+
+Write:
+- data/experiments/pass46b_family_gap_report.json
+- data/experiments/pass46b_family_gap_report.md
+
+Part G — Turn-planning primitive backlog
+Produce a backlog of reusable primitives for future candidate work. This is the key output.
+
+Classify each primitive as:
+- ready_for_design
+- needs_more_trace_evidence
+- needs_cg_typed_lane
+- needs_search_api
+- special_pilot_only
+- blocked_or_unsupported
+
+Include at least:
+1. Typed board decode wrapper: stable typed view of active/bench/hand/discard/prize/deck counts.
+2. Legal option taxonomy: robust SelectContext/OptionType mapping with fallback.
+3. Turn phase plan:
+   - setup active
+   - setup bench
+   - development turn
+   - attack turn
+   - recovery turn
+   - prize-race turn
+4. Energy planner:
+   - attach to current attacker vs future attacker
+   - avoid over-attaching to saturated mon
+   - energy to retreat enabling
+5. Search planner:
+   - prioritize basics if bench underfilled
+   - prioritize evolution if base exists
+   - prioritize energy if attack unlocks
+   - prioritize draw/search engine if hand dead
+6. Discard planner:
+   - preserve unique basics/evolutions/energy thresholds
+   - discard excess duplicates and low-value late-game cards
+7. Attack planner:
+   - choose attack when attack is available and productive
+   - prefer prize-taking and high-prize targets only when supported by observable data
+8. Retreat/switch planner:
+   - promote attacker-ready mon
+   - preserve high-prize damaged attacker when possible
+9. Deckout / draw-safety gate.
+10. Prize-race heuristics.
+11. Reference-parity benchmark gate.
+12. Optional future Search API counterfactual probe:
+   - small, bounded, read-only feasibility only
+   - no live policy yet
+   - only if cg Search API is stable
+
+Write:
+- data/experiments/pass46b_turn_planning_backlog.json
+- data/experiments/pass46b_turn_planning_backlog.md
+- docs/TURN_PLANNING_PRIMITIVES_BACKLOG.md
+
+Part H — Optional bounded sidecar sampler
+If existing sidecars are insufficient for the above, implement a bounded sampler:
+- Select at most N sidecars per group, default N=10.
+- Prefer recent, complete, non-invalid games.
+- Prefer a mix of wins/losses and references/internal candidates.
+- Never download all sidecars from production.
+- Avoid reading locks/, conflict_report, pytest scratch.
+- Cache locally under data/experiments/pass46b_sidecar_sample_manifest.json with no raw secret values.
+- If sidecars are unavailable, do not fail the pass; report unsupported/insufficient.
+
+Write:
+- data/experiments/pass46b_sidecar_sample_manifest.json
+- data/experiments/pass46b_sidecar_sample_manifest.md
+
+Part I — Optional bounded benchmark top-up
+If and only if it is local-only and does not touch production, you may run a small bounded benchmark top-up to improve the reference-gap sample.
+Rules:
+- Use the existing benchmark lane only.
+- No production state.
+- No candidate generation.
+- No full marathon required.
+- Prefer filling missing cells for the weakest sample families.
+- Max one bounded invocation/tranche unless time remains.
+- If it risks timeout or complexity, skip and proceed from existing evidence.
+
+Record:
+- whether top-up was run
+- games attempted/completed
+- exact ledger used
+- any invalid/timeout
+- whether it changed conclusions
+
+Write:
+- data/experiments/pass46b_optional_benchmark_topup.json
+- data/experiments/pass46b_optional_benchmark_topup.md
+
+Part J — Strategy decision
+Create a deterministic decision artifact. Allowed decisions only:
+- reference_gap_diagnostic_complete_soak_continue
+- reference_gap_diagnostic_incomplete_needs_more_sidecars
+- blocked_safety_failure
+
+Expected decision if all goes well:
+reference_gap_diagnostic_complete_soak_continue
+
+Decision should say:
+- keep soaking production probation candidates
+- do not run full Pass 47 yet unless readiness thresholds are near
+- do not optimize one deck now
+- next improvement pass should be reusable turn-planning primitives / policy infrastructure
+- public reference parity is not close yet
+- no upload/submit/promotion/generation occurred
+
+Write:
+- data/experiments/pass46b_strategy_decision.json
+- data/experiments/pass46b_strategy_decision.md
+
+Part K — Tests
+Add tests/test_pass46b_reference_gap_turn_planning.py.
+
+Minimum 20 tests:
+1. root main.py/deck.csv byte-identical to baseline.
+2. no Pass-46B script writes production state or calls push_state.
+3. no Pass-46B script emits forbidden events.
+4. no Pass-46B script calls CandidateStatusChanged or lifecycle apply.
+5. no Pass-46B script generates candidates or writes generated tarballs.
+6. public references remain absent from candidate_pool and scheduler.
+7. turn_planning extractor handles a synthetic setup-active frame.
+8. extractor handles string enum option/context.
+9. extractor handles integer enum option/context.
+10. extractor marks unsupported lethal/missed-KO/Boss/gust when not directly supported.
+11. extractor validates selected indices and count.
+12. turn-level aggregation computes first attack / first prize from logs only.
+13. loss taxonomy never quarantines or promotes.
+14. loss taxonomy labels are deterministic.
+15. sidecar sampler bounded and does not bulk-read all games.
+16. reference behavior baseline report exists and has samples or honest insufficient-data status.
+17. family gap report exists and does not make Kaggle strength claims.
+18. turn-planning backlog contains required primitives.
+19. strategy decision in allowed list.
+20. report includes caveats: not Kaggle, no generation, no upload, no promotion, reference benchmark only, production read-only.
+
+Run relevant suites:
+- new Pass-46B tests
+- pass36–46 existing regression if feasible
+- if a known hash-order flake exists, use the established PYTHONHASHSEED=0 / no-randomly convention and document it.
+
+Part L — Report + docs/site
+Write exact 10-section report:
+data/reports/pass46b_reference_gap_turn_planning_report.md
+
+Required sections:
+1. Charter + safety stop-gate
+2. Evidence inventory
+3. Turn-planning extractor
+4. Reference behavioral baseline
+5. Loss-mode taxonomy
+6. Per-family gap report
+7. Turn-planning primitive backlog
+8. Optional top-up / sidecar sampling
+9. Tests + no-upload/no-mutation guarantees
+10. Verdict + next recommendation
+
+Update only these docs/site files if appropriate:
+- data/reports/activegraph_strategy_report.md
+- docs/NEXT_STEPS.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/site/index.html
+
+Updates must be caveated:
+- read-only diagnostic
+- no candidate generation
+- no upload/submit
+- no promotion
+- public references benchmark-only
+- internal scores not Kaggle leaderboard
+- production daemon unchanged and still soaking
+
+Do NOT write bucket IDs, secrets, Object Storage credentials, or dashboard private handoff content.
+
+Part M — Architect review
+Run the architect/code-review process at the end.
+Ask it specifically to verify:
+- no production mutation path
+- no generation/promotion/upload path
+- no reference leakage
+- no unsupported lethal/KO/gust claims
+- no sidecar bulk download
+- extractor/test determinism
+- report caveats
+- whether the backlog correctly focuses on reusable turn planning, not one-off deck optimization
+
+Fix any severe or medium findings. Re-run tests after fixes.
+
+Part N — Final response
+Return a concise final summary with:
+- decision
+- whether production was mutated
+- whether any candidate was generated/promoted/submitted
+- main reference-gap conclusion
+- top 3 turn-planning primitives to build next
+- whether full Pass 47 should be run now or continue soaking
+- test summary
+- report path
+
+Expected final stance unless evidence says otherwise:
+reference_gap_diagnostic_complete_soak_continue. Keep soaking. Do not run full Pass 47 yet. Next candidate-improvement work should target reusable turn-planning primitives and cg_typed/search-capable policy infrastructure, not another one-off deck.

@@ -3,7 +3,32 @@
 Prioritized roadmap from this first version toward a competitive, well-documented
 submission.
 
-## Pass 45 — production probation soak + promotion-readiness audit (current state)
+## Pass 46B — reference-gap + turn-planning diagnostic (current state)
+
+> READ-ONLY / LOCAL. NO production mutation, no tick, no lifecycle/generation/
+> promotion/upload, no forbidden events. Public references stay benchmark-only.
+> Internal/benchmark metrics are NOT Kaggle leaderboard scores.
+
+- **Decision: `reference_gap_diagnostic_complete_soak_continue`.** Built a reusable,
+  pure turn-planning extractor (`src/ptcg_activegraph/analysis/turn_planning.py`) and
+  honest diagnostic artifacts (`data/experiments/pass46b_*`, report
+  `data/reports/pass46b_reference_gap_turn_planning_report.md`). Safety stop-gate passed
+  all hard checks (root byte-identical before+after; deploy points to the tick not root;
+  `auto_submit` falsy; references absent from pool+worklist).
+- **Key finding:** the gap to public references is broad and **behavioral** — our
+  candidates beat references only ~9.3% of decisive benchmark games (12 W / 117 L / 3 D
+  over 134). It is gameplay **policy / turn planning**, not deck-list counts. Mega lines
+  are weakest (~5%); diamond best (~40%).
+- **Honest evidence limit:** full decision frames exist only in ONE local Kaggle replay;
+  tournament/benchmark records are outcome-only (no frames). Trace-level turn-planning
+  metrics are illustrative (n=1); outcome-level gap is well supported.
+- **Next:** keep soaking; do NOT start full Pass 47 yet; do NOT optimize one deck. The
+  next improvement pass should build **reusable turn-planning primitives** (a
+  `cg_typed`/search-capable policy lane) — see `docs/TURN_PLANNING_PRIMITIVES_BACKLOG.md`
+  (top 3: typed board decode wrapper, legal option taxonomy, energy planner). **26**
+  Pass-46B tests + `pass42–46` regression green.
+
+## Pass 45 — production probation soak + promotion-readiness audit
 
 > READ-ONLY / AUDIT / SOAK. NO Kaggle upload/submit/auto-submit, NO queue/promotion/
 > status-change events, NO generation/deck-mutation/single-deck-opt/cg_typed, NO
