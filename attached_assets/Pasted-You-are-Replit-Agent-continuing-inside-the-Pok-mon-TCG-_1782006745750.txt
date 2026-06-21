@@ -1,0 +1,508 @@
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+PASS 41 — Reference-Calibrated cg_typed Candidate Spike v0
+
+CONTEXT
+
+Pass 40 successfully ingested five public Kaggle typed reference agents as benchmark-only opponents:
+- 4 kiyotah host samples
+- 1 optional ryotasueyoshi Alakazam public notebook
+
+They are external_reference benchmark opponents only:
+- never submit
+- never mutate
+- never promote
+- never queue
+- never use as lineage parents
+- never count toward our active cap
+- never call them our candidates
+
+Pass 40 also proved:
+- cg_typed lane is feasible
+- stdlib lane is still separate and intact
+- public references beat our sampled stdlib/internal candidates 7–1 in an 8-game controlled tick
+- Search API imports are feasible but no MCTS/search candidate was built
+- production scheduled tournament daemon remains unchanged and healthy
+
+The scheduled deployment now runs every 20 minutes. Leave it running. Do not start the root “Start application” workflow; that is the frozen Kaggle entrypoint and not-started is expected.
+
+This pass is the first real gameplay-improvement pass after the ops foundation.
+
+PRIMARY GOAL
+
+Run a larger calibrated benchmark against the public references, then build at most ONE new cg_typed candidate using OUR OWN deck/policy, not a public reference agent, and evaluate whether the cg_typed policy meaningfully closes the public-reference gap.
+
+This is a local candidate-generation/evaluation pass, NOT a Kaggle upload/submission pass.
+
+HARD GUARDRAILS
+
+- NO Kaggle upload.
+- NO Kaggle submission.
+- NO auto-submit.
+- NO GitHub push.
+- NO root main.py / deck.csv mutation.
+- NO mutation/deletion of existing tarballs.
+- NO public reference agent in our submission queue.
+- NO public reference as candidate lineage parent.
+- NO copying public reference agents as our candidate.
+- NO claim of Kaggle strength from local benchmark.
+- Every emitted event must carry no_upload=true.
+- Keep production scheduled daemon safe; do not break scheduled deployment.
+- If any production health hard failure appears, STOP.
+
+You may use public reference agents as design examples and benchmark opponents. You may reuse general ideas such as typed board decoding, per-context scoring, prize math, target selection, and energy attachment planning. Do not submit or relabel public code as ours.
+
+PART A — Root / production / benchmark-lane safety preflight
+
+1. Verify root main.py and deck.csv are byte-identical to data/baselines/v1_kaggle_349_8.
+2. Run package verify-only.
+3. Run scripts/check_tournament_health.py --mode prod.
+4. Confirm scheduled deployment config still points at tournament_deployment_tick.py, not root main.py.
+5. Confirm Pass 40 public reference manifest exists and all five materialized reference agents still hash-match.
+6. Confirm public reference tarballs are benchmark-only and not in candidate_pool.json.
+7. Confirm no SubmissionUploaded / forbidden upload events / no_upload=false.
+
+Write:
+- data/experiments/pass41_root_prod_benchmark_safety.json
+- data/experiments/pass41_root_prod_benchmark_safety.md
+
+STOP on hard failure.
+
+PART B — Larger calibrated public-reference benchmark batch
+
+Run a checkpointed, resumable LOCAL benchmark batch using the Pass 40 benchmark lane.
+
+Do not mutate production. This is local diagnostic/evaluation data.
+
+Benchmark set:
+- all current schedulable internal candidates, or at minimum the top/currently relevant 13 schedulable candidates
+- all 5 public references
+
+Target sample:
+- minimum target: 2 games per seat per candidate-reference pair
+- ideal if runtime permits: 4 games per seat per candidate-reference pair
+- use hard-timeout subprocess isolation
+- no SIGALRM-only native-code timeout
+- checkpoint after each game or small batch
+- resume safely on rerun
+
+Expected scale:
+- 13 internal × 5 references × 2 seats × 2 games = 260 games minimum
+- If time is tight, complete a first tranche and write remaining worklist honestly. Do not fake completion.
+
+For each game record:
+- our_candidate_id
+- public_reference_id
+- seat
+- result from our perspective
+- steps
+- elapsed
+- invalid/error/timeout
+- artifact path + sha256 if sidecar exists
+- no_upload=true
+
+Write:
+- data/experiments/pass41_public_benchmark_games.jsonl
+- data/experiments/pass41_public_benchmark_calibration.json
+- data/experiments/pass41_public_benchmark_calibration.md
+- data/tournament/benchmark/projections/pass41_public_benchmark_matrix.{json,md,csv}
+
+PART C — Benchmark gap analysis and target-family selection
+
+Analyze benchmark results honestly.
+
+For every internal candidate:
+- games vs public refs
+- our win/loss/draw/invalid
+- decisive win rate
+- Wilson 95% CI
+- worst reference matchup
+- best reference matchup
+- seat imbalance
+- invalid/error rate
+- whether sample is too small
+
+Select exactly ONE target for cg_typed candidate spike.
+
+Selection rule:
+1. Prefer a deck that is already legal/stable and has no invalids.
+2. Prefer simple, rules-friendly decks over complex mechanics.
+3. Prefer candidates that are closest to public references or have clear policy-fix potential.
+4. Do NOT choose public references.
+5. Do NOT choose Toxic/Durant special-pilot-only unless the pass is explicitly a special-pilot pass.
+6. If evidence is tied or too weak, default to mono_lightning_miraidon_easy because it is low-decision-density, one-color, Basic-centric, and most compatible with a first cg_typed policy.
+7. Water can be selected only if the benchmark results justify it; do not blindly keep Water as the only path.
+
+Write:
+- data/experiments/pass41_target_family_selection.json
+- data/experiments/pass41_target_family_selection.md
+
+PART D — Design one owned cg_typed policy
+
+Build a policy design document before writing code.
+
+Policy must be OURS:
+- Use our selected decklist.
+- Use our own card IDs from our deck.
+- Use public references only as conceptual examples for typed decoding/per-context scoring.
+- No public reference code copied wholesale.
+- No public reference lineage parent.
+
+Minimum strategic primitives to implement:
+
+1. to_observation_class(obs_dict)
+2. all_card_data() card_table
+3. get_card(obs, area, index, player)
+4. prize_count(pokemon):
+   - megaEx = 3
+   - ex = 2
+   - normal = 1
+   - account for Legacy Energy / Lillie Pearl if readily visible
+5. board counts:
+   - active
+   - bench
+   - hand
+   - discard
+   - prize count
+   - deck count
+   - energy on Pokémon
+6. per-SelectContext logic:
+   - setup active
+   - setup bench
+   - main
+   - to_hand/search
+   - discard
+   - attach
+   - attach_from
+   - switch/to_active
+   - evolve if relevant
+   - attack
+7. attacker readiness:
+   - score ready attacker highest
+   - attach energy toward main attacker
+   - do not overstack pointless energy
+   - attach to active for retreat only when required
+8. target planning:
+   - compute approximate attack damage for known own attacks where card IDs/attack IDs are known
+   - apply weakness/resistance if available
+   - prefer KO that wins game
+   - prefer highest-prize KO
+   - prefer active if no Boss/gust available
+9. draw/deck safety:
+   - avoid drawing/searching when deckCount is dangerously low unless winning now
+10. fallback:
+   - if anything fails, return base/legal fallback
+   - never raise
+
+If selected deck is mono_lightning_miraidon_easy, implement a simple Miraidon policy:
+- prioritize Miraidon ex setup
+- maintain backup Miraidon
+- attach Lightning to active/backup Miraidon
+- use Levincia when available/beneficial if represented by ability/stadium option
+- Boss/gust ex target if available and kill planning supports it
+- use Pawmot only as backup, not primary
+- avoid bench clutter
+
+If another deck is selected, write equivalent deck-specific rules.
+
+Write:
+- docs/PASS41_CG_TYPED_POLICY_DESIGN.md
+- data/experiments/pass41_cg_typed_policy_design.json
+- data/experiments/pass41_cg_typed_policy_design.md
+
+PART E — Build exactly one cg_typed candidate
+
+Build at most ONE candidate:
+
+Name pattern:
+- cg_typed_<selected_family>_policy_v1
+
+Candidate lane:
+- cg_typed_candidate
+- owned_candidate=true
+- public_reference=false
+- submit_allowed=false for this pass
+- mutation_parent = selected internal candidate only
+- no public reference lineage
+
+Tarball layout:
+- main.py
+- deck.csv
+- cg/
+
+Use selected candidate’s deck.csv unchanged unless Part C explicitly justified a decklist copy from our own existing tarball.
+
+Do not touch root main.py/deck.csv.
+
+Candidate should:
+- import cg.api
+- load deck.csv
+- define agent(obs_dict)
+- return 60-card deck on deck request
+- use typed policy
+- fallback safely
+
+Write:
+- data/submissions/candidates_pass41/cg_typed_<selected_family>_policy_v1.tar.gz
+- data/experiments/pass41_candidate_build.json
+- data/experiments/pass41_candidate_build.md
+
+PART F — Validator expansion for owned cg_typed candidate
+
+Use the Pass 40 cg_typed validator lane.
+
+Validate:
+- tarball structure main.py + deck.csv + cg/
+- deck.csv exactly 60 ints
+- no unexpected top-level files
+- cg imports allowed
+- no network imports
+- agent returns deck correctly
+- malformed/deck-selection obs handled safely enough for our validator
+- local import works
+- stdlib validator remains unchanged and continues rejecting cg_typed tarballs
+
+Write:
+- data/experiments/pass41_cg_candidate_validation.json
+- data/experiments/pass41_cg_candidate_validation.md
+
+PART G — Candidate smoke tests
+
+Run local subprocess-isolated smoke:
+
+1. candidate vs itself
+2. candidate vs selected parent
+3. selected parent vs candidate
+4. candidate vs best current internal anchor
+5. best current internal anchor vs candidate
+6. candidate vs at least two public references
+7. same public references vs candidate seat-swapped
+
+Hard fail if:
+- candidate cannot import
+- candidate cannot return deck
+- repeated INVALID/ERROR/TIMEOUT
+- root files mutated
+- public reference enters candidate pool
+
+Write:
+- data/experiments/pass41_cg_candidate_smoke.json
+- data/experiments/pass41_cg_candidate_smoke.md
+
+PART H — Parent/child and benchmark evaluation
+
+Run a bounded, checkpointed evaluation:
+
+Parent/child:
+- candidate vs selected parent
+- target at least 10 games/seat if runtime allows
+- minimum 4 games/seat for first pass
+- report CIs; no superiority claim unless CIs justify it
+
+Public benchmark:
+- candidate vs all five public references
+- target at least 2 games/seat/reference
+- compare to selected parent’s public-reference benchmark from Part B
+- report delta but be honest about sample size
+
+Internal anchors:
+- candidate vs current water control
+- candidate vs current dragapult reference
+- candidate vs any current internal leader from tournament projections
+
+Do not submit.
+
+Write:
+- data/experiments/pass41_parent_child_eval.json
+- data/experiments/pass41_parent_child_eval.md
+- data/experiments/pass41_public_reference_eval.json
+- data/experiments/pass41_public_reference_eval.md
+- data/experiments/pass41_anchor_eval.json
+- data/experiments/pass41_anchor_eval.md
+
+PART I — Non-inertness / decision trace audit
+
+Instrument candidate decisions on a small set of live games.
+
+Compare:
+- base/parent action if available
+- cg_typed candidate action
+- contexts where candidate differs
+- legality of selected action
+- whether the typed policy actually fires
+
+Report:
+- total decisions
+- changed decisions
+- changed decision rate
+- illegal refinements
+- contexts changed
+- fallback count
+- exceptions caught
+- examples of intended changes
+
+Hard fail if any illegal action or uncaught exception appears.
+
+Write:
+- data/experiments/pass41_non_inertness_trace.json
+- data/experiments/pass41_non_inertness_trace.md
+- optional JSONL trace sidecar under data/experiments/pass41_traces/
+
+PART J — Candidate registration decision
+
+This pass may register the new candidate locally for future evaluation, but must not submit or queue it for Kaggle.
+
+Decision states:
+- cg_typed_candidate_built_and_local_eval_passed
+- cg_typed_candidate_inert
+- cg_typed_candidate_invalid
+- cg_typed_candidate_below_parent
+- cg_typed_candidate_promising_local_only
+- build_blocked
+
+Do NOT put it into production scheduled deployment unless:
+- all local gates pass
+- tarball and cg dependencies are available to the deployment environment
+- republish_required is explicitly documented
+- user approval required for republish
+
+Most likely outcome:
+- keep as local candidate pending more evaluation
+- no prod republish yet
+
+Write:
+- data/experiments/pass41_strategy_decision.json
+- data/experiments/pass41_strategy_decision.md
+
+PART K — ActiveGraph events
+
+Emit pass41-tagged events, all no_upload=true.
+
+Suggested events:
+- PublicBenchmarkCalibrationStarted
+- PublicBenchmarkGameFinished
+- PublicBenchmarkCalibrationFinished
+- CgTypedCandidateDesignRecorded
+- CandidateBuilt
+- CandidateValidated
+- CandidateSmokeFinished
+- CandidateNonInertnessMeasured
+- ParentChildComparisonFinished
+- PublicReferenceEvaluationFinished
+- StrategyDecisionRecorded
+- ReportGenerated
+
+Do not emit:
+- SubmissionQueued
+- SubmissionUploaded
+- KaggleScoreUpdated
+- CandidatePromoted
+unless the codebase requires generic names; if generic names are used, payload must clearly say no_upload=true and no submission.
+
+Write:
+- data/experiments/pass41_events.json
+- update event store idempotently
+
+PART L — Tests
+
+Add tests/test_pass41_cg_typed_candidate.py.
+
+Required coverage:
+1. root main.py/deck.csv unchanged
+2. pass40 references remain benchmark-only
+3. public references not in candidate pool
+4. stdlib validator unchanged
+5. cg_typed owned candidate validator accepts the new candidate
+6. cg_typed validator rejects bad shapes
+7. candidate tarball has main.py/deck.csv/cg only
+8. candidate deck matches selected internal parent deck unless justified
+9. no public reference lineage parent
+10. no public reference code path in mutation lineage
+11. no upload/submit/auto-submit
+12. candidate smoke has no invalid/error/timeout above threshold
+13. parent/child eval artifact exists
+14. public-reference eval artifact exists
+15. non-inertness artifact exists and has zero illegal actions
+16. strategy decision is one of allowed states
+17. reports include benchmark caveats
+18. all pass41 events no_upload=true
+19. production scheduled deployment config unchanged unless republish_required explicitly true
+20. if build/eval blocked, blocked artifact is honest and tests validate blocked path
+
+Run:
+- pass36
+- pass37
+- pass38
+- pass39
+- pass40
+- pass41 tests
+
+PART M — Report / docs / site
+
+Write exact 10-section report:
+
+data/reports/pass41_reference_calibrated_cg_candidate_report.md
+
+Sections:
+1. Root and production safety
+2. Public-reference benchmark calibration
+3. Target-family selection
+4. cg_typed policy design
+5. Candidate build and validation
+6. Smoke, parent/child, and anchor evaluations
+7. Public-reference evaluation and gap movement
+8. Non-inertness / decision-trace audit
+9. Tests / ActiveGraph / no-upload guarantees
+10. Verdict and next recommendation
+
+Update:
+- docs/PASS41_CG_TYPED_POLICY_DESIGN.md
+- docs/NEXT_STEPS.md
+- docs/NEXT_AGENT_README.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+
+Docs must say:
+- public references are benchmark-only
+- this candidate is ours
+- no submission was made
+- no Kaggle strength claim
+- local benchmark is directional
+- next step depends on eval outcome
+
+PART N — Architect review
+
+Run architect/code review before final.
+
+Ask specifically:
+1. Did we accidentally copy or promote public reference code?
+2. Is public-reference leakage still zero?
+3. Is cg_typed candidate truly owned lineage?
+4. Did the stdlib lane remain unchanged?
+5. Is the candidate tarball safe and validator-gated?
+6. Are benchmark conclusions honest about small samples?
+7. Did any event imply promotion/upload?
+8. Did we mutate production or scheduled deployment without approval?
+9. Are non-inertness claims backed by traces?
+10. Should candidate stay local or require republish?
+
+Fix real issues. Do not weaken tests.
+
+FINAL RESPONSE FORMAT
+
+When complete, report:
+- PASS/FAIL
+- benchmark calibration sample size
+- selected target family and reason
+- candidate name/path
+- validation result
+- smoke result
+- parent/child result
+- public-reference result
+- non-inertness result
+- whether prod republish is required
+- whether candidate was queued/submitted (should be NO)
+- report path
+- test summary
+- recommended next pass

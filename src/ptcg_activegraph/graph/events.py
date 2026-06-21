@@ -123,6 +123,16 @@ class EventType(str, Enum):
     PublicBenchmarkProjectionUpdated = "PublicBenchmarkProjectionUpdated"
     PublicBenchmarkTickFinished = "PublicBenchmarkTickFinished"
 
+    # --- Pass 41: reference-calibrated owned cg_typed candidate spike ------
+    # The owned cg_typed candidate is a LOCAL-ONLY benchmark subject; these two
+    # types are NEVER folded by the scheduler/lifecycle/pool and carry
+    # no_upload=true. ReferenceCalibrationFinished is written to the SEPARATE
+    # benchmark ledger (reference opponents only); OwnedCgCandidateRegistered is
+    # written to the main lab ledger and is NOT a promotion/queue/active-cap
+    # signal (distinct from the forbidden CandidatePromoted/SubmissionQueued).
+    OwnedCgCandidateRegistered = "OwnedCgCandidateRegistered"
+    ReferenceCalibrationFinished = "ReferenceCalibrationFinished"
+
 
 @dataclass
 class Event:

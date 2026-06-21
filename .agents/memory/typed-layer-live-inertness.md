@@ -49,3 +49,26 @@ the independent tell that such results are noise, not strength.
 **Why:** under H0 (typed layer inert) child==parent behaviourally, so the correct
 null distribution IS the parent_mirror; a single 20-game H2H deviation of the same
 magnitude as the mirror's own deviation is not evidence of effect.
+
+# Prefer Fisher-exact (H2H vs pooled self-mirror) over CI-non-overlap at small n
+
+The "child CI must clear BOTH mirror CIs" rule above is the right instinct but is
+TOO STRICT at budget-feasible sizes — Wilson CIs on ~10–20 decisive games are so
+wide they almost never separate, so a genuine effect reads as inconclusive. Better
+test: compare the H2H win/loss counts against the self-mirror win/loss counts with
+a **Fisher exact test** (one per mirror + a pooled-mirror pool), and require the
+mirror controls themselves to be clean (both mirror CIs straddle 0.50). In Pass-41
+a 10–0 child-vs-parent result (Wilson [0.7225, 1.0]) had mirror controls at 0.60
+and 0.50 (both straddling 0.5) and pooled-mirror Fisher **p=0.0085** → corroborated
+as a real behavioral difference, where the strict CI-non-overlap rule alone would
+have been needlessly indecisive.
+
+**How to apply:** (1) confirm parent_mirror AND child_mirror CIs both straddle 0.50
+(harness unbiased); (2) Fisher-exact the H2H counts vs the pooled mirror counts;
+(3) only then credit "child differs from parent" — and even then scope the claim to
+parent/internal-anchor comparisons, NEVER to public-reference strength (Pass-41's
+parent-beating child was still far below every public reference).
+
+**Why:** at n≈10–20 the variance of a Wilson CI dwarfs the effect; an exact count
+test against the empirical null has far more power while staying honest about small
+samples.

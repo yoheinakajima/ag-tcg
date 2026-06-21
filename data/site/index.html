@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph — Pass 40 Public-Reference Benchmark Lane (internal diagnostics)</title>
+<title>ActiveGraph — Pass 41 Reference-Calibrated cg_typed Candidate Spike (internal diagnostics)</title>
 <style>
  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
  h1{font-size:1.5rem} table{border-collapse:collapse;width:100%;margin:1rem 0}
@@ -9,6 +9,20 @@
  th{background:#f4f4f6} .caveat{background:#fff7e6;border:1px solid #f0c36d;padding:.7rem;border-radius:6px;font-size:.9rem;margin:.5rem 0}
  code{background:#f4f4f6;padding:.1rem .3rem;border-radius:3px}
 </style></head><body>
+<h1>ActiveGraph — Pass 41: Reference-Calibrated cg_typed Candidate Spike v0 (local-only)</h1>
+<p class="caveat"><b>LOCAL benchmark-lane feasibility only — NOT a Kaggle score, NOT a leaderboard, NOT a strength claim.</b> The five public references are <b>benchmark-only opponents</b> — never a candidate/parent/queue/promotion and never toward the active cap. The cg_typed candidate is <b>ours</b> (original typed policy; no reference code copied). <b>NO submission was made — no upload, no submit, no auto-submit, no promotion.</b> The local benchmark is <b>directional only</b>, and the next step <b>depends on the eval outcome</b>.</p>
+<h2>Owned cg_typed candidate vs the public-reference benchmark</h2>
+<p>One <b>owned</b> candidate <code>cg_typed_mono_lightning_miraidon_policy_v1</code> (original typed policy over the bundled <code>cg</code> SDK: decodes <code>cg.api</code> dataclasses; Miraidon prize/board/attacker-readiness reasoning) was built on the parent's unchanged deck with <code>mutation_parent=internal</code>. Its <code>main.py</code> SHA matches none of the references.</p>
+<ul>
+ <li><b>Root/prod safe:</b> root <code>main.py</code>/<code>deck.csv</code> byte-unchanged &middot; scheduled deployment still runs <code>tournament_deployment_tick.py --production</code> (not root <code>main.py</code>) &middot; the <code>Start application</code> frozen Kaggle entrypoint is intentionally <b>not started</b> &middot; <b>republish NOT required</b>.</li>
+ <li><b>Calibration (honest tranche):</b> <b>134</b> of ~260 games &middot; 13 internal subjects &times; 5 public references &middot; internals broadly below the references &middot; default family decisive WR <b>0.10</b> (CI [0.018, 0.404]).</li>
+ <li><b>Target:</b> default <code>mono_lightning_miraidon_easy</code> holds — evidence tied, no candidate's Wilson CI is disjoint from the default's.</li>
+ <li><b>Lanes:</b> cg_typed validator <b>ACCEPTS</b>; both stdlib validators (byte-unchanged) <b>REJECT</b> (forbid <code>import cg</code>) &middot; smoke <b>9/9</b> clean.</li>
+ <li><b>Eval (honest):</b> beats parent <b>10–0</b> (Wilson [0.7225, 1.0]) <b>above</b> the self-mirror noise floor (pooled Fisher p=0.0085) &middot; above <code>water_control</code> + <code>internal_leader</code> &middot; <b>below</b> <code>dragapult</code> reference &middot; <b>below</b> all public references overall (<b>1/20</b> decisive, WR 0.05). Non-inert: 61.8% decisions changed, <b>0 illegal</b>, 0 uncaught exceptions.</li>
+ <li><b>Decision:</b> <code>promising_local_only</code> &middot; candidate stays <b>local-only</b> &middot; <b>20</b> Pass 41 tests + pass36–41 regression green &middot; every pass41 event <code>no_upload=true</code> (no SubmissionUploaded/KaggleScoreUpdated/CandidatePromoted).</li>
+</ul>
+<p>Report: <code>data/reports/pass41_reference_calibrated_cg_candidate_report.md</code> &middot; Design: <code>docs/PASS41_CG_TYPED_POLICY_DESIGN.md</code> &middot; Artifacts: <code>data/experiments/pass41_*</code>.</p>
+<hr>
 <h1>ActiveGraph — Pass 40: Public-Reference Benchmark Lane (intake + cg_typed feasibility)</h1>
 <p class="caveat"><b>Internal cg_typed-lane benchmark feasibility only — NOT our rankings, NOT a Kaggle leaderboard, NOT a Kaggle score, NOT a strength claim.</b> Reference agents are <b>benchmark opponents only</b> — never in our candidate pool, submission queue, promotion, lifecycle, family-champion set, active-cap, or mutation lineage. <b>NO upload, NO submit, NO auto-submit, NO candidate generation.</b></p>
 <h2>Public Kaggle reference agents as benchmark opponents</h2>

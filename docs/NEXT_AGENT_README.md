@@ -63,3 +63,22 @@ entrypoint; not-started is EXPECTED).
   `scripts/run_tournament_lifecycle_manager.py` (default dry-run) for status marks.
 - Authoritative ops docs: `docs/REPLIT_SCHEDULED_DEPLOYMENT_RUNBOOK.md`,
   `docs/PERSISTENT_TOURNAMENT_DAEMON.md`, `docs/TOURNAMENT_CANDIDATE_LIFECYCLE.md`.
+
+## Pass 41 — owned cg_typed candidate spike (local-only)
+
+- The five Pass-40 **public references are benchmark-only** opponents — never a
+  candidate/parent/queue/promotion and never toward the active cap. They live on
+  `data/tournament/benchmark/benchmark_events.jsonl`, which the normal fold /
+  scheduler / lifecycle never read.
+- Pass 41 added **one owned** cg_typed candidate
+  (`cg_typed_mono_lightning_miraidon_policy_v1`): original typed policy over the
+  bundled `cg` SDK; `mutation_parent=internal`; **no reference code copied**.
+  **No submission was made; no Kaggle strength claim** — the local benchmark is
+  **directional only**. Decision `promising_local_only`, `republish_required=false`.
+- The cg_typed candidate ships `cg/` + `import cg`, so it is **correctly rejected**
+  by the stdlib submission validators (left byte-unchanged) and accepted only by
+  the separate cg_typed lane validator. Keep those lanes separate.
+- **Next step depends on the eval outcome:** complete the calibration sweep and
+  deepen the parent/child + noise sample before further typed work; do not claim
+  public-reference parity at this sample. Detail:
+  `data/reports/pass41_reference_calibrated_cg_candidate_report.md`.

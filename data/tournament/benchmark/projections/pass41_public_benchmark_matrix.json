@@ -1,0 +1,518 @@
+{
+  "schema": "pass41_public_benchmark_matrix_v1",
+  "generated_at": "2026-06-21T02:26:58Z",
+  "no_upload": true,
+  "caveat": "Internal cg_typed-lane benchmark feasibility only. These are NOT our rankings, NOT a Kaggle leaderboard, NOT a Kaggle score, and NOT a strength claim. Reference agents are benchmark opponents only \u2014 never in our candidate pool, submission queue, lifecycle, promotion, family-champion set, active-cap, or mutation lineage. NO upload / submit / promote / mutate.",
+  "subjects": [
+    "diamond_toolbox_diancie",
+    "league_dragapult_spread",
+    "league_dragapult_v1_search_only",
+    "league_mega_charizard_x_burst",
+    "league_mega_gardevoir_psychic_ramp",
+    "league_mega_venusaur_tank",
+    "league_water_anti_disruption_pivot_v1",
+    "league_water_core_reference",
+    "mega_charizard_x_burst_typed35",
+    "mega_gardevoir_psychic_ramp_typed35",
+    "mega_venusaur_tank_typed35",
+    "mono_lightning_miraidon_easy",
+    "water_basic_density_v1"
+  ],
+  "references": [
+    "public_ref_kiyotah_dragapult",
+    "public_ref_kiyotah_iono",
+    "public_ref_kiyotah_mega_abomasnow",
+    "public_ref_kiyotah_mega_lucario",
+    "public_ref_ryotasueyoshi_alakazam"
+  ],
+  "reference_labels": {
+    "public_ref_kiyotah_dragapult": "public_reference_dragapult",
+    "public_ref_kiyotah_iono": "public_reference_iono",
+    "public_ref_kiyotah_mega_abomasnow": "public_reference_mega_abomasnow",
+    "public_ref_kiyotah_mega_lucario": "public_reference_mega_lucario",
+    "public_ref_ryotasueyoshi_alakazam": "public_reference_alakazam"
+  },
+  "cells": {
+    "diamond_toolbox_diancie": {
+      "public_ref_kiyotah_dragapult": {
+        "games": 2,
+        "our_win": 1,
+        "reference_win": 1,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_iono": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_abomasnow": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_lucario": {
+        "games": 2,
+        "our_win": 1,
+        "reference_win": 1,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_ryotasueyoshi_alakazam": {
+        "games": 2,
+        "our_win": 2,
+        "reference_win": 0,
+        "draw": 0,
+        "invalid": 0
+      }
+    },
+    "league_dragapult_spread": {
+      "public_ref_kiyotah_dragapult": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_iono": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_abomasnow": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_lucario": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_ryotasueyoshi_alakazam": {
+        "games": 2,
+        "our_win": 1,
+        "reference_win": 1,
+        "draw": 0,
+        "invalid": 0
+      }
+    },
+    "league_dragapult_v1_search_only": {
+      "public_ref_kiyotah_dragapult": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_iono": {
+        "games": 3,
+        "our_win": 0,
+        "reference_win": 3,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_abomasnow": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_lucario": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_ryotasueyoshi_alakazam": {
+        "games": 2,
+        "our_win": 1,
+        "reference_win": 1,
+        "draw": 0,
+        "invalid": 0
+      }
+    },
+    "league_mega_charizard_x_burst": {
+      "public_ref_kiyotah_dragapult": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_iono": {
+        "games": 3,
+        "our_win": 0,
+        "reference_win": 3,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_abomasnow": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_lucario": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_ryotasueyoshi_alakazam": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      }
+    },
+    "league_mega_gardevoir_psychic_ramp": {
+      "public_ref_kiyotah_dragapult": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_iono": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_abomasnow": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_lucario": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_ryotasueyoshi_alakazam": {
+        "games": 3,
+        "our_win": 0,
+        "reference_win": 3,
+        "draw": 0,
+        "invalid": 0
+      }
+    },
+    "league_mega_venusaur_tank": {
+      "public_ref_kiyotah_dragapult": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_iono": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_abomasnow": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 1,
+        "draw": 1,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_lucario": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 1,
+        "draw": 0,
+        "invalid": 1
+      },
+      "public_ref_ryotasueyoshi_alakazam": {
+        "games": 3,
+        "our_win": 1,
+        "reference_win": 1,
+        "draw": 0,
+        "invalid": 1
+      }
+    },
+    "league_water_anti_disruption_pivot_v1": {
+      "public_ref_kiyotah_dragapult": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_iono": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_abomasnow": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_lucario": {
+        "games": 2,
+        "our_win": 1,
+        "reference_win": 1,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_ryotasueyoshi_alakazam": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      }
+    },
+    "league_water_core_reference": {
+      "public_ref_kiyotah_dragapult": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_iono": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_abomasnow": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_lucario": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_ryotasueyoshi_alakazam": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      }
+    },
+    "mega_charizard_x_burst_typed35": {
+      "public_ref_kiyotah_dragapult": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_iono": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_abomasnow": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_lucario": {
+        "games": 2,
+        "our_win": 1,
+        "reference_win": 1,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_ryotasueyoshi_alakazam": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      }
+    },
+    "mega_gardevoir_psychic_ramp_typed35": {
+      "public_ref_kiyotah_dragapult": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_iono": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_abomasnow": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_lucario": {
+        "games": 2,
+        "our_win": 1,
+        "reference_win": 1,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_ryotasueyoshi_alakazam": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      }
+    },
+    "mega_venusaur_tank_typed35": {
+      "public_ref_kiyotah_dragapult": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 1,
+        "draw": 1,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_iono": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_abomasnow": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_lucario": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 1,
+        "draw": 1,
+        "invalid": 0
+      },
+      "public_ref_ryotasueyoshi_alakazam": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      }
+    },
+    "mono_lightning_miraidon_easy": {
+      "public_ref_kiyotah_dragapult": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_iono": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_abomasnow": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_lucario": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_ryotasueyoshi_alakazam": {
+        "games": 2,
+        "our_win": 1,
+        "reference_win": 1,
+        "draw": 0,
+        "invalid": 0
+      }
+    },
+    "water_basic_density_v1": {
+      "public_ref_kiyotah_dragapult": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_iono": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_abomasnow": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_kiyotah_mega_lucario": {
+        "games": 2,
+        "our_win": 1,
+        "reference_win": 1,
+        "draw": 0,
+        "invalid": 0
+      },
+      "public_ref_ryotasueyoshi_alakazam": {
+        "games": 2,
+        "our_win": 0,
+        "reference_win": 2,
+        "draw": 0,
+        "invalid": 0
+      }
+    }
+  }
+}

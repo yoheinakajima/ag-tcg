@@ -1,6 +1,6 @@
 # PTCG Strategy Canvas
 
-> Living strategy canvas. Updated through Pass 37.
+> Living strategy canvas. Updated through Pass 41.
 
 _The internal tournament, parent/child H2H confirmations, and the replay-derived meta sanity are LOCAL diagnostics: every seat is OUR own portfolio deck driven by the SAME deck-agnostic base pilot (meta sanity uses replay-derived surrogate opponents). They are NOT the Kaggle leaderboard and are NOT a promotion or upload signal._
 
@@ -90,3 +90,17 @@ Detail: `data/reports/pass38_scheduled_deployment_ops_report.md`; runbook `docs/
 - **Audits:** scheduler-after-lifecycle deterministic with 0 never-schedule decks queued; event/projection idempotency all-green (`CandidateStatusChanged` folding deterministic + idempotent).
 
 Detail: `data/reports/pass39_candidate_lifecycle_report.md`; `docs/TOURNAMENT_CANDIDATE_LIFECYCLE.md`; `data/experiments/pass39_*`.
+
+## Pass 41 — reference-calibrated cg_typed candidate spike (LOCAL, NOT Kaggle)
+
+_The five Pass-40 public references are **benchmark-only** opponents on a separate ledger — never a candidate/parent/queue/promotion and never toward the active cap. The cg_typed candidate here is **ours**. **No submission was made; no Kaggle strength claim.** The local benchmark is **directional only**._
+
+- **Calibration (honest tranche):** 134 of ~260 games done; 13 internal subjects × 5 public references. Internal candidates are broadly below the references; the default family `mono_lightning_miraidon_easy` sits at decisive WR 0.10 (CI [0.018, 0.404]).
+- **Target selection:** default `mono_lightning_miraidon_easy` holds — evidence tied, **no** family's Wilson CI is disjoint from the default's, so none is a distinguishable higher-leverage target.
+- **Owned candidate:** `cg_typed_mono_lightning_miraidon_policy_v1` — original typed policy over the bundled `cg` SDK (decodes `cg.api` dataclasses; prize/board/attacker-readiness reasoning), parent deck unchanged, `mutation_parent=internal`, no reference code copied.
+- **Lanes:** cg_typed validator ACCEPTS; both stdlib validators (byte-unchanged) REJECT (they forbid `import cg`). Smoke 9/9 clean.
+- **Eval (honest):** beats parent 10–0 (Wilson [0.7225, 1.0]) **above** the self-mirror noise floor (pooled Fisher p=0.0085); above `water_control` + `internal_leader`; **below** `dragapult` reference; **below** all public references overall (1/20 decisive, WR 0.05). Non-inert: 61.8% decisions changed, **0 illegal**, 0 uncaught exceptions.
+- **Decision:** `promising_local_only`; `republish_required=false`; candidate stays **local-only** (not queued/submitted/promoted).
+- **Next step depends on the eval outcome:** complete the calibration sweep + deepen the parent/child + noise sample before any further typed work; no public-reference parity claims at this sample.
+
+Detail: `data/reports/pass41_reference_calibrated_cg_candidate_report.md`; design `docs/PASS41_CG_TYPED_POLICY_DESIGN.md`; `data/experiments/pass41_*`.

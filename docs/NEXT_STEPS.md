@@ -66,3 +66,21 @@ root "Start application" workflow stays not-started (frozen Kaggle entrypoint).
   games), then re-run `scripts/run_tournament_lifecycle_manager.py` — soft-probation
   becomes meaningful and quarantine evidence (invalid/timeout/error) can appear. Keep
   marks ledger-only via `CandidateStatusChanged`; never edit the pool out-of-band.
+
+## Pass 41 — Reference-calibrated cg_typed candidate spike (local-only)
+
+- **What landed:** one **owned** cg_typed candidate
+  (`cg_typed_mono_lightning_miraidon_policy_v1`) — original typed policy over the
+  bundled `cg` SDK, parent deck unchanged, `mutation_parent=internal`. The five
+  Pass-40 **public references are benchmark-only** opponents and were never made a
+  candidate/parent/queue/promotion. **No submission was made; no Kaggle strength
+  claim** — the local benchmark is **directional only**.
+- **Honest signal:** beats its parent 10–0 (above the self-mirror noise floor) and
+  two internal anchors, but is **below** the public references (1/20 decisive) and
+  below the `dragapult` reference. Decision: `promising_local_only`,
+  `republish_required=false`.
+- **Next (depends on eval outcome):** finish the remaining ~126 calibration games
+  to complete the public-reference sweep, then deepen the parent/child + noise
+  sample before any further typed work. Do **not** pursue public-reference parity
+  claims or consider republish until a completed calibration + approved decision
+  justify it. Detail: `data/reports/pass41_reference_calibrated_cg_candidate_report.md`.
