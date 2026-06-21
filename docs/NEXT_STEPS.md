@@ -188,3 +188,36 @@ root "Start application" workflow stays not-started (frozen Kaggle entrypoint).
   **v1** workstream (prove them before admitting). Do **not** promote until an
   adequately-sampled, noise-controlled eval + approved decision justify it. Detail:
   `data/reports/pass42_candidate_generation_v0_report.md`.
+
+## Pass 46D — turn-planning primitives v0 (LOCAL infrastructure, READ-ONLY)
+
+_Reusable, tested, never-raise **turn-planning primitives** over the Pass-46C decision
+frames — **infrastructure only**. **No production mutation, no tick, no candidate
+generation/promotion/queue/upload/republish, no lifecycle change, no root mutation.**
+The public references stay **benchmark-only**. **No Kaggle strength claim**; unsupported
+claims (exact damage / lethal / missed-KO / Boss-gust / spread / best-action) stay
+explicitly unsupported._
+
+- **Module:** `src/ptcg_activegraph/analysis/turn_primitives.py` — 13 pure primitives
+  (safe_get, option/select normalization, family classification + taxonomy, board
+  snapshot + visible per-zone counts, energy attach candidates + generic deck-agnostic
+  ordering, setup/search/discard summaries, unsupported-claims guard). Imports only the
+  pure `action_resolver` + `turn_planning` decoders — no storage/eventstore/prod/
+  reference-policy code. Accepts a Kaggle-replay seat object, raw observation, bare
+  select, or a `DecisionFrame`.
+- **Honest limits:** opponent hand is never read (counts only); search/discard surface
+  only positively-resolvable card ids; these traces encode setup as a hand-select with
+  **no** active/bench destination, so `setup_candidate_summary` reports phase only (the
+  destination-labelling path is backlog for a richer cg-typed observation).
+- **Validation:** 8 trace fixtures (raw frames embedded) across attach / attack / search /
+  discard / setup / low-choice; fixture validation `all_ok` (taxonomy correct, min/max +
+  option counts preserved, energy destinations resolve to active/bench, visible ids only,
+  no hidden-hand exposure, unsupported guard intact). Behavior comparison over the 12-game
+  panel is **directional / small-n** (options presented, not actions chosen).
+- **Decision:** `turn_planning_primitives_ready_soak_continue`; keep production soaking.
+  Do **not** run a generation pass until a fresh readiness check shows a probation
+  candidate near thresholds. **52** Pass-46D tests + pass42–46d regression green.
+
+Detail: `data/reports/pass46d_turn_planning_primitives_report.md`;
+`docs/TURN_PLANNING_PRIMITIVES_V0.md`;
+`docs/TURN_PLANNING_CANDIDATE_INTEGRATION_PLAN.md`; `data/experiments/pass46d_*`.

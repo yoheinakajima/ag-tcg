@@ -145,3 +145,31 @@ _A deterministic, LOCAL-only candidate **factory**: mutate **internal** source d
 - **Decision:** `candidate_generation_v0_enabled`; `republish_required=false`; admitted candidates stay **local-only probation**. **28** Pass 42 tests + pass36–42 regression green.
 
 Detail: `data/reports/pass42_candidate_generation_v0_report.md`; design `docs/CANDIDATE_GENERATION_V0.md`; `data/experiments/pass42_*`.
+
+## Pass 46D — turn-planning primitives v0 (LOCAL infrastructure, READ-ONLY)
+
+_Pure, tested, never-raise **turn-planning primitives** over the Pass-46C decision frames
+— **infrastructure only**. **No production mutation/tick/generation/promotion/queue/
+upload/republish/lifecycle/root mutation.** Public references **benchmark-only**. **No
+Kaggle strength claim;** unsupported claims (exact damage / lethal / missed-KO / Boss-gust
+/ spread / best-action) stay explicit._
+
+- **Module:** `src/ptcg_activegraph/analysis/turn_primitives.py` — 13 pure primitives over
+  the pure `action_resolver` + `turn_planning` decoders only (no storage / eventstore /
+  prod / reference-policy import). Never raises on malformed/partial frames.
+- **Honesty:** opponent hand never read (visible counts only); search/discard list only
+  resolvable card ids; setup is hand-select with **no** active/bench destination in the
+  trace, so the setup primitive reports phase only (destination labelling = backlog).
+  Energy attach destinations DO resolve (active/bench) and a **generic, deck-agnostic**
+  ordering (fuel active before bench) is provided — explicitly not a value/lethal claim.
+- **Evidence:** 8 embedded-frame fixtures; fixture validation `all_ok`; 12-game behavior
+  comparison grouped internal-candidate / internal-parent / public-reference, marked
+  **directional / small-n** (options presented, not chosen). 52 Pass-46D tests +
+  pass42–46d regression green.
+- **Decision:** `turn_planning_primitives_ready_soak_continue` — keep soaking; wire these
+  into candidate generation only in a **future** v1 pass behind the existing safety +
+  promotion gates.
+
+Detail: `data/reports/pass46d_turn_planning_primitives_report.md`;
+`docs/TURN_PLANNING_PRIMITIVES_V0.md`;
+`docs/TURN_PLANNING_CANDIDATE_INTEGRATION_PLAN.md`; `data/experiments/pass46d_*`.

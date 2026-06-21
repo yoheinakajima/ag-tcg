@@ -1,0 +1,162 @@
+PASS 46D — Turn-Planning Primitives v0
+
+Context:
+Pass 46B showed the public-reference gap is behavioral / turn-planning, not deck-list-only. Pass 46C built a local, frame-persisting diagnostic lane with full env.steps decision-frame traces. Production is still soaking the Pass-42 probation candidates and must remain untouched. This pass should build reusable turn-planning primitives from the trace data, not optimize a single deck and not generate candidates.
+
+Hard scope:
+- LOCAL / READ-ONLY / INFRASTRUCTURE ONLY.
+- Do not mutate production Object Storage.
+- Do not run a production tick.
+- Do not change root main.py or deck.csv.
+- Do not generate candidates.
+- Do not promote, retire, quarantine, queue, upload, submit, republish, or change lifecycle status.
+- Do not optimize a single deck.
+- Do not copy or port public-reference policy logic.
+- Public references remain benchmark-only opponents, never candidates, parents, sources, or promotion targets.
+- Keep unsupported claims explicit: no exact damage, lethal, missed-KO, Boss/gust correctness, spread-placement correctness, or best-action claims unless backed by cg Search API. Numeric attackId alone is insufficient.
+- Start application must remain not-started; it is the frozen Kaggle entrypoint.
+
+Objective:
+Build reusable, tested turn-planning primitives that future candidate-generation passes can call. These primitives should operate on persisted decision frames from Pass 46C and raw/cg-typed observations where available. They should be conservative, never-raise, and honest about unsupported information.
+
+Required parts:
+
+A. Safety stop-gate
+- Verify root main.py/deck.csv byte-identical to baseline.
+- Verify deployment config unchanged and production not touched.
+- Verify no public-reference leakage into candidate pool/worklist.
+- Verify no forbidden events in local/prod scope.
+- Write pass46d_safety_preflight.{json,md}.
+- Stop if any hard safety check fails.
+
+B. Primitive design doc
+Write docs/TURN_PLANNING_PRIMITIVES_V0.md and data/experiments/pass46d_primitive_design.{json,md}.
+It must define:
+1. typed_board_decode_wrapper
+2. legal_option_taxonomy
+3. board_role_summary
+4. energy_planner
+5. setup_planner
+6. search_priority_planner
+7. discard_priority_planner
+8. draw_deckout_guard
+9. unsupported_claim_guard
+Clearly mark which primitives are implemented in v0 and which are backlog.
+
+C. Implement primitive module
+Add a new pure module, probably:
+src/ptcg_activegraph/analysis/turn_primitives.py
+
+Requirements:
+- Pure/read-only; no Object Storage writes, no EventStore writes.
+- Accept either a Pass-46C DecisionFrame / trace frame or raw obs/select dict.
+- Never raise on malformed/missing data; return structured unknown/not_checkable results.
+- No dependency on production state.
+- No public-reference code import.
+- No hardcoded deck-specific card strategy beyond generic role classification.
+
+Minimum implemented primitives:
+1. safe_get(obj, path/default)
+2. normalize_option_type()
+3. normalize_select_context()
+4. classify_option_family()
+5. board_snapshot_from_frame()
+6. visible_counts_by_zone()
+7. legal_action_family_summary()
+8. energy_attach_candidates()
+9. score_energy_attach_generic()
+10. setup_candidate_summary()
+11. search_candidate_summary()
+12. discard_candidate_summary()
+13. unsupported_claims()
+
+D. Fixture extraction from Pass 46C traces
+Build a small fixture set from existing Pass 46C traces:
+- at least one setup active frame;
+- setup bench frame;
+- main phase frame with attach options;
+- main phase frame with play/search options;
+- discard frame;
+- to-hand/search frame;
+- attack-available frame if present;
+- end-only or low-choice frame if present.
+Write fixture manifest:
+data/experiments/pass46d_trace_fixture_manifest.{json,md}
+
+E. Primitive validation on fixtures
+Run primitives over the fixture set and assert:
+- option taxonomy classifies known option families correctly;
+- min/max option counts preserved;
+- energy candidates point to active/bench destinations when visible;
+- search/discard summaries list visible card ids only;
+- hidden opponent hand is not exposed/fabricated;
+- unsupported claims remain marked unsupported.
+Write pass46d_primitive_fixture_validation.{json,md}.
+
+F. Behavior comparison using primitives
+Re-analyze the Pass 46C 12-game trace panel using the new primitives:
+- per-player action-family rates;
+- setup benching behavior;
+- energy attach destination distribution;
+- search/discard choice distributions by visible card category;
+- attack/end/passive-main-phase summaries;
+- compare internal candidates vs public references, but label as directional and small-n.
+Write pass46d_primitive_behavior_comparison.{json,md}.
+
+G. Candidate-integration plan, no implementation
+Write a future integration plan:
+- how candidate generation v1 can use these primitives;
+- how a stdlib-safe agent can use a subset;
+- how a cg_typed/search-capable agent can use the full primitive stack;
+- what gates are required before any candidate is generated from this.
+Write docs/TURN_PLANNING_CANDIDATE_INTEGRATION_PLAN.md and pass46d_candidate_integration_plan.{json,md}.
+
+H. Tests
+Add tests/test_pass46d_turn_primitives.py with at least 24 tests:
+- root immutability / no production mutation;
+- module imports without side effects;
+- no EventStore/ObjectStorage writes in primitive module;
+- normalize option type/context handles int, string, enum-name shapes;
+- classify attach/play/search/discard/ability/retreat/attack/end;
+- board snapshot handles missing/null fields;
+- hidden opponent hand not fabricated;
+- energy candidates preserve active/bench destination;
+- setup/search/discard summaries use visible card IDs only;
+- unsupported_claims includes exact_damage, lethal_availability, missed_ko, boss_gust_target_correctness, spread_placement_correctness;
+- fixture manifest exists and is nonempty;
+- fixture validation all_ok;
+- behavior comparison caveats present;
+- no public reference appears as candidate/source/parent;
+- no forbidden events emitted;
+- root Start application not started.
+
+I. Regression
+Run relevant pass42–46D tests or pass36–46D if feasible. Do not weaken existing tests.
+
+J. Report and docs
+Write data/reports/pass46d_turn_planning_primitives_report.md with exactly 10 sections:
+1. Objective and safety
+2. Primitive design
+3. Implemented module
+4. Fixture extraction
+5. Fixture validation
+6. Behavior comparison
+7. Unsupported claims
+8. Candidate integration plan
+9. Tests/no-upload guarantees
+10. Decision and next steps
+
+Update NEXT_STEPS / strategy report / canvas / site with caveats:
+- no production mutation;
+- no candidate generation;
+- not a Kaggle score;
+- primitives are infrastructure only.
+
+K. Architect review
+Run architect review before final. Fix real issues. Do not weaken guardrails.
+
+Expected decision:
+turn_planning_primitives_ready_soak_continue
+
+Expected recommendation:
+Keep production soaking. Do not run Pass 47 until a fresh readiness check says a probation candidate is close to thresholds. Use these primitives in a future candidate-generation v1 pass, not yet.
