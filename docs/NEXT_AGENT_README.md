@@ -46,3 +46,20 @@ seat-swapped, no new candidates, no upload), then decide whether any subfamily
 warrants a *targeted* candidate built only from confirmed card IDs. The chaos
 lane stays closed until a payoff card + measurable trigger is confirmed (see
 `docs/CHAOS_PLAYBOOK_LANE.md`).
+
+## Standing tournament ops — current state (Pass 39)
+
+A separate, **internal** standing tournament engine runs as a Replit Scheduled
+Deployment (NOT Kaggle; internal standings ≠ Kaggle results). If you touch it, keep
+the guardrails: NO upload/submit/auto-submit, NO new candidates, NO root/tarball
+mutation, and **never start the root "Start application" workflow** (frozen Kaggle
+entrypoint; not-started is EXPECTED).
+
+- Cadence is now **every 20 min** (`*/20 * * * *`); the run signature is unchanged
+  (`--max-games 20 --max-seconds 900`). Classify scheduled runs by that **signature**,
+  not by tick spacing (the 20-min interval is shorter than the 30-min lease TTL).
+- Candidate status is ledger-only: emit `CandidateStatusChanged` (`no_upload=true`);
+  `CandidatePool.from_events` folds it. Use
+  `scripts/run_tournament_lifecycle_manager.py` (default dry-run) for status marks.
+- Authoritative ops docs: `docs/REPLIT_SCHEDULED_DEPLOYMENT_RUNBOOK.md`,
+  `docs/PERSISTENT_TOURNAMENT_DAEMON.md`, `docs/TOURNAMENT_CANDIDATE_LIFECYCLE.md`.

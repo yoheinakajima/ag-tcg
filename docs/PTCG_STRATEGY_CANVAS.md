@@ -78,3 +78,15 @@ See `data/reports/pass37_deployment_ready_tournament_worker_report.md`, `scripts
 
 Detail: `data/reports/pass38_scheduled_deployment_ops_report.md`; runbook `docs/REPLIT_SCHEDULED_DEPLOYMENT_RUNBOOK.md`; per-part artifacts `data/experiments/pass38_*.{json,md}`.
 <!-- PASS38_ADDENDUM_END -->
+
+## Pass 39 — Scheduled-tick confirmation + candidate lifecycle v0 (OPS only, NOT Kaggle)
+
+> Internal diagnostics only. NO upload, NO submit, NO auto-submit, NO new candidates, NO root/tarball mutation. Root "Start application" stays not-started (frozen Kaggle entrypoint) — EXPECTED. Every new event `no_upload=true`.
+
+- **Cadence:** Scheduled Deployment cron now `*/20 * * * *` (every 20 min); run signature unchanged (20/900). Interval (1200s) < lease TTL (1800s) → classify scheduled runs by the **run signature**, not tick spacing.
+- **Scheduled tick:** **confirmed** (a real 20/900 scheduled run is present in the ledger).
+- **Prod health:** healthy (0 hard failures; soft warning `placement_sample_size`).
+- **Candidate lifecycle v0 (dry-run vs prod):** 16 actions — 12 retain, 4 eligible_soft_probation, 0 quarantine; 11 protected. `--apply` → **apply_skipped=true** (no safe evidence-backed mark; no lease, no push).
+- **Audits:** scheduler-after-lifecycle deterministic with 0 never-schedule decks queued; event/projection idempotency all-green (`CandidateStatusChanged` folding deterministic + idempotent).
+
+Detail: `data/reports/pass39_candidate_lifecycle_report.md`; `docs/TOURNAMENT_CANDIDATE_LIFECYCLE.md`; `data/experiments/pass39_*`.

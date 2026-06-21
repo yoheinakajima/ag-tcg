@@ -51,3 +51,18 @@ target), upgrade `heuristic_policy` from keyword scoring to field-aware scoring
 * Card graph synergy/combo detection feeding a deck optimizer.
 * Offline LLM analysis of failure clusters (lab-only; never in the runtime).
 * Promotion automation that compiles validated package changes into `main.py`.
+
+## Standing tournament ops (Pass 39 → next)
+
+The internal standing tournament runs as a Scheduled Deployment every 20 min
+(`*/20 * * * *`), signature 20/900. It is internal diagnostics only — NOT Kaggle,
+no upload/submit/auto-submit, no new candidates, no root/tarball mutation, and the
+root "Start application" workflow stays not-started (frozen Kaggle entrypoint).
+
+- **Now:** scheduled tick confirmed; prod healthy; candidate lifecycle v0 dry-run
+  proposes 12 retain / 4 eligible_soft_probation / 0 quarantine (11 protected);
+  `--apply` → `apply_skipped` until evidence accrues.
+- **Next:** let games accumulate so actives clear the placement threshold (≥20
+  games), then re-run `scripts/run_tournament_lifecycle_manager.py` — soft-probation
+  becomes meaningful and quarantine evidence (invalid/timeout/error) can appear. Keep
+  marks ledger-only via `CandidateStatusChanged`; never edit the pool out-of-band.

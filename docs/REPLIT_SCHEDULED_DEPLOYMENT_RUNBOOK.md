@@ -54,11 +54,17 @@ Object Storage has no atomic compare-and-set, so the lease is best-effort plus a
 local `flock`. Keep this ordering true at all times:
 
 ```
-schedule interval (2h) > lease TTL (30 min) > job timeout (~25 min) > --max-seconds (15 min)
+lease TTL (30 min) > job timeout (~25 min) > schedule interval (20 min) > --max-seconds (15 min)
 ```
 
 A cabt game takes ≈ 11–15s, so `--max-games 20` finishes well inside
-`--max-seconds 900`. **Schedule:** `0 */2 * * *` UTC; **job timeout:** ~25 min.
+`--max-seconds 900` = 15 min — comfortably under the 20-min interval, so normal
+ticks never overlap. **Schedule:** `*/20 * * * *` UTC (Pass 39; was `0 */2 * * *`);
+**job timeout:** ~25 min. Because the interval (20 min) is now **shorter** than the
+lease TTL (30 min), the old "scheduled ticks are ≥ TTL apart" spacing heuristic no
+longer holds — the authoritative scheduled signal is the **run signature**
+(`--max-games 20 --max-seconds 900`), with the lease (refuses concurrent ticks) and
+push-merge-by-`event_id` as the safety nets. Do **not** change the lease TTL unless asked.
 
 ## 4. Safety guardrails (must always hold)
 
@@ -75,7 +81,7 @@ A cabt game takes ≈ 11–15s, so `--max-games 20` finishes well inside
 
 1. Open the Publishing (Deployments) tool in this Repl.
 2. Deployment type = **Scheduled Deployment** (not Autoscale / Reserved VM / Static).
-3. Schedule = every 2 hours (`0 */2 * * *`), UTC.
+3. Schedule = every 20 minutes (`*/20 * * * *`), UTC (Pass 39; was `0 */2 * * *`).
 4. Job timeout ≈ 25 minutes (below the 30-min lease TTL).
 5. Confirm the run/build commands match section 2 (they come from `.replit`).
 6. Publish. A successful publish means the run command exits 0 — see section 8 on
@@ -160,3 +166,11 @@ Storage snapshot must be byte-consistent) but only a WARNING in `--mode local`: 
 local working dir is disposable and may be rebuilt ahead of the last push (projections
 carry a fresh `generated_at`), so a local sha drift just means "re-pull to reconcile,"
 not corruption.
+
+## 12. Pass 39 — 20-min cadence & candidate lifecycle v0 (OPS only)
+
+> Internal diagnostics only. NO upload, NO submit, NO auto-submit, NO new candidates, NO root/tarball mutation. Root "Start application" stays not-started (frozen Kaggle entrypoint) — EXPECTED.
+
+- **Cadence:** cron is now `*/20 * * * *` (every 20 min), was `0 */2 * * *`. Run signature unchanged (`--max-games 20 --max-seconds 900`).
+- **Invariant now:** `lease TTL (30 min) > job timeout (~25 min) > schedule interval (20 min) > --max-seconds (15 min)`. Actual work (≤15 min) finishes inside the 20-min interval, so normal ticks never overlap. Because the interval (20 min) is shorter than the lease TTL (30 min), classify scheduled vs manual by the **run signature**, not tick spacing; the lease + push-merge-by-`event_id` keep concurrent/overrun ticks safe. Do not change the lease TTL unless asked.
+- **This pass:** scheduled_tick_confirmed; prod healthy (0 hard fails, warn `placement_sample_size`); lifecycle dry-run 12 retain / 4 eligible_soft_probation / 0 quarantine (11 protected); `--apply` → apply_skipped=true (no lease, no push). See `data/reports/pass39_candidate_lifecycle_report.md` and `data/experiments/pass39_*`.

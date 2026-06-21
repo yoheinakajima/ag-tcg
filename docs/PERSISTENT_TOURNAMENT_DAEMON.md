@@ -42,12 +42,18 @@ racing to schedule duplicate games — so it's safe to schedule ticks generously
 1. Open the **Publishing** (Deployments) tool in this Repl.
 2. Choose deployment type = **Scheduled Deployment** (NOT Autoscale, NOT Reserved
    VM / Always-on, NOT Static).
-3. Set the **schedule** to run every **2 hours** (cron `0 */2 * * *`); leave the
-   timezone at the **UTC** default.
-4. Set the **job timeout** to **~25 minutes** — keep it **below the 30-min lease
-   TTL** so the lease always outlives a tick (invariant: interval > TTL > job
-   timeout). The run command caps work at `--max-seconds 900` = 15 min,
-   comfortably below the timeout.
+3. Set the **schedule** to run every **20 minutes** (cron `*/20 * * * *`); leave the
+   timezone at the **UTC** default. _(Pass 39: cadence changed from the original
+   every-2-hours `0 */2 * * *`; the run signature is unchanged — see the Pass 39
+   addendum for why the scheduled signal is now the 20/900 run signature, not tick
+   spacing.)_
+4. Set the **job timeout** to **~25 minutes** (unchanged). With the 20-min cadence
+   the relationship is now **lease TTL (30 min) > job timeout (~25 min) > schedule
+   interval (20 min) > `--max-seconds` (15 min)**: actual work (≤15 min) finishes
+   inside the 20-min interval so normal ticks never overlap, and because the lease
+   TTL (30 min) still exceeds the interval, a hung tick's lease keeps protecting the
+   next run (which is *refused* rather than double-pushing). Do **not** change the
+   lease TTL unless explicitly asked.
 5. Set the **build command** (Replit's nix Python is externally-managed, so use
    `--user --break-system-packages`, which installs into the writable
    `.pythonlibs` the runtime keeps on `sys.path`). `kaggle-environments` ships
@@ -144,3 +150,22 @@ the deployed disk.
 
 Detail: `data/reports/pass38_scheduled_deployment_ops_report.md`; runbook `docs/REPLIT_SCHEDULED_DEPLOYMENT_RUNBOOK.md`; per-part artifacts `data/experiments/pass38_*.{json,md}`.
 <!-- PASS38_ADDENDUM_END -->
+
+<!-- PASS39_ADDENDUM_START -->
+## Pass 39 — Scheduled-tick confirmation, 20-min cadence & candidate lifecycle v0 (OPS only)
+
+> Internal diagnostics only. **NOT a Kaggle leaderboard.** **NO upload, NO submit, NO auto-submit, NO new candidates, NO root/tarball mutation.** The root "Start application" workflow stays not-started (frozen Kaggle entrypoint) — that is EXPECTED. Every new event carries `no_upload=true`.
+
+### Cadence change (operator)
+- The Scheduled Deployment cron changed from `0 */2 * * *` (every 2h) to **`*/20 * * * *` (every 20 min)**. The run command **signature is unchanged**: `tournament_deployment_tick.py --max-games 20 --max-seconds 900 --storage-backend replit_app_storage --production`.
+- The 20-min interval (1200s) is now **shorter** than the 30-min lease TTL (1800s), so the old "scheduled ticks are ≥ TTL apart" spacing heuristic no longer holds. The authoritative scheduled signal is the **run signature (20/900)**; the lease (refuses concurrent ticks) + push-merge-by-`event_id` remain the safety nets. Lease TTL unchanged (do not change unless asked).
+
+### Status this pass
+- root/deploy safety preflight: **pass** (root byte-identical, auto_submit off, no upload/push/candidate-gen).
+- scheduled-tick confirmation: **scheduled_tick_confirmed** — a real scheduled run with the 20/900 signature is present in the ledger/run metadata.
+- prod health: **healthy** (0 hard failures; soft warning `placement_sample_size`).
+- candidate lifecycle v0 (dry-run vs prod): 16 actions — **12 retain, 4 eligible_soft_probation, 0 quarantine**; 11 protected. `--apply` → **apply_skipped=true** (no safe evidence-backed mark: zero quarantines, soft-probation of under-sampled actives not opted in — churn with no benefit; probation is still schedulable). No lease taken, no push.
+- scheduler-after-lifecycle audit: deterministic worklist, **0 never-schedule decks** queued, matches the persisted projection. Event/projection idempotency audit: all checks green (folding `CandidateStatusChanged` is deterministic + idempotent; a later registration replaces a mark).
+
+Detail: `data/reports/pass39_candidate_lifecycle_report.md`; lifecycle spec `docs/TOURNAMENT_CANDIDATE_LIFECYCLE.md`; per-part artifacts `data/experiments/pass39_*.{json,md}`.
+<!-- PASS39_ADDENDUM_END -->

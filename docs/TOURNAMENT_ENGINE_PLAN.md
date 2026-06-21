@@ -94,3 +94,11 @@ file-backed under `data/tournament/`; a later version can swap in a real
   evaluates them but claims no promotion.
 - Per-game subprocess re-imports cabt (isolation over throughput); a streamed
   batch worker is a future optimization.
+
+## Pass 39 — candidate lifecycle manager v0 + 20-min cadence (OPS only)
+
+> Internal diagnostics only. NO upload/submit/auto-submit, NO candidate generation, NO root/tarball mutation.
+
+- `CandidatePool.from_events` now folds **`CandidateStatusChanged`** (additive, backward-compatible) in canonical `(timestamp, index)` order — registration replaces the snapshot, a status mark mutates `status`/`status_note`; unknown candidate ids and invalid statuses are ignored. Projections honor lifecycle marks **ledger-only** (no out-of-band pool edits).
+- New module `src/ptcg_activegraph/tournament/lifecycle.py` (`evaluate_lifecycle`, `apply_lifecycle_plan` — `dry_run=True` default, Wilson 95% evidence) + CLI `scripts/run_tournament_lifecycle_manager.py`. Marks are emitted with `no_upload=true`; the apply path is hard-guarded (no-auto-submit, no-kaggle-upload, root byte-identical) and lease-protected; it short-circuits to `apply_skipped` when no safe mark applies (no lease, no push).
+- Scheduler unchanged: `schedulable()` + defence-in-depth `blocked` set keep never-schedule decks out of the worklist. Cadence is now every 20 min (`*/20 * * * *`), signature 20/900 unchanged.

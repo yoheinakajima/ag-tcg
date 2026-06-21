@@ -91,27 +91,63 @@ class CandidatePool:
     def from_events(cls, events, tournament_id: str | None = None) -> "CandidatePool":
         """Reconstruct the candidate registry from the event ledger ALONE.
 
-        Uses the latest ``TournamentParticipantRegistered`` snapshot per
-        candidate (the engine emits a full candidate dict per registration), so
-        projections can be rebuilt without reading ``candidate_pool.json``.
+        Folds two event types in canonical ``(timestamp, original index)`` order so
+        projections can be rebuilt without reading ``candidate_pool.json``:
+
+        * ``TournamentParticipantRegistered`` — the engine emits a full candidate
+          dict per registration; it REPLACES the entire snapshot for that
+          candidate (a later registration supersedes an earlier one, including any
+          earlier status mark).
+        * ``CandidateStatusChanged`` — a Pass 39 lifecycle mark that mutates ONLY
+          the ``status`` (and ``status_note``) of an already-registered candidate;
+          last-write-wins. A change for an unknown candidate, or to a status not in
+          :data:`VALID_STATUSES`, is ignored.
+
+        Backward-compatible: with no ``CandidateStatusChanged`` events (every pass
+        before Pass 39) the result is identical to folding registrations alone.
         """
         from ..graph.events import EventType  # local import to avoid cycle
 
-        latest: dict[str, dict] = {}
+        reg_t = EventType.TournamentParticipantRegistered.value
+        chg_t = EventType.CandidateStatusChanged.value
+        init_t = EventType.TournamentEngineInitialized.value
+
         tid = tournament_id
-        for e in events:
+        # (timestamp, original_index, kind, candidate_id, data)
+        items: list[tuple] = []
+        for idx, e in enumerate(events):
             et = getattr(e, "event_type", None)
-            if et == EventType.TournamentEngineInitialized.value and tid is None:
-                tid = e.payload.get("tournament_id")
-            if et != EventType.TournamentParticipantRegistered.value:
-                continue
-            snap = e.payload.get("candidate") or e.payload
-            cid = snap.get("candidate_id")
-            if cid:
-                latest[cid] = snap  # later registration wins
-        cands = [Candidate.from_dict(s) for s in latest.values()]
-        cands.sort(key=lambda c: c.candidate_id)
-        return cls(cands, tournament_id=tid or "ptcg_standing_tournament_v0")
+            payload = getattr(e, "payload", None) or {}
+            if et == init_t and tid is None:
+                tid = payload.get("tournament_id")
+            ts = getattr(e, "timestamp", 0.0) or 0.0
+            if et == reg_t:
+                snap = payload.get("candidate") or payload
+                cid = snap.get("candidate_id")
+                if cid:
+                    items.append((ts, idx, "reg", cid, dict(snap)))
+            elif et == chg_t:
+                cid = payload.get("candidate_id")
+                if cid:
+                    items.append((ts, idx, "status", cid, payload))
+
+        items.sort(key=lambda x: (x[0], x[1]))
+        cands: dict[str, Candidate] = {}
+        for _ts, _idx, kind, cid, data in items:
+            if kind == "reg":
+                cands[cid] = Candidate.from_dict(data)  # full snapshot replace
+            else:  # status mark: mutate only status/status_note
+                c = cands.get(cid)
+                if c is None:
+                    continue
+                ns = data.get("new_status")
+                if not ns or ns not in VALID_STATUSES:
+                    continue  # invalid/unknown status -> ignore the whole mark
+                c.status = ns
+                if data.get("status_note") is not None:
+                    c.status_note = data.get("status_note")
+        out = sorted(cands.values(), key=lambda c: c.candidate_id)
+        return cls(out, tournament_id=tid or "ptcg_standing_tournament_v0")
 
     def save(self, path: str | Path | None = None) -> Path:
         p = Path(path) if path is not None else POOL_PATH

@@ -15,7 +15,7 @@ _Internal self-play diagnostics only. NOT a Kaggle leaderboard and NOT predictiv
 ## lightning  (best-with-games: mono_lightning_miraidon_easy)
 - gen0 `mono_lightning_miraidon_easy` (parent: —, status: portfolio_anchor)
 
-## mega_charizard  (best-with-games: league_mega_charizard_x_burst)
+## mega_charizard  (best-with-games: mega_charizard_x_burst_typed35)
 - gen0 `league_mega_charizard_x_burst` (parent: —, status: family_champion)
 - gen1 `mega_charizard_x_burst_typed35` (parent: league_mega_charizard_x_burst, status: active)
 

@@ -1,0 +1,141 @@
+{
+  "tick_id": "tick_c753012c41",
+  "run_id": "tick_c753012c41",
+  "tournament_id": "ptcg_standing_tournament_v0",
+  "stop_reason": "worklist_exhausted",
+  "planned": 20,
+  "games_played": 20,
+  "results": [
+    {
+      "game_id": "ptcg_standing_tournament_v0|diamond_toolbox_diancie>league_dragapult_v1_search_only@1|g1",
+      "result": "loss",
+      "event_id": "evt_99f60dab881d",
+      "elapsed_s": 13.405
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|diamond_toolbox_diancie>league_mega_charizard_x_burst@0|g1",
+      "result": "loss",
+      "event_id": "evt_81c5ce2ddfe6",
+      "elapsed_s": 6.01
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|diamond_toolbox_diancie>league_mega_gardevoir_psychic_ramp@0|g1",
+      "result": "win",
+      "event_id": "evt_54d35cc94b04",
+      "elapsed_s": 5.907
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|diamond_toolbox_diancie>league_mega_venusaur_tank@0|g1",
+      "result": "draw",
+      "event_id": "evt_353e23c1a6ed",
+      "elapsed_s": 20.82
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|diamond_toolbox_diancie>mono_lightning_miraidon_easy@0|g1",
+      "result": "win",
+      "event_id": "evt_bd3f36454cfa",
+      "elapsed_s": 5.381
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_spread>league_dragapult_v1_search_only@0|g1",
+      "result": "win",
+      "event_id": "evt_39b9d744d80b",
+      "elapsed_s": 5.476
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_mega_charizard_x_burst>mega_charizard_x_burst_typed35@0|g1",
+      "result": "loss",
+      "event_id": "evt_0606833ebd2f",
+      "elapsed_s": 5.63
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_mega_gardevoir_psychic_ramp>mega_gardevoir_psychic_ramp_typed35@0|g1",
+      "result": "win",
+      "event_id": "evt_f41b9fc6bca3",
+      "elapsed_s": 6.013
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_mega_venusaur_tank>mega_venusaur_tank_typed35@0|g1",
+      "result": "loss",
+      "event_id": "evt_c22be9ed255b",
+      "elapsed_s": 4.655
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_water_anti_disruption_pivot_v1>league_water_core_reference@0|g1",
+      "result": "loss",
+      "event_id": "evt_3e884d17ae50",
+      "elapsed_s": 5.512
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_water_anti_disruption_pivot_v1>water_basic_density_v1@0|g1",
+      "result": "win",
+      "event_id": "evt_925035072bfe",
+      "elapsed_s": 5.722
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_water_core_reference>water_basic_density_v1@1|g0",
+      "result": "loss",
+      "event_id": "evt_8e0ea4c23d15",
+      "elapsed_s": 5.31
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_spread>league_mega_charizard_x_burst@1|g0",
+      "result": "loss",
+      "event_id": "evt_83fb91558975",
+      "elapsed_s": 4.643
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_spread>league_water_anti_disruption_pivot_v1@1|g0",
+      "result": "loss",
+      "event_id": "evt_c1c3a80ccf69",
+      "elapsed_s": 4.621
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_spread>mega_gardevoir_psychic_ramp_typed35@1|g0",
+      "result": "win",
+      "event_id": "evt_967805b67267",
+      "elapsed_s": 5.174
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_spread>mono_lightning_miraidon_easy@1|g0",
+      "result": "win",
+      "event_id": "evt_6b671cc59751",
+      "elapsed_s": 5.228
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_v1_search_only>league_mega_charizard_x_burst@0|g0",
+      "result": "loss",
+      "event_id": "evt_42635f5f684a",
+      "elapsed_s": 5.548
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_v1_search_only>league_water_anti_disruption_pivot_v1@0|g0",
+      "result": "loss",
+      "event_id": "evt_a7a9326610bb",
+      "elapsed_s": 5.612
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_v1_search_only>mega_gardevoir_psychic_ramp_typed35@0|g0",
+      "result": "win",
+      "event_id": "evt_12ba0ed7f2cb",
+      "elapsed_s": 5.494
+    },
+    {
+      "game_id": "ptcg_standing_tournament_v0|league_dragapult_v1_search_only>mono_lightning_miraidon_easy@0|g0",
+      "result": "loss",
+      "event_id": "evt_b336fd0d5ca3",
+      "elapsed_s": 4.625
+    }
+  ],
+  "totals": {
+    "games": 52,
+    "ok": 52,
+    "invalid": 0,
+    "timeout": 0,
+    "error": 0,
+    "draw": 1
+  },
+  "tick_finished_event": "evt_4a0ebaebe15f",
+  "next_queue_size": 20,
+  "no_upload": true
+}

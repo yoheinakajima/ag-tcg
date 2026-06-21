@@ -1,17 +1,17 @@
 {
   "tournament_id": "ptcg_standing_tournament_v0",
-  "generated_at": "2026-06-20T23:03:02Z",
+  "generated_at": "2026-06-20T23:43:45Z",
   "caveat": "Internal self-play diagnostics only. NOT a Kaggle leaderboard and NOT predictive of leaderboard placement. NO upload.",
   "no_upload": true,
   "totals": {
-    "games": 12,
-    "ok": 12,
+    "games": 52,
+    "ok": 52,
     "invalid": 0,
     "timeout": 0,
     "error": 0,
-    "draw": 0
+    "draw": 1
   },
-  "last_event_id": "evt_94349efb948b",
+  "last_event_id": "evt_b336fd0d5ca3",
   "registered_candidates": 16,
   "schedulable_candidates": 13,
   "tick_status": {}
