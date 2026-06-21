@@ -1,0 +1,136 @@
+Pass 46 — Core Tournament Soak Monitor + Dashboard Contract Support
+
+This is the existing/core Pokémon TCG ActiveGraph tournament repo. Do NOT build the dashboard here. The dashboard will be a separate Replit Autoscale app.
+
+Scope:
+READ-ONLY / SOAK / DASHBOARD-CONTRACT support only.
+
+Hard guardrails:
+- NO candidate generation.
+- NO deck mutation.
+- NO policy mutation.
+- NO cg_typed spike.
+- NO single-deck optimization.
+- NO lifecycle apply.
+- NO CandidateStatusChanged.
+- NO CandidateGenerated.
+- NO CandidatePromoted.
+- NO SubmissionQueued / SubmissionUploaded / KaggleScoreUpdated.
+- NO Kaggle upload/submit.
+- NO auto-submit.
+- NO root main.py/deck.csv mutation.
+- NO tarball mutation/deletion.
+- NO production mutation.
+- NO republish.
+- NO bucket IDs, secrets, tokens, or storage credentials in repo files, docs, reports, artifacts, memory, or site.
+
+Start application must remain not-started. It is the frozen Kaggle entrypoint, not a server.
+
+Objectives:
+1. Verify the scheduled daemon is still healthy and accruing evidence after Pass 45.
+2. Re-run a fast production ledger soak audit, read-only:
+   - event count
+   - tick count
+   - game count
+   - last tick age
+   - median inter-tick gap
+   - game hard-fail rate
+   - manifest event_count == ledger length
+   - forbidden events absent in current scope
+   - every relevant event no_upload=true
+3. Re-run promotion-readiness audit for the 3 Pass-42 probation candidates:
+   - generated_diamond_diamondtoolbox_eratio_v1
+   - generated_dragapult_leaguedragapul_bdens_v1
+   - generated_lightning_monolightningm_dsratio_v1
+   Show:
+   - games
+   - decisive games
+   - W/L/D
+   - parent-H2H games
+   - anchor games
+   - hard failures
+   - distance to activation thresholds
+   - current recommendation
+4. Re-run promotion gate in dry-run mode only. Do not invoke --apply.
+5. Re-run scheduler/lifecycle read-only audit:
+   - all probation candidates placed in worklist if still eligible
+   - no public reference in main worklist
+   - no special_pilot_only / retired / quarantined / invalid scheduled
+   - protected statuses not demoted
+   - deterministic worklist double-build
+6. Create a non-secret Dashboard Data Contract document that the separate app can use:
+   - docs/DASHBOARD_DATA_CONTRACT.md
+   - It must not contain bucket IDs, env values, secrets, tokens, deployment IDs, or credentials.
+   - It should document relative keys under TOURNAMENT_STORAGE_PREFIX:
+     - events.jsonl
+     - candidate_pool.json
+     - config.yaml
+     - storage_manifest.json
+     - projections/*.json
+     - runs/*.json
+     - games/*.json.gz lazy-load only
+   - Document event shapes and projection shapes observed in the current ledger.
+   - Document known caveats:
+       internal rankings only
+       not Kaggle leaderboard
+       sidecars large; do not bulk-read games/
+       dashboard is read-only
+       locks/ and conflict reports are not dashboard data
+7. Write artifacts:
+   - data/experiments/pass46_core_soak_snapshot.{json,md}
+   - data/experiments/pass46_probation_readiness_refresh.{json,md}
+   - data/experiments/pass46_promotion_gate_dry_run.{json,md}
+   - data/experiments/pass46_scheduler_lifecycle_audit.{json,md}
+   - data/experiments/pass46_dashboard_data_contract_check.{json,md}
+8. Write a 10-section report:
+   - data/reports/pass46_core_soak_dashboard_contract_report.md
+   Required sections:
+   1. Scope and guardrails
+   2. Root/deployment safety
+   3. Production daemon soak status
+   4. Probation evidence refresh
+   5. Promotion Gate dry-run
+   6. Scheduler/lifecycle audit
+   7. Dashboard data contract
+   8. Tests
+   9. No-upload/no-mutation guarantees
+   10. Verdict and next recommendation
+9. Add tests:
+   - tests/test_pass46_core_soak_dashboard_contract.py
+   Minimum 18 checks:
+   - root unchanged
+   - no production mutation flags
+   - no forbidden events in pass artifacts
+   - no CandidateStatusChanged emitted
+   - no CandidateGenerated emitted
+   - no CandidatePromoted emitted
+   - no SubmissionQueued/Uploaded/KaggleScoreUpdated
+   - daemon soak healthy or honestly warns
+   - manifest==ledger
+   - probation targets present
+   - promotion gate dry-run only
+   - no actionable promotion unless thresholds truly pass
+   - scheduler no public references
+   - scheduler no never-schedule statuses
+   - protected statuses retained
+   - data contract exists
+   - data contract contains no bucket/secret/token strings
+   - dashboard contract key list matches actual available keys where possible
+10. Run pass36–46 regression if feasible. If an old hash-seed flaky test appears, document honestly and do not weaken unrelated tests unless the failure is caused by this pass.
+
+Decision logic:
+- If daemon healthy and no target meets promotion thresholds: decision = probation_soak_continue_dashboard_ready.
+- If daemon unhealthy: decision = daemon_attention_required.
+- If any target meets promotion thresholds: decision = promotion_gate_review_required, but do not apply.
+- If dashboard contract would require secrets in repo: decision = dashboard_contract_blocked_secret_risk.
+
+Expected outcome:
+Most likely probation_soak_continue_dashboard_ready.
+
+Final response:
+Summarize results and explicitly say:
+- no republish required
+- no prod mutation
+- no upload/submit
+- dashboard should be built in separate Replit app
+- next core action is to keep soaking until promotion thresholds are near

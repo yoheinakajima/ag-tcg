@@ -98,3 +98,6 @@ build = ["python", "-m", "pip", "install", "--user", "--break-system-packages", 
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 60000
+
+[objectStorage]
+defaultBucketID = "replit-objstore-5e3eea72-7e1a-421d-af23-9469c7f3cd5a"
