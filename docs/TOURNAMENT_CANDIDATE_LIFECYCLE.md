@@ -125,3 +125,17 @@ python scripts/run_tournament_lifecycle_manager.py \
 > Internal diagnostics only. NO upload/submit/auto-submit, NO candidate generation, NO root/tarball mutation. Every event `no_upload=true`.
 
 Dry-run vs the prod-pulled state: **16 actions — 12 retain, 4 eligible_soft_probation, 0 quarantine; 11 protected.** `--apply` (without `--allow-soft-probation`) → **`apply_skipped=true`** (no safe, evidence-backed mark: zero quarantines because no candidate has hard-failure invalid/timeout/error evidence, and demoting under-sampled actives to probation in early soak is churn with no benefit — probation is still schedulable). No lease taken, no push. Scheduled tick: **confirmed**; prod health: **healthy** (soft warn `placement_sample_size`). Detail: `data/reports/pass39_candidate_lifecycle_report.md`, `data/experiments/pass39_lifecycle_{plan,apply}.{json,md}`.
+
+
+<!-- PASS40_BENCHMARK_LANE_NOTE -->
+## Pass 40 — public-reference benchmark lane (additive)
+
+Pass 40 adds an `external_reference` **benchmark lane**: public Kaggle rule-based sample
+agents registered on a SEPARATE ledger (`data/tournament/benchmark/benchmark_events.jsonl`)
+and played against our schedulable candidates via `PublicBenchmark*` events. These
+references are **benchmark opponents only** — never in our candidate pool, submission
+queue, promotion, lifecycle, family-champion set, active-cap, mutation lineage, or any
+"our best" ranking; the normal fold / scheduler / lifecycle never read the
+`PublicBenchmark*` events, so folding is unbroken. Internal benchmark scores are NOT
+Kaggle scores and NOT a strength claim. See `docs/PASS40_REFERENCE_AGENT_INTAKE.md` and
+`data/reports/pass40_public_reference_agent_intake_report.md`.

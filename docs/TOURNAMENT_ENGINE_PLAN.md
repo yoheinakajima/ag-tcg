@@ -102,3 +102,17 @@ file-backed under `data/tournament/`; a later version can swap in a real
 - `CandidatePool.from_events` now folds **`CandidateStatusChanged`** (additive, backward-compatible) in canonical `(timestamp, index)` order — registration replaces the snapshot, a status mark mutates `status`/`status_note`; unknown candidate ids and invalid statuses are ignored. Projections honor lifecycle marks **ledger-only** (no out-of-band pool edits).
 - New module `src/ptcg_activegraph/tournament/lifecycle.py` (`evaluate_lifecycle`, `apply_lifecycle_plan` — `dry_run=True` default, Wilson 95% evidence) + CLI `scripts/run_tournament_lifecycle_manager.py`. Marks are emitted with `no_upload=true`; the apply path is hard-guarded (no-auto-submit, no-kaggle-upload, root byte-identical) and lease-protected; it short-circuits to `apply_skipped` when no safe mark applies (no lease, no push).
 - Scheduler unchanged: `schedulable()` + defence-in-depth `blocked` set keep never-schedule decks out of the worklist. Cadence is now every 20 min (`*/20 * * * *`), signature 20/900 unchanged.
+
+
+<!-- PASS40_BENCHMARK_LANE_NOTE -->
+## Pass 40 — public-reference benchmark lane (additive)
+
+Pass 40 adds an `external_reference` **benchmark lane**: public Kaggle rule-based sample
+agents registered on a SEPARATE ledger (`data/tournament/benchmark/benchmark_events.jsonl`)
+and played against our schedulable candidates via `PublicBenchmark*` events. These
+references are **benchmark opponents only** — never in our candidate pool, submission
+queue, promotion, lifecycle, family-champion set, active-cap, mutation lineage, or any
+"our best" ranking; the normal fold / scheduler / lifecycle never read the
+`PublicBenchmark*` events, so folding is unbroken. Internal benchmark scores are NOT
+Kaggle scores and NOT a strength claim. See `docs/PASS40_REFERENCE_AGENT_INTAKE.md` and
+`data/reports/pass40_public_reference_agent_intake_report.md`.

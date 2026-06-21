@@ -1,0 +1,71 @@
+{
+  "schema": "pass40_reference_pool_v1",
+  "generated_at": "2026-06-21T01:41:48Z",
+  "no_upload": true,
+  "usage": "benchmark_opponent_only",
+  "status": "external_reference",
+  "caveat": "Internal cg_typed-lane benchmark feasibility only. These are NOT our rankings, NOT a Kaggle leaderboard, NOT a Kaggle score, and NOT a strength claim. Reference agents are benchmark opponents only \u2014 never in our candidate pool, submission queue, lifecycle, promotion, family-champion set, active-cap, or mutation lineage. NO upload / submit / promote / mutate.",
+  "note": "Separate from candidate_pool.json. These are NOT our candidates.",
+  "opponents": [
+    {
+      "agent_id": "public_ref_kiyotah_dragapult",
+      "label": "public_reference_dragapult",
+      "deck_archetype": "Dragapult ex",
+      "status": "external_reference",
+      "usage": "benchmark_opponent_only",
+      "tarball": "data/reference_agents/tarballs/public_ref_kiyotah_dragapult.tar.gz",
+      "tarball_sha256": "29fbc5af44b97df872970d53c088e6c319aab93b019146a63e53e044aacc5b49",
+      "content_sha256": "514226f2a4ed47dccc1c8a20466abd73210c9c027e8af23222625d6f65392dfb",
+      "optional": false,
+      "no_upload": true
+    },
+    {
+      "agent_id": "public_ref_kiyotah_iono",
+      "label": "public_reference_iono",
+      "deck_archetype": "Iono's deck",
+      "status": "external_reference",
+      "usage": "benchmark_opponent_only",
+      "tarball": "data/reference_agents/tarballs/public_ref_kiyotah_iono.tar.gz",
+      "tarball_sha256": "01737572c515662a6ed4d55adbe0146aad3cfb2dd53ee79a9c21f54cf984cf65",
+      "content_sha256": "4ce20368c6418d5a2f6ab219ebd3710c8f9839626c3b6dba47df076e94b56328",
+      "optional": false,
+      "no_upload": true
+    },
+    {
+      "agent_id": "public_ref_kiyotah_mega_abomasnow",
+      "label": "public_reference_mega_abomasnow",
+      "deck_archetype": "Mega Abomasnow ex",
+      "status": "external_reference",
+      "usage": "benchmark_opponent_only",
+      "tarball": "data/reference_agents/tarballs/public_ref_kiyotah_mega_abomasnow.tar.gz",
+      "tarball_sha256": "c9fbb6fa38a5d87fa146b580a396bf6147f79c093da33a9bb13d9ada32b017d4",
+      "content_sha256": "cde48be55f4c0d7514417ccc82f5866db5496f0b0eea1f96b622ec6ec15a644c",
+      "optional": false,
+      "no_upload": true
+    },
+    {
+      "agent_id": "public_ref_kiyotah_mega_lucario",
+      "label": "public_reference_mega_lucario",
+      "deck_archetype": "Mega Lucario ex",
+      "status": "external_reference",
+      "usage": "benchmark_opponent_only",
+      "tarball": "data/reference_agents/tarballs/public_ref_kiyotah_mega_lucario.tar.gz",
+      "tarball_sha256": "8a353f0c01a03ef2b73eb0af4cfabd3f4ffbe2cf942014c7b6c8c2729c768878",
+      "content_sha256": "f6f677fa3caa8551cbe0cb6439b6559de8deb3d55488c42d2cf014e985ac397c",
+      "optional": false,
+      "no_upload": true
+    },
+    {
+      "agent_id": "public_ref_ryotasueyoshi_alakazam",
+      "label": "public_reference_alakazam",
+      "deck_archetype": "Alakazam (rule-based)",
+      "status": "external_reference",
+      "usage": "benchmark_opponent_only",
+      "tarball": "data/reference_agents/tarballs/public_ref_ryotasueyoshi_alakazam.tar.gz",
+      "tarball_sha256": "d02338682cb5b370c0bfc494e695147407f243cc1d180fc390844a1ef4acb413",
+      "content_sha256": "e750f1955e44636df14dd9f891bbc3414c6f3f4719ce0890e8fafe215a8f9e82",
+      "optional": true,
+      "no_upload": true
+    }
+  ]
+}

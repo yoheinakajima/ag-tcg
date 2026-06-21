@@ -68,3 +68,19 @@ data/experiments/pass28_action_trace.jsonl
 
 # Kaggle CLI logs (may contain handle; never commit)
 data/kaggle_uploads/
+
+# Pass 40 — public Kaggle reference agents (benchmark opponents ONLY). Commit the
+# materialized sample code + provenance + manifests for inspection/attribution;
+# keep the cg SDK, the native libcg.so, raw `kaggle kernels output` artifacts,
+# source notebooks, and the runnable benchmark tarballs gitignored (all reproducible
+# by re-fetch; the SDK/native lib/official data must never be committed).
+data/reference_agents/_sdk/
+data/reference_agents/raw_outputs/
+data/reference_agents/notebooks/
+data/reference_agents/tarballs/
+data/reference_agents/**/cg/
+data/reference_agents/**/*.so
+**/libcg.so
+
+# Pass 40 — transient local benchmark extraction outputs (reproducible; never commit)
+data/tournament/benchmark/_our_extracted/

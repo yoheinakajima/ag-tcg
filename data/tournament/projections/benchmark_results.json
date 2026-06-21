@@ -1,0 +1,79 @@
+{
+  "schema": "pass40_benchmark_results_v1",
+  "generated_at": "2026-06-21T01:21:40Z",
+  "no_upload": true,
+  "caveat": "Internal cg_typed-lane benchmark feasibility only. These are NOT our rankings, NOT a Kaggle leaderboard, NOT a Kaggle score, and NOT a strength claim. Reference agents are benchmark opponents only \u2014 never in our candidate pool, submission queue, lifecycle, promotion, family-champion set, active-cap, or mutation lineage. NO upload / submit / promote / mutate.",
+  "totals": {
+    "games": 8,
+    "our_win": 1,
+    "reference_win": 7,
+    "draw": 0,
+    "invalid": 0
+  },
+  "by_pair": [
+    {
+      "our_candidate": "diamond_toolbox_diancie",
+      "reference_id": "public_ref_kiyotah_dragapult",
+      "reference_label": "public_reference_dragapult",
+      "games": 2,
+      "our_wins": 1,
+      "reference_wins": 1,
+      "draws": 0,
+      "invalid": 0,
+      "our_decisive_win_rate": 0.5
+    },
+    {
+      "our_candidate": "diamond_toolbox_diancie",
+      "reference_id": "public_ref_kiyotah_iono",
+      "reference_label": "public_reference_iono",
+      "games": 2,
+      "our_wins": 0,
+      "reference_wins": 2,
+      "draws": 0,
+      "invalid": 0,
+      "our_decisive_win_rate": 0.0
+    },
+    {
+      "our_candidate": "league_dragapult_spread",
+      "reference_id": "public_ref_kiyotah_dragapult",
+      "reference_label": "public_reference_dragapult",
+      "games": 2,
+      "our_wins": 0,
+      "reference_wins": 2,
+      "draws": 0,
+      "invalid": 0,
+      "our_decisive_win_rate": 0.0
+    },
+    {
+      "our_candidate": "league_dragapult_spread",
+      "reference_id": "public_ref_kiyotah_iono",
+      "reference_label": "public_reference_iono",
+      "games": 2,
+      "our_wins": 0,
+      "reference_wins": 2,
+      "draws": 0,
+      "invalid": 0,
+      "our_decisive_win_rate": 0.0
+    }
+  ],
+  "by_our_candidate": [
+    {
+      "our_candidate": "diamond_toolbox_diancie",
+      "games": 4,
+      "our_wins": 1,
+      "reference_wins": 3,
+      "draws": 0,
+      "invalid": 0,
+      "our_decisive_win_rate": 0.25
+    },
+    {
+      "our_candidate": "league_dragapult_spread",
+      "games": 4,
+      "our_wins": 0,
+      "reference_wins": 4,
+      "draws": 0,
+      "invalid": 0,
+      "our_decisive_win_rate": 0.0
+    }
+  ]
+}

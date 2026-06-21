@@ -1,0 +1,43 @@
+{
+  "agent_id": "public_ref_kiyotah_iono",
+  "label": "public_reference_iono",
+  "kaggle_ref": "kiyotah/a-sample-rule-based-agent-iono-s-deck",
+  "owner": "kiyotah",
+  "slug": "a-sample-rule-based-agent-iono-s-deck",
+  "author": "kiyotah",
+  "author_display": "Kiyota",
+  "source_kind": "host_public_sample",
+  "deck_archetype": "Iono's deck",
+  "title": "A Sample Rule-Based Agent Iono's Deck",
+  "optional": false,
+  "pool_status": "external_reference",
+  "tags": [
+    "public_benchmark",
+    "external_reference",
+    "host_public_sample"
+  ],
+  "is_public": true,
+  "kaggle_url": "https://www.kaggle.com/code/kiyotah/a-sample-rule-based-agent-iono-s-deck",
+  "competition_sources": [
+    "pokemon-tcg-ai-battle"
+  ],
+  "dataset_sources": [
+    "kiyotah/cg-lib",
+    "kiyotah/iono-deck"
+  ],
+  "kernel_type": "notebook",
+  "tarball_sha256": "5c896471559cfdfa914f19e9ee7d512136a34c5825337baf53a039e525620e70",
+  "tarball_bytes": 497632,
+  "main_py_sha256": "9fa360307e0b9ccd4cd8469aad50c93872468c8dfa8ff8ebb6718cacf9faa8fa",
+  "deck_csv_sha256": "e36d46c5bcafdef8a5d0e6caeb34dd8db09119c62d8fb67c99e89e7eed39f974",
+  "cg_signature": "cd7799a3e539cb72034835028f52ffa2a20e83733213f2a9d5a0835d3436798d",
+  "usage": "benchmark_opponent_only",
+  "guardrails": [
+    "never uploaded or submitted to Kaggle",
+    "never entered in the submission queue / promoted / family-champion",
+    "never mutated; not part of any mutation lineage",
+    "never counted toward the active-candidate cap or 'our best' rankings",
+    "excluded from the lifecycle manager"
+  ],
+  "license_note": "Public Kaggle kernel (is_private=false). Used here strictly as a benchmark opponent with attribution to the original author; not redistributed as our own work. The cg SDK / libcg.so / official card data are kept gitignored. See the kernel page for the author's stated license/terms."
+}

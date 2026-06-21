@@ -1,0 +1,43 @@
+{
+  "agent_id": "public_ref_kiyotah_mega_abomasnow",
+  "label": "public_reference_mega_abomasnow",
+  "kaggle_ref": "kiyotah/a-sample-rule-based-agent-mega-abomasnow-ex-deck",
+  "owner": "kiyotah",
+  "slug": "a-sample-rule-based-agent-mega-abomasnow-ex-deck",
+  "author": "kiyotah",
+  "author_display": "Kiyota",
+  "source_kind": "host_public_sample",
+  "deck_archetype": "Mega Abomasnow ex",
+  "title": "A Sample Rule-Based Agent Mega Abomasnow ex Deck",
+  "optional": false,
+  "pool_status": "external_reference",
+  "tags": [
+    "public_benchmark",
+    "external_reference",
+    "host_public_sample"
+  ],
+  "is_public": true,
+  "kaggle_url": "https://www.kaggle.com/code/kiyotah/a-sample-rule-based-agent-mega-abomasnow-ex-deck",
+  "competition_sources": [
+    "pokemon-tcg-ai-battle"
+  ],
+  "dataset_sources": [
+    "kiyotah/cg-lib",
+    "kiyotah/mega-abomasnow-ex-deck"
+  ],
+  "kernel_type": "notebook",
+  "tarball_sha256": "2ccde9fdb8a8c554e17d21d75bc6d89b9d6a0e859fdf9e9d59bbbaae594a542e",
+  "tarball_bytes": 496935,
+  "main_py_sha256": "d1ef4a86413b7f548270657385c6d5c3cb114b473082cd04e2a0f1733158482b",
+  "deck_csv_sha256": "7af2d7e111c084da535b89758730b3fd6cbb7c0543a9444499c5b61efdc8aecd",
+  "cg_signature": "cd7799a3e539cb72034835028f52ffa2a20e83733213f2a9d5a0835d3436798d",
+  "usage": "benchmark_opponent_only",
+  "guardrails": [
+    "never uploaded or submitted to Kaggle",
+    "never entered in the submission queue / promoted / family-champion",
+    "never mutated; not part of any mutation lineage",
+    "never counted toward the active-candidate cap or 'our best' rankings",
+    "excluded from the lifecycle manager"
+  ],
+  "license_note": "Public Kaggle kernel (is_private=false). Used here strictly as a benchmark opponent with attribution to the original author; not redistributed as our own work. The cg SDK / libcg.so / official card data are kept gitignored. See the kernel page for the author's stated license/terms."
+}

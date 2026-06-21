@@ -84,22 +84,39 @@ def read_game_sidecar(path: str | Path) -> dict:
     return json.loads(raw.decode("utf-8"))
 
 
+def safe_extract_all(tar: tarfile.TarFile, dest_dir: str | Path) -> None:
+    """Safely extract every member of an open tar into ``dest_dir``.
+
+    Members are validated BEFORE extraction; this rejects path traversal
+    (absolute paths or ``..`` escaping ``dest_dir``), symlinks, hardlinks, and
+    device/other special members. Use this for any externally-sourced tarball
+    (e.g. public Kaggle reference agents) instead of a bare ``extractall``.
+    """
+    dest = Path(dest_dir).resolve()
+    dest.mkdir(parents=True, exist_ok=True)
+    for m in tar.getmembers():
+        if m.issym() or m.islnk():
+            raise ValueError(f"link member not allowed in tarball: {m.name!r}")
+        if m.isdev():
+            raise ValueError(f"device member not allowed in tarball: {m.name!r}")
+        target = (dest / m.name).resolve()
+        try:
+            target.relative_to(dest)
+        except ValueError as exc:
+            raise ValueError(f"unsafe path in tarball: {m.name!r}") from exc
+    tar.extractall(dest)  # noqa: S202 - members validated above (no traversal/links)
+
+
 def extract_agent_main(tarball: str | Path, dest_dir: str | Path) -> str:
     """Extract a candidate tarball and return the path to its ``main.py``.
 
     Tarballs are immutable build artifacts; we only read them. Members are
-    validated to stay within ``dest_dir`` (no path traversal).
+    validated to stay within ``dest_dir`` (no path traversal/links).
     """
     tarball = Path(tarball)
     dest = Path(dest_dir)
-    dest.mkdir(parents=True, exist_ok=True)
     with tarfile.open(tarball, "r:gz") as tar:
-        members = tar.getmembers()
-        for m in members:
-            target = (dest / m.name).resolve()
-            if not str(target).startswith(str(dest.resolve())):
-                raise ValueError(f"unsafe path in tarball: {m.name}")
-        tar.extractall(dest)  # noqa: S202 - our own build artifact, validated above
+        safe_extract_all(tar, dest)
     for cand in (dest / "main.py", *dest.rglob("main.py")):
         if cand.exists():
             return str(cand)

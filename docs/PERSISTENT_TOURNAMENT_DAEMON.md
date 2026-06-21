@@ -169,3 +169,17 @@ Detail: `data/reports/pass38_scheduled_deployment_ops_report.md`; runbook `docs/
 
 Detail: `data/reports/pass39_candidate_lifecycle_report.md`; lifecycle spec `docs/TOURNAMENT_CANDIDATE_LIFECYCLE.md`; per-part artifacts `data/experiments/pass39_*.{json,md}`.
 <!-- PASS39_ADDENDUM_END -->
+
+
+<!-- PASS40_BENCHMARK_LANE_NOTE -->
+## Pass 40 — public-reference benchmark lane (additive)
+
+Pass 40 adds an `external_reference` **benchmark lane**: public Kaggle rule-based sample
+agents registered on a SEPARATE ledger (`data/tournament/benchmark/benchmark_events.jsonl`)
+and played against our schedulable candidates via `PublicBenchmark*` events. These
+references are **benchmark opponents only** — never in our candidate pool, submission
+queue, promotion, lifecycle, family-champion set, active-cap, mutation lineage, or any
+"our best" ranking; the normal fold / scheduler / lifecycle never read the
+`PublicBenchmark*` events, so folding is unbroken. Internal benchmark scores are NOT
+Kaggle scores and NOT a strength claim. See `docs/PASS40_REFERENCE_AGENT_INTAKE.md` and
+`data/reports/pass40_public_reference_agent_intake_report.md`.

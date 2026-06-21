@@ -1,0 +1,634 @@
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+PASS 40 — Public Kaggle Reference Agent Intake + cg_typed Lane Feasibility + Benchmark Integration
+
+IMPORTANT CONTEXT
+
+We now have a standing scheduled tournament daemon running every 20 minutes. Pass 39 confirmed scheduled ticks, prod health, and candidate lifecycle v0. Do NOT derail the daemon work. This pass is not candidate generation and not an upload pass.
+
+We also have a mega attachment / notes from public Kaggle discussion boards containing:
+- fetch_samples.sh pattern
+- public Kaggle Code slugs for reference agents
+- eval_round_robin.py local harness pattern
+- cg/ packaging guidance
+- Mega Lucario sample code snippets
+- Search API / MCTS examples
+- replay viewer code
+
+Those files are NOT necessarily already materialized in the repo. Do not assume data/reference_agents exists. This pass must fetch/materialize the public reference agents itself if Kaggle CLI credentials are available. If fetch is blocked, stop honestly and write fetch_blocked artifacts. Do not fabricate missing agents.
+
+PRIMARY GOAL
+
+Fetch, validate, and register public Kaggle reference agents as immutable external benchmarks for the tournament daemon, not as our candidates.
+
+These agents are measuring sticks. They must NEVER be submitted, promoted, mutated, queued for Kaggle, used as lineage parents, or counted as our own work.
+
+The reference agents should help the tournament become meaningful by benchmarking our candidates against real typed rule-based public agents.
+
+PUBLIC KAGGLE AGENTS TO FETCH
+
+Host / public sample references:
+
+1. kiyotah/a-sample-rule-based-agent-mega-lucario-ex-deck
+   id: public_ref_kiyotah_mega_lucario
+   family: public_reference_mega_lucario
+   provenance: host_public_sample
+
+2. kiyotah/a-sample-rule-based-agent-mega-abomasnow-ex-deck
+   id: public_ref_kiyotah_mega_abomasnow
+   family: public_reference_mega_abomasnow
+   provenance: host_public_sample
+
+3. kiyotah/a-sample-rule-based-agent-dragapult-ex-deck
+   id: public_ref_kiyotah_dragapult
+   family: public_reference_dragapult
+   provenance: host_public_sample
+
+4. kiyotah/a-sample-rule-based-agent-iono-s-deck
+   id: public_ref_kiyotah_iono
+   family: public_reference_iono
+   provenance: host_public_sample
+
+Optional competitor/public reference if fetch works after the four host samples:
+
+5. ryotasueyoshi/rule-based-not-psychic-alakazam-best-5th
+   id: public_ref_ryotasueyoshi_alakazam
+   family: public_reference_alakazam
+   provenance: public_competitor_notebook
+   NOTE: label distinctly from host samples.
+
+HARD GUARDRAILS
+
+- NO Kaggle upload.
+- NO Kaggle submission.
+- NO auto_submit.
+- NO root main.py / deck.csv mutation.
+- NO mutation of existing candidate tarballs.
+- NO deletion of tarballs.
+- NO GitHub push.
+- NO generated candidate.
+- NO copying these public reference agents into the submission queue.
+- NO claiming these are our candidates.
+- NO private/non-public source material. Use only public Kaggle Code / Competition data.
+- Do not commit or redistribute card PDFs, card images, extracted image caches, or official card CSVs unless repo policy already allows it. Treat official data as local/gitignored runtime material.
+- Keep every emitted ActiveGraph / tournament event no_upload=true.
+- The frozen root “Start application” workflow is expected to remain not-started. Do not start it.
+
+EXPECTED HIGH-LEVEL OUTCOME
+
+By the end of this pass, if fetch succeeds:
+
+- public reference agents are stored under a clear reference-agent area with attribution.
+- a cg_typed/reference-agent lane is validated locally.
+- the tournament can schedule them only as immutable benchmark opponents.
+- they are excluded from lifecycle, mutation, promotion, submission queue, active caps, and family-champion logic.
+- at least one smoke game with a public reference agent runs to DONE.
+- the scheduler can include benchmark matchups without never-schedule leakage and without breaking scheduled deployment.
+- reports clearly state that public reference agents are external benchmarks only.
+
+If fetch fails due to credentials/network:
+
+- do not continue with fake agents.
+- write pass40_fetch_blocked.{json,md}
+- document exact missing prerequisite.
+- keep all prod state untouched.
+
+PART A — Root / deployment / prod safety preflight
+
+1. Verify root main.py and deck.csv are byte-identical to data/baselines/v1_kaggle_349_8.
+2. Run package verify-only.
+3. Verify .replit still points to scheduled tournament_deployment_tick.py, not root main.py.
+4. Verify pyproject [tool.uv] package = false.
+5. Run scripts/check_tournament_health.py --mode prod.
+6. Confirm no forbidden events:
+   - SubmissionUploaded
+   - KaggleScoreUpdated from this pass
+   - any no_upload=false
+7. Write:
+   - data/experiments/pass40_root_deploy_safety.json
+   - data/experiments/pass40_root_deploy_safety.md
+
+STOP if hard failures.
+
+PART B — Reference-agent source/fetch plan
+
+Create a fetch/intake manifest before fetching.
+
+Required output:
+
+data/experiments/pass40_reference_source_manifest.json
+data/experiments/pass40_reference_source_manifest.md
+
+Include for every target:
+- id
+- Kaggle slug
+- author
+- provenance class
+- intended local directory
+- expected files
+- allowed uses
+- forbidden uses
+- fetch status initial=pending
+
+Guardrail flags per agent:
+
+allowed:
+- tournament_opponent=true
+- benchmark_report=true
+- local_smoke=true
+
+forbidden:
+- submit=false
+- mutate=false
+- promote=false
+- queue=false
+- candidate_generation_parent=false
+- lifecycle_demote=false
+- family_champion=false
+- counts_toward_active_cap=false
+
+PART C — Fetch public Kaggle references automatically
+
+First check whether these already exist:
+
+- data/reference_agents/
+- agents/
+- notebooks/
+- data/sample_submission/cg/
+- data/EN_Card_Data.csv
+
+If missing, use Kaggle CLI.
+
+Fetch competition data if cg SDK / card CSV is missing:
+
+kaggle competitions download -c pokemon-tcg-ai-battle -p data -o
+unzip -o data/pokemon-tcg-ai-battle.zip -d data || true
+
+Fetch the four host sample notebooks and outputs:
+
+For each slug:
+- kaggle kernels pull "$slug" -p "data/reference_agents/notebooks/$id" -m
+- kaggle kernels output "$slug" -p "data/reference_agents/raw_outputs/$id" -o || true
+- unpack zip/tar.gz/tgz in the output dir if present
+
+If Kaggle CLI/auth fails:
+- record exact command and error
+- write pass40_fetch_blocked.{json,md}
+- do not fabricate main.py or deck.csv
+- do not register references
+- stop after report/tests for fetch-blocked state
+
+Materialization rules:
+
+For each fetched notebook/output:
+- find or extract main.py and deck.csv
+- prefer output artifacts if they contain exact main.py/deck.csv
+- otherwise parse notebook cells with %%writefile main.py and %%writefile deck.csv or hardcoded deck generation cells
+- if exact materialization is ambiguous, mark that agent materialize_failed and do not register it
+
+Store materialized agents as:
+
+data/reference_agents/materialized/<id>/main.py
+data/reference_agents/materialized/<id>/deck.csv
+data/reference_agents/materialized/<id>/ATTRIBUTION.md
+data/reference_agents/materialized/<id>/source.json
+
+Shared SDK:
+- locate cg/ under data/sample_submission/cg or equivalent extracted competition path.
+- store/copy a shared runtime SDK at data/reference_agents/_sdk/cg ONLY if needed for local smoke.
+- do not duplicate cg/ into each materialized directory unless building a cg-lane tarball for smoke.
+- ensure cg SDK/csv/pdf/image artifacts stay gitignored unless explicit repo policy says otherwise.
+
+Write:
+- data/experiments/pass40_reference_agent_fetch.json
+- data/experiments/pass40_reference_agent_fetch.md
+
+PART D — Provenance and attribution audit
+
+For every successfully materialized reference agent:
+
+1. Validate source URL is public Kaggle Code.
+2. Create ATTRIBUTION.md containing:
+   - author
+   - Kaggle slug
+   - public/notebook provenance
+   - date fetched
+   - allowed internal use
+   - explicit never-submit / never-mutate / never-promote warning
+3. Ensure source.json includes sha256 for main.py and deck.csv.
+4. Ensure no private source or non-public material is used.
+5. Ensure no official PDFs/images are copied into committed paths.
+
+Write:
+- data/experiments/pass40_reference_attribution_audit.json
+- data/experiments/pass40_reference_attribution_audit.md
+
+PART E — cg_typed lane feasibility validator
+
+Our current stdlib lane is intentionally strict: top-level main.py + deck.csv only, stdlib-only. Keep it unchanged.
+
+Add a separate lane, not a loosening of the stdlib lane.
+
+Implement or spike a cg_typed/reference validator that:
+
+Allows:
+- main.py
+- deck.csv
+- cg/** only
+
+Requires:
+- top-level main.py
+- top-level deck.csv
+- cg/__init__.py
+- cg/api.py
+- cg/game.py
+- cg/sim.py
+- cg/utils.py
+- one native library if present: libcg.so and/or cg.dll
+
+Import policy:
+- allow cg and cg.api / cg.game imports
+- allow stdlib imports
+- reject arbitrary third-party imports except what public samples genuinely require if unavoidable; if unavoidable, record them explicitly and do not submit
+- reject network/file writes outside runtime working dir
+
+Entrypoint policy:
+- main.py must define agent(obs_dict)
+- last callable / actual callable behavior must be validated just like existing entrypoint validator catches callable hijacks
+- deck selection must return exactly 60 integer card IDs for all deck-selection obs shapes used by existing validator
+- malformed/no-select obs must never crash if existing validator already enforces this for our lane; if public agents do crash on our stricter malformed obs, report honestly and put them in benchmark-only, not submission-eligible
+
+Safety:
+- cg_typed reference agents are benchmark-only even if they validate.
+- Do NOT make them uploadable.
+
+Add tests that the cg_typed validator:
+- accepts a correctly packaged public reference tarball
+- rejects a tarball with unexpected extra top-level files
+- rejects missing cg/
+- rejects missing deck.csv
+- rejects malformed deck length
+- rejects/flags last-callable hijack if applicable
+- does not weaken existing stdlib tarball validator
+
+Write:
+- data/experiments/pass40_cg_typed_lane_validation.json
+- data/experiments/pass40_cg_typed_lane_validation.md
+- docs/CG_TYPED_LANE_VALIDATOR.md
+
+PART F — Build immutable local reference tarballs for benchmark use only
+
+If Part C/E succeeded, create benchmark tarballs under:
+
+data/reference_agents/tarballs/<id>.tar.gz
+
+Layout:
+- main.py
+- deck.csv
+- cg/
+
+These tarballs are NOT candidate submission tarballs. They are benchmark/reference tarballs.
+
+Add a manifest:
+
+data/reference_agents/reference_agent_manifest.json
+data/reference_agents/reference_agent_manifest.md
+
+Each row must include:
+- id
+- path
+- sha256
+- deck sha256
+- main sha256
+- cg sha256 or file list digest
+- source slug
+- provenance
+- status=external_reference or public_benchmark
+- submit_allowed=false
+- mutate_allowed=false
+- promote_allowed=false
+- queue_allowed=false
+
+PART G — Local smoke tests
+
+Run local cabt smoke games before touching the tournament pool.
+
+Required smoke matrix:
+
+1. public_ref_kiyotah_mega_lucario vs public_ref_kiyotah_dragapult
+2. public_ref_kiyotah_iono vs public_ref_kiyotah_mega_abomasnow
+3. best current internal candidate/reference vs one public ref
+4. one public ref vs best current internal candidate/reference, seat-swapped
+
+Use subprocess isolation with hard timeout. Do not rely on SIGALRM-only native-code interruption.
+
+Record:
+- status
+- reward
+- steps
+- elapsed
+- invalid/error/timeout
+- import errors
+- whether cg SDK path was used
+- exact tarball path
+
+If any public reference repeatedly fails, mark it materialized_but_smoke_failed and do not schedule it.
+
+Write:
+- data/experiments/pass40_reference_agent_smoke.json
+- data/experiments/pass40_reference_agent_smoke.md
+
+PART H — Tournament integration as external benchmarks
+
+Add a benchmark/reference participant lane to the standing tournament.
+
+Preferred design:
+- extend Candidate or introduce ReferenceParticipant in a backward-compatible way.
+- external references can be scheduled as opponents.
+- external references never appear in:
+  - dry-run submission queue
+  - promotion decisions
+  - candidate generation
+  - mutation lineage
+  - lifecycle probation/quarantine
+  - family champion selection
+  - active cap counts
+  - “our best candidate” ranking claims
+
+Possible status:
+- external_reference
+or:
+- public_benchmark
+
+Whichever is cleaner, document it and tests must prove no leakage.
+
+Scheduling:
+- add benchmark calibration priority after validation/smoke gaps and before pure top-bracket exploration, or as a bounded separate priority.
+- do not flood all 20 scheduled games with public refs forever.
+- initial quota suggestion:
+  - min_public_benchmark_games_per_candidate_per_seat = 2
+  - then least-played maintenance
+- schedule both seats.
+- no public-reference-vs-public-reference games after smoke unless explicitly requested; they are benchmarks, not competitors for our optimization budget.
+
+Event model:
+- emit TournamentParticipantRegistered with full snapshot for external references
+- include provenance and forbidden flags in payload
+- every event no_upload=true
+- no SubmissionQueued for references
+- no CandidatePromoted for references
+
+Projection:
+- rankings should either:
+  A. display public references in a separate “Benchmark references” section, or
+  B. label them clearly in rankings and exclude them from “our candidates” leader summary.
+- Add benchmark_score / vs_public_reference projection if practical:
+  data/tournament/projections/public_benchmark_matrix.{json,md,csv}
+  or equivalent.
+
+Production state:
+- Do not mutate object storage until all local gates pass.
+- If all gates pass, you may register benchmark references to the production ledger/pool safely through the existing storage sync/lease path.
+- If registering references requires republishing Scheduled Deployment to include new files, report “republish_required=true” and do NOT assume prod ticks can play them before republish.
+- If registration to prod would break current scheduled daemon, keep it local and report integration_blocked.
+
+Write:
+- data/experiments/pass40_tournament_benchmark_integration.json
+- data/experiments/pass40_tournament_benchmark_integration.md
+
+PART I — Controlled benchmark tick / dry-run
+
+After integration, run a controlled LOCAL benchmark tick first.
+
+- max games small: 4 to 8
+- include at least one internal candidate vs public reference
+- no production mutation for the first local test
+- verify no never-schedule leakage
+- verify no reference appears in submission_queue.json
+
+If local benchmark tick passes and prod registration was applied, optionally run a controlled production tick with max-games 2 only if:
+- health check hard pass
+- no active lease
+- files required by prod are present after publish or report republish_required
+- no upload/submit path involved
+
+If prod cannot play references until republish, do NOT run prod benchmark games; simply report that.
+
+Write:
+- data/experiments/pass40_benchmark_tick.json
+- data/experiments/pass40_benchmark_tick.md
+
+PART J — Gap report: our stdlib/typed-lite vs public typed references
+
+Produce a brutally honest comparison.
+
+Compare:
+
+1. Current stdlib lane / existing candidates
+2. Pass 35 typed-lite infrastructure
+3. Public cg typed agents
+4. Search API feasibility
+
+Matrix rows should include:
+
+- to_observation_class usage
+- all_card_data usage
+- typed SelectContext / OptionType branching
+- board HP/energy/tools/bench/prize reading
+- damage math
+- weakness/resistance
+- prize_count
+- target selection
+- Boss/gust planning
+- per-context search/discard/attach/retreat logic
+- turn memory
+- deckout draw gating
+- ability-used state
+- Search API / search_begin feasibility
+- cg/ packaging requirement
+- submission validator lane
+
+Clearly state:
+- our daemon/event engine is strong
+- our gameplay policy remains the main weakness
+- public references are benchmarks and design exemplars, not candidates
+- cg_typed lane is the likely route to real gameplay improvement
+- Search API is promising but not part of this pass unless only a tiny smoke is feasible
+
+Write:
+- data/experiments/pass40_public_reference_gap_report.json
+- data/experiments/pass40_public_reference_gap_report.md
+- docs/PASS40_REFERENCE_AGENT_INTAKE.md
+
+PART K — Optional Search API smoke only, no MCTS build
+
+If time allows and cg SDK is available, run a minimal Search API import/one-step feasibility smoke:
+
+from cg.api import search_begin, search_step, search_end, SearchState
+from cg.game import battle_start, battle_select, battle_finish
+
+Do not build MCTS or RL. Do not add torch. Do not train. Do not mutate candidates.
+
+Just prove:
+- imports work
+- battle_start works with a known deck
+- search_begin can initialize from an observation
+- search_step can apply a legal selected action
+- search_end cleans up
+
+If blocked, record why.
+
+Write:
+- data/experiments/pass40_search_api_feasibility.json
+- data/experiments/pass40_search_api_feasibility.md
+- docs/SEARCH_API_FEASIBILITY.md if meaningful
+
+PART L — Tests
+
+Add tests for Pass 40. Keep old suites green. Do not weaken stale cross-pass tests unless clearly out of scope and documented.
+
+Required test coverage:
+
+1. root main.py/deck.csv byte-identical to baseline
+2. no upload/submit/auto-submit
+3. fetch manifest has all required public slugs
+4. materialized reference agents have main.py/deck.csv/ATTRIBUTION/source metadata
+5. deck.csv exactly 60 ints
+6. no official PDF/image cache committed
+7. cg_typed validator accepts known-good cg reference tarball
+8. cg_typed validator rejects bad tarball shapes
+9. existing stdlib validator unchanged and still rejects cg tarballs
+10. reference status/flags forbid submit/mutate/promote/queue
+11. scheduler never places public reference in submission queue
+12. lifecycle manager ignores public references
+13. public references do not count toward active cap
+14. benchmark smoke result has at least one DONE/ok game if fetch succeeded
+15. if fetch blocked, tests validate honest fetch_blocked artifact instead of pretending success
+16. all new ActiveGraph/tournament events no_upload=true
+17. report has exact 10 sections
+18. no GitHub push, no root/tarball mutation
+
+Run:
+- Pass 36 tests
+- Pass 37 tests
+- Pass 38 tests
+- Pass 39 tests
+- new Pass 40 tests
+
+PART M — ActiveGraph events
+
+Emit pass40 events, all no_upload=true, idempotent.
+
+Suggested events:
+- PublicReferenceFetchStarted
+- PublicReferenceFetched
+- PublicReferenceMaterialized
+- PublicReferenceValidated
+- CgTypedLaneValidated
+- PublicBenchmarkRegistered
+- PublicBenchmarkSmokeFinished
+- BenchmarkSchedulerUpdated
+- StrategyGapReportGenerated
+- StrategyDecisionRecorded
+- ReportSiteGenerated
+
+If event enum does not contain these, either:
+- add additive EventType values, or
+- use existing generic event types with payload.event_subtype
+Do not break old event folding.
+
+No upload events.
+
+PART N — Report / docs / site
+
+Write exact 10-section report:
+
+data/reports/pass40_public_reference_agent_intake_report.md
+
+Required sections:
+
+1. Root safety
+2. Public source manifest
+3. Fetch/materialization results
+4. Attribution and guardrails
+5. cg_typed lane validation
+6. Reference agent smoke tests
+7. Tournament benchmark integration
+8. Gap report: our gameplay vs public typed agents
+9. Tests / ActiveGraph / no-upload guarantees
+10. Verdict and next recommendation
+
+Update:
+- docs/PERSISTENT_TOURNAMENT_DAEMON.md
+- docs/REPLIT_SCHEDULED_DEPLOYMENT_RUNBOOK.md
+- docs/TOURNAMENT_ENGINE_PLAN.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- docs/NEXT_STEPS.md
+- docs/NEXT_AGENT_README.md
+- data/reports/activegraph_strategy_report.md
+- data/site/index.html
+
+Docs must clearly state:
+- public references are external benchmarks only
+- not submit candidates
+- not mutation parents
+- if republish is required, say so
+- internal benchmark scores are not Kaggle scores
+
+PART O — Strategy decision
+
+Final decision should be one of:
+
+- reference_benchmarks_registered
+- fetch_blocked
+- cg_lane_blocked
+- local_only_pending_republish
+- integration_blocked
+- benchmark_smoke_failed
+
+No promotion or upload decision in this pass.
+
+Expected if everything works:
+reference_benchmarks_registered, possibly with republish_required=true.
+
+Next recommendation should likely be:
+- let the scheduled tournament accumulate benchmark games vs public references
+- then build a real cg_typed candidate lane using one of our own decks/policies
+- do not submit public references
+- do not start automated candidate generation until public benchmark gap is quantified
+
+PART P — Architect review
+
+Run the architect/code review before finalizing.
+
+Specifically ask it to check:
+
+1. Did we accidentally make public references submit/promote/mutate eligible?
+2. Did cg_typed validator weaken stdlib lane?
+3. Did any official data/images/PDFs get committed or synced improperly?
+4. Does production scheduled deployment still run if references are registered?
+5. Are reference agents schedulable only as benchmarks?
+6. Are reports honest about public provenance and benchmark-only status?
+7. Are fetch-blocked paths honest and tested?
+8. Are no_upload/no-submit guarantees intact?
+9. Does any code create candidate lineage from public references?
+10. Is republish_required handled honestly?
+
+Fix real issues. Do not weaken guardrail tests.
+
+FINAL RESPONSE FORMAT
+
+When complete, give me:
+
+- PASS/FAIL summary
+- whether fetch succeeded or was blocked
+- how many public refs materialized
+- whether cg_typed validator passed
+- whether local smoke passed
+- whether prod registration happened or republish is required
+- whether scheduled deployment needs republish
+- exact report path
+- tests summary
+- next recommended pass
+
+Remember: no Kaggle upload, no submit, no auto-submit, no candidate generation, no GitHub push, root frozen.

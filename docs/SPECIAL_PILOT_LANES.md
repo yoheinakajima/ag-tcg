@@ -75,3 +75,17 @@ Live-smoke diagnosis of the two special-lane decks (generic pilot, both seats = 
 - **deckout_carousel_durant_v2** — missing hooks: value opponent deck depletion as the win metric, preserve the wall and avoid trading prizes, sequence Judge / Lacey / Acerola disruption to accelerate the deck-out, avoid self-deckout (manage own draw); first fixture needed: A clean cabt game where the special pilot drives this deck and reaches DONE on BOTH seats (no INVALID). Not run in Pass 34.
 
 _LOCAL / no upload. Diagnosis is internal smoke evidence, NOT a Kaggle result._
+
+
+<!-- PASS40_BENCHMARK_LANE_NOTE -->
+## Pass 40 — public-reference benchmark lane (additive)
+
+Pass 40 adds an `external_reference` **benchmark lane**: public Kaggle rule-based sample
+agents registered on a SEPARATE ledger (`data/tournament/benchmark/benchmark_events.jsonl`)
+and played against our schedulable candidates via `PublicBenchmark*` events. These
+references are **benchmark opponents only** — never in our candidate pool, submission
+queue, promotion, lifecycle, family-champion set, active-cap, mutation lineage, or any
+"our best" ranking; the normal fold / scheduler / lifecycle never read the
+`PublicBenchmark*` events, so folding is unbroken. Internal benchmark scores are NOT
+Kaggle scores and NOT a strength claim. See `docs/PASS40_REFERENCE_AGENT_INTAKE.md` and
+`data/reports/pass40_public_reference_agent_intake_report.md`.

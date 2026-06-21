@@ -1,0 +1,43 @@
+{
+  "agent_id": "public_ref_kiyotah_dragapult",
+  "label": "public_reference_dragapult",
+  "kaggle_ref": "kiyotah/a-sample-rule-based-agent-dragapult-ex-deck",
+  "owner": "kiyotah",
+  "slug": "a-sample-rule-based-agent-dragapult-ex-deck",
+  "author": "kiyotah",
+  "author_display": "Kiyota",
+  "source_kind": "host_public_sample",
+  "deck_archetype": "Dragapult ex",
+  "title": "A Sample Rule-Based Agent Dragapult ex Deck",
+  "optional": false,
+  "pool_status": "external_reference",
+  "tags": [
+    "public_benchmark",
+    "external_reference",
+    "host_public_sample"
+  ],
+  "is_public": true,
+  "kaggle_url": "https://www.kaggle.com/code/kiyotah/a-sample-rule-based-agent-dragapult-ex-deck",
+  "competition_sources": [
+    "pokemon-tcg-ai-battle"
+  ],
+  "dataset_sources": [
+    "kiyotah/cg-lib",
+    "kiyotah/dragapult-ex-deck"
+  ],
+  "kernel_type": "notebook",
+  "tarball_sha256": "152fa4e9b1322b98c50d696299b548fdf0e95e46be31ef7ce625612022d386d4",
+  "tarball_bytes": 500419,
+  "main_py_sha256": "ef8936859fd215e6c704071042e5438d55e2e972b8f1806fb6eddbd03027e0b9",
+  "deck_csv_sha256": "30c8c7365c75f38fd6e7e1d8543c42ce7055ed6fd1c6e9eb244e44484b78e724",
+  "cg_signature": "cd7799a3e539cb72034835028f52ffa2a20e83733213f2a9d5a0835d3436798d",
+  "usage": "benchmark_opponent_only",
+  "guardrails": [
+    "never uploaded or submitted to Kaggle",
+    "never entered in the submission queue / promoted / family-champion",
+    "never mutated; not part of any mutation lineage",
+    "never counted toward the active-candidate cap or 'our best' rankings",
+    "excluded from the lifecycle manager"
+  ],
+  "license_note": "Public Kaggle kernel (is_private=false). Used here strictly as a benchmark opponent with attribution to the original author; not redistributed as our own work. The cg SDK / libcg.so / official card data are kept gitignored. See the kernel page for the author's stated license/terms."
+}

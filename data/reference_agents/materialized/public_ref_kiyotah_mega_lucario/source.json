@@ -1,0 +1,43 @@
+{
+  "agent_id": "public_ref_kiyotah_mega_lucario",
+  "label": "public_reference_mega_lucario",
+  "kaggle_ref": "kiyotah/a-sample-rule-based-agent-mega-lucario-ex-deck",
+  "owner": "kiyotah",
+  "slug": "a-sample-rule-based-agent-mega-lucario-ex-deck",
+  "author": "kiyotah",
+  "author_display": "Kiyota",
+  "source_kind": "host_public_sample",
+  "deck_archetype": "Mega Lucario ex",
+  "title": "A Sample Rule-Based Agent Mega Lucario ex Deck",
+  "optional": false,
+  "pool_status": "external_reference",
+  "tags": [
+    "public_benchmark",
+    "external_reference",
+    "host_public_sample"
+  ],
+  "is_public": true,
+  "kaggle_url": "https://www.kaggle.com/code/kiyotah/a-sample-rule-based-agent-mega-lucario-ex-deck",
+  "competition_sources": [
+    "pokemon-tcg-ai-battle"
+  ],
+  "dataset_sources": [
+    "kiyotah/cg-lib",
+    "kiyotah/mega-lucario-ex-deck"
+  ],
+  "kernel_type": "notebook",
+  "tarball_sha256": "56b15c91425902651e539f7c8157dd417fe2c834693c69ea8df9ed48f4bc5c22",
+  "tarball_bytes": 498154,
+  "main_py_sha256": "ab8563b67b88b3666c2ff9c308505085a84fdac676c194c5b484d8544478c3b2",
+  "deck_csv_sha256": "406e2e9bd6ae82b8008b16ee64ffcbb58e4a50cd6bc36e33ae655456c6b9afee",
+  "cg_signature": "cd7799a3e539cb72034835028f52ffa2a20e83733213f2a9d5a0835d3436798d",
+  "usage": "benchmark_opponent_only",
+  "guardrails": [
+    "never uploaded or submitted to Kaggle",
+    "never entered in the submission queue / promoted / family-champion",
+    "never mutated; not part of any mutation lineage",
+    "never counted toward the active-candidate cap or 'our best' rankings",
+    "excluded from the lifecycle manager"
+  ],
+  "license_note": "Public Kaggle kernel (is_private=false). Used here strictly as a benchmark opponent with attribution to the original author; not redistributed as our own work. The cg SDK / libcg.so / official card data are kept gitignored. See the kernel page for the author's stated license/terms."
+}

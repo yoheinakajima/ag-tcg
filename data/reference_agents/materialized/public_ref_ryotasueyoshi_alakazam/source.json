@@ -1,0 +1,41 @@
+{
+  "agent_id": "public_ref_ryotasueyoshi_alakazam",
+  "label": "public_reference_alakazam",
+  "kaggle_ref": "ryotasueyoshi/rule-based-not-psychic-alakazam-best-5th",
+  "owner": "ryotasueyoshi",
+  "slug": "rule-based-not-psychic-alakazam-best-5th",
+  "author": "ryotasueyoshi",
+  "author_display": "sue124",
+  "source_kind": "public_competitor_notebook",
+  "deck_archetype": "Alakazam (rule-based)",
+  "title": "\ud83e\udd16 Rule-based, not psychic: Alakazam (Best: 5th)",
+  "optional": true,
+  "pool_status": "external_reference",
+  "tags": [
+    "public_benchmark",
+    "external_reference",
+    "public_competitor_notebook",
+    "optional"
+  ],
+  "is_public": true,
+  "kaggle_url": "https://www.kaggle.com/code/ryotasueyoshi/rule-based-not-psychic-alakazam-best-5th",
+  "competition_sources": [
+    "pokemon-tcg-ai-battle"
+  ],
+  "dataset_sources": [],
+  "kernel_type": "notebook",
+  "tarball_sha256": "616b13b0582f58641ce25b7f284729b97d02caebaa1f3da6429e5d589cc34b33",
+  "tarball_bytes": 1060972,
+  "main_py_sha256": "df4d597f593950b0d0c372f3e0bb26c182c4116648977f15adbb329a6ba922f4",
+  "deck_csv_sha256": "7b413177e5077777f2178143839c0155b03b92bbc8b3a6607621a7d43f351141",
+  "cg_signature": "cd7799a3e539cb72034835028f52ffa2a20e83733213f2a9d5a0835d3436798d",
+  "usage": "benchmark_opponent_only",
+  "guardrails": [
+    "never uploaded or submitted to Kaggle",
+    "never entered in the submission queue / promoted / family-champion",
+    "never mutated; not part of any mutation lineage",
+    "never counted toward the active-candidate cap or 'our best' rankings",
+    "excluded from the lifecycle manager"
+  ],
+  "license_note": "Public Kaggle kernel (is_private=false). Used here strictly as a benchmark opponent with attribution to the original author; not redistributed as our own work. The cg SDK / libcg.so / official card data are kept gitignored. See the kernel page for the author's stated license/terms."
+}

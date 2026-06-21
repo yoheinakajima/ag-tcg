@@ -108,6 +108,21 @@ class EventType(str, Enum):
     TournamentProjectionUpdated = "TournamentProjectionUpdated"
     TournamentReportGenerated = "TournamentReportGenerated"
 
+    # --- Pass 40: public-reference benchmark lane (separate from our pool) -
+    # Benchmark opponents only. These event types are NEVER folded by
+    # ``fold_games`` / ``CandidatePool.from_events`` / the scheduler / lifecycle,
+    # so reference agents never enter our candidate pool, rankings, active-cap,
+    # queue, promotion, or mutation lineage. Every one carries no_upload=true and
+    # is written to a SEPARATE benchmark ledger file.
+    PublicReferenceAgentRegistered = "PublicReferenceAgentRegistered"
+    CgTypedLaneValidated = "CgTypedLaneValidated"
+    PublicBenchmarkTickStarted = "PublicBenchmarkTickStarted"
+    PublicBenchmarkGameScheduled = "PublicBenchmarkGameScheduled"
+    PublicBenchmarkGameStarted = "PublicBenchmarkGameStarted"
+    PublicBenchmarkGameFinished = "PublicBenchmarkGameFinished"
+    PublicBenchmarkProjectionUpdated = "PublicBenchmarkProjectionUpdated"
+    PublicBenchmarkTickFinished = "PublicBenchmarkTickFinished"
+
 
 @dataclass
 class Event:

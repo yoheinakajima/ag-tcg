@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph — Pass 37 Deployment-Ready Tournament Worker (internal diagnostics)</title>
+<title>ActiveGraph — Pass 40 Public-Reference Benchmark Lane (internal diagnostics)</title>
 <style>
  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
  h1{font-size:1.5rem} table{border-collapse:collapse;width:100%;margin:1rem 0}
@@ -9,6 +9,19 @@
  th{background:#f4f4f6} .caveat{background:#fff7e6;border:1px solid #f0c36d;padding:.7rem;border-radius:6px;font-size:.9rem;margin:.5rem 0}
  code{background:#f4f4f6;padding:.1rem .3rem;border-radius:3px}
 </style></head><body>
+<h1>ActiveGraph — Pass 40: Public-Reference Benchmark Lane (intake + cg_typed feasibility)</h1>
+<p class="caveat"><b>Internal cg_typed-lane benchmark feasibility only — NOT our rankings, NOT a Kaggle leaderboard, NOT a Kaggle score, NOT a strength claim.</b> Reference agents are <b>benchmark opponents only</b> — never in our candidate pool, submission queue, promotion, lifecycle, family-champion set, active-cap, or mutation lineage. <b>NO upload, NO submit, NO auto-submit, NO candidate generation.</b></p>
+<h2>Public Kaggle reference agents as benchmark opponents</h2>
+<p>Five public rule-based sample agents (four host <code>kiyotah</code> samples + one optional public competitor notebook) were materialized from their Kaggle kernel outputs and run on the bundled <code>cg</code> (typed) SDK in a lane <b>physically separate</b> from our pure-stdlib candidates. They register on a <b>separate</b> ledger (<code>data/tournament/benchmark/benchmark_events.jsonl</code>) via <code>PublicReferenceAgentRegistered</code> and play our schedulable candidates via <code>PublicBenchmark*</code> events that the normal fold / scheduler / lifecycle never read.</p>
+<ul>
+ <li>Fetch <b>5/5</b> materialized &middot; cg_typed lane <b>5/5</b> (stdlib lane rejects the typed contract 5/5 and is byte-unchanged) &middot; <b>5/5</b> immutable hash-verified tarballs &middot; cabt smoke <b>5/5</b> runnable.</li>
+ <li>Benchmark-lane integration: <code>integration_ok=true</code>, <code>zero_leakage=true</code> (11/11 checks); 13 schedulable candidates &times; 5 references &rarr; 40-game worklist. Main ledger unchanged.</li>
+ <li>Controlled local tick: <b>8 games, 0 invalid</b>; our candidates <b>1</b>, public typed references <b>7</b> (our decisive win rate <b>0.125</b>) — small, directional feasibility, <b>not</b> a strength/Kaggle claim.</li>
+ <li>cg Search API feasible (search_begin/step/end/release present; <code>libcg.so</code> serves card/attack data) &middot; additive <code>PublicBenchmark*</code> EventTypes (folding unbroken) &middot; <b>28</b> Pass 40 tests + pass36–40 regression green.</li>
+ <li>Root <code>main.py</code>/<code>deck.csv</code> byte-unchanged &middot; production healthy &middot; <b>republish NOT required</b> (local-only diagnostics).</li>
+</ul>
+<p>Report: <code>data/reports/pass40_public_reference_agent_intake_report.md</code> &middot; Intake: <code>docs/PASS40_REFERENCE_AGENT_INTAKE.md</code> &middot; Typed lane: <code>docs/CG_TYPED_LANE_VALIDATOR.md</code>.</p>
+<hr>
 <h1>ActiveGraph — Pass 37: Deployment-Ready Standing Tournament Worker</h1>
 <p class="caveat"><b>Internal self-play diagnostics only — NOT a Kaggle leaderboard.</b> <b>NO upload, NO submit, NO auto-submit, no new candidates.</b> Deploy ONLY as a Replit <b>Scheduled Deployment</b> bounded tick (never an always-on server, never the root "Start application" workflow). In production, primary state MUST live in <b>persistent storage</b> — the deployed filesystem is not durable.</p>
 <h2>Scheduled Deployment with persistent storage</h2>
