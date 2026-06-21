@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph — Pass 46B Reference-Gap + Turn-Planning Diagnostic (local diagnostics)</title>
+<title>ActiveGraph — Pass 46F Search-Calibrated Fast Turn-Planner Candidate Pilot (local-only)</title>
 <style>
  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
  h1{font-size:1.5rem} table{border-collapse:collapse;width:100%;margin:1rem 0}
@@ -9,6 +9,20 @@
  th{background:#f4f4f6} .caveat{background:#fff7e6;border:1px solid #f0c36d;padding:.7rem;border-radius:6px;font-size:.9rem;margin:.5rem 0}
  code{background:#f4f4f6;padding:.1rem .3rem;border-radius:3px}
 </style></head><body>
+<h1>ActiveGraph — Pass 46F: Search-Calibrated Fast Turn-Planner Candidate Pilot v0 (local-only)</h1>
+<p class="caveat"><b>LOCAL-ONLY gameplay pilot while production soaks — NOT a Kaggle score, NOT a leaderboard, NOT a strength claim.</b> <b>NO</b> production mutation, no tick, no republish, <b>NO</b> Kaggle upload/submit/auto-submit, <b>NO</b> <code>SubmissionQueued</code>/<code>SubmissionUploaded</code>/<code>KaggleScoreUpdated</code>/<code>CandidatePromoted</code>, <b>NO</b> public reference as source/parent/candidate, <b>NO</b> root <code>main.py</code>/<code>deck.csv</code> mutation, <b>NO</b> tarball edit/delete. <b>NO</b> exact-damage/lethal/missed-KO/Boss-gust/spread/best-action claims. The candidate's fast scorer is calibrated <b>offline</b>; <b>no online Search in the live hot path</b>. The two public references stay <b>benchmark-only</b>.</p>
+<h2>Final decision: <code>insufficient_evidence</code></h2>
+<p>Built one owned <code>cg_typed</code> candidate (<code>cg_typed_water_anti_disruption_searchcal_v1</code>) whose fast turn scorer was distilled <b>offline</b> from the Pass-46E Search oracle into a single pure module + JSON profile, then <b>inlined byte-identically</b> into the candidate (parity-verified). It is <b>safe, runnable and non-inert</b>, but the local head-to-head edge over its internal parent is <b>not</b> statistically resolvable at this sample. Production was <b>not</b> mutated by any part of this pass.</p>
+<ul>
+ <li><b>Root/prod safe (STOP-GATE):</b> <code>all_ok=true</code> &middot; root <code>main.py</code> (<code>09ae8a74…</code>)/<code>deck.csv</code> (<code>e26f6d8a…</code>) byte-identical to baseline via fresh filecmp &middot; <code>.replit</code> deploy runs <code>tournament_deployment_tick.py --production</code> (not root), <code>auto_submit</code> falsy, no tick, no republish &middot; references absent from pool + worklist &middot; all 5 workflows intentionally <b>not started</b>.</li>
+ <li><b>Offline calibration:</b> robust-median per-family weights (attach 1.5 &gt; attack 0.975 &gt; ability 0.6 &gt; play 0.4 &gt; end_turn −0.5); in-sample median oracle lift <b>+8.0</b>, top-1 agreement 0.686 over 51 frames — <b>NOT</b> a win-rate claim.</li>
+ <li><b>Distinct + safe policy:</b> non-inertness <code>non_inert_and_safe</code> — <b>58.1%</b> divergence from parent over 43 ACTIVE frames, <b>0</b> illegal / <b>0</b> fallback / <b>0</b> exceptions; smoke 9/9 clean.</li>
+ <li><b>Local benchmark (directional):</b> parent H2H <b>0.55 [0.342, 0.742]</b> n=20, seats 0.40/0.70 (not both winning); internal anchor 0.50; self-mirror Fisher pooled p=0.752 (inconclusive); public references pooled <b>0/12</b> (benchmark-only, never a promotion signal).</li>
+ <li><b>Decision <code>insufficient_evidence</code>:</b> safe + runnable + non-inert, but no resolvable edge (Wilson CI straddles 0.50, Fisher inconclusive). No promotion, no upload. Next: n≥60 seat-balanced H2H + richer-label re-calibration before any edge claim.</li>
+ <li><b>Tests/guarantees:</b> <b>40</b> Pass-46F tests + <code>pass41–46e</code> regression <b>green</b> &middot; no Pass-46F script uploads, promotes, ticks, mutates root, edits/deletes a tarball, or emits a forbidden event.</li>
+</ul>
+<p>Report: <code>data/reports/pass46f_search_calibrated_turnplanner_candidate_report.md</code> &middot; Scorer: <code>src/ptcg_activegraph/analysis/turn_scorer.py</code> + <code>data/experiments/pass46f_score_profile.json</code> &middot; Candidate: <code>data/submissions/candidates_pass46f/cg_typed_water_anti_disruption_searchcal_v1.tar.gz</code> &middot; Artifacts: <code>data/experiments/pass46f_*</code>.</p>
+<hr>
 <h1>ActiveGraph — Pass 46B: Reference-Gap + Turn-Planning Diagnostic v0 (local diagnostics)</h1>
 <p class="caveat"><b>READ-ONLY / LOCAL diagnostic during probation soak — NOT a Kaggle score, NOT a leaderboard, NOT a strength claim.</b> <b>NO</b> production mutation, no tick, <b>NO</b> lifecycle/generation/promotion/upload, <b>NO</b> <code>SubmissionQueued</code>/<code>SubmissionUploaded</code>/<code>KaggleScoreUpdated</code>/<code>CandidatePromoted</code>/<code>CandidateStatusChanged</code>, <b>NO</b> root <code>main.py</code>/<code>deck.csv</code> mutation, <b>NO</b> tarball deletion/overwrite. The five public references stay <b>benchmark-only</b>.</p>
 <h2>Final decision: <code>reference_gap_diagnostic_complete_soak_continue</code></h2>

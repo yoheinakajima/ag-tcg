@@ -1,0 +1,243 @@
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+PASS 46F — Search-Calibrated Fast Turn-Planner Candidate Pilot v0
+
+Scope:
+LOCAL-ONLY gameplay-improvement pass while production daemon continues soaking. This is NOT Pass 47 promotion readiness. Do not mutate production Object Storage, do not run a production tick, do not register candidates into prod, do not republish, do not upload/submit to Kaggle, do not promote, do not queue, do not mutate root main.py/deck.csv, and do not edit/delete existing tarballs. The root "Start application" workflow staying not-started is expected; do not start it.
+
+Goal:
+Use the now-ready Pass-46E Search oracle and Pass-46D turn-planning primitives to build one fast, owned, local-only cg_typed candidate pilot. The pilot should be search-calibrated but not depend on broad online Search in the live agent hot path. It should be an original policy, not copied from public reference agents. Public references remain benchmark-only opponents.
+
+Important framing:
+- We are trying to close the behavioral/reference gap by improving reusable turn planning, not by doing one-off deck-count tweaking.
+- The candidate may be instantiated on one internal source deck, but the policy implementation must be framed as reusable turn-planner infrastructure.
+- Do not claim Kaggle strength, public-reference parity, or leaderboard relevance.
+- If results are weak, report that honestly and keep the candidate local-only.
+
+Use existing assets:
+- Pass 46D: `src/ptcg_activegraph/analysis/turn_primitives.py`
+- Pass 46E: `src/ptcg_activegraph/analysis/search_oracle.py`, `_search_worker.py`, and artifacts under `data/experiments/pass46e_*`
+- Pass 46C: full local frame traces under `data/experiments/pass46c_traces/`
+- Pass 40 public references: benchmark-only, never source/parent/candidate
+- Current candidate pool / projections for choosing an internal source
+
+Suggested target-selection rule:
+Choose exactly one internal source deck for the first pilot:
+1. Prefer a strong, stable internal source with enough existing internal games and a clear public-reference gap.
+2. Exclude public references, special_pilot_only, retired, quarantined, invalid.
+3. Avoid treating held_probe as mutable unless there is no better source; if you use a held_probe as source, keep it strictly as a copied local pilot parent and do not alter held_probe status.
+4. Good default: choose the best non-held water portfolio/family source (`league_water_anti_disruption_pivot_v1` or `league_water_core_reference`) because water is strongest internally but still loses badly to references. If a deterministic evidence rule selects a different source, explain why.
+
+Deliverables / Parts:
+
+Part A — Safety stop-gate
+Create `scripts/build_pass46f_safety_preflight.py`.
+Freshly verify:
+- root `main.py` and `deck.csv` byte-identical to `data/baselines/v1_kaggle_349_8`
+- .replit scheduled deployment still points to `scripts/tournament_deployment_tick.py ... --production`, not root main.py
+- auto_submit falsy
+- production not mutated
+- no forbidden events in relevant local/prod ledgers: `SubmissionQueued`, `SubmissionUploaded`, `KaggleScoreUpdated`, `CandidatePromoted`
+- public references absent from main candidate pool and scheduler worklist
+- Pass 46D and 46E artifacts present
+Write `data/experiments/pass46f_safety_preflight.{json,md}`.
+Stop if unsafe.
+
+Part B — Source deck selection
+Create `scripts/build_pass46f_source_selection.py`.
+Read current local/prod projections/pool as needed, then deterministically select one internal source deck using the target-selection rule above.
+Record:
+- source candidate id, family, status, tarball path, deck sha, main sha
+- why it was selected
+- excluded alternatives and why
+- public-reference gap summary if available
+Write `data/experiments/pass46f_source_selection.{json,md}`.
+
+Part C — Search-calibrated scoring dataset
+Create `scripts/build_pass46f_turn_label_dataset.py`.
+From Pass-46C traces and Pass-46E oracle:
+- collect ACTIVE-seat decision frames only
+- ignore unsupported/failed oracle frames
+- use Search oracle one-step outcomes as `assumption_based_hidden_state` labels
+- generate interpretable per-option features from 46D primitives:
+  action family, select context, setup/search/discard/attach summaries, visible board counts, hand/deck/prize counts, whether action changes visible objective fields, whether it advances board/energy/search/attack state
+- never infer exact damage/lethal/missed-KO/Boss-gust/spread/best-action
+- never use hidden opponent hand contents
+Write a compact dataset artifact:
+`data/experiments/pass46f_turn_label_dataset.{json,md}`.
+This is for calibration only, not training a black-box model.
+
+Part D — Interpretable scorer calibration
+Create `scripts/build_pass46f_score_profile.py`.
+Build an interpretable score profile, not a black-box model. Acceptable approaches:
+- small deterministic grid search over weights
+- hand-coded profile with automatic sanity checks
+- simple linear scoring table serialized as JSON
+
+Target:
+- improve agreement with Search-oracle one-step labels and/or reference chosen-action top-rank on the calibration frames
+- keep every weight/action family explainable
+- no deck-specific card IDs unless derived from the selected source deck and recorded as such
+- no claims of optimal play
+
+Write:
+- `data/experiments/pass46f_score_profile.json`
+- `data/experiments/pass46f_score_profile.md`
+Include calibration metrics versus baseline generic_progress_v0 from Pass 46E.
+
+Part E — Build local-only cg_typed candidate pilot
+Create `scripts/build_pass46f_candidate.py`.
+Build one tarball under `data/submissions/candidates_pass46f/`, e.g.
+`cg_typed_<source_family>_turnplanner_v0.tar.gz`.
+
+Candidate requirements:
+- top-level `main.py`, `deck.csv`, `cg/`
+- deck.csv exactly copied from selected source
+- original owned `main.py`; no public reference code copied
+- imports cg SDK and uses typed observation decode
+- fast hot-path scorer using the score profile from Part D embedded as constants or generated code
+- no broad online Search in the candidate hot path
+- may include a tiny optional guarded online Search only if it is disabled by default and never required for legality
+- never-raise fallback that returns legal unique in-range indices satisfying min/max
+- provenance comments: owned candidate, source parent internal, public_reference=false, no_upload=true
+
+Validate tarball shape and hashes.
+Write `data/experiments/pass46f_candidate_build.{json,md}`.
+
+Part F — Validator and lane separation
+Create `scripts/build_pass46f_candidate_validation.py`.
+Verify:
+- cg_typed validator accepts
+- stdlib tarball/entrypoint validators reject for the expected reasons and are byte-unchanged
+- import smoke resolves agent
+- deck-return works for obs.select=None
+- malformed obs never raises and returns a legal fallback when possible
+- no reference-code hash match
+Write `data/experiments/pass46f_candidate_validation.{json,md}`.
+
+Part G — Local smoke / legality / non-inertness
+Create `scripts/run_pass46f_candidate_smoke.py`.
+Run local subprocess-isolated smoke games:
+- self mirror, both seats
+- source parent, both seats
+- best internal water/control anchor, both seats
+- at least two public references, both seats
+Record errors/timeouts/import failures/invalids.
+Also run a decision-trace audit:
+- candidate vs source parent on live frames
+- changed decision rate
+- fallback rate
+- illegal refinement count
+- uncaught exceptions
+Write:
+- `data/experiments/pass46f_candidate_smoke.{json,md}`
+- `data/experiments/pass46f_non_inertness.{json,md}`
+
+Part H — Local evaluation panel
+Create `scripts/run_pass46f_eval_panel.py`.
+Run a bounded local evaluation, resumable, no production:
+- parent H2H: at least 20 games, seat-balanced
+- internal anchors: water control, current internal leader, family peer if applicable
+- public references: all five references, at least 2 games/seat if budget allows
+- self-mirror noise control if parent-H2H looks promising
+
+Use Wilson CIs and Fisher/noise-control only where sample size supports it.
+No Kaggle strength claims.
+Write:
+- `data/experiments/pass46f_parent_h2h.{json,md}`
+- `data/experiments/pass46f_internal_anchor_eval.{json,md}`
+- `data/experiments/pass46f_public_reference_eval.{json,md}`
+- `data/experiments/pass46f_noise_control.{json,md}` if run.
+
+Part I — Strategy decision
+Create `scripts/build_pass46f_strategy_decision.py`.
+Decision states allowed:
+- `turnplanner_candidate_promising_local_only`
+- `turnplanner_candidate_not_promising`
+- `validation_failed`
+- `unsafe_stop`
+- `insufficient_evidence`
+
+Gates for promising:
+- safety preflight ok
+- candidate built and validators pass
+- smoke clean: no import/deck/timeouts/errors
+- non-inertness proven and illegal_refinements=0
+- parent H2H direction positive and not explained by self-mirror noise if tested
+- no public-reference parity claim unless actually proven, which is not expected
+- no prod registration/redeploy requested
+
+Write `data/experiments/pass46f_strategy_decision.{json,md}`.
+
+Part J — Events / ActiveGraph
+Emit only local no-upload summary events if this repo convention requires it, and only with distinct pass46f tags.
+Do NOT emit CandidatePromoted, SubmissionQueued, SubmissionUploaded, KaggleScoreUpdated.
+Do NOT write production Object Storage.
+If events are emitted, verify idempotency and all no_upload=true.
+Write `data/experiments/pass46f_events.{json,md}`.
+
+Part K — Tests
+Add `tests/test_pass46f_turnplanner_candidate.py` with at least 30 tests covering:
+- root immutability
+- safety preflight
+- source selection excludes public refs / special / retired
+- score profile deterministic and explainable
+- unsupported claims remain unsupported
+- candidate tarball shape
+- deck matches source exactly
+- cg_typed accepts, stdlib validators reject unchanged
+- no reference code copied
+- malformed obs never raises
+- fallback legal
+- smoke clean
+- non-inertness
+- eval artifacts and honest caveats
+- no forbidden events
+- no production mutation
+- no republish requirement
+Run relevant regression batches, not necessarily full `tests/` if full run OOM-kills. Record exact command(s).
+
+Part L — Report and docs
+Write `data/reports/pass46f_search_calibrated_turnplanner_candidate_report.md` with exactly 10 sections:
+1. Objective and safety
+2. Source selection
+3. Search-calibrated dataset
+4. Score profile
+5. Candidate build
+6. Validation and lane separation
+7. Smoke and non-inertness
+8. Local evaluation
+9. Tests / events / no-upload guarantees
+10. Verdict and next steps
+
+Update:
+- `docs/NEXT_STEPS.md`
+- `docs/PTCG_STRATEGY_CANVAS.md`
+- any report/site index used by prior passes
+
+Part M — Architect review
+Run the architect/code-review skill after all artifacts/tests are in place.
+Fix severe/medium findings unless the fix would violate the charter.
+Re-run affected tests.
+Record final review outcome in the report.
+
+Final response should include:
+- final decision state
+- selected source deck
+- candidate tarball path
+- validation/smoke status
+- parent H2H and public-reference status, with caveats
+- whether redeploy is required (expected: NO)
+- whether production was touched (expected: NO)
+- next recommendation
+
+Hard prohibitions:
+- no production Object Storage mutation
+- no production tick
+- no republish
+- no Kaggle upload/submit
+- no auto-submit
+- no CandidatePromoted / SubmissionQueued / SubmissionUploaded / KaggleScoreUpdated
+- no public reference as source/parent/candidate
+- no exact damage/lethal/missed-KO/Boss-gust/spread/best-action claims
+- no root main.py/deck.csv mutation

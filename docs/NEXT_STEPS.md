@@ -236,3 +236,13 @@ Detail: `data/reports/pass46d_turn_planning_primitives_report.md`;
 - Built never-raise, subprocess-isolated cg Search oracle (`search_oracle.py` + `_search_worker.py`); cg confined to the worker.
 - Calibrated vs Pass-46C traces: supported=147/160, exact_rate=0.65, mismatch_rate=0.0813.
 - Decision **search_oracle_ready_for_candidate_pilot** — fabricated hidden zones keep predictions diagnostic-grade; no candidate created. Next: seed revealed cards, add a full-state-replay path, improve setup/KO transitions.
+
+## Pass 46F — Search-calibrated fast turn-planner candidate pilot v0 (decision: insufficient_evidence)
+- Built ONE owned `cg_typed` candidate (`cg_typed_water_anti_disruption_searchcal_v1`, sha `f58048a0…`) whose **fast** hot-path scorer is calibrated **offline** to the Pass-46E Search oracle — **no online Search in the live hot path**. Deck byte-copied from internal parent `league_water_anti_disruption_pivot_v1` (policy-only change).
+- **Scorer = single source of truth:** pure `src/ptcg_activegraph/analysis/turn_scorer.py` + JSON profile `data/experiments/pass46f_score_profile.json` (`search_calibrated_v0`); the candidate `main.py` **inlines** a byte-identical, behaviorally-identical copy (parity test passes).
+- **Calibration:** robust-median per-family weights (attach 1.5 > attack 0.975 > ability 0.6 > play 0.4 > select 0.3 > end_turn −0.5); in-sample median lift +8.0, top-1 agreement 0.686 over 51 frames (NOT a win-rate claim).
+- **Safety/runnable/non-inert:** Part-A preflight `all_ok`; smoke 9/9 clean; non-inertness `non_inert_and_safe` (58.1% divergence over 43 parent frames, 0 illegal / 0 fallback / 0 exceptions). References stay benchmark-only (0/12, never source/parent/candidate).
+- **Decision `insufficient_evidence`:** parent H2H 0.55 [0.342, 0.742] n=20, seats 0.40/0.70 (not both winning), self-mirror Fisher inconclusive → no resolvable edge. No promotion, no upload. Next: raise H2H to n≥60 seat-balanced + richer oracle labels before any edge claim.
+- **Tests:** 40 Pass-46F tests + pass41–46e regression green; no Pass-46F script uploads, promotes, ticks, mutates root, or emits a forbidden event.
+
+Detail: `data/reports/pass46f_search_calibrated_turnplanner_candidate_report.md`; `data/experiments/pass46f_*`.

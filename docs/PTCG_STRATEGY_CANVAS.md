@@ -185,3 +185,10 @@ Detail: `data/reports/pass46d_turn_planning_primitives_report.md`;
 ## Pass 46E (cg Search oracle v0) — decision: search_oracle_ready_for_candidate_pilot
 - A read-only one-step lookahead over real frames now exists, honestly labelled `assumption_based_hidden_state` / `one_step_score_rank under assumption`. It is calibrated, not trusted: ~92% of frames yield a supported prediction, 0.0813 decisive mismatch.
 - Strategic read: lookahead is feasible but hidden-state fidelity (not the API) is the bottleneck. Treat as analysis tooling until exact-replay + card-reveal seeding land.
+
+## Pass 46F — search-calibrated fast turn-planner candidate (LOCAL-ONLY, NOT Kaggle) — decision: insufficient_evidence
+- **Strategic bet:** keep the expensive Pass-46E Search oracle **offline** and distill it into a cheap, interpretable per-family scorer the live policy can run in the hot path. Scorer is a single pure module + JSON profile, inlined byte-identically into the candidate (parity-verified) — so the same code is testable in-repo and shippable in the cg tarball.
+- **What the evidence says:** the policy is genuinely different (58.1% divergence) and never crashes, and the offline fit is strong in-sample (+8.0 median oracle lift). But live cabt games do **not** yet show an edge over the parent (0.55 [0.342, 0.742] n=20; asymmetric seats 0.40/0.70; Fisher inconclusive). Honest read: calibration quality (diagnostic-grade oracle, fabricated hidden zones) and sample size are the bottlenecks, not the architecture.
+- **Decision:** `insufficient_evidence` — safe, runnable, non-inert, but no resolvable gain. LOCAL-ONLY; references benchmark-only; no upload/promote/tick/republish. Promote the **pattern** (offline-oracle → fast scorer) only once n≥60 seat-balanced H2H + richer-label calibration clear the Wilson+Fisher gate.
+
+Detail: `data/reports/pass46f_search_calibrated_turnplanner_candidate_report.md`; `data/experiments/pass46f_*`.
