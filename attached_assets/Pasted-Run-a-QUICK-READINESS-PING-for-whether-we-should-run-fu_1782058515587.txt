@@ -1,0 +1,88 @@
+Run a QUICK READINESS PING for whether we should run full Pass 47.
+
+This is not a full pass. Do not create a pass report. Do not update docs, site, tests, memory, NEXT_STEPS, strategy reports, or repo artifacts unless there is already a dedicated quick-check script and it needs a tiny bug fix. Prefer chat-only output.
+
+Scope:
+READ-ONLY. No production mutation. No manual tick. No lifecycle apply. No CandidateStatusChanged. No promotion. No candidate generation. No deck/policy mutation. No cg_typed work. No dashboard/export work. No Kaggle upload/submit/auto-submit. Do not start the root Start application workflow; it is the frozen Kaggle entrypoint and should remain not-started.
+
+Goal:
+Tell me whether it is worth running full Pass 47 now, or whether the daemon should keep soaking.
+
+Targets:
+- generated_diamond_diamondtoolbox_eratio_v1
+- generated_dragapult_leaguedragapul_bdens_v1
+- generated_lightning_monolightningm_dsratio_v1
+
+Use production Object Storage, prefix tournament/v0, but only fast reads:
+- events.jsonl
+- candidate_pool.json
+- storage_manifest.json
+- projections/scheduler_queue.json if useful
+Avoid bulk-reading games/*.json.gz sidecars.
+
+Checks:
+1. Production liveness:
+   - ledger readable
+   - manifest event_count == ledger length
+   - no no_upload violations
+   - no forbidden events: SubmissionQueued, SubmissionUploaded, KaggleScoreUpdated, CandidatePromoted
+   - latest completed tournament tick age
+   - ticks started == ticks finished
+   - games scheduled == started == finished
+   - invalid/error/timeout counts and hard-fail rate
+
+2. Target readiness table:
+   For each target, compute from production GameFinished events:
+   - status in production pool
+   - total games
+   - decisive games
+   - W/L/D
+   - win rate
+   - Wilson 95% lower/upper if helper exists
+   - parent-H2H games and decisive parent-H2H
+   - anchor games and decisive anchor games
+   - weaker-seat count or seat balance if available
+   - invalid/error/timeout hard failures
+   - remaining distance to locked Promotion Gate v1 activation minima:
+     total >= 40
+     decisive >= 30
+     anchor games >= 10
+     anchor decisive >= 8
+     parent-H2H >= 20
+
+3. Scheduler sanity:
+   - all 3 targets still probation
+   - all 3 targets schedulable / present in worklist
+   - no public reference in main worklist
+   - no special_pilot_only / retired / quarantined / invalid candidate in worklist
+   - no protected demotion evidence
+
+4. Decide one of these exact states:
+   - SOAK_MORE
+   - RUN_PASS47_NOW
+   - HEALTH_BLOCKED
+
+Decision rules:
+- HEALTH_BLOCKED if production health is unsafe: manifest mismatch, forbidden events, no_upload violation, stale daemon, orphaned ticks, sidecar/ledger inconsistency detectable from manifest, public-reference leakage, scheduler leakage, or hard-fail rate above policy.
+- RUN_PASS47_NOW if at least one probation candidate is close enough to justify the full pass:
+  - total_remaining <= 10 AND
+  - decisive_remaining <= 8 AND
+  - parent_h2h_remaining <= 5 AND
+  - anchor_remaining <= 3
+  OR if any target already meets all sample-size minima.
+- Otherwise SOAK_MORE.
+
+If a target meets all sample-size minima, optionally run the real promotion gate in dry-run mode only. Do not apply. Report whether it is actionable.
+
+Output only a concise chat summary:
+1. READINESS: SOAK_MORE / RUN_PASS47_NOW / HEALTH_BLOCKED
+2. one-line reason
+3. latest tick age and total games
+4. compact table for the 3 targets:
+   candidate | total | decisive | W-L-D | parent_h2h | anchor | missing total/decisive/parent/anchor | hard_fail
+5. next action:
+   - if SOAK_MORE: “wait X more ticks / roughly Y hours”
+   - if RUN_PASS47_NOW: “run full Pass 47”
+   - if HEALTH_BLOCKED: “run ops/health repair prompt before Pass 47”
+
+Do not write a full report. Do not republish. Do not mutate production.
