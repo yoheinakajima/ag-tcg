@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ActiveGraph — Pass 44 Post-Republish Production Probation Registration (local diagnostics)</title>
+<title>ActiveGraph — Pass 45 Production Probation Soak + Promotion-Readiness Audit (local diagnostics)</title>
 <style>
  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;max-width:920px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
  h1{font-size:1.5rem} table{border-collapse:collapse;width:100%;margin:1rem 0}
@@ -9,6 +9,22 @@
  th{background:#f4f4f6} .caveat{background:#fff7e6;border:1px solid #f0c36d;padding:.7rem;border-radius:6px;font-size:.9rem;margin:.5rem 0}
  code{background:#f4f4f6;padding:.1rem .3rem;border-radius:3px}
 </style></head><body>
+<h1>ActiveGraph — Pass 45: Production Probation Soak + Promotion-Readiness Audit v0 (local diagnostics)</h1>
+<p class="caveat"><b>READ-ONLY / AUDIT / SOAK — NOT a Kaggle score, NOT a leaderboard, NOT a strength claim.</b> <b>NO</b> Kaggle upload/submit/auto-submit, <b>NO</b> <code>SubmissionQueued</code>/<code>SubmissionUploaded</code>/<code>KaggleScoreUpdated</code>/<code>CandidatePromoted</code>/<code>CandidateStatusChanged</code>, <b>NO</b> promotion, <b>NO</b> generation/deck-mutation/single-deck-opt/<code>cg_typed</code>, <b>NO</b> root <code>main.py</code>/<code>deck.csv</code> mutation, <b>NO</b> tarball deletion/overwrite, <b>NO</b> production mutation. The five public references stay <b>benchmark-only</b>.</p>
+<h2>Final decision: <code>probation_soak_continue</code></h2>
+<p>The deployed Scheduled Deployment is healthy and accruing placement evidence for the 3 Pass-42 probation candidates on its ~20-min cron, but every candidate is still far below the locked v1 sample-size minimums — so none is promotion-ready and the soak continues. Production was <b>not</b> mutated by any part of this pass.</p>
+<ul>
+ <li><b>Root/prod safe (STOP-GATE):</b> preflight <code>safe</code>, <code>stop_required=false</code> &middot; root <code>main.py</code>/<code>deck.csv</code> byte-identical to baseline via <b>fresh filecmp this pass</b> (not inherited/hardcoded) &middot; deployment runs <code>tournament_deployment_tick.py --production</code>, <code>auto_submit</code> falsy &middot; all five workflows intentionally <b>not started</b> &middot; prod health read-only green.</li>
+ <li><b>Scheduled-daemon soak / cadence:</b> prod ledger <b>3030</b> events, <b>52</b> ticks &middot; median gap <b>1202 s</b> (~20 min), staleness <b>~21.5 min</b> → daemon <b>live</b> &middot; <b>932</b> games (418 W / 502 L / 12 D), <b>0</b> invalid/timeout/error &middot; <code>soak_healthy=true</code>, manifest==ledger, no forbidden events, no tick executed.</li>
+ <li><b>Probation evidence:</b> all 3 in prod pool, <code>status=probation</code>, accruing &middot; diamond 3 games (0-3), dragapult 7 (3-4), lightning 8 (2-6) &middot; each is <b>&gt;20 decisive games and 17 parent-H2H games short</b> of the activate floor (total≥40, decisive≥30, H2H≥20) → <b>all <code>insufficient_evidence</code></b>, <code>any_promotion_ready=false</code>.</li>
+ <li><b>Failure / quarantine screen:</b> hard-fail rate <b>0.0</b>, 0 timeouts/errors &middot; <code>any_quarantine_warranted=false</code> &middot; honesty invariant: <code>decisive==0</code> alone <b>never</b> quarantines (needs complete / high-rate hard-failure evidence).</li>
+ <li><b>Promotion Gate v1 (DRY-RUN only):</b> local + prod → <b>0 actionable</b>, all 3 <code>insufficient_evidence</code> &middot; <code>apply_invoked=false</code>, <code>emitted_events=0</code>, production not mutated.</li>
+ <li><b>Scheduler/lifecycle:</b> <code>all_ok=true</code> &middot; deterministic worklist (50); schedulable 16 / registered 19; all 3 probation placed &middot; 0 public-ref / never-schedule in worklist; protected never demoted; no active-cap replacement; no retirement/promotion events.</li>
+ <li><b>Controlled-tick decision:</b> <code>skip_daemon_live</code> (staleness ~21.5 min &lt; 120-min stopped threshold) — no manual tick; the deployed daemon stays the single writer.</li>
+ <li><b>Tests/guarantees:</b> <b>26</b> Pass-45 tests + <code>pass36_45</code> regression (passes 36→45, 274 tests) <b>green</b> &middot; no Pass-45 script emits a forbidden/status-change event, deletes/overwrites a tarball, or starts the root workflow &middot; every part agrees production not mutated.</li>
+</ul>
+<p>Report: <code>data/reports/pass45_production_probation_soak_report.md</code> &middot; Readiness: <code>data/experiments/pass45_probation_readiness_table.md</code> &middot; Gate: <code>docs/PROMOTION_GATE_V1.md</code> &middot; Artifacts: <code>data/experiments/pass45_*</code>.</p>
+<hr>
 <h1>ActiveGraph — Pass 44: Post-Republish Production Probation Registration + Verification Bridge (local diagnostics)</h1>
 <p class="caveat"><b>Lifecycle plumbing + internal diagnostics — NOT a Kaggle score, NOT a leaderboard, NOT a strength claim.</b> <b>NO</b> Kaggle upload/submit/auto-submit, <b>NO</b> <code>SubmissionQueued</code>/<code>SubmissionUploaded</code>/<code>KaggleScoreUpdated</code>/<code>CandidatePromoted</code>, <b>NO</b> root <code>main.py</code>/<code>deck.csv</code> mutation, <b>NO</b> tarball deletion/overwrite, <b>NO</b> new candidate generation. The five public references stay <b>benchmark-only</b>.</p>
 <h2>Final decision: <code>production_probation_registered_promotion_gate_ready</code></h2>

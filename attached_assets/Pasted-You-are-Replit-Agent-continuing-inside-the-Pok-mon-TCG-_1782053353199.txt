@@ -1,0 +1,295 @@
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+We are now after Pass 44.
+
+Pass 44 final decision was:
+production_probation_registered_promotion_gate_ready
+
+The 3 Pass-42 generated candidates are registered in production Object Storage as status=probation, and a controlled runtime proof confirmed that the live production engine can resolve and run their tarballs. The Scheduled Deployment is already republished and running on the cron schedule. Do NOT redeploy unless a hard finding proves it is required.
+
+This is the next pass:
+
+PASS 45 — Production Probation Soak + Promotion Readiness Audit v0
+
+Scope:
+READ-ONLY / AUDIT / SOAK only, unless an explicit safety fix is required.
+
+Do NOT generate candidates.
+Do NOT mutate decklists.
+Do NOT build a new cg_typed candidate.
+Do NOT optimize any single deck.
+Do NOT upload/submit/queue to Kaggle.
+Do NOT promote anything.
+Do NOT apply CandidateStatusChanged.
+Do NOT start the root Start application workflow.
+Do NOT run a full manual production tick unless the pass explicitly determines the cron has stopped and explains why a small controlled tick is safe.
+
+The root Start application workflow is the frozen Kaggle entrypoint and should remain not-started.
+
+Goal:
+Determine whether the production daemon is successfully accruing placement evidence for the 3 registered Pass-42 probation candidates, and whether any candidate is ready for Promotion Gate action. This pass should normally end with one of:
+
+1. probation_soak_continue
+2. promotion_review_ready_no_apply
+3. probation_runtime_issue_found
+4. blocked_safety_failure
+
+Expected likely decision:
+probation_soak_continue
+
+PART A — Root / production safety preflight
+Run hard safety checks before any analysis:
+
+1. root main.py and deck.csv byte-identical to data/baselines/v1_kaggle_349_8.
+2. .replit deployment unchanged:
+   - deploymentTarget=scheduled
+   - run uses scripts/tournament_deployment_tick.py
+   - run includes --production
+   - run uses replit_app_storage
+   - run is not root main.py
+3. auto_submit false.
+4. production Object Storage reachable.
+5. production health check has zero hard failures, sample-size warnings allowed.
+6. no SubmissionQueued / SubmissionUploaded / KaggleScoreUpdated / CandidatePromoted events in the relevant new scope.
+7. public references absent from production candidate pool, scheduler, promotion set, and mutation lineage.
+8. Pass-42 probation candidate tarballs exist locally and match manifest.
+9. Start application workflow not-started is expected.
+
+Deliver:
+- data/experiments/pass45_soak_safety_preflight.{json,md}
+
+If any hard check fails, STOP.
+
+PART B — Production state pull and tick-cadence audit
+Pull production Object Storage read-only.
+
+Audit scheduled daemon activity since Pass 44:
+- number of ticks after Pass 44 registration,
+- tick timestamps,
+- games played per tick,
+- lease-held graceful skips, if any,
+- tick failures, if any,
+- whether tick cadence matches expected 20-minute schedule closely enough,
+- whether the daemon is making forward progress,
+- whether all new GameFinished events have no_upload=true,
+- whether sidecars exist and sha match,
+- manifest event_count == ledger length.
+
+Do not use spacing >= lease TTL as a scheduled-run detector; the cadence is every 20 minutes and lease TTL is 30 minutes. Use run signature / deployment tick metadata / production run records.
+
+Deliver:
+- data/experiments/pass45_scheduled_daemon_soak_audit.{json,md}
+
+PART C — Probation candidate evidence audit
+For the 3 Pass-42 probation candidates:
+
+- generated_diamond_diamondtoolbox_eratio_v1
+- generated_dragapult_leaguedragapul_bdens_v1
+- generated_lightning_monolightningm_dsratio_v1
+
+Compute evidence from production ledger only:
+
+Per candidate:
+- status from CandidatePool.from_events,
+- status from candidate_pool.json,
+- total games,
+- decisive games,
+- wins/losses/draws,
+- invalid/error/timeout counts,
+- hard-fail rate,
+- seat split and weaker-seat rate,
+- games vs parent,
+- games vs portfolio anchors,
+- games vs family peers,
+- games vs family champion if applicable,
+- games vs water/live controls,
+- Wilson CI for aggregate decisive win rate,
+- Wilson CI for parent H2H if enough data,
+- anchor non-inferiority status,
+- whether deck-delta evidence exists,
+- whether non-inertness evidence exists or is required,
+- which Promotion Gate v1 thresholds are satisfied,
+- which Promotion Gate v1 thresholds are still blockers.
+
+Be explicit if the scheduler has not yet given them enough placement games.
+
+Deliver:
+- data/experiments/pass45_probation_evidence_audit.{json,md}
+
+PART D — Runtime failure / quarantine screen
+Run a conservative failure screen for all probation candidates.
+
+Quarantine should NOT be applied in this pass. This is read-only.
+
+Detect and report:
+- repeated missing tarball,
+- import failure,
+- validation failure,
+- invalid game,
+- timeout game,
+- divergent sidecar sha,
+- candidate producing illegal actions,
+- all-games-hard-fail pattern,
+- hard-fail-rate pattern over adequate N.
+
+If a candidate meets the quarantine evidence threshold, report:
+quarantine_recommended_no_apply
+
+Do not emit CandidateStatusChanged.
+
+Deliver:
+- data/experiments/pass45_probation_failure_screen.{json,md}
+
+PART E — Promotion Gate v1 dry-run only
+Run the Promotion Gate v1 dry-run against production evidence.
+
+Do NOT run --apply.
+
+Expected likely outcome:
+all 3 probation candidates remain insufficient_evidence.
+
+For each candidate, include:
+- recommended action,
+- all unmet gates,
+- all satisfied gates,
+- parent H2H result if available,
+- anchor result if available,
+- whether raw aggregate win rate is misleading,
+- whether a direct H2H requirement blocks promotion,
+- whether sample-size minimums block promotion.
+
+If a candidate surprisingly clears every gate, do NOT apply; produce:
+promotion_review_ready_no_apply
+and explain the exact CandidateStatusChanged that would be emitted only after human approval.
+
+Deliver:
+- data/experiments/pass45_promotion_gate_prod_dry_run.{json,md}
+
+PART F — Scheduler/lifecycle consistency audit
+Verify the production scheduler after some soak:
+
+1. all 3 probation candidates are still schedulable.
+2. all 3 appear in the worklist unless already saturated by placement quotas.
+3. no public reference appears in the main queue.
+4. no special_pilot_only / retired / quarantined / invalid candidate is scheduled.
+5. protected statuses remain protected.
+6. held probe remains held.
+7. family champions remain family champions.
+8. scheduler deterministic across two builds.
+9. active cap not impacted by probation entries.
+10. worklist priority for probation is sensible: placement / anchor / parent-child evidence before top-bracket noise.
+
+Deliver:
+- data/experiments/pass45_scheduler_lifecycle_soak_audit.{json,md}
+
+PART G — Optional controlled tick decision
+Default: do NOT manually tick.
+
+Only consider a tiny controlled production tick if:
+- no scheduled daemon tick has occurred since Pass 44,
+- no active lease is held,
+- production health is otherwise green,
+- the small tick is needed to distinguish "cron stopped" from "no data yet."
+
+If run, use a very small bounded command, e.g.
+python scripts/tournament_deployment_tick.py --max-games 1 --max-seconds 120 --storage-backend replit_app_storage --production
+
+But prefer read-only if the cron is already running.
+
+Deliver:
+- data/experiments/pass45_optional_controlled_tick_decision.{json,md}
+- If skipped, explain why.
+- If run, verify no upload/submit/promotion/root/tarball mutation and sidecar sha integrity.
+
+PART H — Projection/reporting update
+Rebuild production-derived local projections read-only from pulled state.
+
+Write a probation-focused markdown summary:
+- data/tournament/projections/probation_readiness.md if projection framework supports it, or
+- data/experiments/pass45_probation_readiness_table.md
+
+Include:
+- candidate,
+- family,
+- parent,
+- games,
+- parent H2H,
+- anchor games,
+- hard-fail rate,
+- promotion action,
+- blockers,
+- next needed evidence.
+
+PART I — Tests
+Add tests/test_pass45_probation_soak.py.
+
+Minimum coverage:
+1. root unchanged.
+2. production health zero hard failures in artifact.
+3. 3 probation candidates present in production pool.
+4. 3 probation candidates status=probation.
+5. no public reference leakage.
+6. no forbidden upload/submit/promotion event.
+7. manifest event_count == ledger length.
+8. all finished games have sidecars or hard warning in local-only mode.
+9. promotion gate dry-run emits no status changes.
+10. promotion apply is not run.
+11. insufficient_evidence remains insufficient if sample thresholds unmet.
+12. quarantine screen is read-only.
+13. scheduler deterministic.
+14. never-schedule statuses absent from worklist.
+15. probation candidates schedulable.
+16. optional tick decision is justified.
+17. report contains no Kaggle strength claim.
+18. pass36–45 regression green.
+
+PART J — Report/docs
+Write exact 10-section report:
+data/reports/pass45_production_probation_soak_report.md
+
+Sections:
+1. Root and production safety
+2. Scheduled daemon soak status
+3. Probation evidence by candidate
+4. Runtime failure / quarantine screen
+5. Promotion Gate v1 dry-run
+6. Scheduler/lifecycle consistency
+7. Optional controlled tick decision
+8. Tests / no-upload guarantees
+9. Operator notes
+10. Verdict and next recommendation
+
+Update:
+- data/reports/activegraph_strategy_report.md
+- docs/NEXT_STEPS.md
+- docs/PTCG_STRATEGY_CANVAS.md
+- data/site/index.html
+- docs/REPLIT_SCHEDULED_DEPLOYMENT_RUNBOOK.md only if operational instructions change.
+
+PART K — Architect review
+Run architect review before final.
+
+Ask specifically:
+- Are we accidentally applying promotion/status marks in a read-only soak pass?
+- Is the Promotion Gate dry-run using production evidence only?
+- Are the sample-size and H2H blockers honest?
+- Are public references excluded from the main pool/scheduler/promotion set?
+- Are the three probation candidates actually getting scheduled?
+- Is any runtime failure severe enough to recommend quarantine later?
+- Is any manual tick unnecessary or risky?
+- Is there any reason to redeploy now?
+- Is any Kaggle upload/submit/promotion path reachable?
+
+Fix real issues and add regression tests.
+
+FINAL DECISION
+One of:
+1. probation_soak_continue
+2. promotion_review_ready_no_apply
+3. probation_runtime_issue_found
+4. blocked_safety_failure
+
+Expected likely result:
+probation_soak_continue
+
+Do not generate, optimize, promote, upload, or redeploy. This is a production soak and promotion-readiness audit only.

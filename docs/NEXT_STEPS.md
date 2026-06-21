@@ -3,7 +3,28 @@
 Prioritized roadmap from this first version toward a competitive, well-documented
 submission.
 
-## Pass 44 — post-republish production probation registration (current state)
+## Pass 45 — production probation soak + promotion-readiness audit (current state)
+
+> READ-ONLY / AUDIT / SOAK. NO Kaggle upload/submit/auto-submit, NO queue/promotion/
+> status-change events, NO generation/deck-mutation/single-deck-opt/cg_typed, NO
+> root/tarball mutation, NO production mutation.
+
+- **Status: `probation_soak_continue`.** The deployed Scheduled Deployment is healthy
+  and accruing placement evidence for the 3 Pass-42 probation candidates on its ~20-min
+  cron (prod ledger 3030 events, 52 ticks, 932 games, 418 W / 502 L / 12 D, 0%
+  hard-fail rate, manifest==ledger). All 3 are registered, schedulable, and gaining
+  games (diamond 0-3, dragapult 3-4, lightning 2-6 decisive).
+- **Promotion readiness:** none ready. Each candidate is >20 decisive games and 17
+  parent-H2H games short of the locked v1 activate floor (total≥40, decisive≥30,
+  H2H≥20) → all `insufficient_evidence`. The promotion gate ran **dry-run only** (0
+  actionable, no apply). No quarantine warranted (hard-fail rate 0; `decisive==0` alone
+  never quarantines).
+- **Next:** let the daemon keep accruing placement / parent-H2H games on its cron, then
+  re-run this readiness audit + gate. Only once a candidate approaches the sample-size /
+  H2H / anchor minimums can activation be considered (still gated, still no Kaggle
+  upload). See `data/reports/pass45_production_probation_soak_report.md`.
+
+## Pass 44 — post-republish production probation registration (superseded by Pass 45)
 
 > Internal diagnostics + lifecycle plumbing only. NO Kaggle upload/submit/auto-submit,
 > NO queue/promotion events, NO root/tarball mutation, NO new candidates.
