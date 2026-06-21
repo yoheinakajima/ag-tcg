@@ -173,3 +173,15 @@ Kaggle strength claim;** unsupported claims (exact damage / lethal / missed-KO /
 Detail: `data/reports/pass46d_turn_planning_primitives_report.md`;
 `docs/TURN_PLANNING_PRIMITIVES_V0.md`;
 `docs/TURN_PLANNING_CANDIDATE_INTEGRATION_PLAN.md`; `data/experiments/pass46d_*`.
+
+## Pass 46E (cg Search oracle v0) — decision: search_oracle_partial_diagnostic_only
+- A read-only one-step lookahead over real frames now exists, honestly labelled `assumption_based_hidden_state` / `one_step_score_rank under assumption`. It is calibrated, not trusted: ~79% of frames yield a supported prediction, 0.2125 decisive mismatch.
+- Strategic read: lookahead is feasible but hidden-state fidelity (not the API) is the bottleneck. Treat as analysis tooling until exact-replay + card-reveal seeding land.
+
+## Pass 46E (cg Search oracle v0) — decision: search_oracle_ready_for_candidate_pilot
+- A read-only one-step lookahead over real frames now exists, honestly labelled `assumption_based_hidden_state` / `one_step_score_rank under assumption`. It is calibrated, not trusted: ~91% of frames yield a supported prediction, 0.0938 decisive mismatch.
+- Strategic read: lookahead is feasible but hidden-state fidelity (not the API) is the bottleneck. Treat as analysis tooling until exact-replay + card-reveal seeding land.
+
+## Pass 46E (cg Search oracle v0) — decision: search_oracle_ready_for_candidate_pilot
+- A read-only one-step lookahead over real frames now exists, honestly labelled `assumption_based_hidden_state` / `one_step_score_rank under assumption`. It is calibrated, not trusted: ~92% of frames yield a supported prediction, 0.0813 decisive mismatch.
+- Strategic read: lookahead is feasible but hidden-state fidelity (not the API) is the bottleneck. Treat as analysis tooling until exact-replay + card-reveal seeding land.

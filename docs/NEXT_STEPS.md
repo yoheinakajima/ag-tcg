@@ -221,3 +221,18 @@ explicitly unsupported._
 Detail: `data/reports/pass46d_turn_planning_primitives_report.md`;
 `docs/TURN_PLANNING_PRIMITIVES_V0.md`;
 `docs/TURN_PLANNING_CANDIDATE_INTEGRATION_PLAN.md`; `data/experiments/pass46d_*`.
+
+## Pass 46E — cg Search Outcome Oracle + one-step planner v0 (decision: search_oracle_partial_diagnostic_only)
+- Built never-raise, subprocess-isolated cg Search oracle (`search_oracle.py` + `_search_worker.py`); cg confined to the worker.
+- Calibrated vs Pass-46C traces: supported=126/160, exact_rate=0.425, mismatch_rate=0.2125.
+- Decision **search_oracle_partial_diagnostic_only** — fabricated hidden zones keep predictions diagnostic-grade; no candidate created. Next: seed revealed cards, add a full-state-replay path, improve setup/KO transitions.
+
+## Pass 46E — cg Search Outcome Oracle + one-step planner v0 (decision: search_oracle_ready_for_candidate_pilot)
+- Built never-raise, subprocess-isolated cg Search oracle (`search_oracle.py` + `_search_worker.py`); cg confined to the worker.
+- Calibrated vs Pass-46C traces: supported=145/160, exact_rate=0.6375, mismatch_rate=0.0938.
+- Decision **search_oracle_ready_for_candidate_pilot** — fabricated hidden zones keep predictions diagnostic-grade; no candidate created. Next: seed revealed cards, add a full-state-replay path, improve setup/KO transitions.
+
+## Pass 46E — cg Search Outcome Oracle + one-step planner v0 (decision: search_oracle_ready_for_candidate_pilot)
+- Built never-raise, subprocess-isolated cg Search oracle (`search_oracle.py` + `_search_worker.py`); cg confined to the worker.
+- Calibrated vs Pass-46C traces: supported=147/160, exact_rate=0.65, mismatch_rate=0.0813.
+- Decision **search_oracle_ready_for_candidate_pilot** — fabricated hidden zones keep predictions diagnostic-grade; no candidate created. Next: seed revealed cards, add a full-state-replay path, improve setup/KO transitions.

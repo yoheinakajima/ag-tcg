@@ -1,0 +1,298 @@
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+IMPORTANT STRATEGIC CONTEXT
+We are NOT running Pass 47 yet. Pass 47 is promotion-readiness and must wait until the production probation candidates approach the locked v1 thresholds. Production is currently soaking correctly.
+
+This pass is a LOCAL gameplay-infrastructure pass to close the public-reference gap. The public references beat our candidates because they do real typed turn planning. We have now completed:
+- Pass 40: public references + cg_typed lane.
+- Pass 46B: reference-gap diagnostic.
+- Pass 46C: frame-persisting diagnostic lane.
+- Pass 46D: pure turn-planning primitives.
+
+Now build the next reusable layer: a cg Search API outcome oracle and one-step planner diagnostic.
+
+PASS 46E — cg Search Outcome Oracle + One-Step Turn Planner v0
+
+Scope:
+LOCAL / READ-ONLY / DIAGNOSTIC / GAMEPLAY-INFRASTRUCTURE ONLY.
+No production mutation.
+No Object Storage write.
+No scheduled tick.
+No candidate generation.
+No deck mutation.
+No policy mutation.
+No candidate admission.
+No lifecycle/status apply.
+No promotion.
+No Kaggle upload/submit/auto-submit.
+No republish.
+No public-reference code copying.
+The root Start application workflow must remain not-started; it is the frozen Kaggle entrypoint.
+
+Primary objective:
+Build a reusable, never-raise, subprocess-isolated wrapper around the cg Search API that can evaluate the immediate consequence of legal actions from trace/replay frames, and calibrate it against Pass-46C full traces. This should prepare us for a later serious cg_typed pilot, but this pass itself must not create a candidate.
+
+Key principle:
+Do not fabricate exact-damage/lethal/missed-KO claims. The Search API may allow exact one-step outcomes under certain state-completeness assumptions, but the pass must explicitly classify evidence as:
+- exact_full_state_replay: calibrated against complete trace/full state and matches next frame/log delta.
+- assumption_based_hidden_state: uses observed state plus hidden-zone assumptions; useful but not exact.
+- unsupported_or_failed: failed, timed out, mismatched, or cannot be trusted.
+
+Do not claim “best action” unless it is explicitly scoped as “best under this one-step scoring function and this search-state assumption,” never as globally optimal.
+
+Parts to complete:
+
+A. Safety stop-gate
+- Reuse the Pass-46D style safety gate.
+- Freshly verify root main.py and deck.csv byte-identical to data/baselines/v1_kaggle_349_8.
+- Confirm .replit deployment still points to scripts/tournament_deployment_tick.py with --production and replit_app_storage, not root main.py.
+- Confirm auto_submit false/falsy.
+- Confirm no forbidden events in local/prod ledgers in scope:
+  SubmissionQueued, SubmissionUploaded, KaggleScoreUpdated, CandidatePromoted.
+- Confirm public references remain benchmark-only and absent from candidate_pool and scheduler worklist.
+- Confirm no production mutation will occur.
+- Artifact: data/experiments/pass46e_safety_preflight.{json,md}.
+- If any hard stop fails, stop the pass and write a clear report.
+
+B. cg Search API surface audit
+- Inspect the bundled cg SDK from data/reference_agents/_sdk/cg.
+- Confirm importability and exact available API names:
+  cg.api.search_begin, search_step, search_end, search_release if present;
+  cg.api.SearchState;
+  cg.game battle_start/battle_select/battle_finish if needed.
+- Record function signatures or callable existence without dumping binary contents.
+- Run all risky/native calls in a hard-timeout subprocess. Native cg/open_spiel can hang.
+- Artifact: data/experiments/pass46e_search_api_surface.{json,md}.
+
+C. Implement reusable oracle module
+Create:
+src/ptcg_activegraph/analysis/search_oracle.py
+
+The module must be pure from the repo perspective:
+- no ObjectStorage writes
+- no EventStore writes
+- no production ledger access
+- no candidate generation
+- no public reference policy imports
+- no root mutation
+- never-raise public APIs
+
+Suggested public dataclasses/functions:
+- SearchAssumption
+  fields such as mode, hidden_state_source, opponent_hand_strategy, opponent_deck_strategy, notes.
+- ActionOutcome
+  selected_indices, legal, error, timed_out, elapsed_s, pre_signature, post_signature, prize_delta, hp_delta_summary, zone_delta_summary, log_delta_summary, result_delta, assumption_mode.
+- OracleResult
+  ok, supported_level, outcome, warnings, unsupported_claims.
+- build_search_inputs_from_frame(frame, assumption_mode)
+- evaluate_action_once(frame, selected_indices, assumption_mode="trace_full_state_if_available", timeout_s=...)
+- rank_legal_actions_one_step(frame, scoring_profile="generic_progress_v0", max_actions=..., timeout_s=...)
+- unsupported_search_claims()
+
+Requirements:
+- Works with Pass-46C trace frames and the Pass-46B/46D DecisionFrame or raw frame objects where possible.
+- If a frame lacks enough state for search_begin, return unsupported_or_failed, not an exception.
+- If hidden zones are unavailable, use a clearly-labeled hidden-state assumption only if the API requires it; record the assumption in the output.
+- Always call search_end/search_release in subprocess cleanup where applicable.
+- Use subprocess isolation for actual search calls if native hangs are possible.
+- Never read opponent hand contents beyond visible/public fields; hidden-hand handling must be assumptions/counts only.
+- Never claim exact damage unless the post-state actually shows it and the calibration supports it.
+
+D. Trace replay calibration against Pass-46C full traces
+Build:
+scripts/build_pass46e_search_oracle_calibration.py
+
+Use the existing Pass-46C trace panel under data/experiments/pass46c_traces.
+For each trace, select a bounded set of decision frames:
+- attack frames when available
+- attach frames
+- search/to-hand frames
+- discard frames
+- main-phase mixed frames
+- low-choice/end frames
+
+For each selected frame:
+- take the actual selected action from the trace
+- ask the oracle to evaluate that action
+- compare predicted/returned one-step post-state signature to the actual next frame where possible:
+  active IDs/HP if visible
+  bench count
+  hand count
+  discard count
+  deck count
+  prize count
+  stadium count
+  energy/tool counts
+  result if changed
+  key log deltas if available
+- classify:
+  exact_match
+  partial_match
+  mismatch
+  unsupported
+  timed_out
+  error
+
+Produce aggregate calibration:
+- frames_attempted
+- frames_supported
+- exact/partial/mismatch counts
+- timeout/error counts
+- supported_level breakdown
+- by action family breakdown
+- by trace/matchup breakdown
+
+Artifacts:
+data/experiments/pass46e_search_oracle_calibration.{json,md}
+
+Hard honesty rule:
+If calibration is weak or mismatched, decision must be search_oracle_blocked_or_partial, not ready.
+
+E. One-step action ranking diagnostic
+Build:
+scripts/build_pass46e_one_step_planner_diagnostic.py
+
+Using only frames where the oracle calibration says the search result is supported enough:
+- enumerate legal single-option actions, respecting minCount/maxCount.
+- For multi-select contexts, start with actual selected action and small bounded combinations only; do not explode combinatorially.
+- Score outcomes with a transparent generic_progress_v0 function:
+  positive:
+    win/result improvement
+    prize count progress
+    opponent active HP reduction
+    own prize remaining reduction
+    energy attached to a Pokémon that can plausibly attack
+    search result that improves board development
+    avoiding pass/end when productive options exist
+  negative:
+    invalid/error/timeout
+    own prize loss
+    deckout risk
+    no-op/pass with productive alternatives
+    excessive discard of visible useful resources
+- This is NOT “best action”; call it one_step_score_rank under assumptions.
+
+Compare chosen action rank distribution for:
+- public references
+- internal candidates
+- internal parents/anchors
+from the Pass-46C panel.
+
+Artifacts:
+data/experiments/pass46e_one_step_planner_diagnostic.{json,md}
+
+F. Runtime budget audit
+We eventually need anything used in an agent to fit actTimeout.
+Measure:
+- median/p90/p99 time per evaluate_action_once
+- median/p90/p99 time per rank_legal_actions_one_step with small max_actions
+- timeout rate
+- recommended safe budget for a future agent
+- whether this is runtime-agent-safe now, diagnostic-only, or requires caching/pruning
+
+Artifact:
+data/experiments/pass46e_search_runtime_budget.{json,md}
+
+Do not force runtime readiness. If it is too slow, say so and keep it diagnostic-only.
+
+G. Fixtures and tests
+Create self-contained fixtures from Pass-46C frames for:
+- attack option
+- attach option
+- search/to-hand option
+- discard option
+- play option
+- low-choice/end option
+- unsupported/no-select or insufficient-state case
+- hidden-state-assumption case if applicable
+
+Create:
+tests/test_pass46e_search_oracle.py
+
+Minimum test coverage:
+1. root main/deck unchanged
+2. search_oracle imports are pure/no storage writes
+3. unsupported_search_claims includes exact_damage/lethal/missed_ko/best_action unless calibrated
+4. no public reference policy code imported
+5. surface audit finds cg Search API or records absence honestly
+6. evaluate_action_once never raises on malformed frames
+7. unsupported frames return unsupported, not exceptions
+8. calibrated actual action frames produce structured OracleResult
+9. all subprocess calls have timeout boundaries
+10. search cleanup is attempted
+11. no opponent hidden hand contents exposed
+12. one-step ranker respects legal option indices and min/max
+13. one-step ranker labels assumptions
+14. runtime budget artifact exists and has med/p90 stats or honest unsupported reason
+15. calibration artifact has exact/partial/mismatch/unsupported breakdown
+16. no production mutation flag in every artifact
+17. no forbidden events emitted
+18. report contains caveats: local-only, not Kaggle, no candidate, no best-action claim
+19. pass42–46e regression green or run in bounded batches if full suite OOMs
+
+H. Docs
+Write:
+docs/CG_SEARCH_ORACLE_V0.md
+
+Include:
+- supported vs unsupported claims
+- exact_full_state_replay vs assumption_based_hidden_state
+- how to use safely in future candidate pilots
+- why this does not yet imply public-reference parity
+- timeout/subprocess safety
+- no production/no-upload posture
+
+Update:
+docs/NEXT_STEPS.md
+docs/PTCG_STRATEGY_CANVAS.md
+data/reports/activegraph_strategy_report.md if that file is the current strategy rollup
+data/site/index.html or site source if current convention requires it
+
+I. Strategy decision
+Write:
+data/experiments/pass46e_strategy_decision.{json,md}
+
+Allowed final decisions:
+- search_oracle_ready_for_candidate_pilot
+- search_oracle_partial_diagnostic_only
+- search_oracle_blocked
+- safety_stop_required
+
+Decision gates:
+search_oracle_ready_for_candidate_pilot only if:
+- safety stop-gate passes
+- cg Search API exists and imports
+- calibration has meaningful supported frames
+- mismatch rate is acceptably low and honestly reported
+- runtime budget is not absurd for bounded future use OR clear pruning plan exists
+- no forbidden events
+- no production mutation
+- no public reference leakage
+- unsupported claims remain guarded
+
+If any of those fail, choose partial or blocked. Do not overclaim.
+
+J. Report
+Write a 10-section report:
+data/reports/pass46e_cg_search_oracle_report.md
+
+Suggested sections:
+1. Summary and decision
+2. Safety stop-gate
+3. cg Search API surface
+4. Oracle module design
+5. Calibration against Pass-46C traces
+6. One-step planner diagnostic
+7. Runtime budget
+8. Fixtures/tests/regression
+9. Unsupported claims and honesty caveats
+10. Next recommendation
+
+K. Architect review
+Run the architect/code review after implementation.
+Fix all severe and material medium issues.
+Do not weaken tests to pass.
+If architect finds a limitation, either fix it or explicitly downgrade the decision.
+
+Expected end state:
+A reusable, tested cg Search oracle exists, with an honest calibration report. No candidate is generated. Production keeps soaking. If the oracle is ready, the next pass will be a local-only candidate-pilot pass that builds one serious cg_typed turn-planning pilot using this oracle/primitives stack.
