@@ -36,6 +36,17 @@ pass necessarily breaks.
 - To tell pre-existing from self-inflicted: `git show HEAD:<shared file>` and check
   which pass's content it holds; tests for older passes than that were red before you.
 
+**Forward-compat applies only to SHARED artifacts; PASS-SPECIFIC ones are safe to strict-pin.**
+The "write loose/forward-compatible tests" rule is about the shared mutable files above. A
+pass's OWN `pass<NN>_*.json` evidence (e.g. `pass46k_edge_analysis.json`,
+`pass46k_strategy_decision.json`) is NOT shared — a later pass writes `pass<NN+1>_*.json` and
+never overwrites it. So a STRICT snapshot pinning *this* pass's exact rationale (e.g. "inconclusive
+SPECIFICALLY because triggered `spec_vs_spec` noise is dirty while practical/attribution/Fisher/
+min-gating are all green") is correct and durable, not brittle. Architect review will actively ask
+for such a snapshot to stop the decision->gate-state map from passing under the *wrong* reason.
+Keep BOTH: a forward-compatible generic ladder/map test (re-derives) AND a pass-specific snapshot
+test (pins the actual point-in-time evidence).
+
 **Site caveat — do NOT regenerate the shared site in a gameplay pass.**
 `scripts/build_report_site.py` (generic `write_site`) rebuilds `data/site/index.html`
 from events/runs ONLY and does NOT carry the accumulated per-pass narrative blocks +

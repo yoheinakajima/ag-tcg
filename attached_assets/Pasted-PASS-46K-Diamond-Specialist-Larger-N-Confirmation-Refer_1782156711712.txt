@@ -1,0 +1,263 @@
+PASS 46K — Diamond Specialist Larger-N Confirmation + Reference Gap Audit v0
+
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+Strategic context:
+Pass 46J produced the first credible local gameplay breakthrough: cg_typed_diamond_specialist_planner_v0 is a real deck-specific planner, not a flat scorer, and it beat its internal parent diamond_toolbox_diancie 32/43 = 0.744 with Wilson lower 0.598. It also beat the generic family-only floor 27/33 = 0.818, and Fisher increments over the 46H generic scorers were significant. However, public references were excluded from the decision, and the direct H2H vs the stronger generic option_value scorer was no_edge. This candidate is promising local-only, not production-ready.
+
+This is NOT Pass 47. Production keeps soaking. Do not redeploy.
+
+Scope:
+LOCAL-ONLY confirmation + reference-gap audit.
+No production Object Storage mutation.
+No production tick.
+No republish.
+No production candidate registration.
+No lifecycle/status apply.
+No promotion.
+No Kaggle upload/submit/auto-submit.
+No root main.py/deck.csv mutation.
+No existing tarball deletion/overwrite.
+No public reference as source/parent/candidate.
+Public references remain benchmark-only opponents.
+Start application remains not-started.
+
+Primary candidate:
+cg_typed_diamond_specialist_planner_v0 from Pass 46J.
+
+Primary questions:
+1. Does the specialist retain its parent edge at larger N?
+2. Does the specialist separate from the stronger generic option_value scorer at larger N?
+3. How far is the specialist from public reference parity?
+4. Which planner components drive wins/losses and should be improved next?
+
+Part A — Safety stop-gate
+Freshly verify:
+- root main.py and deck.csv byte-identical to data/baselines/v1_kaggle_349_8
+- .replit scheduled deployment unchanged; still runs tournament_deployment_tick.py --production with replit_app_storage
+- auto_submit false/falsy
+- no forbidden events in scope: CandidatePromoted, SubmissionQueued, SubmissionUploaded, KaggleScoreUpdated
+- public references absent from candidate pool and main scheduler worklist
+- Pass 46J candidate tarball and eval artifacts present
+- no production mutation path will run
+Write:
+data/experiments/pass46k_safety_preflight.{json,md}
+Stop if unsafe.
+
+Part B — Candidate artifact verification
+Verify existing Pass-46J tarball only; do not rebuild:
+- cg_typed_diamond_specialist_planner_v0
+
+Verify comparison tarballs:
+- diamond_toolbox_diancie parent
+- cg_typed_diamond_option_value_v1
+- cg_typed_diamond_family_only_floor_v1
+
+Confirm:
+- tarballs exist
+- recorded sha matches current file
+- top-level main.py + deck.csv + cg/ for cg_typed candidates
+- specialist deck.csv equals parent deck exactly
+- no public reference code/hash match
+- cg_typed validator accepts specialist
+- stdlib validators reject specialist for expected reasons and are byte-unchanged
+- no tarball overwritten
+Write:
+data/experiments/pass46k_artifact_check.{json,md}
+
+Part C — Pre-registered evaluation plan
+Create the plan before running games.
+
+Required panels:
+1. specialist_vs_parent
+   - continue from Pass 46J if safe, or start fresh with explicit accounting
+   - target at least 80 decisive total, seat-balanced
+   - minimum acceptable tranche: 60 decisive
+2. specialist_vs_generic_option_value
+   - target at least 80 decisive total, seat-balanced
+   - this is the strongest generic baseline and the previous weak spot
+3. specialist_vs_family_only_floor
+   - target at least 60 decisive total, seat-balanced
+   - attribution context
+4. specialist_vs_public_references
+   - all five public references if feasible
+   - at least 2 games per seat per reference; expand if budget allows
+   - benchmark-only, never a decision gate
+5. noise controls
+   - parent self-mirror and specialist self-mirror only if parent edge remains strong
+6. internal anchor context
+   - water control/internal leader optional, 20 games if budget allows
+
+Decision labels:
+- confirmed_edge: Wilson lower > 0.50 and both seats non-collapsed
+- directional_edge: point estimate >= 0.58 but Wilson lower <= 0.50
+- no_edge
+- seat_confounded
+- unsafe_invalid
+
+Write:
+data/experiments/pass46k_eval_plan.{json,md}
+
+Part D — Run local confirmation panel
+Implement or reuse a local, checkpointed, subprocess-isolated runner:
+scripts/run_pass46k_diamond_confirmation.py
+
+Requirements:
+- local only
+- no production Object Storage
+- no production EventStore writes
+- hard-timeout subprocess games
+- checkpoint/resume
+- never overwrite completed rows
+- write raw rows to data/experiments/pass46k_diamond_confirmation_games.jsonl
+- write summary after every tranche
+- do not regenerate candidate tarballs
+- record which rows are new vs carried from Pass 46J if reusing any data
+
+Run until:
+- core panels hit minimum acceptable tranche, or
+- tool budget requires a partial report.
+
+Write:
+data/experiments/pass46k_diamond_confirmation.{json,md}
+
+Part E — Edge analysis
+Analyze:
+- specialist_vs_parent
+- specialist_vs_generic_option_value
+- specialist_vs_family_only_floor
+- public reference context
+- optional noise controls
+- invalid/error/timeout counts
+- seat splits
+- Wilson 95% CIs
+- Fisher exact comparisons where appropriate
+
+Write:
+data/experiments/pass46k_edge_analysis.{json,md}
+
+Part F — Public reference gap audit
+Report public-reference performance separately:
+- per reference W/L/D
+- pooled result
+- seat split
+- Wilson CI
+- compare to prior benchmark baselines if available
+- no parity claim unless CI supports it, which is not expected
+
+Write:
+data/experiments/pass46k_public_reference_gap.{json,md}
+
+Part G — Planner failure/success trace sample
+Collect a bounded set of full traces from:
+- specialist wins vs parent
+- specialist losses vs parent
+- specialist games vs generic option_value
+- specialist games vs public references
+
+Use existing trace tooling if available.
+Sample 8–16 traces max.
+Analyze visible-only planner fields:
+- search_targets
+- setup_bench
+- safe_discard
+- attach_energy
+- attack/end behavior
+- fallback/unknown reasons
+- no exact damage/lethal/Boss/gust/spread/best-action claims
+
+Write:
+data/experiments/pass46k_planner_trace_diagnostic.{json,md}
+
+Part H — Strategy decision
+Allowed decisions:
+- diamond_specialist_confirmed_local_candidate
+- diamond_specialist_promising_needs_reference_work
+- diamond_specialist_inconclusive_needs_more_n
+- diamond_specialist_not_promising
+- validation_failed
+- safety_stop_required
+
+Decision rules:
+diamond_specialist_confirmed_local_candidate only if:
+- safety ok
+- artifact check ok
+- specialist_vs_parent confirmed_edge at larger N
+- specialist_vs_generic_option_value confirmed_edge or at least directional with favorable Fisher increment
+- noise controls clean if run
+- no hard failures
+- no seat collapse
+- public reference context honestly reported
+- no production registration/redeploy requested
+
+diamond_specialist_promising_needs_reference_work if:
+- parent edge remains confirmed
+- generic option_value edge remains inconclusive or only directional
+- public references still beat it
+
+Write:
+data/experiments/pass46k_strategy_decision.{json,md}
+
+Part I — Events
+Optional local summary events only if repo convention requires them.
+If emitted:
+- all no_upload=true
+- no CandidatePromoted
+- no SubmissionQueued
+- no SubmissionUploaded
+- no KaggleScoreUpdated
+- no production Object Storage
+Write:
+data/experiments/pass46k_events.{json,md}
+
+Part J — Tests
+Create tests/test_pass46k_diamond_confirmation.py with at least 36 tests:
+- root immutable
+- production untouched
+- no republish required
+- existing tarballs reused, not rebuilt
+- deck equals parent
+- cg_typed accepts / stdlib rejects unchanged
+- no reference code copied
+- eval plan pre-registered before results
+- confirmation games checkpoint exists
+- required panels present
+- Wilson/seat splits computed
+- public refs benchmark-only
+- trace diagnostic has unsupported-claim caveats
+- decision in allowed list
+- no forbidden events
+- no public reference candidate leakage
+- report caveats
+Run relevant regression batches.
+
+Part K — Report
+Write:
+data/reports/pass46k_diamond_specialist_confirmation_report.md
+
+Exactly 10 sections:
+1. Objective and safety
+2. Candidate artifact reuse
+3. Evaluation plan
+4. Larger-N parent/generic confirmation
+5. Edge analysis and noise controls
+6. Public reference gap
+7. Planner trace diagnostic
+8. Strategy decision
+9. Tests/events/no-upload guarantees
+10. Verdict and next recommendation
+
+Update NEXT_STEPS and PTCG_STRATEGY_CANVAS with caveated local-only status.
+Do not regenerate shared report site if prior memory says stale tests break.
+
+Part L — Architect review
+Run architect/code review.
+Fix severe and medium issues.
+Re-run affected tests.
+
+Expected outcomes:
+- If parent/generic confirmation succeeds but references still beat us: diamond_specialist_promising_needs_reference_work.
+- If parent and generic both confirm strongly and reference gap improves materially: diamond_specialist_confirmed_local_candidate.
+- If the signal disappears: diamond_specialist_not_promising or inconclusive.
+- Redeploy expected: NO.
+- Production touched expected: NO.
