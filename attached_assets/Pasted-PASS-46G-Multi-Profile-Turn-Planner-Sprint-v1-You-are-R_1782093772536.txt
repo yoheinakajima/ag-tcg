@@ -1,0 +1,252 @@
+PASS 46G — Multi-Profile Turn-Planner Sprint v1
+
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+Strategic context:
+Pass 46F proved the cg_typed fast-turnplanner candidate pipeline works, but the first candidate was insufficient_evidence: safe, non-inert, runnable, but no resolvable parent edge at n=20 and 0/12 versus public references. Do NOT deploy or register that candidate. We need to move faster locally by testing several better turn-planner profiles before anything enters production.
+
+This is NOT Pass 47. Production keeps soaking. No redeploy.
+
+Scope:
+LOCAL-ONLY gameplay-improvement sprint.
+No production Object Storage mutation.
+No production tick.
+No republish.
+No candidate registration into production.
+No lifecycle/status apply.
+No promotion.
+No Kaggle upload/submit/auto-submit.
+No root main.py/deck.csv mutation.
+No existing tarball deletion/overwrite.
+No public reference as source/parent/candidate.
+Public references remain benchmark-only opponents.
+Start application remains not-started.
+
+Goal:
+Build and evaluate a small batch of owned, local-only cg_typed fast-turnplanner candidates using the Pass-46D primitives and Pass-46E Search-oracle labels, improving over the shallow Pass-46F single-weight profile. The pass should discover whether any profile/source family is actually promising before we spend production ticks.
+
+High-level approach:
+Generate multiple local-only candidate variants from internal source decks, each with an original fast scorer. Search is used offline for calibration only; broad online Search must not be in the live hot path.
+
+Candidate budget:
+- Build at most 6 candidate variants.
+- At most 3 source families.
+- Prefer 2 variants per source family.
+- If time/budget is tight, use 4 candidates total.
+
+Suggested source families:
+1. Water — strongest internal family; use league_water_anti_disruption_pivot_v1 or league_water_core_reference as source.
+2. Lightning — simple mono-lightning/Miraidon deck; easier turn-planning surface.
+3. Optional: Dragapult or Diamond if budget permits.
+
+Do not use public references as sources. Do not mutate special_pilot_only decks.
+
+Part A — Safety stop-gate
+Fresh checks:
+- root main.py and deck.csv byte-identical to data/baselines/v1_kaggle_349_8
+- .replit deployment unchanged, scheduled tick still uses --production and replit_app_storage
+- auto_submit false/falsy
+- no forbidden events in scope: CandidatePromoted, SubmissionQueued, SubmissionUploaded, KaggleScoreUpdated
+- public references absent from candidate pool and main scheduler worklist
+- Pass 46D primitives and Pass 46E oracle artifacts present
+Write data/experiments/pass46g_safety_preflight.{json,md}
+Stop if unsafe.
+
+Part B — Source-family selection
+Create scripts/build_pass46g_source_selection.py.
+Select 2–3 internal source decks using deterministic evidence:
+- internal stability / enough games
+- simple enough for turn planning
+- public-reference gap exists
+- not retired/quarantined/special
+- not public reference
+Record excluded options and reasons.
+Write data/experiments/pass46g_source_selection.{json,md}
+
+Part C — Profile catalog design
+Create a small profile catalog, not a single profile. Each profile must be interpretable.
+
+Include at least these profile types:
+1. phase_aware_tempo_v1
+   - Different scoring by phase: setup, develop, attack-ready, recovery, late-game.
+   - Penalize end/pass when productive options exist.
+2. role_aware_energy_v1
+   - Stronger role-aware attach/search/discard logic.
+   - Prioritize active attacker only if it advances attack; otherwise develop backup attacker.
+3. optional balanced_control_v1 if using Water/Diamond
+   - More cautious draw/deckout/discard penalties.
+
+Each profile must explicitly list:
+- action-family weights
+- phase weights
+- role weights
+- deckout/draw safety
+- unsupported claims guard
+- no exact damage/lethal/Boss/gust/spread/best-action claims
+
+Write:
+- data/experiments/pass46g_profile_catalog.{json,md}
+
+Part D — Search-calibrated dataset reuse / expansion
+Reuse Pass-46F/46E labels where possible.
+If needed, add bounded local calibration frames from Pass-46C traces.
+Do not run huge calibration.
+For each profile, score the same calibration frames and compare:
+- oracle top-1 agreement
+- mean/median oracle score lift vs baseline generic_progress_v0
+- end/pass reduction on productive frames
+- attach/search/discard reasonability
+Write:
+- data/experiments/pass46g_profile_calibration.{json,md}
+
+Part E — Build local-only candidate variants
+Create scripts/build_pass46g_candidates.py.
+For each selected source × profile combination:
+- build cg_typed tarball under data/submissions/candidates_pass46g/
+- top-level main.py + deck.csv + cg/
+- deck.csv copied exactly from source
+- owned original main.py
+- no public reference code
+- fast hot-path scorer, no broad online Search
+- never-raise legal fallback
+- profile constants embedded
+- provenance: local-only, no_upload=true, public_reference=false, parent=internal source
+
+Do not overwrite existing candidate tarballs with different bytes.
+Write:
+- data/experiments/pass46g_candidate_build.{json,md}
+
+Part F — Validation and lane separation
+For every variant:
+- cg_typed validator accepts
+- stdlib validators reject for expected reasons and are byte-unchanged
+- import smoke resolves agent
+- malformed obs never raises
+- deck-return works
+- deck equals source exactly
+- no public reference hash/code match
+Write:
+- data/experiments/pass46g_candidate_validation.{json,md}
+
+Part G — Smoke and non-inertness screen
+For each variant, run a small local smoke:
+- self game
+- vs source parent both seats if possible
+- vs one internal anchor
+- vs one public reference
+Hard fail if import/deck/timeout/error.
+
+Then run non-inertness trace vs parent:
+- changed decision rate
+- fallback rate
+- illegal decisions
+- uncaught exceptions
+
+Only candidates with clean smoke + non-inertness continue to eval.
+Write:
+- data/experiments/pass46g_smoke_non_inertness.{json,md}
+
+Part H — Fast local evaluation tournament
+Run a bounded local panel, not production:
+For each surviving variant:
+- parent H2H, at least 10 games, seat-balanced
+- one or two internal anchors
+- at least two public references
+Use subprocess isolation and checkpoint/resume.
+If time allows, expand top 1–2 variants to n=20 parent H2H.
+
+Report:
+- parent win rate + Wilson CI
+- seat split
+- internal anchor result
+- public reference result
+- invalid/error/timeout
+- self-mirror/noise control only for candidates that look promising
+
+Write:
+- data/experiments/pass46g_eval_panel.{json,md}
+
+Part I — Selection / decision
+Allowed decisions:
+- turnplanner_profile_promising_local_only
+- no_profile_promising_continue_iteration
+- validation_failed
+- safety_stop_required
+
+A profile can be promising only if:
+- safety passes
+- validation passes
+- smoke clean
+- non-inertness with zero illegal decisions
+- parent H2H point estimate clearly positive and not one-seat-only
+- no hard failure
+- public-reference caveat remains honest
+
+Do not require public-reference parity yet, but report it.
+
+Write:
+- data/experiments/pass46g_strategy_decision.{json,md}
+
+Part J — Events
+Optional local summary events only if repo convention requires them.
+If emitted:
+- all no_upload=true
+- no CandidatePromoted
+- no SubmissionQueued
+- no SubmissionUploaded
+- no KaggleScoreUpdated
+- no production Object Storage
+Write:
+- data/experiments/pass46g_events.{json,md}
+
+Part K — Tests
+Create tests/test_pass46g_turnplanner_sprint.py with at least 35 tests:
+- root immutable
+- source selection excludes public/special/retired
+- profile catalog deterministic
+- unsupported claims remain guarded
+- candidate tarball shape
+- deck equals source
+- cg_typed accepts / stdlib rejects unchanged
+- no public reference code copied
+- malformed obs never raises
+- fallback legal
+- smoke clean for admitted eval candidates
+- non-inertness recorded
+- eval artifacts have caveats
+- no production mutation
+- no republish required
+- no forbidden events
+- no exact-damage/lethal/Boss/gust/spread/best-action claims
+Run relevant regression batches.
+
+Part L — Report
+Write data/reports/pass46g_multi_profile_turnplanner_sprint_report.md with exactly 10 sections:
+1. Objective and safety
+2. Source-family selection
+3. Profile catalog
+4. Calibration
+5. Candidate builds
+6. Validation and lane separation
+7. Smoke and non-inertness
+8. Local evaluation panel
+9. Tests/events/no-upload guarantees
+10. Verdict and next recommendation
+
+Update NEXT_STEPS, PTCG_STRATEGY_CANVAS, strategy report/site if consistent with recent pass conventions.
+
+Part M — Architect review
+Run architect/code review.
+Fix severe and medium issues.
+Re-run affected tests.
+
+Expected outcome:
+Probably no public-reference parity yet. We are looking for one locally promising profile with a clearer parent edge than Pass 46F. If none appears, report no_profile_promising_continue_iteration and identify which profile/source failed and why.
+
+Final answer should say:
+- whether any profile is promising
+- best source/profile if any
+- parent/internal/reference results
+- whether redeploy is required (expected: NO)
+- whether production was touched (expected: NO)
+- next recommendation

@@ -192,3 +192,11 @@ Detail: `data/reports/pass46d_turn_planning_primitives_report.md`;
 - **Decision:** `insufficient_evidence` — safe, runnable, non-inert, but no resolvable gain. LOCAL-ONLY; references benchmark-only; no upload/promote/tick/republish. Promote the **pattern** (offline-oracle → fast scorer) only once n≥60 seat-balanced H2H + richer-label calibration clear the Wilson+Fisher gate.
 
 Detail: `data/reports/pass46f_search_calibrated_turnplanner_candidate_report.md`; `data/experiments/pass46f_*`.
+
+## Pass 46G — multi-profile turn-planner sprint (LOCAL-ONLY, NOT Kaggle) — decision: no_profile_promising_continue_iteration
+- **Strategic bet:** generalise the 46F offline-oracle→fast-scorer pattern across multiple families and make the scorer **phase- and role-aware**, to see whether an interpretable profile produces a separable, attributable gameplay gain. Four candidates (water × diamond) × (phase, role) on a single pure V2 scorer, inlined byte-identically into each candidate (parity-verified).
+- **What the evidence says — the phase/role hypothesis is falsified at this fidelity.** Phase and role give **identical** offline fit; the role layer **equals the family-only floor** at the actual decision (top-1, 0.0% divergence); and in live games the phase profile is **indistinguishable from its own family-only sibling** (intra-family CI spans 0.5). The layer adds interpretability vocabulary but no separable signal.
+- **A real but unattributable transfer signal.** diamond `phase_aware_tempo` went 8/2 over its parent (vs 46F's 0/2) — encouraging, but Wilson_low 0.49 is not 95%-confident and the gain is the cg_typed **family-weighted scorer transfer**, not the phase/role profile. Below all public references (benchmark-only, expected).
+- **Decision:** `no_profile_promising_continue_iteration` — safe, runnable, non-inert, but no profile-attributable edge. LOCAL-ONLY; references benchmark-only; no upload/promote/tick/register/republish; all five workflows stayed not-started. Pivot next to **within-family per-option value features** (the cross-family phase layer is structurally top-1-inert), and confirm the diamond transfer at larger N before any edge claim.
+
+Detail: `data/reports/pass46g_multi_profile_turnplanner_sprint_report.md`; `data/experiments/pass46g_*`.

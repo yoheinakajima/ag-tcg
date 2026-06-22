@@ -246,3 +246,13 @@ Detail: `data/reports/pass46d_turn_planning_primitives_report.md`;
 - **Tests:** 40 Pass-46F tests + pass41–46e regression green; no Pass-46F script uploads, promotes, ticks, mutates root, or emits a forbidden event.
 
 Detail: `data/reports/pass46f_search_calibrated_turnplanner_candidate_report.md`; `data/experiments/pass46f_*`.
+
+## Pass 46G — Multi-profile turn-planner sprint v1 (LOCAL-ONLY, NOT Kaggle) — decision: no_profile_promising_continue_iteration
+- Built a SMALL BATCH of **four** owned `cg_typed` candidates (water × diamond) × (`phase_aware_tempo_v1`, `role_aware_energy_v1`) on a NEW pure scorer `src/ptcg_activegraph/analysis/turn_planner_profiles.py` (schema `pass46g_turn_scorer_v1`, owned `INLINE_SCORER_V2`); 46F `turn_scorer.py` untouched. Decks byte-copied from internal parents `league_water_anti_disruption_pivot_v1` / `diamond_toolbox_diancie` (policy-only). **No online Search in the live hot path.**
+- **Profiles measured offline vs the Pass-46E oracle:** phase & role both lift oracle top-1 to **0.814** (+4.0 median) over the 0.729 baseline — but **identically** to each other (first red flag).
+- **The phase/role layer is the thing that failed — twice.** Internal distinguishability: role == family-only floor at top-1 (0.0% divergence) in both families; phase moves the menu only in diamond (7.9%) not water (4.7%). In gameplay the intra-family phase-vs-role test spans 0.5 (6/4, [0.31,0.83]) → indistinguishable.
+- **Eval panel (56 games, 0 err/timeout):** `parent_h2h_edge_candidates_95=[]` — no candidate clears Wilson_low>0.5. diamond_phase posts **8/2** over its parent (Wilson [0.49,0.94], just misses) — a real improvement over 46F's 0/2, but a **family-weighted TRANSFER** signal, NOT a phase/role success. Below all public references (benchmark-only).
+- **Safety/runnable/non-inert:** Part-A preflight `all_ok`; smoke 8/8 clean; all four `non_inert_and_safe` (34–63% divergence, 0 illegal/fallback/exception). References stay benchmark-only (never source/parent/candidate, not pooled). No upload/promote/tick/pool-register/republish; 24 LOCAL `no_upload` events (clean, incl. report-site) + 1 benchmark.
+- **Decision `no_profile_promising_continue_iteration`.** Next: (1) replace the additive phase×family / role-target layer with **within-family per-option value features**; (2) confirm the diamond transfer at N≥40 seat-balanced before any edge claim; (3) consider cut Lightning/Dragapult families + a from-scratch value head. **48** Pass-46G tests + pass41–46f regression green.
+
+Detail: `data/reports/pass46g_multi_profile_turnplanner_sprint_report.md`; `data/experiments/pass46g_*`.

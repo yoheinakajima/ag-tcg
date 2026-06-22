@@ -35,3 +35,17 @@ pass necessarily breaks.
   that pass's true point-in-time state. Just report the expected staleness.
 - To tell pre-existing from self-inflicted: `git show HEAD:<shared file>` and check
   which pass's content it holds; tests for older passes than that were red before you.
+
+**Site caveat — do NOT regenerate the shared site in a gameplay pass.**
+`scripts/build_report_site.py` (generic `write_site`) rebuilds `data/site/index.html`
+from events/runs ONLY and does NOT carry the accumulated per-pass narrative blocks +
+"NOT A KAGGLE LEADERBOARD" `<p class="caveat">` paragraphs that the committed
+index.html holds (that narrative is frozen at Pass 40; gameplay passes 41+ leave the
+site untouched). Running it in a non-reporting pass therefore STRIPS those disclaimers
+and breaks `test_pass17/18 *_carry_not_a_kaggle_leaderboard_disclaimer` — a REAL
+self-inflicted regression, distinct from the benign staleness above (confirmed by
+`git show HEAD:data/site/index.html | grep -c 'NOT A KAGGLE LEADERBOARD'` = 4 vs 0
+after regen). For a LOCAL-ONLY gameplay pass, do NOT run build_report_site.py; leave
+`data/site/*` as-is. The emitter only needs the site PATH to exist, and pass-specific
+tests (e.g. test_pass46g) don't read site content — so reverting the site to HEAD
+costs nothing and restores the disclaimers.
