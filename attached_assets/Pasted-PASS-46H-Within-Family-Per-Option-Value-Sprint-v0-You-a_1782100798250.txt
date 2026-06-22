@@ -1,0 +1,310 @@
+PASS 46H — Within-Family Per-Option Value Sprint v0
+
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+Strategic context:
+Pass 46G tested phase-aware and role-aware additive turn-planner profiles. The candidates were safe and non-inert, but no profile cleared the promising bar. The key finding was that phase/role layers are too coarse and mostly top-1 inert. The one interesting signal was diamond_phase going 8–2 vs parent, but that was not attributable to the phase/role layer; it looked more like family-weighted scorer transfer.
+
+This pass should move one level lower: build within-family per-option value features that score the actual legal option, target, card, zone, and visible board context. Do not optimize one deck blindly; build reusable option-value infrastructure and test a small local batch.
+
+This is NOT Pass 47. Production keeps soaking. Do not redeploy.
+
+Scope:
+LOCAL-ONLY gameplay-improvement sprint.
+No production Object Storage mutation.
+No production tick.
+No republish.
+No production registration.
+No lifecycle/status apply.
+No promotion.
+No Kaggle upload/submit/auto-submit.
+No root main.py/deck.csv mutation.
+No existing tarball deletion/overwrite.
+No public reference as source/parent/candidate.
+Public references remain benchmark-only opponents.
+Start application remains not-started.
+
+Goal:
+Build and test a small batch of owned, local-only cg_typed candidates using within-family per-option value features, calibrated against Pass-46E Search oracle labels. Determine whether option-specific visible features produce a clearer parent edge than the coarse Pass-46G phase/role profiles.
+
+Key hypothesis:
+Specific option-value features — card identity/role, target zone, energy count, active-vs-bench destination, search/discard resource value, end-with-alternatives — will outperform coarse phase/role additives.
+
+Part A — Safety stop-gate
+Fresh checks:
+- root main.py and deck.csv byte-identical to data/baselines/v1_kaggle_349_8
+- .replit deployment unchanged, scheduled tick still uses --production and replit_app_storage
+- auto_submit false/falsy
+- no forbidden events in scope: CandidatePromoted, SubmissionQueued, SubmissionUploaded, KaggleScoreUpdated
+- public references absent from candidate pool and main scheduler worklist
+- Pass 46D primitives and Pass 46E oracle artifacts present
+- Pass 46G candidate/eval artifacts present
+Write data/experiments/pass46h_safety_preflight.{json,md}
+Stop if unsafe.
+
+Part B — Source selection and attribution plan
+Create scripts/build_pass46h_source_selection.py.
+
+Select at most 3 internal source families:
+1. Diamond — because 46G showed the strongest local transfer signal.
+2. Water — strongest internal family and practical benchmark.
+3. Lightning or Dragapult only if budget permits; prefer Lightning if simple source/deck data is cleaner.
+
+Exclude:
+- public references
+- special_pilot_only
+- retired/quarantined/invalid
+- root baseline
+- any candidate without a verified internal tarball
+
+For each selected source record:
+- source id, family, status, parent, generation
+- tarball/deck/main sha
+- why selected
+- pass46g/46f evidence if available
+- source deck role map candidates: energy ids, basic Pokémon ids, evolution ids, trainer/search/draw cards, main attacker candidates if inferable from existing profiles/metadata
+
+Write data/experiments/pass46h_source_selection.{json,md}
+
+Part C — Per-option feature catalog
+Create or extend:
+src/ptcg_activegraph/analysis/option_value_features.py
+
+Implement pure, never-raise feature extraction for one legal option in context:
+- option_family
+- option_card_id if visible
+- target_card_id if visible
+- selected_zone / target_zone
+- target_is_active / target_is_bench
+- target_energy_count if visible
+- target_hp / max_hp if visible
+- active_id / active_energy_count
+- bench_count
+- hand_count, deck_count, prize_count
+- energy_attached/supporter_played flags
+- is_basic_energy / is_pokemon / is_basic_pokemon / is_evolution / is_trainer if metadata available
+- source-deck visible role tags: energy, basic, evolution, search, draw, switch, tool, attacker_candidate, setup_candidate, duplicate_visible_count
+- search_to_hand candidate role
+- discard candidate risk: unique_visible_basic, unique_visible_evolution, energy_threshold_risk, duplicate_low_risk, unknown
+- end_with_productive_alternatives
+- attack_available / attach_available / search_available in menu
+
+Do not infer:
+- exact damage
+- lethal
+- missed KO
+- Boss/gust correctness
+- spread placement
+- best action
+- hidden opponent hand contents
+
+Write:
+data/experiments/pass46h_option_feature_catalog.{json,md}
+docs/OPTION_VALUE_FEATURES_V0.md
+
+Part D — Search-oracle label dataset with option features
+Create scripts/build_pass46h_option_value_dataset.py.
+
+Use ACTIVE-seat frames from Pass 46C / Pass 46G / Pass 46E artifacts where possible.
+For each candidate legal option:
+- compute option features from Part C
+- evaluate one-step outcome using Pass-46E Search oracle labels if already cached, or run bounded oracle calls if needed
+- assign oracle_score and rank within the frame
+- include actual chosen action flag
+- label assumption level: assumption_based_hidden_state / unsupported
+- keep only supported oracle frames for training metrics; retain unsupported counts honestly
+
+Write:
+data/experiments/pass46h_option_value_dataset.{json,md}
+
+Part E — Interpretable per-family value profile fitting
+Create scripts/build_pass46h_value_profiles.py.
+
+Fit deterministic, interpretable value profiles. No black-box model required. Use either:
+- regularized linear score over named features,
+- decision-table / weights learned by grid search,
+- or hand-initialized weights adjusted by median oracle deltas.
+
+Must produce:
+1. family_only_floor_v1
+   - reproduces the Pass-46G family-weighted floor.
+2. option_value_v1
+   - uses specific option-value features.
+3. conservative_option_value_v1
+   - option_value_v1 plus stronger discard/deckout/end-with-alternatives guards.
+
+For each selected family:
+- calibrate on oracle-supported frames
+- compare top-1 agreement, median oracle lift, and decision divergence vs family_only_floor
+- report whether option_value changes top-1 on live menus by at least 5%
+
+Write:
+data/experiments/pass46h_value_profiles.{json,md}
+
+Part F — Build local-only candidate variants
+Create scripts/build_pass46h_candidates.py.
+
+Budget:
+- At most 6 candidates.
+- Prefer:
+  - Diamond family_only_floor_v1
+  - Diamond option_value_v1
+  - Diamond conservative_option_value_v1 if budget
+  - Water option_value_v1
+  - Water conservative_option_value_v1
+  - Lightning option_value_v1 if selected
+- If calibration data is too sparse for a family, skip its candidate and record why.
+
+Candidate requirements:
+- cg_typed tarball under data/submissions/candidates_pass46h/
+- top-level main.py + deck.csv + cg/
+- deck.csv exactly copied from source
+- original owned main.py
+- fast hot-path scorer, no broad online Search
+- feature/profile constants embedded
+- never-raise legal fallback
+- no public reference code
+- provenance comments: local-only, no_upload=true, parent=internal source, public_reference=false
+
+Do not overwrite existing candidate tarballs with different bytes.
+Write:
+data/experiments/pass46h_candidate_build.{json,md}
+
+Part G — Validation and lane separation
+For every candidate:
+- cg_typed validator accepts
+- stdlib validators reject for expected reasons and are byte-unchanged
+- import smoke resolves agent
+- malformed obs never raises
+- fallback legal
+- deck equals source exactly
+- no public reference hash/code match
+Write:
+data/experiments/pass46h_candidate_validation.{json,md}
+
+Part H — Smoke and non-inertness
+For every validated candidate:
+- self game
+- parent both seats if possible
+- internal anchor
+- one public reference
+Record import/deck/error/timeout/invalid.
+
+Non-inertness:
+- decision divergence vs source parent
+- divergence vs family_only_floor where applicable
+- illegal decisions
+- fallback rate
+- uncaught exceptions
+
+Only clean candidates proceed to eval.
+Write:
+data/experiments/pass46h_smoke_non_inertness.{json,md}
+
+Part I — Local evaluation panel
+Run bounded local eval only.
+
+Core comparisons:
+1. For Diamond:
+   - option_value_v1 vs parent, at least 20 games seat-balanced
+   - option_value_v1 vs family_only_floor, at least 20 games if both built
+   - if strong, expand best diamond candidate to 40 parent games
+2. For Water:
+   - option_value_v1 vs parent, at least 20 games seat-balanced
+3. For any surviving candidate:
+   - internal anchor
+   - two public references, low-N but both seats
+4. Noise control only if a candidate's parent point estimate is >=0.65 at n>=20.
+
+Use Wilson CIs. A candidate is not promising unless:
+- parent H2H point estimate is positive and seat-balanced
+- Wilson lower bound approaches or clears 0.5
+- candidate beats family_only_floor or differs materially from it, if relevant
+- no hard failures
+- no public-reference parity claim unless actually shown
+
+Write:
+data/experiments/pass46h_eval_panel.{json,md}
+
+Part J — Strategy decision
+Allowed decisions:
+- option_value_profile_promising_local_only
+- option_value_profile_inconclusive_continue_iteration
+- no_option_value_profile_promising
+- validation_failed
+- safety_stop_required
+
+A promising decision requires:
+- safety ok
+- validation/smoke clean
+- non-inertness with zero illegal decisions
+- parent H2H improvement stronger than Pass 46G
+- attribution: option_value candidate beats or materially differs from family_only_floor
+- no production registration/redeploy requested
+
+Write:
+data/experiments/pass46h_strategy_decision.{json,md}
+
+Part K — Events
+Optional local summary events only if repo convention requires them.
+If emitted:
+- all no_upload=true
+- no CandidatePromoted
+- no SubmissionQueued
+- no SubmissionUploaded
+- no KaggleScoreUpdated
+- no production Object Storage
+Write:
+data/experiments/pass46h_events.{json,md}
+
+Part L — Tests
+Create tests/test_pass46h_option_value_profiles.py with at least 40 tests:
+- root immutable
+- source selection excludes public/special/retired
+- option feature catalog deterministic
+- hidden opponent hand never exposed
+- unsupported claims guarded
+- dataset labels assumption-based, not exact
+- value profiles deterministic
+- family_only_floor vs option_value attribution exists
+- candidate tarball shape
+- deck equals source
+- cg_typed accepts / stdlib rejects unchanged
+- no public reference code copied
+- malformed obs never raises
+- fallback legal
+- smoke clean for eval candidates
+- non-inertness recorded
+- eval artifacts have caveats
+- no production mutation
+- no republish required
+- no forbidden events
+- no exact-damage/lethal/Boss/gust/spread/best-action claims
+Run relevant regression batches.
+
+Part M — Report
+Write data/reports/pass46h_within_family_option_value_report.md with exactly 10 sections:
+1. Objective and safety
+2. Source selection
+3. Option-value feature catalog
+4. Search-oracle label dataset
+5. Value profile fitting
+6. Candidate builds
+7. Validation / smoke / non-inertness
+8. Local evaluation
+9. Tests / events / no-upload guarantees
+10. Verdict and next recommendation
+
+Update NEXT_STEPS and PTCG_STRATEGY_CANVAS. Do not regenerate the shared report site if prior memory says site regeneration breaks stale pass tests.
+
+Part N — Architect review
+Run architect/code review.
+Fix severe and medium issues.
+Re-run affected tests.
+
+Expected honest outcomes:
+- If Diamond option_value beats parent and family_only_floor with attribution, decision may be option_value_profile_promising_local_only.
+- If Diamond's signal was just variance or family transfer, decision should be inconclusive/no promising profile.
+- Public references likely still beat us; report honestly.
+- Redeploy expected: NO.
+- Production touched expected: NO.

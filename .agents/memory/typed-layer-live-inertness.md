@@ -72,3 +72,28 @@ parent-beating child was still far below every public reference).
 **Why:** at n≈10–20 the variance of a Wilson CI dwarfs the effect; an exact count
 test against the empirical null has far more power while staying honest about small
 samples.
+
+# A "finer-feature escapes coarse inertness" claim needs a COHERENT live∩gameplay escape
+
+When testing whether a finer policy layer (e.g. per-OPTION visible features) escapes a
+coarser layer's documented TOP-1-INERTNESS, measure TWO independent legs against the
+same family-only floor control and require BOTH: (1) LIVE-menu distinctness — top-1
+pick divergence from the floor on real replay menus above a floor (e.g. ≥5%); (2)
+GAMEPLAY distinctness — beats-or-loses-to the floor at 95% (Wilson CI does NOT span
+0.5). Partition candidates into coherent (live AND gameplay), live-only (live, not
+gameplay), and gameplay-variance (gameplay, not live) — disjoint buckets.
+
+**Why:** a gameplay split over a LIVE-INERT menu is almost certainly variance, not the
+feature firing (the layer barely changed any pick, yet "won" — that is noise); and
+live-distinctness with no gameplay or parent separation is interpretability, not
+strength. Only the coherent bucket is a defensible "escape," and even then it is a
+WITHIN-FAMILY-FLOOR escape, NEVER a parent edge — a parent edge requires its own
+Wilson-lower>0.5 H2H, which can be absent even when all candidates incl. the floor tie
+the parent.
+
+**How to apply:** "promising" = at least one coherent escape; gate the decision on it,
+but report the no-parent-edge / tiny-offline-coverage (hand-set priors, not fit) /
+likely-variance caveats explicitly. Lock these in tests: assert the three buckets are
+a disjoint partition whose (coherent ∪ gameplay-variance) equals the gameplay-distinct
+set, assert parent_edge_established is a biconditional of the eval edge list, and
+assert the report literally states the no-parent-edge and variance caveats.
