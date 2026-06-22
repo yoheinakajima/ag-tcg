@@ -256,3 +256,12 @@ Detail: `data/reports/pass46f_search_calibrated_turnplanner_candidate_report.md`
 - **Decision `no_profile_promising_continue_iteration`.** Next: (1) replace the additive phase×family / role-target layer with **within-family per-option value features**; (2) confirm the diamond transfer at N≥40 seat-balanced before any edge claim; (3) consider cut Lightning/Dragapult families + a from-scratch value head. **48** Pass-46G tests + pass41–46f regression green.
 
 Detail: `data/reports/pass46g_multi_profile_turnplanner_sprint_report.md`; `data/experiments/pass46g_*`.
+
+## Pass 46I — Water option-value confirmation v0 (LOCAL-ONLY, NO redeploy) — decision: water_option_value_not_promising
+- Confirmed the 46H water "coherent escape" `cg_typed_water_option_value_v1` at larger N by **reusing the 46H tarballs byte-for-byte** (no rebuild, no overwrite). Two pre-registered seat-balanced gating arms, 43 decisive each; 198 games total, 0 invalid.
+- **Attribution arm fails:** ov vs its own family-only floor `cg_typed_water_family_only_floor_v1` = 22/43 = **0.512**, Wilson95 [0.368, 0.654] (spans 0.5) → `no_edge`. The per-option value head does **not** separate from the floor in gameplay; 46H's live-menu 13.95% top-1 divergence did **not** convert into a gameplay edge.
+- **Practical arm directional-only & NOT attributable:** ov vs real parent `league_water_anti_disruption_pivot_v1` = 26/43 = **0.605** [0.456, 0.736] (spans 0.5; seats 0.73/0.48). The floor posts a near-identical 25/43 = 0.581 vs the same parent; Fisher-exact increment **p=1.0** → the parent edge is **not detectably added over the floor** (inherited from it, not contributed by option-value; "no detectable increment at N=43", not formal equality). Noise controls (self-mirrors) clean.
+- **Decision `water_option_value_not_promising`.** LOCAL-ONLY; references benchmark-only & **excluded** (combined 7/28 = 0.25, below refs); no upload/promote/register/tick/republish; all five workflows stayed not-started; shared report site **not** regenerated. 45 Pass-46I tests + pass41–46h regression green.
+- Next: **retire** the per-option value head as a parent-beating lever; iterate on the family-only **floor** (it carries the directional parent signal); only revisit option-value after fitting weights to a much larger cached Search-oracle label set.
+
+Detail: `data/reports/pass46i_water_option_value_confirmation_report.md`; `data/experiments/pass46i_*`.

@@ -200,3 +200,11 @@ Detail: `data/reports/pass46f_search_calibrated_turnplanner_candidate_report.md`
 - **Decision:** `no_profile_promising_continue_iteration` — safe, runnable, non-inert, but no profile-attributable edge. LOCAL-ONLY; references benchmark-only; no upload/promote/tick/register/republish; all five workflows stayed not-started. Pivot next to **within-family per-option value features** (the cross-family phase layer is structurally top-1-inert), and confirm the diamond transfer at larger N before any edge claim.
 
 Detail: `data/reports/pass46g_multi_profile_turnplanner_sprint_report.md`; `data/experiments/pass46g_*`.
+
+## Pass 46I — water option-value confirmation (LOCAL-ONLY, NO redeploy) — decision: water_option_value_not_promising
+- **Strategic test:** take 46H's one surviving "coherent floor-escape" (`cg_typed_water_option_value_v1`) and decide it cleanly with a two-arm pre-registered design at larger N — ATTRIBUTION (vs its own family-only floor) AND PRACTICAL (vs the real parent) — reusing the 46H tarballs byte-for-byte.
+- **What the evidence says — the per-option value layer adds no separable gameplay signal.** Versus its own floor control the treatment is a coin flip (22/43 = 0.512, CI [0.368, 0.654]); the 46H live-menu divergence does not convert into a gameplay edge. Versus the real parent it is only directional (0.605, CI spans 0.5, seat-asymmetric) — and a Fisher increment vs the floor (p=1.0) shows that signal is the **floor's**, not the value head's.
+- **Durable lesson:** live top-1 menu divergence is necessary but **not sufficient** for a gameplay edge; and a "beats the parent" reading must be **decomposed against the family-only floor** before it can be credited to the layer under test.
+- **Decision:** `water_option_value_not_promising` — LOCAL-ONLY; references benchmark-only & excluded (below refs); no upload/promote/register/tick/republish; all five workflows stayed not-started; shared site not regenerated. Next: iterate on the family-only floor (it carries the directional parent signal), not the option-value overlay; only revisit the value head with a much larger cached oracle label set.
+
+Detail: `data/reports/pass46i_water_option_value_confirmation_report.md`; `data/experiments/pass46i_*`.

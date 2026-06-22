@@ -1,0 +1,238 @@
+PASS 46I — Water Option-Value Confirmation v0
+
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+Strategic context:
+Pass 46H found the first coherent local turn-planning signal: cg_typed_water_option_value_v1 is distinguishable from its family-only floor sibling in both live top-1 menu choice and gameplay (7/1 vs floor, Wilson low > 0.5). But it did NOT establish a parent edge: all water variants tied the real parent league_water_anti_disruption_pivot_v1 at 5/3.
+
+This pass is a LOCAL confirmation pass. It should determine whether the water option-value candidate is actually worth considering for future production probation, or whether it is merely better than the artificial family-only floor.
+
+This is NOT Pass 47. Production keeps soaking. Do not redeploy.
+
+Scope:
+LOCAL-ONLY confirmation.
+No production Object Storage mutation.
+No production tick.
+No republish.
+No production registration.
+No lifecycle/status apply.
+No promotion.
+No Kaggle upload/submit/auto-submit.
+No root main.py/deck.csv mutation.
+No existing tarball deletion/overwrite.
+No public reference as source/parent/candidate.
+Public references remain benchmark-only opponents.
+Start application remains not-started.
+Do not generate new candidates. Use existing Pass-46H tarballs.
+
+Primary candidates:
+- treatment: cg_typed_water_option_value_v1
+- floor control: cg_typed_water_family_only_floor_v1
+- conservative sibling: cg_typed_water_conservative_option_value_v1
+- real parent: league_water_anti_disruption_pivot_v1
+- optional water family anchor/context: league_water_core_reference or water_basic_density_v1, read-only local eval only
+
+Main question:
+Does cg_typed_water_option_value_v1 clear both:
+1. attribution vs family_only_floor, and
+2. practical edge vs real parent?
+
+Part A — Safety stop-gate
+Freshly verify:
+- root main.py and deck.csv byte-identical to data/baselines/v1_kaggle_349_8
+- .replit scheduled deployment unchanged; still runs tournament_deployment_tick.py --production with replit_app_storage
+- auto_submit false/falsy
+- no forbidden events in scope: CandidatePromoted, SubmissionQueued, SubmissionUploaded, KaggleScoreUpdated
+- public references absent from candidate pool and main scheduler worklist
+- Pass 46H candidate tarballs and eval artifacts present
+- no production mutation path will run
+Write:
+data/experiments/pass46i_safety_preflight.{json,md}
+Stop if unsafe.
+
+Part B — Candidate artifact verification
+Verify existing 46H tarballs:
+- cg_typed_water_option_value_v1
+- cg_typed_water_family_only_floor_v1
+- cg_typed_water_conservative_option_value_v1
+Confirm:
+- tarballs exist
+- top-level main.py + deck.csv + cg/
+- deck.csv equals parent deck exactly
+- no public reference hash/code match
+- cg_typed validator accepts
+- stdlib validators reject for expected reasons and are byte-unchanged
+- no tarball overwritten
+Write:
+data/experiments/pass46i_candidate_artifact_check.{json,md}
+
+Part C — Evaluation design
+Create a pre-registered evaluation plan before running games.
+
+Required H2H panels:
+1. option_value vs family_only_floor
+   - target at least 40 decisive games, seat-balanced
+   - this confirms attribution
+2. option_value vs real parent
+   - target at least 40 decisive games, seat-balanced
+   - this confirms practical usefulness
+3. family_only_floor vs real parent
+   - target at least 40 decisive games, seat-balanced
+   - this determines whether the floor itself explains any result
+4. conservative_option_value vs option_value
+   - target at least 20 decisive games, seat-balanced
+   - secondary profile sanity check
+5. optional: option_value vs one internal water anchor
+   - target 20 games if budget allows
+6. optional: option_value vs two public references
+   - small context only, both seats, no parity claim
+
+Evaluation must be resumable, checkpointed, subprocess-isolated, and budgeted for the tool-call cap.
+
+Write:
+data/experiments/pass46i_eval_plan.{json,md}
+
+Part D — Run local confirmation panel
+Implement or reuse a runner:
+scripts/run_pass46i_water_confirmation.py
+
+Requirements:
+- local only
+- no production Object Storage
+- no EventStore production writes
+- hard-timeout subprocess games
+- checkpoint/resume
+- never overwrite completed rows
+- store raw game rows in data/experiments/pass46i_water_confirmation_games.jsonl
+- maintain summary artifacts after every tranche
+- zero public reference leakage into candidates/pool
+
+Run until the core required panels are complete, or until time budget requires an honest partial report.
+
+Write:
+data/experiments/pass46i_water_confirmation.{json,md}
+
+Part E — Parent/floor/noise analysis
+Analyze:
+- option_value vs floor
+- option_value vs parent
+- floor vs parent
+- conservative vs option_value
+- seat split for each
+- Wilson 95% CI
+- Fisher exact where appropriate
+- invalid/error/timeout counts
+
+Run self-mirror/noise controls only if option_value appears to clear the parent edge:
+- parent vs parent, seat-balanced
+- option_value vs option_value, seat-balanced
+
+Decision labels for each edge:
+- confirmed_edge: Wilson lower > 0.50 and both seats non-collapsed
+- directional_edge: point estimate >= 0.60 but Wilson lower <= 0.50
+- no_edge: point estimate near or below 0.50
+- seat_confounded: one seat materially weak
+- unsafe_invalid: invalid/error/timeout issue
+
+Write:
+data/experiments/pass46i_edge_analysis.{json,md}
+
+Part F — Reference context, optional and caveated
+If optional reference games are run:
+- report separately as benchmark-only context
+- do not include them in parent/floor decisions
+- do not claim public-reference parity unless sample and CIs support it, which is not expected
+
+Write:
+data/experiments/pass46i_reference_context.{json,md}
+
+Part G — Strategy decision
+Allowed decisions:
+- water_option_value_confirmed_local_candidate
+- water_option_value_floor_escape_only
+- water_option_value_inconclusive_needs_more_n
+- water_option_value_not_promising
+- validation_failed
+- safety_stop_required
+
+Decision rules:
+water_option_value_confirmed_local_candidate only if:
+- safety passes
+- artifact check passes
+- option_value has confirmed_edge vs floor
+- option_value has confirmed_edge vs parent
+- floor does not explain the parent result better than option_value
+- no hard failures
+- no seat collapse
+- no production mutation / no republish requested
+
+water_option_value_floor_escape_only if:
+- option_value confirmed vs floor
+- but not confirmed vs parent
+
+water_option_value_inconclusive_needs_more_n if:
+- point estimates are positive but CIs are too wide
+
+Write:
+data/experiments/pass46i_strategy_decision.{json,md}
+
+Part H — Events
+Optional local summary events only if repo convention requires them.
+If emitted:
+- all no_upload=true
+- no CandidatePromoted
+- no SubmissionQueued
+- no SubmissionUploaded
+- no KaggleScoreUpdated
+- no production Object Storage
+Write:
+data/experiments/pass46i_events.{json,md}
+
+Part I — Tests
+Create tests/test_pass46i_water_confirmation.py with at least 32 tests:
+- root immutable
+- production untouched
+- no republish required
+- candidate artifacts exist
+- deck equals parent
+- cg_typed accepts / stdlib rejects unchanged
+- no reference code copied
+- eval plan pre-registered before results
+- confirmation games checkpoint exists
+- option/floor/parent panels present
+- Wilson/seat splits computed
+- decision in allowed list
+- no forbidden events
+- no public reference candidate leakage
+- report caveats
+Run relevant regression batches.
+
+Part J — Report
+Write:
+data/reports/pass46i_water_option_value_confirmation_report.md
+
+Exactly 10 sections:
+1. Objective and safety
+2. Candidate artifact verification
+3. Evaluation plan
+4. Confirmation panel results
+5. Edge analysis
+6. Reference context
+7. Noise controls
+8. Strategy decision
+9. Tests/events/no-upload guarantees
+10. Verdict and next recommendation
+
+Do not regenerate the shared report site if prior memory says that breaks stale pass tests.
+Update NEXT_STEPS and PTCG_STRATEGY_CANVAS with caveated local-only status.
+
+Part K — Architect review
+Run architect/code review.
+Fix severe and medium issues.
+Re-run affected tests.
+
+Expected outcomes:
+- Best case: water_option_value_confirmed_local_candidate. Then the next step would be a separate human-approved production-probation registration pass, requiring republish first.
+- Likely case: water_option_value_floor_escape_only or inconclusive. Then continue local iteration with richer option features / more labels.
+- Redeploy expected: NO for this pass.
+- Production touched expected: NO.
