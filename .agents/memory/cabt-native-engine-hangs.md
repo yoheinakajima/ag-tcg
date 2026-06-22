@@ -48,3 +48,22 @@ hang-safety and crash-safety:
 **Why:** Pass-35's internal 9-deck two-stage tournament (216 games) finished in 2
 calls this way vs ~18 with per-game subprocess isolation; warm-engine batch games
 ran ~0.5s each.
+
+## Reaping the warm worker: never `subprocess.run(capture_output=True)` for it
+
+The orchestrator that spawns the warm batch worker must NOT reap it with
+`subprocess.run(..., capture_output=True, timeout=...)`. The native cg/open_spiel
+engine can leave a grandchild holding the worker's stdout/stderr pipe, so
+`communicate()` blocks on pipe-EOF FOREVER — past the timeout — and the
+orchestrator never returns or writes its summary (it just gets killed at the 120s
+tool cap, with the ledger silently advancing each run).
+
+**Rule:** spawn the worker with `subprocess.Popen(..., stdout=DEVNULL,
+stderr=DEVNULL, start_new_session=True)` (no pipe to drain), `proc.wait(timeout=...)`,
+and on `TimeoutExpired` `os.killpg(os.getpgid(proc.pid), SIGKILL)` to take down the
+whole process group (the grandchild too). Worker progress is already crash-safe via
+the fsync'd JSONL, so a group-kill loses at most the in-flight game.
+
+**Why:** Pass-46J's eval orchestrator (copied from 46I) hung twice at the 120s cap
+with zero stdout even though the JSONL kept gaining ~30 results/run; the fix was
+swapping `subprocess.run(capture_output=True)` for Popen+DEVNULL+killpg.

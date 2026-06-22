@@ -30,3 +30,19 @@ changed. Honesty requires the claim to track reality.
 **How to apply:** compute via filecmp.cmp(shallow=False); package verify = PASS only if
 both root files match, FAIL if either differs, UNVERIFIED if a side is missing. Add a
 test that section-1 strings match the live comparison result.
+
+# Report/doc numeric claims must be cross-checked against the source artifact
+Every ratio / win-rate / Wilson-CI / p-value written into a report, NEXT_STEPS, or the
+strategy canvas must come from (or be test-asserted equal to) the eval-panel JSON it
+summarizes — never hand-transcribed.
+
+**Why:** a hand-typed `spec_vs_generic_floor = 18/22 [0.612,0.927]` shipped into the
+report + NEXT_STEPS while the panel JSON actually held 27/33 = 0.818 [0.656,0.914]; the
+numbers were internally plausible but wrong, and only caught at architect review.
+Hand-transcription silently drifts from the artifact.
+
+**How to apply:** prefer rendering report numbers from the panel JSON programmatically;
+when prose is hand-written, grep the doc for the stale value after any panel recompute,
+and keep a test that re-derives headline metrics from the JSON. Also keep volatile
+counts (e.g. "N Pass tests", "N LOCAL events") in lockstep — adding tests/events means
+updating every doc that states the count.

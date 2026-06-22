@@ -1,0 +1,379 @@
+PASS 46J — Diamond cg_typed Specialist Planner v0
+
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+Strategic context:
+We have learned that generic scoring overlays are not enough. Pass 46F/46G/46H/46I built safe local cg_typed candidates, but the profile/phase/option-value layers did not produce an attributable parent-beating edge. The key lesson is that we are optimizing weak policy abstractions instead of building a real deck-specific turn planner.
+
+This pass should make the bigger jump: build ONE serious owned cg_typed specialist pilot for Diamond Toolbox.
+
+This is NOT Pass 47. Production keeps soaking. Do not redeploy.
+
+Scope:
+LOCAL-ONLY gameplay-improvement pass.
+No production Object Storage mutation.
+No production tick.
+No republish.
+No production candidate registration.
+No lifecycle/status apply.
+No promotion.
+No Kaggle upload/submit/auto-submit.
+No root main.py/deck.csv mutation.
+No existing tarball deletion/overwrite.
+No public reference as source/parent/candidate.
+Public references remain benchmark-only opponents.
+Start application remains not-started.
+Do not optimize a generic scorer profile. Build a real deck-specific planner.
+
+Primary source:
+diamond_toolbox_diancie, unless safety/source verification proves it unavailable or unsuitable.
+Use its existing internal tarball/deck as the parent/source.
+Do not invent card IDs. Verify every card ID from deck.csv against the card DB or cg/all_card_data.
+
+High-level goal:
+Build an owned, original cg_typed Diamond specialist that computes a per-turn plan and uses deck-specific per-context rules:
+- setup
+- benching
+- energy attachment
+- search/to-hand
+- discard
+- retreat/switch
+- attack/end
+
+The candidate should be clearly different from the previous generic family/option scorers. It should contain an explicit turn-plan layer, not just a weight table over option families.
+
+Important honesty:
+- No exact damage / lethal / missed-KO / Boss-gust correctness / spread placement / best-action claims unless supported by cg Search API and explicitly labeled.
+- Numeric attackId alone is not enough.
+- Public references are benchmarks only; do not copy their code or use them as parents.
+- Search oracle may be used offline for diagnosis/calibration. Broad online Search in the agent hot path is forbidden unless it is narrow, bounded, measured, and optional/fail-safe. Default should be a fast rule-based typed planner.
+
+Part A — Safety stop-gate
+Freshly verify:
+- root main.py and deck.csv byte-identical to data/baselines/v1_kaggle_349_8
+- .replit scheduled deployment unchanged and still points to tournament_deployment_tick.py --production with replit_app_storage
+- auto_submit false/falsy
+- no forbidden events in scope: CandidatePromoted, SubmissionQueued, SubmissionUploaded, KaggleScoreUpdated
+- public references absent from candidate pool and main scheduler worklist
+- source parent tarball exists and is internal, not public reference / special / retired / quarantined / invalid
+- Pass 46D primitives and Pass 46E Search oracle artifacts present
+Write:
+data/experiments/pass46j_safety_preflight.{json,md}
+Stop if unsafe.
+
+Part B — Diamond source/deck audit
+Create scripts/build_pass46j_diamond_source_audit.py.
+
+Audit diamond_toolbox_diancie:
+- tarball path, main.py sha, deck.csv sha, tarball sha
+- 60-card deck legality
+- all card IDs known
+- copy counts
+- basic count, energy count, trainer count, search/draw count
+- evolution requirements if any
+- card metadata from cg/all_card_data or EN_Card_Data.csv
+- identify deck roles from verified metadata and existing deck only:
+  main attacker candidates
+  backup attacker candidates
+  setup/support Pokémon
+  energy cards
+  search cards
+  draw cards
+  switch/retreat cards
+  tool/stadium cards
+  discard-sensitive cards
+- explicitly mark uncertain roles as inferred, not fact
+
+Write:
+data/experiments/pass46j_diamond_source_audit.{json,md}
+
+Part C — Diamond specialist strategy blueprint
+Write docs/DIAMOND_SPECIALIST_PLANNER_V0.md and data/experiments/pass46j_diamond_planner_blueprint.{json,md}.
+
+The blueprint must define a real turn planner, not a flat option scorer.
+
+Required planning objects:
+- DiamondBoardView
+- DiamondRoleMap
+- DiamondTurnPlan
+
+DiamondTurnPlan must include, at minimum:
+- phase: setup / develop / attack_ready / recovery / late_game
+- desired_active_role
+- primary_attacker_target
+- backup_attacker_target
+- energy_attach_target
+- setup_bench_targets
+- search_targets_by_priority
+- safe_discard_candidates
+- retreat_or_switch_goal
+- attack_now flag
+- draw_safety / deckout_safety state
+- fallback_reason if no plan available
+
+Required per-context policy sections:
+1. deck selection / malformed obs fallback
+2. setup active Pokémon selection
+3. setup bench Pokémon selection
+4. main phase play ordering
+5. attach energy / attach tool
+6. search-to-hand
+7. discard choice
+8. evolve choice if relevant
+9. ability choice
+10. retreat / switch / promote
+11. attack / end turn
+
+Blueprint must explicitly state:
+- which claims remain unsupported
+- whether any Search API calls are allowed in live hot path (expected: no broad online Search)
+- how the policy remains never-raise and legal
+
+Part D — Implement reusable Diamond planner module
+Create:
+src/ptcg_activegraph/analysis/diamond_specialist.py
+
+This module is for local source generation and fixture tests. It should be pure/read-only and must not import Object Storage or EventStore.
+
+Implement:
+- role map builder from deck/card metadata
+- board view extraction from cg typed obs or raw obs fallback
+- turn plan construction
+- per-context score/rank helpers
+- unsupported_claims guard
+- never-raise wrappers
+
+Do not import public reference code.
+Do not access production state.
+Do not mutate anything.
+
+Write:
+data/experiments/pass46j_diamond_planner_module.{json,md}
+
+Part E — Build local-only cg_typed candidate
+Create scripts/build_pass46j_diamond_candidate.py.
+
+Candidate id suggestion:
+cg_typed_diamond_specialist_planner_v0
+
+Build tarball under:
+data/submissions/candidates_pass46j/
+
+Requirements:
+- tarball top-level main.py + deck.csv + cg/
+- deck.csv exactly copied from diamond_toolbox_diancie parent
+- owned original main.py
+- cg_typed typed observation decode
+- inline DiamondRoleMap / DiamondTurnPlan / per-context policy
+- no import from src in final candidate
+- no public reference code copied
+- no broad online Search in hot path
+- never-raise fallback returning legal unique indices satisfying min/max
+- fallback records/infers reason internally if possible, but no logs/secrets
+- candidate provenance comments:
+  owned_candidate=true
+  parent=diamond_toolbox_diancie
+  public_reference=false
+  local_only=true
+  no_upload=true
+
+Do not overwrite an existing tarball with different bytes.
+Write:
+data/experiments/pass46j_candidate_build.{json,md}
+
+Part F — Validation and lane separation
+Create scripts/build_pass46j_candidate_validation.py.
+
+Verify:
+- cg_typed validator accepts
+- stdlib validators reject for expected reasons and are byte-unchanged
+- import smoke resolves agent
+- deck-return works for obs.select=None
+- malformed obs never raises
+- fallback legal when possible
+- deck equals parent exactly
+- no public reference main.py hash/code match
+- root unchanged after validation
+
+Write:
+data/experiments/pass46j_candidate_validation.{json,md}
+
+Part G — Planner fixture tests on traces
+Use Pass 46C traces and/or Diamond-specific local frames if available.
+
+Create a fixture set covering:
+- setup active/bench frame
+- attach-energy frame
+- search/to-hand frame
+- discard frame
+- main phase with multiple play options
+- retreat/switch or promote frame if available
+- attack/end frame
+- unsupported/malformed frame
+
+For each fixture:
+- build DiamondTurnPlan
+- run context policy
+- verify legal indices
+- verify unsupported claims remain unsupported
+- verify hidden opponent hand not read
+- verify plan fields are populated or honest unknown
+
+Write:
+data/experiments/pass46j_planner_fixture_validation.{json,md}
+
+Part H — Smoke and non-inertness
+Create scripts/run_pass46j_diamond_smoke.py.
+
+Run local subprocess-isolated smoke games:
+- self mirror, both seats
+- vs parent diamond_toolbox_diancie, both seats
+- vs current water control or internal leader, both seats
+- vs at least two public references, both seats
+
+Record:
+- import/deck failures
+- invalids
+- timeouts
+- errors
+- steps
+- result
+
+Non-inertness:
+- compare candidate decisions to parent on live ACTIVE frames
+- changed decision rate
+- changed contexts/families
+- illegal decisions
+- fallback rate
+- uncaught exceptions
+
+Write:
+data/experiments/pass46j_diamond_smoke.{json,md}
+data/experiments/pass46j_diamond_non_inertness.{json,md}
+
+Part I — Local evaluation panel
+Create scripts/run_pass46j_diamond_eval_panel.py.
+
+Run a local-only, checkpointed, subprocess-isolated evaluation.
+
+Required:
+1. candidate vs parent diamond_toolbox_diancie
+   - target at least 40 decisive games, seat-balanced
+   - minimum acceptable if time-limited: 20 decisive with honest inconclusive label
+2. candidate vs internal water control / current internal leader
+   - at least 20 games if feasible
+3. candidate vs public references
+   - all five references if feasible, low-N context only
+   - both seats
+   - benchmark-only, not a decision gate
+4. self-mirror/noise controls only if candidate appears promising vs parent
+
+Compute:
+- W/L/D
+- invalid/error/timeout
+- seat split
+- Wilson 95% CI
+- Fisher/noise control where applicable
+- compare against previous Diamond parent baseline if available
+
+Write:
+data/experiments/pass46j_diamond_eval_panel.{json,md}
+
+Part J — Strategy decision
+Create scripts/build_pass46j_strategy_decision.py.
+
+Allowed decisions:
+- diamond_specialist_promising_local_only
+- diamond_specialist_directional_needs_more_n
+- diamond_specialist_not_promising
+- validation_failed
+- safety_stop_required
+
+Promising requires:
+- safety ok
+- validation ok
+- smoke clean
+- non-inert with zero illegal decisions
+- parent H2H confirmed or strongly directional with clean seats
+- no hard failures
+- no public-reference leakage
+- no production registration/redeploy requested
+- public-reference context honestly reported
+
+If parent H2H is weak, mark not_promising.
+If point estimate is positive but CI broad, mark directional_needs_more_n.
+Do not claim Kaggle strength.
+
+Write:
+data/experiments/pass46j_strategy_decision.{json,md}
+
+Part K — Events
+Optional local summary events only if repo convention requires them.
+If emitted:
+- all no_upload=true
+- no CandidatePromoted
+- no SubmissionQueued
+- no SubmissionUploaded
+- no KaggleScoreUpdated
+- no production Object Storage
+- local descriptive candidate event must not enter pool/lifecycle/rankings
+Write:
+data/experiments/pass46j_events.{json,md}
+
+Part L — Tests
+Create tests/test_pass46j_diamond_specialist.py with at least 45 tests:
+- root immutable
+- production untouched
+- no republish required
+- source is internal Diamond, not public/special/retired
+- deck audit known IDs / legal 60
+- role map deterministic and no invented IDs
+- blueprint exists and defines DiamondTurnPlan
+- specialist module pure/no ObjectStorage/EventStore
+- unsupported claims guarded
+- hidden opponent hand not exposed
+- candidate tarball shape
+- deck equals parent
+- cg_typed accepts / stdlib rejects unchanged
+- no public reference code copied
+- malformed obs never raises
+- fallback legal
+- fixture validation all_ok
+- smoke clean
+- non-inertness recorded
+- eval artifacts and caveats present
+- no production mutation
+- no forbidden events
+- report decision in allowed list
+- no exact-damage/lethal/Boss-gust/spread/best-action claims
+Run relevant regression batches. Do not weaken existing tests.
+
+Part M — Report
+Write:
+data/reports/pass46j_diamond_specialist_planner_report.md
+
+Exactly 10 sections:
+1. Objective and safety
+2. Diamond source/deck audit
+3. Specialist planner blueprint
+4. Candidate build
+5. Validation and lane separation
+6. Fixture validation
+7. Smoke and non-inertness
+8. Local evaluation
+9. Tests/events/no-upload guarantees
+10. Verdict and next recommendation
+
+Update docs/NEXT_STEPS.md and docs/PTCG_STRATEGY_CANVAS.md with caveated local-only status.
+Do not regenerate the shared report site if prior memory says that breaks stale pass tests.
+
+Part N — Architect review
+Run architect/code review.
+Fix severe and medium findings.
+Re-run affected tests.
+
+Expected outcomes:
+- Best case: diamond_specialist_promising_local_only, still local-only. Next would be a separate production-probation registration bridge requiring human approval and republish first.
+- Likely case: directional_needs_more_n or not_promising. Report honestly and use findings to decide whether to try Lightning specialist or build a larger Search-labeled planner dataset.
+- Redeploy expected: NO.
+- Production touched expected: NO.
