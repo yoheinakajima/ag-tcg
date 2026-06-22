@@ -35,6 +35,10 @@ args = "pass36_44_regression"
 task = "workflow.run"
 args = "pass36_45_regression"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "pass46l"
+
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -89,6 +93,17 @@ args = "python3 -m pytest tests/test_pass36_tournament_engine.py tests/test_pass
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow]]
+name = "pass46l"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PYTHONHASHSEED=0 python3 -m pytest tests/test_pass46l_diamond_reference_gap.py -q"
+
+[workflows.workflow.metadata]
+isValidation = true
 
 [deployment]
 deploymentTarget = "scheduled"

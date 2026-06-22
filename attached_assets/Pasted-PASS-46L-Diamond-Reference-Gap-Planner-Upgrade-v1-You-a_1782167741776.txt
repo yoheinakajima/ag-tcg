@@ -1,0 +1,274 @@
+PASS 46L — Diamond Reference-Gap Planner Upgrade v1
+
+You are Replit Agent continuing inside the Pokémon TCG ActiveGraph repo.
+
+Strategic context:
+Pass 46K proved the Diamond specialist planner is a real internal improvement: it beat the parent, the generic option_value scorer, and the family-only floor at larger N. The only gating cleanliness issue was a dirty self-mirror noise control, but the bigger unresolved problem is public-reference performance: the planner went 1/60 pooled versus public references. Do not spend the whole pass on mirror forensics. Treat mirror/noise as a small sanity check only. The main goal is to improve reference-facing gameplay.
+
+This is NOT Pass 47. Production keeps soaking. Do not redeploy.
+
+Scope:
+LOCAL-ONLY gameplay-improvement pass.
+No production Object Storage mutation.
+No production tick.
+No republish.
+No production candidate registration.
+No lifecycle/status apply.
+No promotion.
+No Kaggle upload/submit/auto-submit.
+No root main.py/deck.csv mutation.
+No existing tarball deletion/overwrite.
+No public reference as source/parent/candidate.
+Public references remain benchmark-only opponents.
+Start application remains not-started.
+
+Primary source:
+Existing Pass-46J candidate:
+cg_typed_diamond_specialist_planner_v0
+
+Build one upgraded owned candidate:
+cg_typed_diamond_specialist_planner_v1
+
+Do not use public-reference code. Use public references only as benchmark opponents and failure cases.
+
+Main objective:
+Upgrade the Diamond specialist planner to target public-reference failures by improving:
+1. attack / attack-now gating
+2. target and prize-pressure awareness where observable
+3. search_to_hand priorities
+4. setup_bench priorities
+5. energy attachment to the planned attacker / backup attacker
+6. discard safety
+7. end-turn avoidance when productive options exist
+
+Do NOT claim exact damage/lethal/missed-KO/Boss-gust/spread/best-action unless Search explicitly supports it. Numeric attackId alone is not enough.
+
+Part A — Safety stop-gate
+Freshly verify:
+- root main.py and deck.csv byte-identical to data/baselines/v1_kaggle_349_8
+- deployment unchanged and still scheduled production tick
+- auto_submit false/falsy
+- no forbidden events in scope: CandidatePromoted, SubmissionQueued, SubmissionUploaded, KaggleScoreUpdated
+- public references absent from candidate pool and scheduler worklist
+- Pass 46J/46K Diamond specialist artifacts present
+- no production mutation path will run
+Write data/experiments/pass46l_safety_preflight.{json,md}
+Stop if unsafe.
+
+Part B — Reference-loss trace audit
+Use Pass 46K public-reference games and any available traces. If trace frames are missing, run a small LOCAL trace panel:
+- v0 vs public_ref_kiyotah_dragapult, both seats
+- v0 vs public_ref_kiyotah_iono, both seats
+- v0 vs public_ref_kiyotah_mega_lucario or Alakazam, both seats
+- optionally v0 wins/losses vs parent for contrast
+
+Extract visible-only diagnostics:
+- first attack turn
+- number of turns ending with attack available / no attack available
+- search_to_hand chosen card roles
+- setup_bench decisions
+- attach target active/bench/main attacker/backup
+- discard chosen role
+- end turn with productive alternatives
+- hand/deck/prize counts
+- visible prize progress
+- attack option presence, but no exact damage/lethal claims
+
+Write:
+data/experiments/pass46l_reference_loss_trace_audit.{json,md}
+
+Part C — Planner upgrade blueprint
+Write docs/DIAMOND_SPECIALIST_PLANNER_V1.md and data/experiments/pass46l_planner_v1_blueprint.{json,md}.
+
+Blueprint must define specific changes from v0:
+- improved attack_now gate
+- improved attacker readiness model
+- search_to_hand priority table
+- setup_bench priority table
+- energy target priority
+- safe discard priority
+- anti-pass / productive-action rule
+- conservative deckout/draw safety
+- optional narrow Search-assisted diagnostic hooks OFF by default
+
+Must list all unsupported claims and guardrails.
+
+Part D — Implement Diamond v1 planner module
+Create/extend:
+src/ptcg_activegraph/analysis/diamond_specialist_v1.py
+
+Requirements:
+- pure/read-only
+- no ObjectStorage/EventStore
+- no public reference code
+- no online broad Search
+- never-raise
+- fallback legal
+- typed obs and raw obs fallback
+- no hidden opponent hand reading
+
+Part E — Build local-only v1 candidate
+Create scripts/build_pass46l_diamond_v1_candidate.py.
+
+Build:
+data/submissions/candidates_pass46l/cg_typed_diamond_specialist_planner_v1.tar.gz
+
+Requirements:
+- main.py + deck.csv + cg/
+- deck.csv exactly copied from diamond parent
+- owned original main.py
+- v1 planner inlined, no src import
+- no public reference hash/code match
+- provenance comments local_only=true, no_upload=true, public_reference=false
+- do not overwrite different bytes
+
+Write:
+data/experiments/pass46l_candidate_build.{json,md}
+
+Part F — Validation and lane separation
+Verify:
+- cg_typed validator accepts
+- stdlib validators reject unchanged
+- import smoke resolves agent
+- malformed obs never raises
+- fallback legal
+- deck equals parent
+- root unchanged
+- no reference code copied
+Write:
+data/experiments/pass46l_candidate_validation.{json,md}
+
+Part G — Fixture validation and non-inertness
+Build fixtures from v0/v1 reference-loss frames and parent frames.
+Validate:
+- v1 plan fields populate
+- search_to_hand and setup_bench priorities differ from v0 where intended
+- attack_now gate differs where intended
+- all selected indices legal
+- unsupported claims remain unsupported
+
+Run non-inertness:
+- v1 vs v0
+- v1 vs parent
+Record changed decision rate, contexts, illegal decisions, fallback rate.
+
+Write:
+data/experiments/pass46l_fixture_validation.{json,md}
+data/experiments/pass46l_non_inertness.{json,md}
+
+Part H — Local evaluation panel
+Run local, checkpointed, subprocess-isolated evaluation.
+
+Required panels:
+1. v1 vs v0
+   - target 40 decisive, seat-balanced
+2. v1 vs parent
+   - target 60 decisive if feasible
+3. v1 vs generic option_value
+   - target 40 decisive if feasible
+4. v1 vs public references
+   - all five references if feasible
+   - at least 4 games per reference, both seats
+   - benchmark-only context, but central diagnostic
+5. small mirror sanity
+   - v1 vs v1, 20–30 games
+   - diagnose if obviously dirty, but do not let this consume the pass
+
+Compute W/L/D, Wilson CIs, seat splits, invalid/error/timeout.
+
+Write:
+data/experiments/pass46l_eval_panel.{json,md}
+
+Part I — Reference-gap analysis
+Compare v1 vs v0 on public references:
+- pooled reference win rate
+- per-reference win rate
+- seat split
+- first attack turn / setup/search/attach/end metrics if traces available
+- relative improvement over 46K's 1/60 baseline
+- no parity claim unless supported
+
+Write:
+data/experiments/pass46l_reference_gap_analysis.{json,md}
+
+Part J — Strategy decision
+Allowed decisions:
+- diamond_v1_reference_gap_improved_local_only
+- diamond_v1_internal_only_no_reference_gain
+- diamond_v1_not_promising
+- validation_failed
+- safety_stop_required
+
+Decision rules:
+diamond_v1_reference_gap_improved_local_only if:
+- safety ok
+- validation/smoke clean
+- v1 non-inert vs v0
+- v1 not worse than v0/parent internally
+- public-reference pooled result materially improves over 1/60 baseline
+- no hard failures
+- no production/redeploy requested
+
+Do not require reference parity. We are looking for a bigger jump in the right direction.
+
+Write:
+data/experiments/pass46l_strategy_decision.{json,md}
+
+Part K — Events
+Optional local summary events only if repo convention requires.
+If emitted:
+- no_upload=true
+- no CandidatePromoted
+- no SubmissionQueued
+- no SubmissionUploaded
+- no KaggleScoreUpdated
+- no production Object Storage
+Write:
+data/experiments/pass46l_events.{json,md}
+
+Part L — Tests
+Create tests/test_pass46l_diamond_reference_gap.py with at least 40 tests:
+- root immutable
+- production untouched
+- no republish required
+- v1 tarball shape
+- deck equals parent
+- cg_typed accepts / stdlib rejects unchanged
+- no reference code copied
+- malformed obs never raises
+- fallback legal
+- fixture validation
+- non-inertness v1 vs v0
+- eval artifacts present
+- public refs benchmark-only
+- no forbidden events
+- unsupported claims guarded
+- decision in allowed list
+Run relevant regression batches.
+
+Part M — Report
+Write data/reports/pass46l_diamond_reference_gap_planner_report.md with exactly 10 sections:
+1. Objective and safety
+2. Reference-loss trace audit
+3. Planner v1 blueprint
+4. Candidate build and validation
+5. Fixture validation and non-inertness
+6. Local evaluation
+7. Reference-gap analysis
+8. Strategy decision
+9. Tests/events/no-upload guarantees
+10. Verdict and next recommendation
+
+Update NEXT_STEPS and PTCG_STRATEGY_CANVAS.
+Do not regenerate shared report site.
+
+Part N — Architect review
+Run architect/code review.
+Fix severe and medium findings.
+Re-run affected tests.
+
+Expected outcomes:
+- Best case: v1 materially improves reference result over 1/60 while preserving internal edge.
+- If reference gap remains flat: stop Diamond reference-gap work and try a different archetype/specialist, likely Lightning or a sample-inspired owned deck.
+- Redeploy expected: NO.
+- Production touched expected: NO.
